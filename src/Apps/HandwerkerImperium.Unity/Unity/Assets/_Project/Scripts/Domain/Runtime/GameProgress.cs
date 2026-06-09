@@ -5,6 +5,7 @@ using HandwerkerImperium.Domain.Idle;
 using HandwerkerImperium.Domain.Progression;
 using HandwerkerImperium.Domain.Achievements;
 using HandwerkerImperium.Domain.Restoration;
+using HandwerkerImperium.Domain.Story;
 
 namespace HandwerkerImperium.Domain.Runtime
 {
@@ -61,6 +62,43 @@ namespace HandwerkerImperium.Domain.Runtime
             if (totalGems > 0) m.Gems += totalGems;
             return totalGems;
         }
+
+        /// <summary>
+        /// Wertet die Meister-Hans-Story-Beats aus: prüft die Loop-Meilenstein-Bedingungen und spielt die jeweils
+        /// noch nicht abgespielten Beats ab (in <see cref="GameModel.PlayedStoryBeats"/> vermerkt). Liefert die neuen Ids.
+        /// </summary>
+        public static List<string> EvaluateStory(GameModel m, IReadOnlyList<StoryBeatDefinition> catalog)
+        {
+            var played = new List<string>();
+            if (m == null || catalog == null) return played;
+            FireBeats(m, catalog, StoryTrigger.GameStart, true, played);
+            FireBeats(m, catalog, StoryTrigger.FirstStationProduce, AnyStock(m.Idle), played);
+            FireBeats(m, catalog, StoryTrigger.FirstWorkerHired, CountWorkers(m.Idle) > 0, played);
+            FireBeats(m, catalog, StoryTrigger.FirstPlotUnlocked, LastStationUnlocked(m.Idle), played);
+            FireBeats(m, catalog, StoryTrigger.FirstLandmarkRestored, RestorationFormulas.CompletedLandmarks(m.Landmarks) > 0, played);
+            FireBeats(m, catalog, StoryTrigger.FirstPrestige, m.Meta.PrestigeCount > 0, played);
+            return played;
+        }
+
+        private static void FireBeats(GameModel m, IReadOnlyList<StoryBeatDefinition> catalog, StoryTrigger trigger, bool condition, List<string> played)
+        {
+            if (!condition) return;
+            var beats = StoryBeatFormulas.BeatsForTrigger(catalog, trigger, m.PlayedStoryBeats);
+            foreach (var id in beats)
+            {
+                m.PlayedStoryBeats.Add(id);
+                played.Add(id);
+            }
+        }
+
+        private static bool AnyStock(GreyboxSimState idle)
+        {
+            foreach (var st in idle.Stations) if (st.Stock > 0) return true;
+            return false;
+        }
+
+        private static bool LastStationUnlocked(GreyboxSimState idle) =>
+            idle.Stations.Count > 0 && idle.Stations[idle.Stations.Count - 1].Unlocked;
 
         private static MasterToolContext BuildMasterToolContext(GameModel m) => new MasterToolContext
         {

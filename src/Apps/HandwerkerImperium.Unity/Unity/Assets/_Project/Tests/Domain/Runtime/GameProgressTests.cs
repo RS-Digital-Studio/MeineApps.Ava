@@ -2,6 +2,7 @@ using NUnit.Framework;
 using HandwerkerImperium.Domain.Idle;
 using HandwerkerImperium.Domain.Progression;
 using HandwerkerImperium.Domain.Achievements;
+using HandwerkerImperium.Domain.Story;
 using HandwerkerImperium.Domain.Config;
 using HandwerkerImperium.Domain.Runtime;
 
@@ -58,6 +59,39 @@ namespace HandwerkerImperium.Domain.Tests.Runtime
                 GameSimulation.Tick(m, ib, bal, 5.0, 1000 + i);
 
             Assert.That(m.Meta.MasteryXp, Is.GreaterThan(before), "Verdienst fliesst als Meisterschafts-XP");
+        }
+
+        [Test]
+        public void EvaluateStory_FiresBeatsOnMilestones_Idempotent()
+        {
+            var ib = new IdleBalancing();
+            var m = GameModel.CreateNew(ib);
+            var cat = StoryCatalog.Default();
+
+            Assert.That(GameProgress.EvaluateStory(m, cat), Contains.Item("hans_intro"), "GameStart -> Intro");
+            Assert.That(GameProgress.EvaluateStory(m, cat), Is.Empty, "ohne neuen Meilenstein -> nichts");
+
+            m.Idle.Stations[0].HasWorker = true;
+            Assert.That(GameProgress.EvaluateStory(m, cat), Contains.Item("hans_first_worker"));
+
+            m.Meta.PrestigeCount = 1;
+            Assert.That(GameProgress.EvaluateStory(m, cat), Contains.Item("hans_first_prestige"));
+        }
+
+        [Test]
+        public void Tick_AccruesRenommee_OnlyInFinalCity()
+        {
+            var ib = new IdleBalancing();
+            var bal = new GameBalancing();
+            var m = GameModel.CreateNew(ib);
+            m.Idle.Stations[0].HasWorker = true;
+
+            for (int i = 0; i < 5; i++) GameSimulation.Tick(m, ib, bal, 5.0, 1000 + i);
+            Assert.That(m.Meta.Renommee, Is.EqualTo(0m), "vor der Endstadt kein Renommee");
+
+            m.Meta.PrestigeCount = 3; // Metropole (Endstadt)
+            for (int i = 0; i < 5; i++) GameSimulation.Tick(m, ib, bal, 5.0, 2000 + i);
+            Assert.That(m.Meta.Renommee, Is.GreaterThan(0m), "in der Endstadt akkumuliert Renommee");
         }
     }
 }

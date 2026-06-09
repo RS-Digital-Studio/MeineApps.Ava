@@ -35,6 +35,10 @@ namespace HandwerkerImperium.Domain.Runtime
             if (earned > 0m && bal.Mastery.XpPerMoney > 0)
                 MetaProgression.GainMasteryXp(m.Meta, (double)earned * bal.Mastery.XpPerMoney, bal.Mastery.BaseXp, bal.Mastery.Growth);
 
+            // Endgame: in der Endstadt akkumuliert Renommee aus dem Verdienst (Soft-Infinite-Meistergrad-Loop, PROGRESSION §5).
+            if (earned > 0m && PrestigeFormulas.IsFinalCity(m.Meta.PrestigeCount, bal.Prestige.MaxPrestige))
+                m.Meta.Renommee += earned * bal.Meistergrad.AccrualRatePerIncome;
+
             return earned;
         }
 

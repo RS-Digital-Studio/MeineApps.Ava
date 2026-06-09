@@ -6,6 +6,7 @@ using HandwerkerImperium.Domain.Config;
 using HandwerkerImperium.Domain.Runtime;
 using HandwerkerImperium.Domain.Progression;
 using HandwerkerImperium.Domain.Achievements;
+using HandwerkerImperium.Domain.Story;
 
 namespace HandwerkerImperium.Game
 {
@@ -26,6 +27,7 @@ namespace HandwerkerImperium.Game
         private GameBalancing _bal;
         private List<MasterToolDefinition> _masterToolCatalog;
         private IReadOnlyList<AchievementDefinition> _achievementCatalog;
+        private IReadOnlyList<StoryBeatDefinition> _storyCatalog;
         private string _deviceKey;
         private float _autosaveTimer;
         private float _progressTimer;
@@ -33,6 +35,7 @@ namespace HandwerkerImperium.Game
         public GameModel Model => _model;
         public GameBalancing Balancing => _bal;
         public decimal LastOfflineEarned { get; private set; }
+        public string LatestStoryBeat { get; private set; } = "";
         public int CollectedToolsCount => _model != null ? _model.CollectedMasterTools.Count : 0;
         public int AchievementsCount => _model != null ? _model.ClaimedAchievements.Count : 0;
 
@@ -42,6 +45,7 @@ namespace HandwerkerImperium.Game
             _bal = config != null ? config.ToGameBalancing() : new GameBalancing();
             _masterToolCatalog = MasterToolFormulas.DefaultCatalog();
             _achievementCatalog = AchievementCatalog.Default();
+            _storyCatalog = StoryCatalog.Default();
             _deviceKey = RuntimeSave.DeviceKey;
             _model = RuntimeSave.HasSave ? RuntimeSave.Load(_deviceKey, _idleBal) : GameModel.CreateNew(_idleBal);
             if (_model == null) _model = GameModel.CreateNew(_idleBal);
@@ -74,6 +78,8 @@ namespace HandwerkerImperium.Game
                 _progressTimer = 0f;
                 GameProgress.CollectEligibleMasterTools(_model, _masterToolCatalog);
                 GameProgress.GrantNewAchievements(_model, _achievementCatalog);
+                var beats = GameProgress.EvaluateStory(_model, _storyCatalog);
+                if (beats.Count > 0) LatestStoryBeat = beats[beats.Count - 1];
             }
 
             _autosaveTimer += Time.deltaTime;
@@ -101,6 +107,15 @@ namespace HandwerkerImperium.Game
 
         /// <summary>Convenience für die UI (ohne Domain-Typ): kauft eine Stations-Tempo-Upgrade-Stufe.</summary>
         public bool BuyTempoUpgrade() => GameActions.BuyUpgrade(_model, _idleBal, UpgradeTrack.StationSpeed);
+
+        /// <summary>Holt die Tagesbelohnung ab (einkommens-skaliert). Liefert den Geld-Betrag (0 = nicht fällig).</summary>
+        public decimal ClaimDaily() => GameActions.ClaimDaily(_model, _bal, 500m, EffectiveIncomePerSecond(), DateTime.UtcNow.Ticks);
+
+        /// <summary>Kauft eine Stufe des Global-Tempo-Perks (Imperium-Marken).</summary>
+        public bool BuyTempoPerk() => GameActions.BuyPerk(_model, _bal, PerkKind.GlobalTempo);
+
+        /// <summary>Kauft (in der Endstadt) den nächsten Meistergrad (Renommee).</summary>
+        public bool BuyMeistergrad() => GameActions.BuyMeistergrad(_model, _bal);
 
         public void PersistNow()
         {

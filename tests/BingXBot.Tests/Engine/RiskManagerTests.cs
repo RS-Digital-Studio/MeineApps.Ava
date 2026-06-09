@@ -751,4 +751,101 @@ public class RiskManagerTests
                 customPositions: new List<Position> { unknownPos }));
         result.IsAllowed.Should().BeTrue();
     }
+
+    // === Cross-Asset-Netto-Direktions-Limit (MaxNetDirectionalExposurePercent) ===
+    // Notional-basiert ueber ALLE Kategorien (Crypto + TradFi). Geplantes Notional konservativ:
+    // Sizing-Margin × Kategorie-Leverage. Bei BTC (Crypto, catLeverage=5) und 10 % MaxPositionSize
+    // auf 10.000 USDT Balance = geplantes Notional 10000 * 0.10 * 5 = 5000 (= 50 %).
+    // MaxCorrelatedExposurePercent bleibt 0, damit ausschliesslich das Netto-Limit greift
+    // (das Crypto-Aggregat-Gate haengt an MaxCorrelatedExposurePercent > 0).
+
+    [Fact]
+    public void ValidateTrade_NetDirectionalLimitDisabledByDefault_GrossesBuchErlaubt()
+    {
+        // Default MaxNetDirectionalExposurePercent = 0 → Gate inaktiv. Ein einseitig grosses Buch
+        // (3× gleichgerichtetes Long-Notional zu je 200 %) darf NICHT blockiert werden.
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxOpenPositions = 10;
+            s.MaxPositionSizePercent = 10m;
+            s.MaxRiskPercentPerTrade = 100m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var positions = new List<Position>
+        {
+            new("ETH-USDT", Side.Buy, 3000m, 3000m, 6m, 0m, 5m, MarginType.Cross, DateTime.UtcNow),  // 18000 Notional
+            new("SOL-USDT", Side.Buy, 150m, 150m, 130m, 0m, 5m, MarginType.Cross, DateTime.UtcNow),  // 19500 Notional
+        };
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        var result = risk.ValidateTrade(signal,
+            CreateContext(symbol: "BTC-USDT", balance: 10000m, customPositions: positions));
+        result.IsAllowed.Should().BeTrue("Default 0 deaktiviert das Netto-Direktions-Gate");
+    }
+
+    [Fact]
+    public void ValidateTrade_NetDirectionalLimit_BlocktEinseitigesBuch()
+    {
+        // Limit 100 %. Offene Long-Position mit Notional 6000 (= 60 %) + geplantes BTC-Notional 5000
+        // (= 50 %) − keine Gegenseite = 110 % Netto-Long > 100 % → Reject.
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxOpenPositions = 10;
+            s.MaxPositionSizePercent = 10m;
+            s.MaxRiskPercentPerTrade = 100m;
+            s.MaxNetDirectionalExposurePercent = 100m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        // ETH-Long: Notional = 3000 * 2 = 6000.
+        var ethLong = new Position("ETH-USDT", Side.Buy, 3000m, 3000m, 2m, 0m, 5m, MarginType.Cross, DateTime.UtcNow);
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        var result = risk.ValidateTrade(signal,
+            CreateContext(symbol: "BTC-USDT", balance: 10000m,
+                customPositions: new List<Position> { ethLong }));
+        result.IsAllowed.Should().BeFalse();
+        result.RejectionReason.Should().Contain("Netto-Direktions-Limit");
+    }
+
+    [Fact]
+    public void ValidateTrade_NetDirectionalLimit_GegenseiteReduziertNetto()
+    {
+        // Limit 100 %. Gleichgerichtetes Long-Notional 6000 + geplant 5000 = 11000 (= 110 %),
+        // aber eine Gegenseiten-Short-Position (Notional 6000) wird angerechnet:
+        // Netto = 6000 + 5000 − 6000 = 5000 (= 50 %) < 100 % → erlaubt (Hedge zaehlt).
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxOpenPositions = 10;
+            s.MaxPositionSizePercent = 10m;
+            s.MaxRiskPercentPerTrade = 100m;
+            s.MaxNetDirectionalExposurePercent = 100m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var ethLong = new Position("ETH-USDT", Side.Buy, 3000m, 3000m, 2m, 0m, 5m, MarginType.Cross, DateTime.UtcNow);   // +6000 (gleiche Seite)
+        var solShort = new Position("SOL-USDT", Side.Sell, 150m, 150m, 40m, 0m, 5m, MarginType.Cross, DateTime.UtcNow);  // -6000 (Gegenseite)
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        var result = risk.ValidateTrade(signal,
+            CreateContext(symbol: "BTC-USDT", balance: 10000m,
+                customPositions: new List<Position> { ethLong, solShort }));
+        result.IsAllowed.Should().BeTrue("Gegenseiten-Notional reduziert das Netto unter das Limit");
+    }
+
+    [Fact]
+    public void ValidateTrade_NetDirectionalLimit_KnappUnterLimit_Erlaubt()
+    {
+        // Limit 100 %. Gleichgerichtetes Long-Notional 4000 (= 40 %) + geplant 5000 (= 50 %) = 90 %
+        // < 100 % → erlaubt (Grenzfall direkt unter der Schwelle).
+        var settings = CreateTestSettings(s =>
+        {
+            s.MaxOpenPositions = 10;
+            s.MaxPositionSizePercent = 10m;
+            s.MaxRiskPercentPerTrade = 100m;
+            s.MaxNetDirectionalExposurePercent = 100m;
+        });
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var ethLong = new Position("ETH-USDT", Side.Buy, 2000m, 2000m, 2m, 0m, 5m, MarginType.Cross, DateTime.UtcNow); // 4000
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        var result = risk.ValidateTrade(signal,
+            CreateContext(symbol: "BTC-USDT", balance: 10000m,
+                customPositions: new List<Position> { ethLong }));
+        result.IsAllowed.Should().BeTrue();
+    }
 }

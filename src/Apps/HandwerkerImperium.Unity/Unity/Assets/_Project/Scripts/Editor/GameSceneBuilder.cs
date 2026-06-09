@@ -80,12 +80,13 @@ namespace HandwerkerImperium.Editor
             var avatar = avatarGo.AddComponent<AvatarController>();
             var triggers = avatarGo.AddComponent<InteractionTriggerSystem>();
 
-            // Kamera (fixer Schräg-Follow)
+            // Kamera (fixer Schräg-Follow, Genre-Framing: ~52°, nah dran, Avatar im unteren Drittel)
             var camGo = new GameObject("Main Camera");
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.55f, 0.70f, 0.82f);
+            cam.fieldOfView = 45f; // enger als der 60er-Default — weniger Verzerrung, Figuren größer
             var follow = camGo.AddComponent<FollowCamera>();
 
             // Tresen + Kunde (echtes Modell) + Cash-Spawn
@@ -98,7 +99,7 @@ namespace HandwerkerImperium.Editor
             SetRef(counter, "cashSpawnPoint", cashSpawn);
             SetRef(counter, "cashPrefab", coinPrefab);
             var customerRoot = new GameObject("Customer");
-            customerRoot.transform.position = new Vector3(0f, 0f, 2.4f);   // Kunden-Seite des Tresens
+            customerRoot.transform.position = new Vector3(0f, 0f, 3.1f);   // Kunden-Seite, mit Abstand (überlappt sonst aus Kamerasicht den Tresen)
             customerRoot.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // schaut zum Tresen
             AttachModel(customerRoot.transform, ModelDir + "/customer_npc.glb", 1.65f);
 
@@ -162,13 +163,18 @@ namespace HandwerkerImperium.Editor
             SetRef(plot, "controller", controller);
             SetRef(plot, "fenceVisual", fenceGo);
 
-            // Avatar-/Kamera-Verdrahtung
+            // Avatar-/Kamera-Verdrahtung. WICHTIG: Start-Position UND Start-Rotation setzen —
+            // FollowCamera richtet erst im Play-Mode aus, sonst schaut die Edit-Game-View horizontal in den Himmel.
             SetRef(avatar, "controller", controller);
             SetRef(avatar, "carryAnchor", carryAnchor);
             SetRef(avatar, "carryWarePrefab", warePrefab);
             SetRef(triggers, "controller", controller);
             SetRef(follow, "target", avatarGo.transform);
-            camGo.transform.position = avatarGo.transform.position + new Vector3(0f, 13f, -10f);
+            var camOffset = new Vector3(0f, 8.5f, -6.5f); // ~52° Schrägaufsicht, nah (Genre-Standard)
+            SetVector3(follow, "offset", camOffset);
+            SetFloat(follow, "lookAheadZ", 2.5f); // Blick leicht vor den Avatar -> Avatar im unteren Bilddrittel
+            camGo.transform.position = avatarGo.transform.position + camOffset;
+            camGo.transform.LookAt(avatarGo.transform.position + Vector3.up * 1f + Vector3.forward * 2.5f);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -410,6 +416,20 @@ namespace HandwerkerImperium.Editor
             var so = new SerializedObject(target);
             var p = so.FindProperty(field);
             if (p != null) { p.enumValueIndex = enumIndex; so.ApplyModifiedPropertiesWithoutUndo(); }
+        }
+
+        private static void SetVector3(Object target, string field, Vector3 value)
+        {
+            var so = new SerializedObject(target);
+            var p = so.FindProperty(field);
+            if (p != null) { p.vector3Value = value; so.ApplyModifiedPropertiesWithoutUndo(); }
+        }
+
+        private static void SetFloat(Object target, string field, float value)
+        {
+            var so = new SerializedObject(target);
+            var p = so.FindProperty(field);
+            if (p != null) { p.floatValue = value; so.ApplyModifiedPropertiesWithoutUndo(); }
         }
     }
 

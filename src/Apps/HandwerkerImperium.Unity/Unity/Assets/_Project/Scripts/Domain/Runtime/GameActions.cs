@@ -85,6 +85,11 @@ namespace HandwerkerImperium.Domain.Runtime
         public static int GainMastery(GameModel m, GameBalancing bal, double xp) =>
             MetaProgression.GainMasteryXp(m.Meta, xp, bal.Mastery.BaseXp, bal.Mastery.Growth);
 
+        // ── Rush-Event (alle Stationen kurz 2×) ────────────────────────────
+        /// <summary>Startet das Rush-Event (per Ad), wenn nicht aktiv und Cooldown abgelaufen. Liefert true bei Erfolg.</summary>
+        public static bool StartRush(GameModel m, GameBalancing bal, long nowUtcTicks) =>
+            RushEventFormulas.Start(m.Rush, bal.Rush.Multiplier, bal.Rush.DurationSeconds, bal.Rush.CooldownSeconds, nowUtcTicks);
+
         private static void EnsurePerkSlots(GameModel m, int index)
         {
             while (m.PerkLevels.Count <= index)

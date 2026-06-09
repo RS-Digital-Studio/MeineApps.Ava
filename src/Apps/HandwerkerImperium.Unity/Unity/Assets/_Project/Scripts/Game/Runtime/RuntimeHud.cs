@@ -56,6 +56,7 @@ namespace HandwerkerImperium.Game
             GUILayout.Label($"Meisterschaft:  Lv {m.Meta.MasteryLevel}    Meistergrad: {m.Meta.MeistergradGrade}", _label);
             GUILayout.Label($"Master-Tools:   {controller.CollectedToolsCount}/12    Achievements: {controller.AchievementsCount}", _label);
             GUILayout.Label($"Kunden:         {m.Orders.PendingCustomers} warten · {m.Orders.TotalServed} bedient", _label);
+            GUILayout.Label($"Saison: {controller.CurrentSeason()}    Rush: <b>{(controller.RushActive() ? "AKTIV (2×)" : "inaktiv")}</b>", _label);
             if (!string.IsNullOrEmpty(controller.LatestStoryBeat))
                 GUILayout.Label($"Hans (Beat):    <i>{controller.LatestStoryBeat}</i>", _label);
             if (hasStation)
@@ -74,6 +75,8 @@ namespace HandwerkerImperium.Game
             if (GUILayout.Button("Tempo-Upgrade kaufen (kostet Geld)", _button)) controller.BuyTempoUpgrade();
             if (GUILayout.Button("+250 Meisterschafts-XP", _button)) controller.GainMastery(250.0);
             if (GUILayout.Button("Tagesbelohnung abholen", _button)) controller.ClaimDaily();
+            if (GUILayout.Button("Free-Cash abholen (2× Einkommen, 'Ad')", _button)) controller.ClaimFreeCash();
+            if (GUILayout.Button("Rush-Event starten (alle Stationen 2×)", _button)) controller.StartRush();
             if (GUILayout.Button("Perk Global-Tempo kaufen (Marken)", _button)) controller.BuyTempoPerk();
             if (GUILayout.Button("Meistergrad kaufen (Endstadt, Renommee)", _button)) controller.BuyMeistergrad();
             if (GUILayout.Button("5 Sterne setzen (Prestige freischalten)", _button)) m.Meta.CurrentStar = 5;

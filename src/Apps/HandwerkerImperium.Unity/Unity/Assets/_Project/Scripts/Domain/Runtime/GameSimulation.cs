@@ -31,6 +31,15 @@ namespace HandwerkerImperium.Domain.Runtime
             OrderQueueFormulas.ExpireRushIfDue(m.Orders, nowUtcTicks);
             RushEventFormulas.ExpireIfDue(m.Rush, nowUtcTicks);
 
+            // Rush-Event (alle Stationen kurz 2×): boostet den laufenden Verdienst.
+            decimal rushMult = RushEventFormulas.CurrentMultiplier(m.Rush, nowUtcTicks);
+            if (rushMult > 1m && earned > 0m)
+            {
+                decimal bonus = earned * (rushMult - 1m);
+                m.Idle.Money += bonus;
+                earned += bonus;
+            }
+
             // Meisterschafts-XP fließt aus dem laufenden Verdienst (PROGRESSION §4: kontoweit, nie reset).
             if (earned > 0m && bal.Mastery.XpPerMoney > 0)
                 MetaProgression.GainMasteryXp(m.Meta, (double)earned * bal.Mastery.XpPerMoney, bal.Mastery.BaseXp, bal.Mastery.Growth);

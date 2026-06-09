@@ -7,6 +7,8 @@ using HandwerkerImperium.Domain.Runtime;
 using HandwerkerImperium.Domain.Progression;
 using HandwerkerImperium.Domain.Achievements;
 using HandwerkerImperium.Domain.Story;
+using HandwerkerImperium.Domain.LiveOps;
+using HandwerkerImperium.Domain.Monetization;
 
 namespace HandwerkerImperium.Game
 {
@@ -116,6 +118,25 @@ namespace HandwerkerImperium.Game
 
         /// <summary>Kauft (in der Endstadt) den nächsten Meistergrad (Renommee).</summary>
         public bool BuyMeistergrad() => GameActions.BuyMeistergrad(_model, _bal);
+
+        /// <summary>Startet das Rush-Event (alle Stationen kurz 2×).</summary>
+        public bool StartRush() => GameActions.StartRush(_model, _bal, DateTime.UtcNow.Ticks);
+
+        /// <summary>True, wenn gerade ein Rush-Event läuft.</summary>
+        public bool RushActive() => RushEventFormulas.IsActive(_model.Rush, DateTime.UtcNow.Ticks);
+
+        /// <summary>Aktive Saison (oder „keine").</summary>
+        public string CurrentSeason() =>
+            SeasonalFormulas.TryGetActiveSeason(DateTime.UtcNow, out var s) ? s.ToString() : "keine";
+
+        /// <summary>Free-Cash-Pad (per Ad): 2× Einkommen je Zeitblock. Liefert den gutgeschriebenen Betrag.</summary>
+        public decimal ClaimFreeCash()
+        {
+            decimal reward = MonetizationFormulas.FreeCashReward(
+                EffectiveIncomePerSecond(), _bal.Monetization.FreeCashBlockSeconds, _bal.Monetization.FreeCashAdMultiplier);
+            if (reward > 0m) _model.Idle.Money += reward;
+            return reward;
+        }
 
         public void PersistNow()
         {

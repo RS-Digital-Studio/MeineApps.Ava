@@ -110,6 +110,29 @@ namespace HandwerkerImperium.Domain.Tests.Runtime
             Assert.That(m.Meta.MasteryLevel, Is.EqualTo(2));
         }
 
+        [Test]
+        public void StartRush_Activates_AndTickBoostsEarnings()
+        {
+            var ib = Idle();
+            var b = Bal();
+            long now = 1000L;
+
+            var s = GameModel.CreateNew(ib);
+            Assert.That(GameActions.StartRush(s, b, now), Is.True);
+            Assert.That(HandwerkerImperium.Domain.LiveOps.RushEventFormulas.CurrentMultiplier(s.Rush, now), Is.EqualTo(2m));
+            Assert.That(GameActions.StartRush(s, b, now), Is.False, "schon aktiv");
+
+            // gleicher Startzustand, einmal mit / einmal ohne Rush -> mit Rush mehr Verdienst
+            var noRush = GameModel.CreateNew(ib); noRush.Idle.Stations[0].HasWorker = true; noRush.Idle.Stations[0].Stock = 8;
+            decimal ea = GameSimulation.Tick(noRush, ib, b, 1.0, now);
+
+            var rush = GameModel.CreateNew(ib); rush.Idle.Stations[0].HasWorker = true; rush.Idle.Stations[0].Stock = 8;
+            GameActions.StartRush(rush, b, now);
+            decimal eb = GameSimulation.Tick(rush, ib, b, 1.0, now);
+
+            Assert.That(eb, Is.GreaterThan(ea), "Rush boostet den Tick-Verdienst");
+        }
+
         private static void OrderQueueFormulasStartRush(GameModel m)
         {
             HandwerkerImperium.Domain.Orders.OrderQueueFormulas.StartRush(m.Orders, 3m, 60, 0);

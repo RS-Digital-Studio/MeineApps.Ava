@@ -41,6 +41,11 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
     private readonly BotDatabaseService? _dbService;
     /// <summary>Phase 18 / G1 — Optional fuer Trade-Replay: holt Income-Records aus BingX (wenn Live-Mode).</summary>
     private readonly LiveTradingManager? _liveManager;
+    /// <summary>
+    /// Optional: publiziert Backfill-Trades als TradeCompleted-Event — sonst bleiben
+    /// TradeStatsAggregator, SignalR-Clients und FCM-Push blind fuer Backfill-Closes.
+    /// </summary>
+    private readonly BotEventBus? _eventBus;
     /// <summary>Phase 18 / G1 — Drift-Schwelle, ab der ein Trade-Replay-Hint geloggt wird.</summary>
     private static readonly TimeSpan ReplayDriftThreshold = TimeSpan.FromMinutes(5);
 
@@ -68,7 +73,8 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
         ILogger<BotAutoResumeService> logger,
         ServerHealthWatchdog? healthWatchdog = null,
         BotDatabaseService? dbService = null,
-        LiveTradingManager? liveManager = null)
+        LiveTradingManager? liveManager = null,
+        BotEventBus? eventBus = null)
     {
         _botControl = botControl;
         _botSettings = botSettings;
@@ -77,6 +83,7 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
         _healthWatchdog = healthWatchdog;
         _dbService = dbService;
         _liveManager = liveManager;
+        _eventBus = eventBus;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -136,11 +143,30 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
             await TryLogReplayHintAsync(ct).ConfigureAwait(false);
 
             var tfs = _scannerSettings.ActiveTimeframes?.ToList() ?? new List<TimeFrame>();
-            _logger.LogInformation(
-                "Auto-Resume: Engine wird im {Mode}-Modus mit Timeframes [{Tfs}] reaktiviert (vor Shutdown lief der Bot).",
-                _botSettings.LastMode, string.Join(",", tfs));
 
-            var request = new BotStartRequest(_botSettings.LastMode, InitialBalance: null, ActiveTimeframes: tfs);
+            // Mode + Engine des letzten Starts aus dem separaten DB-Key (NICHT aus dem Settings-Blob,
+            // der nur bei Client-Saves geschrieben wird). Ohne das startete der Resume IMMER den
+            // Scalper-Default — lief zuvor Paper-Xsec, kam der Live-Scalper mit Echtgeld zurueck.
+            var resumeMode = _botSettings.LastMode;
+            var resumeEngine = _botSettings.LastEngineMode;
+            if (_dbService != null)
+            {
+                try
+                {
+                    var persisted = await _dbService.LoadResumeEngineAsync().ConfigureAwait(false);
+                    if (persisted.HasValue) (resumeMode, resumeEngine) = persisted.Value;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Auto-Resume: Resume-Engine-Key nicht lesbar — Fallback auf BotSettings.");
+                }
+            }
+
+            _logger.LogInformation(
+                "Auto-Resume: Engine wird im {Mode}/{Engine}-Modus mit Timeframes [{Tfs}] reaktiviert (vor Shutdown lief der Bot).",
+                resumeMode, resumeEngine, string.Join(",", tfs));
+
+            var request = new BotStartRequest(resumeMode, InitialBalance: null, ActiveTimeframes: tfs, Engine: resumeEngine);
             // Bewusst CancellationToken.None weiterreichen — Engine-Start ist atomar zu betrachten.
             var status = await _botControl.StartAsync(request, CancellationToken.None).ConfigureAwait(false);
 
@@ -335,10 +361,18 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
             // wurden bei laufendem Bot doppelt verbucht bzw. der Backfill lief gar nicht (nur bei Drift).
             var existing = await _dbService.GetTradesAsync(modeFilter: TradingMode.Live, limit: 1000).ConfigureAwait(false);
             var existingTradeKeys = new HashSet<(string Symbol, long Sec)>();
+            // Fenster-Dedup gegen ECHTE (nicht-synthetische) Trades: Live-/WS-/Orphan-Buchungen
+            // setzen ihre ExitTime zur Detection-Zeit — die weicht vom Income-Zeitstempel ab
+            // (> 1 s), der Sekunden-Key allein griff also nie. Ein Income-Record, der ins
+            // [EntryTime − 60 s, ExitTime + 300 s]-Fenster eines echten Trades desselben Symbols
+            // faellt, ist von diesem Trade abgedeckt und darf nicht erneut synthetisch gebucht werden.
+            var realTradeWindows = new List<(string Symbol, DateTime From, DateTime To)>();
             foreach (var t in existing)
             {
                 var sec = t.ExitTime.Ticks / TimeSpan.TicksPerSecond;
                 existingTradeKeys.Add((t.Symbol, sec));
+                if (t.EntryPrice > 0m && t.Quantity > 0m)
+                    realTradeWindows.Add((t.Symbol, t.EntryTime.AddSeconds(-60), t.ExitTime.AddSeconds(300)));
             }
 
             var todayUtc = DateTime.UtcNow.Date;
@@ -361,7 +395,25 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
                     continue;
                 }
 
+                // Fenster-Dedup gegen echte Trades (s.o.).
+                var coveredByRealTrade = false;
+                foreach (var w in realTradeWindows)
+                {
+                    if (w.Symbol == rec.Symbol && rec.Time >= w.From && rec.Time <= w.To)
+                    {
+                        coveredByRealTrade = true;
+                        break;
+                    }
+                }
+                if (coveredByRealTrade)
+                {
+                    skipped++;
+                    continue;
+                }
+
                 // Synthetischer CompletedTrade — Best-Effort, da Income-Record nur PnL kennt.
+                // Letzte Verteidigungslinie: WS-Fill-Buchung und Orphan-Rekonstruktion liefern
+                // normalerweise echte Records; hierher kommt nur, was beide Pfade verpasst haben.
                 var synth = new CompletedTrade(
                     Symbol: rec.Symbol,
                     Side: Side.Buy, // Side aus rec.Info ist meist nicht eindeutig — Default Buy
@@ -372,7 +424,7 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
                     Fee: 0m,
                     EntryTime: rec.Time,
                     ExitTime: rec.Time,
-                    Reason: "Backfilled (Pi offline)",
+                    Reason: "Backfilled (Income)",
                     Mode: TradingMode.Live,
                     NavigatorTimeframe: TimeFrame.H4);
 
@@ -380,6 +432,12 @@ public sealed class BotAutoResumeService : IHostedService, IDisposable
                 {
                     await _dbService.SaveTradeAsync(synth).ConfigureAwait(false);
                     backfilled++;
+                    // Intra-Loop-Dedup: mehrere Income-Records derselben Exit-Sekunde (z.B. das
+                    // beobachtete DOGE-Duplikat) duerfen nicht alle einzeln gebucht werden.
+                    existingTradeKeys.Add((rec.Symbol, keyTime));
+                    // Event publizieren — sonst bleiben TradeStatsAggregator, SignalR-Clients und
+                    // FCM-Push blind fuer den Close (Stats-Breakdown war 6 Tage eingefroren).
+                    _eventBus?.PublishTrade(synth);
 
                     // RiskManager.UpdateDailyStats nur fuer heute (DailyPnl ist tagesbasiert).
                     if (rm != null && rec.Time.Date == todayUtc)

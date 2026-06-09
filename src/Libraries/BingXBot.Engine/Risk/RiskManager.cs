@@ -75,8 +75,10 @@ public class RiskManager : IRiskManager
             var newCluster = AssetClusterClassifier.Classify(context.Symbol);
             if (newCluster != AssetCluster.Other && newCluster != AssetCluster.CryptoOther)
             {
+                // AreCorrelated statt Cluster-Gleichheit: deckt auch definierte Cross-Cluster-Paare
+                // ab (TradFiIndex ↔ TradFiStock = ein US-Equity-Budget).
                 var clusterMargins = context.OpenPositions
-                    .Where(p => AssetClusterClassifier.Classify(p.Symbol) == newCluster)
+                    .Where(p => AssetClusterClassifier.AreCorrelated(AssetClusterClassifier.Classify(p.Symbol), newCluster))
                     .Sum(p => p.Leverage > 0 ? p.EntryPrice * p.Quantity / p.Leverage : p.EntryPrice * p.Quantity);
 
                 // Geplante neue Margin: konservativ als Risk-Per-Trade-Cap (vor Position-Sizing-Fluktuation).
@@ -110,6 +112,41 @@ public class RiskManager : IRiskManager
                     return new RiskCheckResult(false,
                         $"Crypto-Netto-{newSide}-Limit: {aggPct:F1}% > {aggregateLimit:F1}% (gleichgerichtetes Crypto-Klumpenrisiko)", 0m);
             }
+        }
+
+        // Cross-Asset-Netto-Direktions-Limit (opt-in via MaxNetDirectionalExposurePercent > 0):
+        // Das Crypto-Aggregat oben deckt nur Crypto — TradFi-Klumpen (8 Shorts ueber Indizes/
+        // Aktien/Rohstoffe/Crypto gleichzeitig = 159 % Net-Short der Balance, live beobachtet)
+        // blieben ungedeckt. Ein breiter Risk-On/Off-Event trifft alle gleichgerichteten
+        // Positionen zusammen. Notional-basiert (nicht Margin), damit Hochhebel-Positionen
+        // (Forex 20x) nicht systematisch unterschaetzt werden.
+        if (_settings.MaxNetDirectionalExposurePercent > 0 && context.Account.Balance > 0)
+        {
+            var newSide = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
+            decimal sameSideNotional = 0m, otherSideNotional = 0m;
+            for (var i = 0; i < context.OpenPositions.Count; i++)
+            {
+                var p = context.OpenPositions[i];
+                var notional = p.EntryPrice * p.Quantity;
+                if (p.Side == newSide) sameSideNotional += notional;
+                else otherSideNotional += notional;
+            }
+
+            // Geplantes Notional bewusst KONSERVATIV als Obergrenze (Sizing-Margin × Kategorie-
+            // MaxLeverage): Das echte risiko-basierte Sizing nutzt oft weniger Leverage — das Gate
+            // greift damit eher zu frueh als zu spaet (Schutzlimit, kein Praezisions-Sizing).
+            // Beim Setzen des Limits den Richtwert entsprechend nicht zu eng waehlen (100-150).
+            var category = BingXBot.Core.Helpers.SymbolClassifier.Classify(context.Symbol);
+            var catLeverage = _settings.GetCategorySettings(category)?.MaxLeverage ?? _settings.MaxLeverage;
+            var plannedNotional = context.Account.Balance * _settings.MaxPositionSizePercent / 100m
+                * Math.Max(1, catLeverage);
+
+            var netDirectional = sameSideNotional + plannedNotional - otherSideNotional;
+            var netPct = netDirectional / context.Account.Balance * 100m;
+            if (netPct > _settings.MaxNetDirectionalExposurePercent)
+                return new RiskCheckResult(false,
+                    $"Netto-Direktions-Limit ({newSide}): {netPct:F0}% > {_settings.MaxNetDirectionalExposurePercent}% Notional " +
+                    $"(gleichgerichtet {sameSideNotional:F0}$ + geplant {plannedNotional:F0}$ − Gegenseite {otherSideNotional:F0}$)", 0m);
         }
 
         // 4. Position-Größe berechnen mit tatsächlichem Leverage (nicht MaxLeverage)
@@ -686,6 +723,30 @@ public class RiskManager : IRiskManager
                 _peakEquity = peakEquity;
                 _peakEquityInitialized = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// Rehydriert das Rolling-30-Trade-Fenster nach einem Engine-Restart aus den persistierten
+    /// Trades. Ohne diese Rekonstruktion startet das Fenster leer bzw. fuellt sich nur mit
+    /// synthetischen Backfill-Records — RollingSharpe blieb nach Restarts dauerhaft 0
+    /// (Health-Warn-Schleife im Minutentakt) und WinRate/ProfitFactor waren bis zu 30 Trades lang
+    /// verzerrt. Synthetische Records (EntryPrice/Quantity = 0) werden ausgefiltert — sie tragen
+    /// keine verwertbaren Returns.
+    /// </summary>
+    public void RestoreRollingWindow(IEnumerable<CompletedTrade> trades)
+    {
+        lock (_lock)
+        {
+            _rollingTrades.Clear();
+            foreach (var t in trades
+                .Where(t => t.EntryPrice > 0m && t.Quantity > 0m)
+                .OrderBy(t => t.ExitTime)
+                .TakeLast(RollingWindowSize))
+            {
+                _rollingTrades.Enqueue(t);
+            }
+            _recentTradesSnapshot = null;
         }
     }
 }

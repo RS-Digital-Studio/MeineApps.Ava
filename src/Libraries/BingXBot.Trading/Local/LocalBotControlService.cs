@@ -176,6 +176,18 @@ public sealed class LocalBotControlService : IBotControlService, IDisposable
 
                 // Auto-Resume-Flag setzen + persistieren (Pi-Reboot ueberlebt Engine-Zustand).
                 await PersistResumeFlagAsync(true).ConfigureAwait(false);
+                // Mode + Engine persistieren (separater DB-Key): Auto-Resume startet sonst nach
+                // einem Reboot IMMER den Scalper-Default — lief zuvor Paper-Xsec, kaeme der
+                // Live-Scalper mit Echtgeld zurueck.
+                if (_db != null)
+                {
+                    try { await _db.SaveResumeEngineAsync(request.Mode, request.Engine).ConfigureAwait(false); }
+                    catch (Exception pex)
+                    {
+                        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
+                            $"Resume-Engine konnte nicht persistiert werden: {pex.Message}"));
+                    }
+                }
             }
             catch (Exception ex)
             {

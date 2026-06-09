@@ -571,6 +571,20 @@ public partial class LiveTradingService
 
         if (isTp2 && (es.Phase == ExitPhase.Tp1Hit || es.Phase == ExitPhase.Initial))
         {
+            // Buchungs-Gate: Der finale TP2-Close konkurriert mit der Orphan-Rekonstruktion —
+            // waehrend das await GetPositionsAsync oben lief, kann ein paralleler Reconcile-/
+            // Ticker-Tick die (auf BingX bereits geschlossene) Position als Orphan erkannt und
+            // aus der Income-History gebucht haben. Wer das Gate gewinnt, bucht; der Verlierer
+            // raeumt nur auf.
+            if (!TryClaimNativeCloseBooking(matchedKey))
+            {
+                es.Tp2LimitOrderId = null;
+                es.Tp1LimitOrderId = null;
+                RemoveSignalByKey(matchedKey);
+                await PersistExitStatesAsync().ConfigureAwait(false);
+                return true;
+            }
+
             // Tp2 oder Tp-Single (Phase=Initial mit nur einem TP der per LIMIT lief): Position komplett zu.
             var totalEntryQty = es.OriginalQuantity > 0 ? es.OriginalQuantity : (posAfter?.Quantity ?? 0m);
             var alreadyClosedTp1 = es.Phase == ExitPhase.Tp1Hit

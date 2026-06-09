@@ -72,6 +72,11 @@ public abstract class TradingServiceBase : IDisposable
     // Margin-Monitoring: Bereits gewarnte Positionen (nicht bei jedem Tick erneut warnen)
     private readonly ConcurrentDictionary<string, DateTime> _marginWarningsIssued = new();
 
+    // Strategy-Health-Warnung throtteln: gleiche Warnung max. 1x/Stunde statt bei jedem
+    // Scan-Durchlauf (vorher Minutentakt-Spam in DB-Logs + Desktop-Notifications).
+    private string? _lastHealthWarning;
+    private DateTime _lastHealthWarningUtc = DateTime.MinValue;
+
     // SL/TP-Tracking: Speichert das Original-Signal pro offener Position (Symbol_Side → SignalResult)
     // ConcurrentDictionary weil PriceTickerLoop und ScanAndTradeAsync parallel darauf zugreifen
     // protected internal: protected fuer Subklassen (Live/Paper), internal fuer BingXBot.Tests
@@ -1428,12 +1433,17 @@ public abstract class TradingServiceBase : IDisposable
             }
         }
 
-        // Strategy-Health-Check: Warnung bei Performance-Degradation
+        // Strategy-Health-Check: Warnung bei Performance-Degradation.
+        // Gleiche Warnung max. 1x/Stunde — vorher spammte sie jeden Scan-Durchlauf (Minutentakt).
         if (_riskManager != null)
         {
             var healthWarning = _riskManager.CheckStrategyHealth();
-            if (healthWarning != null)
+            if (healthWarning != null &&
+                (healthWarning != _lastHealthWarning ||
+                 (DateTime.UtcNow - _lastHealthWarningUtc) >= TimeSpan.FromHours(1)))
             {
+                _lastHealthWarning = healthWarning;
+                _lastHealthWarningUtc = DateTime.UtcNow;
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Health",
                     $"{LogPrefix}Strategy-Health-Warnung: {healthWarning}"));
 

@@ -145,6 +145,9 @@ public partial class LiveTradingService
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
                         $"{LogPrefix}{action.Symbol} {action.Side}: Orphan-Signal entfernt — {action.Reason}",
                         action.Symbol));
+                    // Close aus Income rekonstruieren BEVOR Signal+ExitState verschwinden.
+                    _exitStates.TryGetValue(key, out var orphanState);
+                    BookOrphanCloseInBackground(key, orphanState, "Reconcile-Orphan");
                     RemoveSignalByKey(key);
                     break;
 
@@ -584,6 +587,10 @@ public partial class LiveTradingService
         {
             if (_exitStates.TryRemove(key, out var removedState))
             {
+                // Close aus Income rekonstruieren — Stale-ExitStates entstehen v.a. wenn die
+                // Position exchange-seitig (nativer SL/TP, manueller Close) verschwand, ohne
+                // dass ein Buchungspfad lief. Recovery-Leichen (Qty=0) filtert die Methode selbst.
+                BookOrphanCloseInBackground(key, removedState, "Stale-ExitState");
                 _positionSignals.TryRemove(key, out _);
                 OnSignalRemoved(key);
                 removed++;

@@ -51,6 +51,104 @@ public partial class LiveTradingService : TradingServiceBase
     // Zeitpunkt der Signal-Erstellung (für Grace Period bei Bereinigung verwaister Signale)
     // internal damit Tests den Zeitstempel fuer Grace-Window-Cases setzen koennen.
     internal readonly ConcurrentDictionary<string, DateTime> _signalCreatedAt = new();
+
+    // Atomares Buchungs-Gate fuer native Closes: WS-Handler (ORDER_TRADE_UPDATE), Ticker-Mikro-Race
+    // ("bereits durch native SL/TP geschlossen") und Orphan-Rekonstruktion konkurrieren um denselben
+    // Close — genau EIN Pfad darf den CompletedTrade buchen. TryAdd entscheidet das Rennen.
+    // Eintraege werden beim naechsten Entry desselben Keys geloescht (Re-Entry nicht blockieren)
+    // und altern per TTL aus.
+    private readonly ConcurrentDictionary<string, DateTime> _nativeCloseBookings = new();
+
+    /// <summary>
+    /// Versucht, die Buchung eines nativen Closes fuer den Positions-Key zu beanspruchen.
+    /// True = dieser Aufrufer bucht; False = ein anderer Pfad hat bereits gebucht.
+    /// </summary>
+    internal bool TryClaimNativeCloseBooking(string key)
+    {
+        var now = DateTime.UtcNow;
+        foreach (var kvp in _nativeCloseBookings)
+        {
+            if ((now - kvp.Value) > TimeSpan.FromMinutes(30))
+                _nativeCloseBookings.TryRemove(kvp.Key, out _);
+        }
+        return _nativeCloseBookings.TryAdd(key, now);
+    }
+
+    /// <summary>Gibt das Buchungs-Gate fuer einen Key frei (beim neuen Entry desselben Symbols+Side).</summary>
+    internal void ClearNativeCloseBooking(string key) => _nativeCloseBookings.TryRemove(key, out _);
+
+    /// <summary>
+    /// Rekonstruiert beim Entsorgen eines verwaisten Signals/ExitStates den zugehoerigen Close als
+    /// echten CompletedTrade aus der BingX-Income-History (REALIZED_PNL seit Entry), statt still zu
+    /// loeschen. Fallback-Pfad fuer den Fall, dass der WebSocket-Fill-Event verpasst wurde —
+    /// ohne ihn landete jeder native Close als synthetischer Backfill-Record (Side=Buy, alle
+    /// Felder 0) in der Historie. ExitTime = Zeitstempel des juengsten Income-Records, damit der
+    /// 30-min-Backfill denselben Record per (Symbol, ExitTime ± 1 s) als bereits gebucht erkennt.
+    /// Validierung + Gate-Claim laufen synchron; der Income-API-Call laeuft im Hintergrund —
+    /// PriceTickerLoop/ReconcileLoop duerfen nicht auf REST-Latenz warten (SL/TP-Reaktionszeit,
+    /// Rate-Limit-Budget bei mehreren gleichzeitigen Orphans).
+    /// </summary>
+    internal void BookOrphanCloseInBackground(string key, PositionExitState? es, string trigger)
+    {
+        if (es == null || es.EntryPrice <= 0m || es.OriginalQuantity <= 0m) return;
+        if (!TryClaimNativeCloseBooking(key)) return;
+        _ = Task.Run(() => BookOrphanCloseCoreAsync(key, es, trigger));
+    }
+
+    private async Task BookOrphanCloseCoreAsync(string key, PositionExitState es, string trigger)
+    {
+        try
+        {
+            var since = es.EntryTime.AddMinutes(-1);
+            var income = await _restClient.GetIncomeHistoryAsync(
+                es.Symbol, "REALIZED_PNL", since, null, 100).ConfigureAwait(false);
+            var records = income
+                .Where(r => r.Time >= since)
+                .OrderBy(r => r.Time)
+                .ToList();
+            if (records.Count == 0) return;
+
+            // Nach TP1-Teilschliessung (bereits separat gebucht) gehoert nur der juengste Record
+            // zum finalen Close; sonst alle Records seit Entry (Full-Close ggf. in Teilfills).
+            var relevant = es.PartialClosed ? records.GetRange(records.Count - 1, 1) : records;
+            var grossPnl = relevant.Sum(r => r.Income);
+            var exitTime = relevant[^1].Time;
+            var qty = es.PartialClosed
+                ? Math.Max(0m, es.OriginalQuantity * (1m - _riskSettings.Tp1CloseRatio))
+                : es.OriginalQuantity;
+            if (qty <= 0m) qty = es.OriginalQuantity;
+
+            // Exit-Preis aus Brutto-PnL rueckrechnen (Income liefert keinen Preis). Preis + Fees
+            // sind bewusst Best-Effort: REALIZED_PNL ist brutto (TRADING_FEE/FUNDING_FEE sind
+            // separate Income-Typen), die Taker-Schaetzung ersetzt die echten Kommissions-Records
+            // (zweiter API-Call gespart — der WS-Pfad mit echten Fill-Daten ist der Primaerweg).
+            var exitPrice = es.Side == Side.Buy
+                ? es.EntryPrice + grossPnl / qty
+                : es.EntryPrice - grossPnl / qty;
+            if (exitPrice < 0m) exitPrice = 0m;
+
+            var entryFee = qty * es.EntryPrice * _takerFeeRate;
+            var exitFee = qty * exitPrice * _takerFeeRate;
+            var navTf = GetNavigatorTimeframeForKey(key);
+            var trade = new CompletedTrade(es.Symbol, es.Side, es.EntryPrice, exitPrice, qty,
+                grossPnl - entryFee - exitFee, entryFee + exitFee,
+                es.EntryTime, exitTime, $"Native Close (rekonstruiert, {trigger})",
+                TradingMode.Live, navTf);
+            ProcessCompletedTrade(trade);
+            _eventBus.PublishTrade(trade);
+
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
+                $"LIVE: {es.Symbol} {es.Side}: Close aus Income-History rekonstruiert " +
+                $"({relevant.Count} Record(s), PnL={grossPnl:F4}, Trigger={trigger})", es.Symbol));
+        }
+        catch (Exception ex)
+        {
+            // Best-effort: Der 30-min-Income-Backfill faengt den Record spaeter (synthetisch) ein.
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                $"LIVE: {es.Symbol}: Orphan-Close-Rekonstruktion fehlgeschlagen ({trigger}): {ex.Message}",
+                es.Symbol));
+        }
+    }
     // Eröffnungszeitpunkt pro Position (BingX liefert kein OpenTime in GetPositions)
     private readonly ConcurrentDictionary<string, DateTime> _positionOpenTimes = new();
     private string? _listenKey;
@@ -311,6 +409,10 @@ public partial class LiveTradingService : TradingServiceBase
                 // Verwaiste native SL/TP-Orders canceln (Position bereits geschlossen)
                 await CancelNativeSlTpOrdersAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
 
+                // Buchungs-Gate: Wenn der WS-Handler (ProcessNativeCloseFillAsync) den Close bereits
+                // mit echten Fill-Daten gebucht hat, hier NICHT nochmal buchen (Doppel-Trade).
+                if (!TryClaimNativeCloseBooking(key)) return;
+
                 // CompletedTrade trotzdem erstellen (TradeHistory + RiskManager)
                 var entryFeeNat = pos.Quantity * pos.EntryPrice * _takerFeeRate;
                 var exitFeeNat = pos.Quantity * price * _takerFeeRate;
@@ -333,6 +435,10 @@ public partial class LiveTradingService : TradingServiceBase
             // Position erfolgreich geschlossen → jetzt verwaiste SL/TP-Orders aufräumen
             try { await CancelNativeSlTpOrdersAsync(pos.Symbol, pos.Side).ConfigureAwait(false); }
             catch { /* Best-effort: Verwaiste Orders sind ungefährlich */ }
+
+            // Buchungs-Gate: Falls der native SL parallel zum Bot-Close gefuellt wurde und der
+            // WS-Handler den Close bereits gebucht hat, hier nicht nochmal buchen.
+            if (!TryClaimNativeCloseBooking(key)) return;
 
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
                 $"LIVE: {pos.Symbol}: {reason} ({pos.Side})", pos.Symbol));
@@ -452,6 +558,9 @@ public partial class LiveTradingService : TradingServiceBase
     {
         _signalCreatedAt[key] = DateTime.UtcNow;
         _positionOpenTimes[key] = DateTime.UtcNow;
+        // Neuer Entry auf diesem Key → Buchungs-Gate des vorherigen Closes freigeben,
+        // sonst wuerde der naechste native Close dieses Symbols nicht gebucht.
+        ClearNativeCloseBooking(key);
     }
 
     // Pending-Limit-Orders-Management extrahiert in LiveTradingService.PendingLimitOrders.cs
@@ -548,6 +657,10 @@ public partial class LiveTradingService : TradingServiceBase
                         // Wenn User die Position manuell auf BingX schließt, bleiben die nativen Orders im Orderbuch.
                         try { await CancelNativeSlTpOrdersAsync(symbol, sideOfKey).ConfigureAwait(false); }
                         catch { /* Best-effort: Verwaiste Orders sind ungefährlich */ }
+                        // Close aus Income rekonstruieren BEVOR der ExitState verschwindet —
+                        // sonst landet er nur als synthetischer Backfill-Record in der Historie.
+                        _exitStates.TryGetValue(key, out var orphanState);
+                        BookOrphanCloseInBackground(key, orphanState, "TickerLoop-Orphan");
                         RemoveSignalByKey(key);
                     }
                 }

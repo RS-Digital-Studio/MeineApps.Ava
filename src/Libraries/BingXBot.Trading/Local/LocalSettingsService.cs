@@ -315,6 +315,7 @@ public sealed class LocalSettingsService : ISettingsService, IDisposable
     private static readonly HashSet<string> ServerAuthorityProperties = new(StringComparer.Ordinal)
     {
         nameof(BotSettings.LastMode),
+        nameof(BotSettings.LastEngineMode),
         nameof(BotSettings.WasRunningOnShutdown)
     };
 

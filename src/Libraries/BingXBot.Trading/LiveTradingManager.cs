@@ -31,6 +31,11 @@ public class LiveTradingManager : IDisposable
     private RateLimiter? _rateLimiter;
     private BingXRestClient? _restClient;
     private LiveTradingService? _service;
+    // User-Data-/Ticker-Stream: ohne diese Instanz war der gesamte WebSocket-Pfad toter Code —
+    // TP-Limit-Fills + native SL-Fills wurden nie live gebucht (alle Closes liefen als
+    // synthetische Income-Backfill-Records). Lifecycle: erzeugt pro StartAsync, disposed in
+    // StopAsync/EmergencyStopAsync/Dispose.
+    private BingXWebSocketClient? _wsClient;
     private bool _disposed;
 
     /// <summary>Name der aktuell laufenden Strategie — fuer RuntimeState-Tagging (Loss-Streak-Reset bei Wechsel).</summary>
@@ -185,6 +190,15 @@ public class LiveTradingManager : IDisposable
         if (_publicClient == null)
             throw new InvalidOperationException("Marktdaten-Client nicht verfügbar");
 
+        // WebSocket-Client fuer User-Data- + Ticker-Stream. Pro Start frisch (WS-State ist nach
+        // Stop nicht wiederverwendbar). Logging laeuft ueber den EventBus im Service — der
+        // ILogger-Ctor-Parameter bekommt den NullLogger (konsistent mit RiskManager).
+        if (_wsClient != null)
+        {
+            try { await _wsClient.DisposeAsync().ConfigureAwait(false); } catch { /* Best-effort */ }
+        }
+        _wsClient = new BingXWebSocketClient(NullLogger<BingXWebSocketClient>.Instance);
+
         // LiveTradingService erstellen
         _service = new LiveTradingService(
             _restClient,
@@ -194,6 +208,7 @@ public class LiveTradingManager : IDisposable
             _scannerSettings,
             _eventBus,
             _botSettings,
+            wsClient: _wsClient,
             dbService: _dbService);
         _service.SetScannerResultsCache(_scannerCache);
 
@@ -285,6 +300,9 @@ public class LiveTradingManager : IDisposable
                         if (s.Equity > peakEquity) peakEquity = s.Equity;
 
                     rm.RestoreStats(todayPnl, totalPnl, peakEquity);
+                    // Rolling-30-Fenster mit den letzten validen Trades fuellen — sonst meldet
+                    // CheckStrategyHealth nach jedem Restart dauerhaft "Rolling Sharpe 0,00".
+                    rm.RestoreRollingWindow(liveTrades);
                     _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
                         $"RiskManager-Stats rehydriert: HeutePnL={todayPnl:F2}, TotalPnL={totalPnl:F2}, PeakEquity={peakEquity:F2}"));
                 }
@@ -547,6 +565,13 @@ public class LiveTradingManager : IDisposable
             _service.Dispose();
             _service = null;
         }
+        // WS-Client nach dem Service-Stop schliessen (CleanupUserDataStreamAsync im Service
+        // braucht die lebende Instanz fuer Disconnect + ListenKey-Delete).
+        if (_wsClient != null)
+        {
+            try { await _wsClient.DisposeAsync(); } catch { /* Best-effort beim Stop */ }
+            _wsClient = null;
+        }
         // _restClient NICHT null setzen — PriceTickerLoop könnte noch eine letzte Iteration laufen.
         // Wird bei Dispose() oder erneutem ConnectAsync() aufgeräumt.
 
@@ -581,6 +606,11 @@ public class LiveTradingManager : IDisposable
             await _service.EmergencyStopAsync();
             _service.Dispose();
             _service = null;
+        }
+        if (_wsClient != null)
+        {
+            try { await _wsClient.DisposeAsync(); } catch { /* Best-effort */ }
+            _wsClient = null;
         }
         // Jetzt sicher: Alle Close-Tasks sind abgeschlossen, _restClient kann null werden
         _restClient = null;
@@ -703,6 +733,12 @@ public class LiveTradingManager : IDisposable
         _disposed = true;
         _service?.Dispose();
         _service = null;
+        if (_wsClient != null)
+        {
+            // Sync-Dispose-Kontext: DisposeAsync fire-and-forget (schliesst Sockets best-effort).
+            _ = _wsClient.DisposeAsync();
+            _wsClient = null;
+        }
         _restClient = null;
         _rateLimiter?.Dispose();
         _rateLimiter = null;

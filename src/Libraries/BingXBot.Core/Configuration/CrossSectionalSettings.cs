@@ -2,9 +2,11 @@ namespace BingXBot.Core.Configuration;
 
 /// <summary>
 /// Parameter der Cross-Sectional-Momentum-Strategie (market-neutral: long staerkste / short schwaechste
-/// Symbole, periodischer Rebalance). Backtest-validiert (06.06.2026): in ALLEN 4 Marktphasen positiv bei
-/// <c>L120/R~monatlich/radj/1x</c>; Slot-Anzahl skaliert mit Universums-Breite (breit → 5L-5S). Persistierbar
-/// analog <see cref="RiskSettings"/>/<see cref="ScannerSettings"/>.
+/// Symbole, periodischer Rebalance). Backtest-validiert: in ALLEN 4 Marktphasen positiv bei
+/// <c>L120/R~monatlich/radj/1x</c> auf dem Top-50-Universum INKL. TradFi mit 3L-3S (min +14,2 %,
+/// Σ +202 % ueber 4 Phasen bei 154 USDT). Wichtig: Auf Top-100 ist KEINE Config phasen-robust
+/// (5L-5S dort min −17,2 %) und OHNE TradFi kippt auch Top-50 — die Cross-Asset-Dispersion
+/// (Gold/Indizes/Forex) traegt den Edge. Persistierbar analog <see cref="RiskSettings"/>.
 /// </summary>
 public sealed class CrossSectionalSettings
 {
@@ -14,11 +16,11 @@ public sealed class CrossSectionalSettings
     /// <summary>Rebalance-Intervall in TAGEN (Wall-Clock, robust gegen Pi-Downtime). 21 ≈ monatlich.</summary>
     public int RebalanceDays { get; set; } = 21;
 
-    /// <summary>Anzahl Long-Slots (staerkste Momentum-Symbole). Breites Universum (Top-100+) → 5.</summary>
-    public int LongK { get; set; } = 5;
+    /// <summary>Anzahl Long-Slots (staerkste Momentum-Symbole). Top-50-Universum → 3 (phasen-robustestes Profil).</summary>
+    public int LongK { get; set; } = 3;
 
-    /// <summary>Anzahl Short-Slots (schwaechste). Breites Universum → 5.</summary>
-    public int ShortK { get; set; } = 5;
+    /// <summary>Anzahl Short-Slots (schwaechste). Top-50-Universum → 3.</summary>
+    public int ShortK { get; set; } = 3;
 
     /// <summary>Momentum vol-bereinigen (ROC / ATR%) — macht unterschiedlich volatile Symbole vergleichbar.</summary>
     public bool RiskAdjusted { get; set; } = true;
@@ -35,10 +37,16 @@ public sealed class CrossSectionalSettings
     /// <summary>Per-Position-ATR-Stop zwischen Rebalances (0 = kein Stop; die validierte v1-Config ist ohne robust).</summary>
     public decimal AtrStopMultiplier { get; set; } = 0m;
 
-    /// <summary>Universums-Groesse (Top-N nach 24h-Volumen). Breite ist noetig fuer den Dispersions-Edge.</summary>
-    public int UniverseTopN { get; set; } = 100;
+    /// <summary>
+    /// Universums-Groesse (Top-N nach 24h-Volumen). Top-50 ist das validierte Profil — Top-100
+    /// verwaessert das Ranking (kein phasen-robustes K auf Top-100 im 4-Phasen-Screen).
+    /// </summary>
+    public int UniverseTopN { get; set; } = 50;
 
-    /// <summary>TradFi-Perps (NC-Prefix) ins Universum aufnehmen (zusaetzliche Diversifikation).</summary>
+    /// <summary>
+    /// TradFi-Perps (NC-Prefix) ins Universum aufnehmen. PFLICHT fuer den Edge: ohne TradFi ist
+    /// auch Top-50 in keiner Config phasen-robust (Crypto allein liefert zu wenig Dispersion).
+    /// </summary>
     public bool IncludeTradFi { get; set; } = true;
 
     /// <summary>Nav-Timeframe fuer Momentum/Kerzen. Default H4 (wie Backtest).</summary>

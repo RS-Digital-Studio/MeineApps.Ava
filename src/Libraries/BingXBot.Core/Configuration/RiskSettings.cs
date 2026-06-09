@@ -72,6 +72,16 @@ public class RiskSettings
     /// </summary>
     public decimal MaxCorrelatedExposurePercent { get; set; } = 0m;
 
+    /// <summary>
+    /// Cross-Asset-Netto-Direktions-Limit (opt-in, default 0 = aus). Wenn &gt; 0: Vor jedem Trade
+    /// wird das gleichgerichtete Netto-Notional ALLER offenen Positionen (Crypto + TradFi) plus
+    /// das geplante Notional gegen <c>X %</c> der Wallet-Balance geprueft. Schuetzt vor einem
+    /// einseitigen Gesamt-Buch (z.B. 8 Shorts ueber Indizes/Aktien/Rohstoffe/Crypto = 159 %
+    /// Net-Short), das ein einzelner Markt-Rebound komplett gleichzeitig trifft. Notional-basiert,
+    /// damit Hochhebel-Positionen (Forex 20x) nicht unterschaetzt werden. Richtwert: 100-150.
+    /// </summary>
+    public decimal MaxNetDirectionalExposurePercent { get; set; } = 0m;
+
     // === v1.7.0 Phase 16 — Cross-TF-Position-Pyramidisierung (User-Ausnahme, NICHT im Buch) ===
     /// <summary>
     /// Bewusste Buch-Abweichung. Wenn aktiv: ein offenes Long/Short kann durch ein zweites

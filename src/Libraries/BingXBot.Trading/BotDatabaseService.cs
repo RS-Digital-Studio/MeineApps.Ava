@@ -357,6 +357,32 @@ public class BotDatabaseService
     }
 
     /// <summary>
+    /// Persistiert Mode + Engine des letzten Engine-Starts als separate Keys (analog AutoResumeFlag,
+    /// bewusst NICHT im BotSettings-Blob — der wird nur bei Client-Settings-Saves geschrieben).
+    /// Ohne diese Persistenz startete Auto-Resume nach einem Pi-Reboot IMMER den Scalper
+    /// (BotStartRequest-Default), auch wenn zuvor Cross-Sectional lief — im Worst-Case der
+    /// Live-Scalper mit Echtgeld statt des Paper-Xsec-Tests.
+    /// </summary>
+    public async Task SaveResumeEngineAsync(TradingMode mode, EngineMode engine)
+    {
+        EnsureInitialized();
+        await _db!.InsertOrReplaceAsync(new SettingEntity { Key = "ResumeMode", Value = mode.ToString() });
+        await _db!.InsertOrReplaceAsync(new SettingEntity { Key = "ResumeEngine", Value = engine.ToString() });
+    }
+
+    /// <summary>Lädt Mode + Engine des letzten Engine-Starts. Null wenn nie persistiert/korrupt.</summary>
+    public async Task<(TradingMode Mode, EngineMode Engine)?> LoadResumeEngineAsync()
+    {
+        EnsureInitialized();
+        var modeEntity = await _db!.FindAsync<SettingEntity>("ResumeMode");
+        var engineEntity = await _db!.FindAsync<SettingEntity>("ResumeEngine");
+        if (modeEntity?.Value == null || engineEntity?.Value == null) return null;
+        if (!Enum.TryParse<TradingMode>(modeEntity.Value.Trim(), ignoreCase: true, out var mode)) return null;
+        if (!Enum.TryParse<EngineMode>(engineEntity.Value.Trim(), ignoreCase: true, out var engine)) return null;
+        return (mode, engine);
+    }
+
+    /// <summary>
     /// Phase 18 / B2 — Persistiert den letzten Bot-Heartbeat-Zeitstempel (UTC, ISO-8601 "O").
     /// Wird vom <c>TradingServiceBase</c> alle 30 s in der PriceTickerLoop geschrieben. Beim
     /// Server-Resume liest <c>BotAutoResumeService</c> den Wert und entscheidet, ob ein

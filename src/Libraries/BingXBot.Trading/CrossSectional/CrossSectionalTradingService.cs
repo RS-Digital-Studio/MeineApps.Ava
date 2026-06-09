@@ -39,6 +39,7 @@ public sealed class CrossSectionalTradingService : IDisposable
     private readonly ILogger _logger;
     private readonly string? _stateFilePath;
     private readonly PaperHooks? _paper;
+    private readonly BotDatabaseService? _dbService;
 
     private CancellationTokenSource? _cts;
     private Task? _loop;
@@ -57,7 +58,8 @@ public sealed class CrossSectionalTradingService : IDisposable
         BotEventBus eventBus,
         ILogger logger,
         string? stateFilePath = null,
-        PaperHooks? paper = null)
+        PaperHooks? paper = null,
+        BotDatabaseService? dbService = null)
     {
         _execution = execution;
         _marketData = marketData;
@@ -67,6 +69,7 @@ public sealed class CrossSectionalTradingService : IDisposable
         _logger = logger;
         _stateFilePath = stateFilePath;
         _paper = paper;
+        _dbService = dbService;
     }
 
     public async Task StartAsync()
@@ -220,8 +223,25 @@ public sealed class CrossSectionalTradingService : IDisposable
     private void DrainPaperTrades()
     {
         if (_paper == null) return;
-        foreach (var trade in _paper.DrainNewTrades())
-            _eventBus.PublishTrade(trade);   // Subscriber (DB-Persist, Stats, FCM) verarbeiten weiter.
+        var fresh = _paper.DrainNewTrades();
+        foreach (var trade in fresh)
+            _eventBus.PublishTrade(trade);   // Stats/SignalR/FCM-Subscriber (RAM/Push).
+
+        // DB-Persistenz explizit: KEIN TradeCompleted-Subscriber ruft SaveTradeAsync —
+        // ohne diesen Aufruf waere der Paper-Lauf nach jedem Restart unauswertbar
+        // (/api/v1/trades leer, Stats-Aggregator-Rebuild findet nichts).
+        // EIN Hintergrund-Task fuer alle Trades des Drains (haelt die Insert-Reihenfolge).
+        if (_dbService != null && fresh.Count > 0)
+        {
+            _ = Task.Run(async () =>
+            {
+                foreach (var t in fresh)
+                {
+                    try { await _dbService.SaveTradeAsync(t).ConfigureAwait(false); }
+                    catch (Exception ex) { Log(LogLevel.Error, "Trade", $"Paper-Trade-Persist fehlgeschlagen ({t.Symbol}): {ex.Message}"); }
+                }
+            });
+        }
     }
 
     // ─────────── State-Persistenz (Crash-Recovery) ───────────
@@ -230,6 +250,16 @@ public sealed class CrossSectionalTradingService : IDisposable
 
     private async Task RestoreOrAdoptStateAsync()
     {
+        // Paper startet IMMER frisch: Die SimulatedExchange ist nach jedem Prozess-Start leer
+        // (Positionen + PnL weg) — einen persistierten Korb zu adoptieren wuerde den Lauf bis zu
+        // RebalanceDays lang einfrieren (leere Sim + Geister-Korb, kein einziger Trade).
+        if (_paper != null)
+        {
+            _lastRebalanceUtc = DateTime.MinValue; // → erster Tick rebalanced sofort.
+            Log(LogLevel.Info, "Engine", "Paper-Modus: frischer Start, Rebalance beim ersten Tick (State-Adoption nur im Live-Modus).");
+            return;
+        }
+
         // 1. Persistierten State laden (falls vorhanden) → bestehenden Korb adoptieren, NICHT sofort rebalancen.
         if (_stateFilePath != null && File.Exists(_stateFilePath))
         {

@@ -23,6 +23,9 @@ public sealed class CrossSectionalManager : IDisposable
     private readonly BotEventBus _eventBus;
     private readonly BotSettings _botSettings;
     private readonly string _stateFilePath;
+    // Optional: persistiert Paper-Trades in die DB (Trades-Tabelle, Mode=Paper). Ohne sie waeren
+    // Paper-Laeufe nach einem Restart unauswertbar (EventBus-Subscriber halten Trades nur im RAM).
+    private readonly BotDatabaseService? _dbService;
 
     private CrossSectionalTradingService? _service;
     private SimulatedExchange? _paperExchange;
@@ -44,7 +47,8 @@ public sealed class CrossSectionalManager : IDisposable
         CrossSectionalSettings cfg,
         BotEventBus eventBus,
         BotSettings botSettings,
-        string? stateFilePath = null)
+        string? stateFilePath = null,
+        BotDatabaseService? dbService = null)
     {
         _secureStorage = secureStorage;
         _marketData = marketData;
@@ -53,12 +57,18 @@ public sealed class CrossSectionalManager : IDisposable
         _eventBus = eventBus;
         _botSettings = botSettings;
         _stateFilePath = stateFilePath ?? Path.Combine(AppContext.BaseDirectory, "xsec-state.json");
+        _dbService = dbService;
     }
 
     /// <summary>Startet den Cross-Sectional-Modus. <paramref name="mode"/> = Paper oder Live.</summary>
     public async Task StartAsync(TradingMode mode, decimal? initialBalance = null)
     {
         if (IsRunning) return;
+
+        // State-Datei pro Modus: Ein Paper-Lauf darf den Live-State nicht kontaminieren
+        // (ein spaeterer Live-Start wuerde sonst den Paper-Korb als vermeintlichen Live-Stand
+        // adoptieren) — und umgekehrt.
+        var statePath = DeriveStatePath(mode);
 
         IExchangeClient execution;
         PaperHooks? paper = null;
@@ -96,8 +106,16 @@ public sealed class CrossSectionalManager : IDisposable
         }
 
         _service = new CrossSectionalTradingService(
-            execution, _marketData, _risk, _cfg, _eventBus, NullLogger.Instance, _stateFilePath, paper);
+            execution, _marketData, _risk, _cfg, _eventBus, NullLogger.Instance, statePath, paper, _dbService);
         await _service.StartAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>Leitet aus dem konfigurierten Basis-Pfad den mode-spezifischen State-Pfad ab.</summary>
+    private string DeriveStatePath(TradingMode mode)
+    {
+        var dir = Path.GetDirectoryName(_stateFilePath) ?? AppContext.BaseDirectory;
+        var suffix = mode == TradingMode.Paper ? "paper" : "live";
+        return Path.Combine(dir, $"xsec-state-{suffix}.json");
     }
 
     private async Task<IExchangeClient> ConnectLiveAsync()

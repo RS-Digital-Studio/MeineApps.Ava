@@ -424,6 +424,7 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     // Adaptive-Sizing-/Schutz-Features (waren ungemappt → fielen bei JEDEM Server-Restart auf Default
     // zurueck: Korrelations-Filter auf 0=aus, Vol-Targeting/Equity-Scaling aus). User-Werte gingen verloren.
     risk.MaxCorrelatedExposurePercent = saved.Risk.MaxCorrelatedExposurePercent;
+    risk.MaxNetDirectionalExposurePercent = saved.Risk.MaxNetDirectionalExposurePercent;
     risk.EnableVolatilityTargeting = saved.Risk.EnableVolatilityTargeting;
     risk.VolatilityTargetPercent = saved.Risk.VolatilityTargetPercent;
     risk.VolatilityScaleCap = saved.Risk.VolatilityScaleCap;
@@ -501,6 +502,7 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
 
     // Bot
     bot.LastMode = saved.LastMode;
+    bot.LastEngineMode = saved.LastEngineMode;
     bot.LastStrategyName = saved.LastStrategyName;
     bot.PaperInitialBalance = saved.PaperInitialBalance;
     bot.ShowBtcTicker = saved.ShowBtcTicker;

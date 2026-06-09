@@ -40,8 +40,15 @@ public static class AssetClusterClassifier
         // Crypto-Buckets — Symbol-Prefix-basiert (BingX-Format z.B. "BTC-USDT").
         var asset = ExtractBaseAsset(symbol);
 
+        // Tokenisierte Edelmetalle (XAUT/PAXG = Gold-Token): preislich 1:1 Gold, nicht Crypto.
+        // Vorher CryptoOther (no-op) → ein XAUT-Short teilte sich kein Budget mit Gold-Futures,
+        // obwohl beide exakt dieselbe Preisquelle haben.
+        if (Equals(asset, "XAUT", "PAXG"))
+            return AssetCluster.TradFiCommodity;
+
         // BTC-Cluster: BTC + WBTC + BTC-Forks die quasi 1:1 zu BTC laufen.
-        if (Equals(asset, "BTC", "WBTC", "BTCB", "BTCDOM"))
+        // BCH/LTC: hochkorrelierte Fork-/Payment-Coins (BCH ~0.8 zu BTC) — vorher no-op CryptoOther.
+        if (Equals(asset, "BTC", "WBTC", "BTCB", "BTCDOM", "BCH", "LTC"))
             return AssetCluster.CryptoBtcMajor;
 
         // ETH-Cluster: ETH + alle Liquid-Staking-Derivate + ETH-Layer-2-Tokens die stark mit ETH korrelieren.
@@ -54,7 +61,8 @@ public static class AssetClusterClassifier
         // WLD/ENA/ONDO/FET u.a. im no-op CryptoOther → der Korrelations-Filter sah sie als unkorreliert
         // (Klumpenrisiko bei mehreren gleichzeitigen Alt-Longs auf kleinem Konto).
         if (Equals(asset, "SOL", "AVAX", "ADA", "DOT", "NEAR", "ATOM", "ALGO", "FTM", "TRX", "TON", "APT", "SUI", "INJ", "SEI", "TIA",
-                          "HYPE", "TAO", "WLD", "ENA", "ONDO", "FET", "RENDER", "RNDR", "ZRO", "ARB", "OP", "STRK", "ASTER", "KAS", "JTO", "JUP"))
+                          "HYPE", "TAO", "WLD", "ENA", "ONDO", "FET", "RENDER", "RNDR", "ZRO", "ARB", "OP", "STRK", "ASTER", "KAS", "JTO", "JUP",
+                          "BNB", "XRP"))
             return AssetCluster.CryptoAltL1;
 
         // Alt-DeFi-Cluster: DeFi-Bluechips + Lending/DEX-/Perp-Plattform-Tokens.
@@ -77,12 +85,24 @@ public static class AssetClusterClassifier
     public static bool ShareCluster(string symbolA, string symbolB)
     {
         if (string.IsNullOrEmpty(symbolA) || string.IsNullOrEmpty(symbolB)) return false;
-        var clA = Classify(symbolA);
-        var clB = Classify(symbolB);
-        // "Other"-Cluster zaehlen NICHT als geteilt (sonst landen alle Edge-Cases im selben Topf).
+        return AreCorrelated(Classify(symbolA), Classify(symbolB));
+    }
+
+    /// <summary>
+    /// True wenn zwei Cluster sich ein Korrelations-Budget teilen. Cluster-Gleichheit plus
+    /// definierte Cross-Cluster-Paare; "Other"-Cluster zaehlen NIE als geteilt (sonst landen
+    /// alle Edge-Cases im selben Topf).
+    /// </summary>
+    public static bool AreCorrelated(AssetCluster clA, AssetCluster clB)
+    {
         if (clA == AssetCluster.CryptoOther || clA == AssetCluster.Other) return false;
         if (clB == AssetCluster.CryptoOther || clB == AssetCluster.Other) return false;
-        return clA == clB;
+        if (clA == clB) return true;
+        // US-Equity-Klumpen: Index-Perps (NASDAQ/SP500/...) und Einzelaktien (MSTR/NVDA/...)
+        // korrelieren in Risk-Off-Events ~1:1 — getrennte Toepfe machten den Filter blind fuer
+        // 3 parallele Equity-Shorts (NASDAQ+SP500+MSTR = 142 % der Balance, live beobachtet).
+        return (clA == AssetCluster.TradFiIndex && clB == AssetCluster.TradFiStock)
+            || (clA == AssetCluster.TradFiStock && clB == AssetCluster.TradFiIndex);
     }
 
     /// <summary>Liefert das Base-Asset eines BingX-Symbols (z.B. "BTC" aus "BTC-USDT" oder "Ncco1OilWti2USD-USDT" → "OILWTI").</summary>

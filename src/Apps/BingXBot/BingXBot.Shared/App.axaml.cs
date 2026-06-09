@@ -284,6 +284,7 @@ public partial class App : Application
         // Adaptive-Sizing-/Schutz-Features (waren ungemappt → fielen beim Settings-Restore auf Default
         // zurueck: Korrelations-Filter aus, Vol-Targeting/Equity-Scaling aus). Analog zum Server-Restore.
         risk.MaxCorrelatedExposurePercent = saved.Risk.MaxCorrelatedExposurePercent;
+        risk.MaxNetDirectionalExposurePercent = saved.Risk.MaxNetDirectionalExposurePercent;
         risk.EnableVolatilityTargeting = saved.Risk.EnableVolatilityTargeting;
         risk.VolatilityTargetPercent = saved.Risk.VolatilityTargetPercent;
         risk.VolatilityScaleCap = saved.Risk.VolatilityScaleCap;

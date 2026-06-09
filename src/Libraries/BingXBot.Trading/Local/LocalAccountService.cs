@@ -14,21 +14,49 @@ public sealed class LocalAccountService : IAccountService
     private readonly PaperTradingService _paperService;
     private readonly ISecureStorageService _secureStorage;
     private readonly BotDatabaseService? _db;
+    private readonly CrossSectional.CrossSectionalManager? _xsecManager;
 
     public LocalAccountService(
         LiveTradingManager liveManager,
         PaperTradingService paperService,
         ISecureStorageService secureStorage,
-        BotDatabaseService? db = null)
+        BotDatabaseService? db = null,
+        CrossSectional.CrossSectionalManager? xsecManager = null)
     {
         _liveManager = liveManager;
         _paperService = paperService;
         _secureStorage = secureStorage;
         _db = db;
+        _xsecManager = xsecManager;
     }
 
     public async Task<AccountSnapshotDto> GetSnapshotAsync(CancellationToken ct = default)
     {
+        // Cross-Sectional ZUERST: Nach einem Scalper-Stop bleibt _liveManager.IsConnected true
+        // (_restClient lebt bis Dispose) — ohne diesen Zweig zeigte ein laufender Paper-Xsec
+        // weiterhin das ECHTE Konto, und die persistierte Equity-Kurve mass nie die Paper-Sim.
+        if (_xsecManager?.IsRunning == true)
+        {
+            var exec = _xsecManager.PaperExchange as IExchangeClient ?? _xsecManager.RestClient;
+            if (exec != null)
+            {
+                var info = await exec.GetAccountInfoAsync().ConfigureAwait(false);
+                var positions = await exec.GetPositionsAsync(ct).ConfigureAwait(false);
+                var positionDtos = positions.Select(p => p.ToDto()).ToList();
+                return new AccountSnapshotDto(
+                    Balance: info.Balance,
+                    Available: info.AvailableBalance,
+                    UnrealizedPnl: info.UnrealizedPnl,
+                    // Realisierter PnL ist ueber die Trades-Tabelle (Mode=Paper) auswertbar;
+                    // die Equity-Messgroesse des Xsec-Laufs ist Balance + UnrealizedPnl.
+                    RealizedPnlToday: 0m,
+                    TotalPnlAllTime: 0m,
+                    OpenPositionCount: positionDtos.Count,
+                    Positions: positionDtos,
+                    AsOfUtc: DateTime.UtcNow);
+            }
+        }
+
         if (_liveManager.IsConnected && _liveManager.RestClient is { } rest)
         {
             var accountInfo = await rest.GetAccountInfoAsync().ConfigureAwait(false);

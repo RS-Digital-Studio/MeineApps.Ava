@@ -156,7 +156,24 @@ public partial class LiveTradingService
                                     ? iProp.GetInt64().ToString(System.Globalization.CultureInfo.InvariantCulture)
                                     : iProp.GetString();
                             }
-                            if (!string.IsNullOrEmpty(orderId))
+
+                            // Native SL-/TP-Market-Fills (STOP_MARKET / TAKE_PROFIT_MARKET) buchen.
+                            // Diese Orders schliessen die Position exchange-seitig — ohne diesen Pfad
+                            // hatte ein nativer SL-Fill KEINEN Buchungsweg (Position verschwand vor dem
+                            // naechsten 5-s-Tick, Orphan-Cleanup loeschte still, der 30-min-Income-
+                            // Backfill buchte einen synthetischen Null-Record).
+                            var orderType = orderData.TryGetProperty("o", out var otProp) ? otProp.GetString() : null;
+                            if (orderType is "STOP_MARKET" or "TAKE_PROFIT_MARKET")
+                            {
+                                var ps = orderData.TryGetProperty("ps", out var psProp) ? psProp.GetString() : null;
+                                var avgPrice = ReadWsDecimal(orderData, "ap");
+                                var filledQty = ReadWsDecimal(orderData, "z");
+                                var commission = ReadWsDecimal(orderData, "n");
+                                var realizedPnl = ReadWsDecimal(orderData, "rp");
+                                _ = SafeProcessNativeCloseFillAsync(symbol!, orderType!, ps, oSide,
+                                    avgPrice, filledQty, commission, realizedPnl);
+                            }
+                            else if (!string.IsNullOrEmpty(orderId))
                             {
                                 // Fire-and-forget — der WebSocket-Handler darf nicht blockieren.
                                 // Exceptions im Helper werden dort geloggt.
@@ -188,6 +205,113 @@ public partial class LiveTradingService
             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "WebSocket",
                 $"TP-Limit-Fill-Verarbeitung fuer {symbol}/{orderId} fehlgeschlagen: {ex.Message}", symbol));
         }
+    }
+
+    /// <summary>
+    /// Liest ein decimal-Feld aus dem ORDER_TRADE_UPDATE-Payload (String oder Number).
+    /// Liefert null wenn das Feld FEHLT oder unparsbar ist — der Unterschied zu einem echten
+    /// 0-Wert ist entscheidend: realizedPnl == 0 ist ein valider Break-Even-Close (kein
+    /// Fallback auf die lokale Preis-Rechnung), commission == 0 eine valide Maker-Rabatt-Fee.
+    /// </summary>
+    private static decimal? ReadWsDecimal(System.Text.Json.JsonElement orderData, string name)
+    {
+        if (!orderData.TryGetProperty(name, out var prop)) return null;
+        if (prop.ValueKind == System.Text.Json.JsonValueKind.Number && prop.TryGetDecimal(out var num))
+            return num;
+        if (prop.ValueKind == System.Text.Json.JsonValueKind.String &&
+            decimal.TryParse(prop.GetString(), System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+        return null;
+    }
+
+    /// <summary>Exception-sicherer Wrapper um <see cref="ProcessNativeCloseFillAsync"/>.</summary>
+    private async Task SafeProcessNativeCloseFillAsync(string symbol, string orderType, string? positionSide,
+        string? orderSide, decimal? avgPrice, decimal? filledQty, decimal? commission, decimal? realizedPnl)
+    {
+        try
+        {
+            await ProcessNativeCloseFillAsync(symbol, orderType, positionSide, orderSide,
+                avgPrice, filledQty, commission, realizedPnl).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "WebSocket",
+                $"Native-Close-Fill-Verarbeitung fuer {symbol} ({orderType}) fehlgeschlagen: {ex.Message}", symbol));
+        }
+    }
+
+    /// <summary>
+    /// Bucht einen exchange-seitigen Market-Close (nativer STOP_MARKET-SL oder TAKE_PROFIT_MARKET)
+    /// als echten CompletedTrade mit den Fill-Daten aus dem ORDER_TRADE_UPDATE-Event
+    /// (avgPrice = ap, Menge = z, Kommission = n, realisierter PnL = rp).
+    /// Das Buchungs-Gate (<see cref="TryClaimNativeCloseBooking"/>) verhindert Doppel-Buchung
+    /// gegen den Ticker-Mikro-Race-Zweig in OnSlTpHitAsync und die Orphan-Rekonstruktion.
+    /// </summary>
+    internal async Task<bool> ProcessNativeCloseFillAsync(string symbol, string orderType,
+        string? positionSide, string? orderSide, decimal? avgPrice, decimal? filledQty,
+        decimal? commission, decimal? realizedPnl)
+    {
+        // Positions-Seite: bevorzugt "ps" (LONG/SHORT, Hedge-Mode), Fallback Order-Side-Inversion
+        // (der SL eines Longs verkauft). NIE reduceOnly nutzen — im Hedge-Mode immer false.
+        Side side;
+        if (string.Equals(positionSide, "LONG", StringComparison.OrdinalIgnoreCase)) side = Side.Buy;
+        else if (string.Equals(positionSide, "SHORT", StringComparison.OrdinalIgnoreCase)) side = Side.Sell;
+        else if (string.Equals(orderSide, "SELL", StringComparison.OrdinalIgnoreCase)) side = Side.Buy;
+        else if (string.Equals(orderSide, "BUY", StringComparison.OrdinalIgnoreCase)) side = Side.Sell;
+        else return false;
+
+        var key = $"{symbol}_{side}";
+
+        // Entry-Kontext: ohne ExitState keine belastbaren Entry-Daten → Orphan-/Backfill-Pfad
+        // uebernimmt. (Gate hier noch NICHT claimen, sonst blockieren wir die Fallback-Buchung.)
+        if (!_exitStates.TryGetValue(key, out var es) || es.EntryPrice <= 0m)
+            return false;
+
+        if (!TryClaimNativeCloseBooking(key)) return false;
+
+        // Menge: echte Fill-Menge vom Event; Fallback Rest nach TP1-Teilschliessung.
+        var qty = filledQty is > 0m
+            ? filledQty.Value
+            : (es.PartialClosed
+                ? Math.Max(0m, es.OriginalQuantity * (1m - _riskSettings.Tp1CloseRatio))
+                : es.OriginalQuantity);
+        if (qty <= 0m) qty = es.OriginalQuantity;
+
+        var exitPrice = avgPrice is > 0m ? avgPrice.Value : (es.Signal.StopLoss ?? 0m);
+        var entryFee = qty * es.EntryPrice * _takerFeeRate;
+        // Feld-Praesenz statt !=0: commission == 0 ist eine valide Maker-Rabatt-Fee,
+        // realizedPnl == 0 ein valider Break-Even-Close (kein Fallback auf die lokale Rechnung).
+        var exitFee = commission.HasValue ? Math.Abs(commission.Value) : qty * exitPrice * _takerFeeRate;
+        var rawPnl = side == Side.Buy
+            ? (exitPrice - es.EntryPrice) * qty
+            : (es.EntryPrice - exitPrice) * qty;
+        // BingX "rp" ist der realisierte Brutto-PnL des Fills (Kommission separat in "n").
+        var grossPnl = realizedPnl ?? rawPnl;
+
+        var reason = orderType == "STOP_MARKET"
+            ? "Native Stop-Loss (WebSocket)"
+            : "Native Take-Profit (WebSocket)";
+        var navTf = GetNavigatorTimeframeForKey(key);
+        var trade = new CompletedTrade(symbol, side, es.EntryPrice, exitPrice, qty,
+            grossPnl - entryFee - exitFee, entryFee + exitFee,
+            es.EntryTime, DateTime.UtcNow, reason, TradingMode.Live, navTf);
+
+        // Signal + ExitState entfernen, uebrige native Orders (TP-Limits) aufraeumen.
+        RemoveSignalByKey(key);
+        try { await CancelNativeSlTpOrdersAsync(symbol, side).ConfigureAwait(false); }
+        catch { /* Verwaiste Orders sind ungefaehrlich */ }
+
+        ProcessCompletedTrade(trade);
+        _eventBus.PublishTrade(trade);
+
+        _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Trade, "Trade",
+            $"LIVE: {symbol} {side}: {reason} @ {exitPrice} (qty={qty:F8}, PnL={grossPnl - entryFee - exitFee:F4})",
+            symbol));
+
+        try { await PersistExitStatesAsync().ConfigureAwait(false); }
+        catch { /* best-effort */ }
+        return true;
     }
 
     /// <summary>

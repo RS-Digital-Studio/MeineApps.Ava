@@ -5,6 +5,7 @@ using HandwerkerImperium.Domain.Idle;
 using HandwerkerImperium.Domain.Config;
 using HandwerkerImperium.Domain.Runtime;
 using HandwerkerImperium.Domain.Progression;
+using HandwerkerImperium.Domain.Achievements;
 
 namespace HandwerkerImperium.Game
 {
@@ -24,18 +25,23 @@ namespace HandwerkerImperium.Game
         private IdleBalancing _idleBal;
         private GameBalancing _bal;
         private List<MasterToolDefinition> _masterToolCatalog;
+        private IReadOnlyList<AchievementDefinition> _achievementCatalog;
         private string _deviceKey;
         private float _autosaveTimer;
+        private float _progressTimer;
 
         public GameModel Model => _model;
         public GameBalancing Balancing => _bal;
         public decimal LastOfflineEarned { get; private set; }
+        public int CollectedToolsCount => _model != null ? _model.CollectedMasterTools.Count : 0;
+        public int AchievementsCount => _model != null ? _model.ClaimedAchievements.Count : 0;
 
         private void Awake()
         {
             _idleBal = config != null ? config.ToIdleBalancing() : new IdleBalancing();
             _bal = config != null ? config.ToGameBalancing() : new GameBalancing();
             _masterToolCatalog = MasterToolFormulas.DefaultCatalog();
+            _achievementCatalog = AchievementCatalog.Default();
             _deviceKey = RuntimeSave.DeviceKey;
             _model = RuntimeSave.HasSave ? RuntimeSave.Load(_deviceKey, _idleBal) : GameModel.CreateNew(_idleBal);
             if (_model == null) _model = GameModel.CreateNew(_idleBal);
@@ -60,6 +66,15 @@ namespace HandwerkerImperium.Game
         {
             long now = DateTime.UtcNow.Ticks;
             GameSimulation.Tick(_model, _idleBal, _bal, Time.deltaTime, now);
+
+            // Permanente Fortschritts-Systeme periodisch auswerten (Master-Tools sammeln, Achievements gutschreiben).
+            _progressTimer += Time.deltaTime;
+            if (_progressTimer >= 1f)
+            {
+                _progressTimer = 0f;
+                GameProgress.CollectEligibleMasterTools(_model, _masterToolCatalog);
+                GameProgress.GrantNewAchievements(_model, _achievementCatalog);
+            }
 
             _autosaveTimer += Time.deltaTime;
             if (_autosaveTimer >= autosaveIntervalSeconds)

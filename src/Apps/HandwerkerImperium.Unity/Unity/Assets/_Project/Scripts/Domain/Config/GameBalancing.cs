@@ -52,6 +52,8 @@ namespace HandwerkerImperium.Domain.Config
             public double BaseXp = 100;
             public double Growth = 1.15;
             public decimal BonusPerLevel = 0.01m; // +1 %/Level (Soft-Cap gedämpft)
+            /// <summary>Anteil des laufenden Verdiensts, der als Meisterschafts-XP zufließt (PROGRESSION §4).</summary>
+            public double XpPerMoney = 0.1;
         }
 
         // ── Endgame-Meistergrade (PROGRESSION §5) ──────────────────────────

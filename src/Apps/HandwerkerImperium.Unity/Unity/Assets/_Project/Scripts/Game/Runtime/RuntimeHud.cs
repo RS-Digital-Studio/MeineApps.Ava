@@ -54,6 +54,7 @@ namespace HandwerkerImperium.Game
             GUILayout.Label($"Stern:          {m.Meta.CurrentStar}★   Stadt: {m.Meta.CityIndex}", _label);
             GUILayout.Label($"Prestige:       {m.Meta.PrestigeCount}  (x{m.Meta.PrestigeMultiplier})   Marken: {m.Meta.AvailableMarks}", _label);
             GUILayout.Label($"Meisterschaft:  Lv {m.Meta.MasteryLevel}    Meistergrad: {m.Meta.MeistergradGrade}", _label);
+            GUILayout.Label($"Master-Tools:   {controller.CollectedToolsCount}/12    Achievements: {controller.AchievementsCount}", _label);
             GUILayout.Label($"Kunden:         {m.Orders.PendingCustomers} warten · {m.Orders.TotalServed} bedient", _label);
             if (hasStation)
             {

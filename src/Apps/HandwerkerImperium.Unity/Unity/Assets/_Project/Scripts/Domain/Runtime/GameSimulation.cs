@@ -30,6 +30,11 @@ namespace HandwerkerImperium.Domain.Runtime
             OrderQueueFormulas.Tick(m.Orders, dtSeconds, bal.Orders.SpawnIntervalSeconds, bal.Orders.MaxQueue);
             OrderQueueFormulas.ExpireRushIfDue(m.Orders, nowUtcTicks);
             RushEventFormulas.ExpireIfDue(m.Rush, nowUtcTicks);
+
+            // Meisterschafts-XP fließt aus dem laufenden Verdienst (PROGRESSION §4: kontoweit, nie reset).
+            if (earned > 0m && bal.Mastery.XpPerMoney > 0)
+                MetaProgression.GainMasteryXp(m.Meta, (double)earned * bal.Mastery.XpPerMoney, bal.Mastery.BaseXp, bal.Mastery.Growth);
+
             return earned;
         }
 

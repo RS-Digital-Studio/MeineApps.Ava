@@ -14,3 +14,10 @@ MemoryCaptures/
 .vscode/
 .idea/
 .DS_Store
+
+# 3D-Asset-Binaries (ComfyUI-Pipeline-Output, lokal aus D:\AI\3d_output re-importiert —
+# wie generierte Scenes nicht versioniert; Re-Import-Doku: Assets/_Project/Art/Models/README.md)
+Assets/_Project/Art/Models/*.glb
+Assets/_Project/Art/Models/*.gltf
+Assets/_Project/Art/Models/*.fbx
+Assets/_Project/Art/Models/*.bin

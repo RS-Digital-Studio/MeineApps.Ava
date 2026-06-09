@@ -35,6 +35,16 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > `RuntimeHud` (IMGUI-Diagnose), `RuntimeSceneBuilder` (Editor-Menü `HandwerkerImperium/Runtime/Build Runtime Scene` →
 > spielbare `Runtime.unity`). Generierte `.unity`/`.asset` sind lokal (`*.meta`-Gitignore-Policy); der Builder ist versioniert.
 >
+> **Physischer 3D-Loop (gekoppelt, Play-Mode-verifiziert):** Der P0-Genre-Loop (Avatar läuft/sammelt/trägt,
+> Stationen produzieren sichtbar, Tresen verkauft, Hold-to-Pay-Pads, Bauzaun) arbeitet im gekoppelten Modus des
+> `GreyboxGameController` (runtime-Ref) direkt auf `GameModel.Idle` — eine Wahrheit, EIN Ticker (`GameSimulation.Tick`),
+> EIN HMAC-Save; `CounterView`-Verkäufe bedienen die Runtime-Kunden-Queue (`NotifyPhysicalSale`), Prestige-Rebind inklusive.
+> `GameSceneBuilder` (Menü `…/Build Game Scene (3D)`) baut `Game.unity` lokal mit den echten Pipeline-Assets
+> (avatar_hans/workshop/workshop_smith/customer_npc/worker). **Szene-Builder-Gotchas:** Materialien über das
+> Default-Material der aktiven Pipeline erzeugen (`Shader.Find` → magenta im Editor-Batch) und für Prefabs als
+> Asset persistieren (in-memory-Material überlebt `SaveAsPrefabAsset` nicht); `Application.runInBackground` setzt
+> der Controller (Editor/Desktop tickt ohne Fokus, sonst steht der Play-Mode bei frameCount≈2).
+>
 > **Live-Ops im Runtime aktiv:** Über die Formel-Sätze hinaus sind die Live-Systeme im `RuntimeGameController`
 > verdrahtet und periodisch ausgewertet: Master-Tool-Auto-Sammlung, Achievement-Gutschrift, Meister-Hans-Story-Beats,
 > Endgame-Renommee-Akkumulation, Rush-Event (2×), Saison-Erkennung, Free-Cash-Pad (Monetarisierung), Tagesaufgaben

@@ -42,6 +42,15 @@ namespace HandwerkerImperium.Domain.Tests.Save
             s.Cosmetics.OwnedSkins.Add("default");
             s.Cosmetics.OwnedSkins.Add("premium");
             s.Cosmetics.ActiveSkin = "premium";
+            s.Endgame.MeistergradGrade = 2;
+            s.Endgame.Renommee = 333.33m;
+            s.Perkboard.AvailableMarks = 7;
+            s.Perkboard.PerkLevels.Add(1); s.Perkboard.PerkLevels.Add(0); s.Perkboard.PerkLevels.Add(3);
+            s.Collection.CollectedMasterTools.Add("mt_golden_hammer");
+            s.Progress.DailyLastClaimUtcTicks = 638_000_000_000_000_001L;
+            s.Progress.DailyStreakDay = 4;
+            s.Progress.PlayedStoryBeats.Add("intro");
+            s.Progress.ClaimedAchievements.Add("orders_10");
             return s;
         }
 
@@ -186,6 +195,13 @@ namespace HandwerkerImperium.Domain.Tests.Save
             Assert.That(loaded.Mastery.Level, Is.EqualTo(7));
             Assert.That(loaded.Cosmetics.ActiveSkin, Is.EqualTo("premium"));
             Assert.That(loaded.LastSeenUtcTicks, Is.EqualTo(638_000_000_000_000_000L));
+            Assert.That(loaded.Endgame.MeistergradGrade, Is.EqualTo(2));
+            Assert.That(loaded.Endgame.Renommee, Is.EqualTo(333.33m));
+            Assert.That(loaded.Perkboard.AvailableMarks, Is.EqualTo(7));
+            Assert.That(loaded.Perkboard.PerkLevels, Is.EqualTo(new[] { 1, 0, 3 }).AsCollection);
+            Assert.That(loaded.Collection.CollectedMasterTools[0], Is.EqualTo("mt_golden_hammer"));
+            Assert.That(loaded.Progress.DailyStreakDay, Is.EqualTo(4));
+            Assert.That(loaded.Progress.ClaimedAchievements[0], Is.EqualTo("orders_10"));
 
             // Signatur überlebt den Roundtrip (decimal/Format stabil).
             Assert.That(SaveSignature.Verify(loaded, KeyA), Is.True);
@@ -218,6 +234,21 @@ namespace HandwerkerImperium.Domain.Tests.Save
 
             var i = NewPopulatedSave(); SaveSignature.Sign(i, KeyA); i.Franchise.PrestigeCurrency = 777m;
             Assert.That(SaveSignature.Verify(i, KeyA), Is.False, "Prestige-Waehrung");
+
+            var j = NewPopulatedSave(); SaveSignature.Sign(j, KeyA); j.Endgame.MeistergradGrade = 99;
+            Assert.That(SaveSignature.Verify(j, KeyA), Is.False, "Meistergrad");
+
+            var k = NewPopulatedSave(); SaveSignature.Sign(k, KeyA); k.Endgame.Renommee += 1_000_000m;
+            Assert.That(SaveSignature.Verify(k, KeyA), Is.False, "Renommee");
+
+            var l = NewPopulatedSave(); SaveSignature.Sign(l, KeyA); l.Perkboard.AvailableMarks = 9999;
+            Assert.That(SaveSignature.Verify(l, KeyA), Is.False, "Perkboard-Marken");
+
+            var n = NewPopulatedSave(); SaveSignature.Sign(n, KeyA); n.Collection.CollectedMasterTools.Add("mt_master_crown");
+            Assert.That(SaveSignature.Verify(n, KeyA), Is.False, "Master-Tool-Sammlung");
+
+            var o = NewPopulatedSave(); SaveSignature.Sign(o, KeyA); o.Progress.ClaimedAchievements.Add("orders_100");
+            Assert.That(SaveSignature.Verify(o, KeyA), Is.False, "eingeloeste Achievements");
         }
 
         [Test]

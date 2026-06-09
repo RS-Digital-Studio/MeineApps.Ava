@@ -29,6 +29,10 @@ namespace HandwerkerImperium.Domain.Save
         public TownSlice Town = new TownSlice();
         public MasterySlice Mastery = new MasterySlice();
         public CosmeticsSlice Cosmetics = new CosmeticsSlice();
+        public EndgameSlice Endgame = new EndgameSlice();
+        public PerkboardSlice Perkboard = new PerkboardSlice();
+        public CollectionSlice Collection = new CollectionSlice();
+        public ProgressSlice Progress = new ProgressSlice();
     }
 
     /// <summary>Geld + Hartwährung.</summary>
@@ -114,5 +118,34 @@ namespace HandwerkerImperium.Domain.Save
     {
         public List<string> OwnedSkins = new List<string>();
         public string ActiveSkin = "";
+    }
+
+    /// <summary>Endgame-Meistergrade + Renommee-Ressource (P3, nie reset).</summary>
+    public sealed class EndgameSlice
+    {
+        public int MeistergradGrade;
+        public decimal Renommee;
+    }
+
+    /// <summary>Imperium-Marken-Perkboard: verfügbare Marken + Stufen je Perk-Achse (permanent).</summary>
+    public sealed class PerkboardSlice
+    {
+        public int AvailableMarks;
+        public List<int> PerkLevels = new List<int>();
+    }
+
+    /// <summary>Sammlung: gesammelte Meisterwerkzeug-Ids (permanent).</summary>
+    public sealed class CollectionSlice
+    {
+        public List<string> CollectedMasterTools = new List<string>();
+    }
+
+    /// <summary>Live-Ops-/Story-Fortschritts-Flags (Tagesbelohnung, abgespielte Beats, eingelöste Achievements).</summary>
+    public sealed class ProgressSlice
+    {
+        public long DailyLastClaimUtcTicks;
+        public int DailyStreakDay;
+        public List<string> PlayedStoryBeats = new List<string>();
+        public List<string> ClaimedAchievements = new List<string>();
     }
 }

@@ -33,6 +33,10 @@ namespace HandwerkerImperium.Domain.Save
             var w = save.Workers ?? new WorkersSlice();
             var r = save.Restoration ?? new RestorationSlice();
             var c = save.Cosmetics ?? new CosmeticsSlice();
+            var eg = save.Endgame ?? new EndgameSlice();
+            var pb = save.Perkboard ?? new PerkboardSlice();
+            var col = save.Collection ?? new CollectionSlice();
+            var pr = save.Progress ?? new ProgressSlice();
 
             var sb = new StringBuilder();
             sb.Append("v").Append(save.SchemaVersion.ToString(ci));
@@ -84,6 +88,22 @@ namespace HandwerkerImperium.Domain.Save
             if (c.OwnedSkins != null)
                 foreach (var sk in c.OwnedSkins)
                     sb.Append(",").Append(sk ?? "");
+
+            // Endgame + Perkboard + Sammlung + eingelöste Achievements (alle economy-wirksam -> signiert)
+            sb.Append("|E").Append(eg.MeistergradGrade.ToString(ci))
+              .Append(":").Append(eg.Renommee.ToString("F2", ci));
+            sb.Append("|P").Append(pb.AvailableMarks.ToString(ci));
+            if (pb.PerkLevels != null)
+                foreach (var lvl in pb.PerkLevels)
+                    sb.Append(",").Append(lvl.ToString(ci));
+            sb.Append("|MT");
+            if (col.CollectedMasterTools != null)
+                foreach (var id in col.CollectedMasterTools)
+                    sb.Append(",").Append(id ?? "");
+            sb.Append("|Ach");
+            if (pr.ClaimedAchievements != null)
+                foreach (var id in pr.ClaimedAchievements)
+                    sb.Append(",").Append(id ?? "");
 
             return sb.ToString();
         }

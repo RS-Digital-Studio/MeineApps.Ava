@@ -38,6 +38,14 @@ namespace HandwerkerImperium.Domain.Save
             save.Mastery ??= new MasterySlice();
             save.Cosmetics ??= new CosmeticsSlice();
             save.Cosmetics.OwnedSkins ??= new List<string>();
+            save.Endgame ??= new EndgameSlice();
+            save.Perkboard ??= new PerkboardSlice();
+            save.Perkboard.PerkLevels ??= new List<int>();
+            save.Collection ??= new CollectionSlice();
+            save.Collection.CollectedMasterTools ??= new List<string>();
+            save.Progress ??= new ProgressSlice();
+            save.Progress.PlayedStoryBeats ??= new List<string>();
+            save.Progress.ClaimedAchievements ??= new List<string>();
             return save;
         }
 
@@ -80,6 +88,13 @@ namespace HandwerkerImperium.Domain.Save
                 if (lm.TotalPhases < 0) lm.TotalPhases = 0;
                 lm.PhasesComplete = Clamp(lm.PhasesComplete, 0, lm.TotalPhases);
             }
+
+            if (save.Endgame.MeistergradGrade < 0) save.Endgame.MeistergradGrade = 0;
+            if (save.Endgame.Renommee < 0m) save.Endgame.Renommee = 0m;
+            if (save.Perkboard.AvailableMarks < 0) save.Perkboard.AvailableMarks = 0;
+            for (int i = 0; i < save.Perkboard.PerkLevels.Count; i++)
+                if (save.Perkboard.PerkLevels[i] < 0) save.Perkboard.PerkLevels[i] = 0;
+            if (save.Progress.DailyStreakDay < 0) save.Progress.DailyStreakDay = 0;
 
             return save;
         }

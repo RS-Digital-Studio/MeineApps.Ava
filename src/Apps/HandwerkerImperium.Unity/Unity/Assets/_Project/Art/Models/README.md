@@ -85,9 +85,24 @@ Alternativ-Vorlage durch die Kette (Amboss v04).
 | `ware_master_smith.glb` | Meisterschmiede | Amboss mit Hammer |
 | `ware_innovation_lab.glb` | Innovationslabor | Zahnrad-Kiste |
 
+## Wahrzeichen (Stadt-Wiederaufbau) + Kunden-Vielfalt (komplett)
+
+`landmark_concepts.py` → gleiche Kette, Wahrzeichen auf **8.000 Tris** (Gebäude-Klasse, nur eines
+der beiden Modelle gleichzeitig aktiv), Kunden 12k (Charakter-Klasse). Sichtungs-Lehre: Konzepte
+mit Rahmen/Pergola VOR dem Objekt kollabieren bei Single-View-3D zu flachen Dioramen →
+freistehende Silhouetten wählen (Brunnen-saniert über die Pavillon-Vorlage neu generiert).
+
+| GLB-Paar | Wahrzeichen (Phasen) |
+|----------|----------------------|
+| `landmark_fountain_ruined/_restored` | Brunnen (3) — bemoostes Becken → Pavillon-Brunnen |
+| `landmark_clocktower_ruined/_restored` | Glockenturm (4) — Moos-Häuschen → Pagoden-Uhrturm |
+| `landmark_gate_ruined/_restored` | Stadttor (5) — zerfallenes Steintor → Fachwerk-Tor |
+
+`customer_woman.glb` (Frau mit Brotkorb) + `customer_elder.glb` (Senior mit Stock) = Statisten an
+der Tresen-Queue. Ids/Phasen = `LandmarkCatalog` (Domain), Szene-Plots = `GameSceneBuilder.MakeLandmark`.
+
 ## Offener Generierungs-Backlog (gleiche Kette, GPU)
 
-Noch offen: **Stadt-/Wahrzeichen-Props** (Sanierung). **Münze/Geld** + **Upgrade-Pad** +
-**Plot-Bauzaun** sind besser als **Unity-Primitive** (Zylinder/Quader + Material) — flach/einfach,
-Image-to-3D ungeeignet (wie City-Tiles, siehe `pilot_log.md`). **Auto-Rig-Stufe** (AccuRIG/UniRig)
-für echte Walk-Cycles statt ToonBob.
+**Münze/Geld** + **Upgrade-Pad** + **Plot-Bauzaun** sind besser als **Unity-Primitive**
+(Zylinder/Quader + Material) — flach/einfach, Image-to-3D ungeeignet (wie City-Tiles, siehe
+`pilot_log.md`). **Auto-Rig-Stufe** (AccuRIG/UniRig) für echte Walk-Cycles statt ToonBob.

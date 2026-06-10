@@ -83,12 +83,16 @@ if (GetArg(argMap, "top-coins", null) != null)
 {
     var topN = int.Parse(GetArg(argMap, "top-coins", "100")!, CultureInfo.InvariantCulture);
     var includeTradFi = GetArg(argMap, "include-tradfi", "true") != "false";
-    Console.WriteLine($"Lade Top-{topN} Symbole nach 24h-Volumen (TradFi={includeTradFi})...");
+    // Sub-Kategorie-Ausschluss: TradFi behalten, aber Aktien (NCSK) raus — beantwortet, ob der
+    // Xsec-Dispersions-Edge an den Aktien-Perps haengt oder an Rohstoffen/Indizes/Forex.
+    var excludeStocks = GetArg(argMap, "exclude-stocks", "false") == "true";
+    Console.WriteLine($"Lade Top-{topN} Symbole nach 24h-Volumen (TradFi={includeTradFi}, ExcludeStocks={excludeStocks})...");
     var allTickers = await realClient.GetAllTickersAsync();
     var ranked = allTickers
         .Where(t => t.Symbol.EndsWith("-USDT", StringComparison.OrdinalIgnoreCase)
                     && SymbolClassifier.IsApiTradeable(t.Symbol)
-                    && (includeTradFi || !SymbolClassifier.IsTradFi(t.Symbol)))
+                    && (includeTradFi || !SymbolClassifier.IsTradFi(t.Symbol))
+                    && (!excludeStocks || SymbolClassifier.Classify(t.Symbol) != MarketCategory.Stock))
         .OrderByDescending(t => t.Volume24h)
         .Take(topN)
         .Select(t => t.Symbol)
@@ -130,7 +134,17 @@ if (GetArg(argMap, "xsec", null) != null)
     var parallelism = Math.Max(1, int.Parse(GetArg(argMap, "sweep-parallel", Environment.ProcessorCount.ToString())!, CultureInfo.InvariantCulture));
     var memData = new MemoryKlineCache(dataClient);
     var symbolInfo = await BingXSymbolInfoProvider.LoadAsync(Path.Combine(toolDir, ".symbolinfo-cache"));
-    return await XsecScreen.RunAsync(XsecScreen.DefaultConfigs(), PhaseScreen.DefaultPhases(), symbols, navTf,
+    // --xsec-levs "1,2,3,5": Leverage-Sweep auf dem Live-Profil (L120/R126/3L-3S/radj) statt
+    // des Default-Config-Sets — isoliert den Hebel-Effekt auf der produktiven Config.
+    var configs = GetArg(argMap, "xsec-levs", null) is { Length: > 0 } levList
+        ? levList.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(l => new BingXBot.Backtest.Portfolio.XsecParams(
+                LookbackCandles: 120, RebalanceEveryCandles: 126, LongK: 3, ShortK: 3,
+                RiskAdjusted: true, AtrStopMultiplier: 0m,
+                LeverageCap: int.Parse(l, CultureInfo.InvariantCulture)))
+            .ToArray()
+        : XsecScreen.DefaultConfigs();
+    return await XsecScreen.RunAsync(configs, PhaseScreen.DefaultPhases(), symbols, navTf,
         botSettings, memData, symbolInfo, balance, parallelism, outDir, label);
 }
 

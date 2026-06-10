@@ -26,10 +26,12 @@ public sealed class CrossSectionalSettings
     public bool RiskAdjusted { get; set; } = true;
 
     /// <summary>
-    /// Leverage-Obergrenze pro Position. KRITISCH = 1: der Backtest zeigt lev1 Bear +10%, lev5 Bear −81%
-    /// (5×-Default macht die Strategie auf dem Crypto-Korb zur Lotterie). Default 1.
+    /// Leverage-Obergrenze pro Position. Der Hebel ist ein reiner Multiplikator des Profil-Ergebnisses:
+    /// Auf dem Live-Profil (Top-50+TradFi, 3L-3S) ist 2x in allen 4 Phasen positiv (Σ +548 % vs.
+    /// +250 % bei 1x ueber 4 Jahre) — ab 3x kippt die Recovery-Phase (−12 %), 5x ist Lotterie (−36 %).
+    /// Default 2 (bewusste User-Entscheidung 10.06.2026); 1 = konservative Basis.
     /// </summary>
-    public int LeverageCap { get; set; } = 1;
+    public int LeverageCap { get; set; } = 2;
 
     /// <summary>Equity-Auslastung pro Rebalance (≤ MaxTotalMargin/100, laesst Puffer fuer Fees/Slippage).</summary>
     public decimal MarginUtilization { get; set; } = 0.75m;

@@ -65,9 +65,29 @@ mit Regen-Fix für painter/architect — "workshop/studio" kippt sonst in Innenr
 (Schreiner (0) = `workshop.glb`, Meisterschmied (8) = `workshop_smith.glb`.) Alle per
 Blender-Kontaktblatt qualitäts-geprüft, je 12k Tris + PBR. Quelle: `…\genre_core\unity_glb\`.
 
+## Trag-Waren je Gewerk (komplett)
+
+`ware_concepts.py` → Hunyuan → Decimate auf **1.200 Tris** (Waren werden zigfach gestapelt —
+12k wäre Mobile-Budget-Bruch). Schreinerei nutzt `stool.glb` (Pilot-Produkt). Sichtungs-Lehren:
+zusammenhängende Einzel-Objekte wählen (getrennte Teile zerfallen bei Single-View-3D); „roof tiles"
+kippt hartnäckig in Häuser-Sheets; ein Asset (Tiegel auf beigem Grund) meshte als Bodenplatte →
+Alternativ-Vorlage durch die Kette (Amboss v04).
+
+| GLB | Gewerk | Ware |
+|-----|--------|------|
+| `ware_plumber.glb` | Klempnerei | Kupfer-Winkelrohr |
+| `ware_electrician.glb` | Elektriker | Kabeltrommel |
+| `ware_painter.glb` | Malerei | Farbeimer mit Kelle |
+| `ware_roofer.glb` | Dachdeckerei | Ziegel-Paket |
+| `ware_contractor.glb` | Bauunternehmen | Ziegelstein-Cluster |
+| `ware_architect.glb` | Architekturbüro | Bauplan-Bündel |
+| `ware_general_contractor.glb` | Generalunternehmer | Bauhelm (auf Stapel) |
+| `ware_master_smith.glb` | Meisterschmiede | Amboss mit Hammer |
+| `ware_innovation_lab.glb` | Innovationslabor | Zahnrad-Kiste |
+
 ## Offener Generierungs-Backlog (gleiche Kette, GPU)
 
-Noch offen: **eigene Trag-Ware je Station** (aktuell ein gemeinsamer Holz-Würfel),
-**Stadt-/Wahrzeichen-Props** (Sanierung). **Münze/Geld** + **Upgrade-Pad** + **Plot-Bauzaun** sind
-besser als **Unity-Primitive** (Zylinder/Quader + Material) — flach/einfach, Image-to-3D ungeeignet
-(wie City-Tiles, siehe `pilot_log.md`).
+Noch offen: **Stadt-/Wahrzeichen-Props** (Sanierung). **Münze/Geld** + **Upgrade-Pad** +
+**Plot-Bauzaun** sind besser als **Unity-Primitive** (Zylinder/Quader + Material) — flach/einfach,
+Image-to-3D ungeeignet (wie City-Tiles, siehe `pilot_log.md`). **Auto-Rig-Stufe** (AccuRIG/UniRig)
+für echte Walk-Cycles statt ToonBob.

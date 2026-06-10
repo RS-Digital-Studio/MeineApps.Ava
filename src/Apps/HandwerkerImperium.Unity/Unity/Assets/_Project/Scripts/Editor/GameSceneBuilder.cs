@@ -39,6 +39,28 @@ namespace HandwerkerImperium.Editor
             var coinPrefab = MakeCoinPrefab();
             var workerPrefab = MakeWorkerPrefab();
 
+            // Trag-Ware je Gewerk (GDD §6.1: jede Station eigene Ware). Fehlt ein GLB (lokal
+            // regenerierbar), greift der generische Holz-Würfel.
+            string[] wareModels =
+            {
+                ModelDir + "/stool.glb",                    // 0 schreiner (Pilot-Produkt)
+                ModelDir + "/ware_plumber.glb",             // 1 Kupfer-Winkelrohr
+                ModelDir + "/ware_electrician.glb",         // 2 Kabeltrommel
+                ModelDir + "/ware_painter.glb",             // 3 Farbeimer
+                ModelDir + "/ware_roofer.glb",              // 4 Ziegel-Paket
+                ModelDir + "/ware_contractor.glb",          // 5 Ziegelstein-Block
+                ModelDir + "/ware_architect.glb",           // 6 Bauplan-Bündel
+                ModelDir + "/ware_general_contractor.glb",  // 7 Bauhelm
+                ModelDir + "/ware_master_smith.glb",        // 8 Schmiede-Tiegel
+                ModelDir + "/ware_innovation_lab.glb"       // 9 Zahnrad-Kiste
+            };
+            var stationWares = new GameObject[wareModels.Length];
+            for (int i = 0; i < wareModels.Length; i++)
+            {
+                var ware = MakeStationWarePrefab("Game_Ware_" + i, wareModels[i]);
+                stationWares[i] = ware != null ? ware : warePrefab;
+            }
+
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             // Licht (warm, Werkstatt-Nachmittag)
@@ -172,7 +194,7 @@ namespace HandwerkerImperium.Editor
                 SetInt(view, "stationIndex", i);
                 SetRef(view, "controller", controller);
                 SetRef(view, "stackAnchor", stackAnchor);
-                SetRef(view, "warePrefab", warePrefab);
+                SetRef(view, "warePrefab", stationWares[i]); // Gewerk-eigene Ware im Stapel
                 SetRef(view, "unlockedVisual", modelRoot);
                 stationTransforms[i] = stGo.transform;
 
@@ -221,6 +243,7 @@ namespace HandwerkerImperium.Editor
             SetRef(avatar, "controller", controller);
             SetRef(avatar, "carryAnchor", carryAnchor);
             SetRef(avatar, "carryWarePrefab", warePrefab);
+            SetRefArray(avatar, "stationWarePrefabs", stationWares); // Carry-Stack zeigt die Ware der Quell-Station
             SetRef(triggers, "controller", controller);
             SetRef(follow, "target", avatarGo.transform);
             var camOffset = new Vector3(0f, 8.5f, -6.5f); // ~52° Schrägaufsicht, nah (Genre-Standard)
@@ -365,6 +388,15 @@ namespace HandwerkerImperium.Editor
             visual.AddComponent<ToonBob>(); // läuft Station<->Tresen -> Lauf-Bob
             go.AddComponent<WorkerNpc>();
             return SavePrefab(go, "Game_Worker");
+        }
+
+        /// <summary>Gewerk-eigene Trag-Ware als Prefab (Modell, ~0,42 m). Fehlendes GLB -> null (Fallback generisch).</summary>
+        private static GameObject MakeStationWarePrefab(string prefabName, string glbPath)
+        {
+            if (AssetDatabase.LoadMainAssetAtPath(glbPath) == null) return null;
+            var go = new GameObject(prefabName);
+            AttachModel(go.transform, glbPath, 0.42f);
+            return SavePrefab(go, prefabName);
         }
 
         private static GameObject SavePrefab(GameObject go, string name)
@@ -520,6 +552,17 @@ namespace HandwerkerImperium.Editor
             var so = new SerializedObject(target);
             var p = so.FindProperty(field);
             if (p != null) { p.enumValueIndex = enumIndex; so.ApplyModifiedPropertiesWithoutUndo(); }
+        }
+
+        private static void SetRefArray(Object target, string field, Object[] values)
+        {
+            var so = new SerializedObject(target);
+            var p = so.FindProperty(field);
+            if (p == null) return;
+            p.arraySize = values.Length;
+            for (int i = 0; i < values.Length; i++)
+                p.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void SetVector3(Object target, string field, Vector3 value)

@@ -14,6 +14,8 @@ namespace HandwerkerImperium.Game
         [SerializeField] private GreyboxGameController controller;
         [SerializeField] private Transform carryAnchor;
         [SerializeField] private GameObject carryWarePrefab;
+        [Tooltip("Optional: Trag-Ware je Station (Index = Stations-Index) — Fallback ist carryWarePrefab.")]
+        [SerializeField] private GameObject[] stationWarePrefabs;
         [SerializeField] private float gravity = -20f;
         [SerializeField] private float rotateSpeedDeg = 720f;
         [SerializeField] private float carryWareHeight = 0.45f;
@@ -98,11 +100,12 @@ namespace HandwerkerImperium.Game
         private void RebuildCarryVisual()
         {
             if (carryAnchor == null) return;
+            GameObject prefab = WarePrefabFor(CarriedStation);
             while (_visualCount < CarriedCount)
             {
-                if (carryWarePrefab != null)
+                if (prefab != null)
                 {
-                    var go = Instantiate(carryWarePrefab, carryAnchor);
+                    var go = Instantiate(prefab, carryAnchor);
                     go.transform.localPosition = new Vector3(0f, _visualCount * carryWareHeight, 0f);
                     go.transform.localRotation = Quaternion.identity;
                 }
@@ -113,6 +116,14 @@ namespace HandwerkerImperium.Game
                 Destroy(carryAnchor.GetChild(carryAnchor.childCount - 1).gameObject);
                 _visualCount--;
             }
+        }
+
+        /// <summary>Trag-Ware der Quell-Station (stationsspezifisches Visual), sonst der generische Fallback.</summary>
+        private GameObject WarePrefabFor(int stationIndex)
+        {
+            if (stationWarePrefabs != null && stationIndex >= 0 && stationIndex < stationWarePrefabs.Length && stationWarePrefabs[stationIndex] != null)
+                return stationWarePrefabs[stationIndex];
+            return carryWarePrefab;
         }
     }
 }

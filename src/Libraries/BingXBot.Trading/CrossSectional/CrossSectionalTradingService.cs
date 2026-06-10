@@ -280,20 +280,21 @@ public sealed class CrossSectionalTradingService : IDisposable
             catch (Exception ex) { Log(LogLevel.Warning, "Recovery", $"State-Datei nicht lesbar ({ex.Message}) — adoptiere offene Positionen."); }
         }
 
-        // 2. Kein State: offene Positionen als Korb adoptieren (Neustart ohne Datei). Wenn welche offen sind,
-        //    lastRebalance = jetzt (erst nach vollem Intervall neu ranken). Wenn KEINE offen → sofort rebalancen.
+        // 2. Kein State: SOFORT ranken. Offene Positionen ohne State-Datei sind mit hoher
+        //    Wahrscheinlichkeit FREMDE Reste (Scalper-Wechsel, manuelle Trades) — sie blind als
+        //    Korb zu adoptieren verschob den ersten Rebalance um volle RebalanceDays (live
+        //    passiert 09.06.2026: 1 Rest-Position adoptiert → Rebalance erst am 30.06.).
+        //    Der Rebalancer behandelt sie korrekt: Close-vor-Open schliesst alles, was nicht
+        //    in den Ziel-Korb gehoert; Korb-konforme Positionen bleiben implizit erhalten.
         var positions = await _execution.GetPositionsAsync().ConfigureAwait(false);
         if (positions.Count > 0)
         {
-            _currentBasket = positions.GroupBy(p => p.Symbol).ToDictionary(g => g.Key, g => g.First().Side);
-            _lastRebalanceUtc = DateTime.UtcNow;
-            Log(LogLevel.Info, "Recovery", $"{positions.Count} offene Position(en) als Korb adoptiert — naechster Rebalance in {_cfg.RebalanceDays}d.");
+            Log(LogLevel.Warning, "Recovery",
+                $"{positions.Count} offene Position(en) ohne Xsec-State gefunden — sofortiger Rebalance "
+                + "uebernimmt/schliesst sie (Close-vor-Open).");
         }
-        else
-        {
-            _lastRebalanceUtc = DateTime.MinValue; // → erster Tick rebalanced sofort.
-            Log(LogLevel.Info, "Engine", "Kein State, keine offenen Positionen → Rebalance beim ersten Tick.");
-        }
+        _lastRebalanceUtc = DateTime.MinValue; // → erster Tick rebalanced sofort.
+        Log(LogLevel.Info, "Engine", "Kein Xsec-State → Rebalance beim ersten Tick.");
     }
 
     private void SaveState()

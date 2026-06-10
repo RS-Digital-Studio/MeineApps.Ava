@@ -37,6 +37,11 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
     private readonly IBotControlService _botControl;
     private readonly BotSettings _botSettings;
     private readonly ILogger<StaleEngineDetector> _logger;
+    // Optional: Cross-Sectional-Engine erkennen. Sie hat KEINEN Scan-Loop (monatlicher
+    // Wall-Clock-Rebalance, 30-min-Ticks) — ohne diesen Guard meldete der Detector nach 6 h
+    // "LastScanCycle=NIE" und der Auto-Restart ersetzte die laufende Xsec-Engine durch den
+    // Scalper-Default (live passiert 10.06.2026, 15:32).
+    private readonly BingXBot.Trading.CrossSectional.CrossSectionalManager? _xsecManager;
 
     private readonly TimeSpan _staleAfter = TimeSpan.FromHours(6);
     private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(10);
@@ -58,7 +63,8 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
         FcmDeviceStore store,
         IBotControlService botControl,
         BotSettings botSettings,
-        ILogger<StaleEngineDetector> logger)
+        ILogger<StaleEngineDetector> logger,
+        BingXBot.Trading.CrossSectional.CrossSectionalManager? xsecManager = null)
     {
         _stream = stream;
         _bus = bus;
@@ -66,6 +72,7 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
         _botControl = botControl;
         _botSettings = botSettings;
         _logger = logger;
+        _xsecManager = xsecManager;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -150,6 +157,9 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
         }
 
         if (state != BotState.Running) return;
+        // Cross-Sectional hat per Design keine Scanner-Aktivitaet (Rebalance ~monatlich) —
+        // der Stale-Check gilt nur fuer den Scalper-Scan-Loop.
+        if (_xsecManager?.IsRunning == true) return;
         if (idle < _staleAfter) return;
         if (!canPush) return;
 
@@ -205,7 +215,10 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
             // Kurze Pause, damit StopBase + Dispose abgeschlossen sind
             await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 
-            var request = new BotStartRequest(lastMode, InitialBalance: null, ActiveTimeframes: activeTfs);
+            // Engine-aware: ohne explizites Engine-Feld wuerde der Default (Scalper) eine
+            // laufende Cross-Sectional-Engine ersetzen.
+            var request = new BotStartRequest(lastMode, InitialBalance: null, ActiveTimeframes: activeTfs,
+                Engine: _botSettings.LastEngineMode);
             var status = await _botControl.StartAsync(request, CancellationToken.None).ConfigureAwait(false);
 
             if (status.State == BotState.Running)

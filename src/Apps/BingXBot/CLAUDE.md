@@ -234,8 +234,19 @@ TradingServiceBase (abstrakt)
 ### Cross-Sectional-Momentum-Modus (`EngineMode.CrossSectional`)
 
 **Zweite, market-neutrale Engine NEBEN dem Scalper** (opt-in, kein Eingriff in TradingServiceBase). Long die
-staerksten / short die schwaechsten Coins nach vol-bereinigtem Momentum, monatlicher Wall-Clock-Rebalance, 1x.
+staerksten / short die schwaechsten Symbole nach vol-bereinigtem Momentum, monatlicher Wall-Clock-Rebalance, 1x.
 Backtest-validiert phasen-robust (Details → `tools/BingXBacktestLab/CLAUDE.md` + Memory `bingxbot.md`).
+
+**Validiertes Live-Profil (Defaults in `CrossSectionalSettings`): Top-50 inkl. TradFi, 3L-3S,
+L120/R21d/radj/lev1.** Auf Top-100 ist KEINE Config phasen-robust, und OHNE TradFi kippt auch
+Top-50 — die Cross-Asset-Dispersion (Gold/Indizes/Forex) traegt den Edge. Betriebs-Mechanik:
+- **Paper startet immer frisch** (kein State-Adopt — die SimulatedExchange ist nach Restart leer);
+  State-Datei pro Modus (`xsec-state-paper.json` / `xsec-state-live.json`, keine Kontamination).
+- **Paper-Trades werden via `BotDatabaseService` persistiert** (Mode=Paper in der Trades-Tabelle);
+  `LocalAccountService` liefert bei laufendem Xsec den Sim-/Live-Snapshot (Equity-Messung korrekt).
+- **Auto-Resume startet die richtige Engine**: `SaveResumeEngineAsync`/`LoadResumeEngineAsync`
+  (separate DB-Keys `ResumeMode`/`ResumeEngine`, beim Start persistiert) — ohne sie kaeme nach
+  jedem Reboot der Scalper-Default zurueck. `LastEngineMode` ist Server-Authority-Property.
 
 ```
 CrossSectionalManager (Lifecycle: Paper=SimulatedExchange / Live=BingXRestClient + zwingend Hedge)
@@ -306,6 +317,37 @@ BingxNativeSlTpManager (native SL/TP-Cancel + Update)
 PendingLimitOrders-Persist → Stage-3-Retry-Loop bei BingX-Hochlast
 ```
 
+### Close-Erfassung (Live) — vier Pfade, ein Buchungs-Gate
+
+`LiveTradingManager` instanziiert den `BingXWebSocketClient` pro Start (User-Data- +
+Ticker-Stream). Exchange-seitige Closes werden ueber vier Pfade als CompletedTrade gebucht:
+
+1. **WS ORDER_TRADE_UPDATE** (Primaerweg): TP-Limit-Fills via `ProcessTpLimitFillAsync`,
+   native `STOP_MARKET`/`TAKE_PROFIT_MARKET`-Fills via `ProcessNativeCloseFillAsync`
+   (echte Fill-Daten `ap`/`z`/`n`/`rp`; Feld-Praesenz-Parsing — `rp == 0` ist ein valider
+   Break-Even, kein Fallback-Trigger).
+2. **Ticker-Mikro-Race** (`OnSlTpHitAsync`, Position zwischen zwei 5-s-Ticks verschwunden).
+3. **Orphan-Rekonstruktion** (`BookOrphanCloseInBackground`): beim Entsorgen verwaister
+   Signale/ExitStates (TickerLoop-Orphan, Reconcile-Orphan, Stale-ExitState) wird der Close
+   aus der Income-History rekonstruiert statt still geloescht (Hintergrund-Task; ExitTime =
+   Income-Record-Zeit, damit der Backfill-Dedup greift).
+4. **30-min-Income-Backfill** (`BotAutoResumeService`, letzte Verteidigungslinie): bucht
+   synthetisch mit Reason `"Backfilled (Income)"`, publiziert `PublishTrade` (Stats/SignalR/
+   FCM), dedupliziert per (Symbol, ExitTime ± 1 s) UND Fenster-Dedup gegen echte Trades
+   (`[EntryTime − 60 s, ExitTime + 300 s]`).
+
+Alle Pfade konkurrieren um das **atomare Buchungs-Gate** (`TryClaimNativeCloseBooking`,
+`ConcurrentDictionary.TryAdd`) — genau EIN Pfad bucht. Freigabe beim neuen Entry desselben
+Keys (`OnSignalCreated`), TTL 30 min. **Jede neue Stelle, die Signale/ExitStates entfernt
+oder Closes bucht, MUSS das Gate respektieren.**
+
+> **Gotcha BingX-API:** Der `userDataStream`-ListenKey-Endpoint antwortet OHNE die uebliche
+> `{code,msg,data}`-Huelle — `SendSignedRequestAsync<JsonElement>` liefert dann das
+> Top-Level-Objekt statt `default(JsonElement)` (dessen `TryGetProperty` wuerde
+> `InvalidOperationException` werfen). Order-Responses liefern Mengen als `origQty`
+> (im DTO `EffectiveQuantity` nutzen, nie `Quantity` direkt), den Margin-Modus als
+> bool `isolated`. Der Haupt-WS braucht VOR `SubscribeAllTickersAsync` einen expliziten
+> `ConnectAsync` — sonst wird das Abo nur vorgemerkt und nie aktiv.
 
 ### Composition-Bibliotheken
 
@@ -393,11 +435,16 @@ bei ≥ PauseAtCount stehen → Scaling 0 → kein Trade → selbsterhaltende Da
 ### Korrelations-Filter (`AssetClusterClassifier`)
 
 Opt-in via `MaxCorrelatedExposurePercent` (Default 0 = aus). Schützt vor "3× BTC durch
-parallele BTC/ETH/SOL"-Disasters bei Flash-Crashes. Cluster:
+parallele BTC/ETH/SOL"-Disasters bei Flash-Crashes. Budget-Vergleich läuft über
+`AreCorrelated` (Cluster-Gleichheit PLUS `TradFiIndex` ↔ `TradFiStock` = ein gemeinsames
+US-Equity-Budget). Tokenisierte Edelmetalle (XAUT/PAXG) zählen als `TradFiCommodity`.
+Zusätzlich: **Cross-Asset-Netto-Direktions-Limit** `MaxNetDirectionalExposurePercent`
+(opt-in, notional-basiert, Richtwert 100-150) gegen einseitige Gesamtbücher über alle
+Asset-Klassen (z.B. 8 parallele Shorts = 159 % Net-Short — live beobachtet). Cluster:
 
 | Cluster | Mitglieder |
 |---------|-----------|
-| `CryptoBtcMajor` | BTC, WBTC, BTCB, BTCDOM |
+| `CryptoBtcMajor` | BTC, WBTC, BTCB, BTCDOM, BCH, LTC |
 | `CryptoEthMajor` | ETH, WETH, STETH, RETH, CBETH, WSTETH |
 | `CryptoAltL1` | SOL, AVAX, ADA, DOT, NEAR, ATOM, ALGO, FTM, TRX, TON, APT, SUI, INJ, SEI, TIA |
 | `CryptoAltDefi` | UNI, AAVE, LINK, MKR, SNX, COMP, CRV, LDO, GMX, DYDX, 1INCH, BAL, SUSHI |

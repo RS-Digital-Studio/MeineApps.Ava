@@ -2,7 +2,8 @@
 
 Alle ViewModels sind **Singleton** (in `App.axaml.cs` registriert) und werden vom `MainViewModel`
 per Constructor-Injection gehalten. Nur UI-Logik — Berechnungen delegieren immer an Services.
-BLE-Events kommen vom Background-Thread → IMMER `Dispatcher.UIThread.Post` vor UI-Property-Änderung.
+Service-Events können vom Background-Thread kommen → IMMER `Dispatcher.UIThread.Post` vor
+UI-Property-Änderung.
 Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 ---
@@ -11,15 +12,13 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 | Datei | Verantwortlichkeit |
 |-------|-------------------|
-| `MainViewModel.cs` | 8 `IsXxxActive`-Properties (Navigation), Status-Bar (BLE/Fix/Sat), AR-Transfer-Orchestrierung, Export-Banner, Back-Button, ForegroundService-Kopplung |
-| `SurveyViewModel.cs` | Live-Position (BLE-Events), Punkte empfangen/anzeigen, AR-Capture starten, `CompassRenderer` versorgen |
+| `MainViewModel.cs` | 6 `IsXxxActive`-Properties (Navigation), AR-Transfer-Orchestrierung, Export-Banner, Back-Button |
+| `SurveyViewModel.cs` | AR-Capture starten (Hero-CTA), Punkte-Liste + Projekt-Statistik aus `IMeasurementService`-Events |
 | `TerrainViewModel.cs` | Mesh berechnen (Bowyer-Watson via `ITerrainService`), Konturlinien, Rotation/Zoom/Pan, `TerrainRenderer` steuern |
 | `GardenPlanViewModel.cs` | Gartenelemente CRUD, `GardenPlanRenderer` steuern, Volumen-Panel, PointsJson v2 |
 | `MapViewModel.cs` | Mapsui-Karte initialisieren (lazy), Punkte als Pins, Export-Trigger |
 | `ProjectsViewModel.cs` | SQLite-Projekte laden/erstellen/löschen, Export-Flows, Differential-Snapshot-Aufruf |
-| `StakeoutViewModel.cs` | Stakeout-Ziele laden, `StakeoutRenderer` versorgen, Reached-Feedback |
-| `ConnectViewModel.cs` | BLE-Scan, Verbinden/Trennen, NTRIP-Config, `GnssConditionService`-Anzeige |
-| `SettingsViewModel.cs` | Stabhöhe, Einheiten, Min-Fix-Quality → persistiert via `IPreferencesService`. Version aus Assembly |
+| `SettingsViewModel.cs` | Einheiten (metrisch/imperial), App-/Datenbank-Info → persistiert via `IPreferencesService`. Version aus Assembly |
 
 ---
 
@@ -27,17 +26,16 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 ### Navigation
 
-8 `IsXxxActive`-Properties gesteuert durch `NavigateCommand(string page)`.
-Seiten: `Survey` | `Terrain` | `Garden` | `Map` | `Projects` | `Stakeout` | `Connect` | `Settings`.
+6 `IsXxxActive`-Properties gesteuert durch `NavigateCommand(string page)`.
+Seiten: `Survey` | `Terrain` | `Garden` | `Map` | `Projects` | `Settings`.
 `IsSurveyActive = true` beim Start.
 
 ### Events
 
 | Event | Konsument |
 |-------|----------|
-| `ExitHintRequested` | `MainActivity` → Toast |
+| `ExitHintRequested` | `MainActivity` → Toast (double-back) |
 | `MessageRequested` | `MainActivity` → Toast (Long) |
-| `ForegroundServiceRequested` | `MainActivity` → `MeasurementForegroundService.Start/Stop` |
 
 ### AR-Transfer-Flow
 
@@ -55,7 +53,6 @@ ProjectsVm.ProjectSelected
   → IProjectService.GetProjectAsync(id)
   → IMeasurementService.ReplacePoints(full.Points)   (1 PointsReset-Event!)
   → GardenPlanVm.LoadElementsFromProjectAsync
-  → StakeoutVm.LoadTargetsAsync
   → Navigate("Survey")
 ```
 
@@ -72,18 +69,20 @@ MIME-Type aus Dateiendung: `.pdf` / `.csv` / `.geojson` / `.kmz` / `.dxf` / `.ob
 
 ## SurveyViewModel
 
-- `IsMockMode = bleService is MockBleService` — steuert Debug-Panel-Sichtbarkeit.
 - `RecentPoints` ist `ObservableCollection<SurveyPointDisplay>` (Insert an Position 0 = neueste oben).
-- Label wird beim nächsten `PointReceived`-Event auf dem Punkt gesetzt und danach zurückgesetzt.
-- Fix-Verlust (FixQuality == 0) setzt alle Live-Werte zurück (`ResetLivePositionUi`), damit keine Stale-Daten gemessen werden.
-- `MagWarning` (string) ist nicht leer wenn `state.MagAccuracy < 2 && state.IsConnected` — Horizontal-Tilt-Korrektur greift nicht.
-- Statistik (`PointCount`, `AreaText`, `PerimeterText`) wird aus `IMeasurementService.PointAdded/PointsReset` gespeist — AR-Punkte erscheinen damit ebenso wie RTK-Stab-Punkte.
+- `SurveyPointDisplay.FromPoint` zeigt die ARCore-Konfidenz als Qualitäts-Badge
+  ("AR · 85%", Ampel-Farbe via `QualityColor`-Hex + `StringToColorBrushConverter`).
+- Statistik (`PointCount`, `AreaText`, `PerimeterText`) wird aus
+  `IMeasurementService.PointAdded/PointsReset` gespeist.
+- `StartArCaptureAsync`: Doppel-Tap-Schutz via `IsArBusy`, setzt Site-/Preload-Punkte vor dem
+  Start und räumt die Brücken im `finally` wieder ab; differenziert nach
+  `LastCompletionStatus` (UserCancelled/Error/Success).
 
 ---
 
 ## TerrainViewModel
 
-- `PointAdded` → inkrementelles Neu-Triangulieren (RTK-Live-Ansicht).
+- `PointAdded` → inkrementelles Neu-Triangulieren (Live-Ansicht beim AR-Transfer).
 - `PointsReset` → einmalige Neuberechnung (Projekt-Load).
 - Rotation via `HandleDrag(dx, dy)`, Zoom via `HandleZoom(factor)`, Pan via `HandlePan(dx, dy)`.
   Alle drei delegieren direkt an `Renderer.*`, kein eigener State-Speicher nötig.
@@ -94,7 +93,7 @@ MIME-Type aus Dateiendung: `.pdf` / `.csv` / `.geojson` / `.kmz` / `.dxf` / `.ob
 ## SettingsViewModel
 
 - Verwendet `IAppPaths` statt `Environment.GetFolderPath` (Android-Sandbox-Fix).
-- Persistenz-Keys: `sm.stab_height`, `sm.use_metric`, `sm.min_fix_quality`.
+- Persistenz-Key: `sm.use_metric`.
 - `_isLoaded`-Guard verhindert, dass `OnXxxChanged`-Partial-Methoden beim Initialisieren in Preferences schreiben.
 
 ---
@@ -103,7 +102,6 @@ MIME-Type aus Dateiendung: `.pdf` / `.csv` / `.geojson` / `.kmz` / `.dxf` / `.ob
 
 | Problem | Fix |
 |---------|-----|
-| BLE-Events auf Background-Thread, UI crasht | IMMER `Dispatcher.UIThread.Post` für alle Property-Änderungen aus BLE-Callbacks |
-| SurveyView-Handler akkumulieren bei DataContext-Wechsel | Handler-Dedup: `_boundVm.CompassInvalidateRequested -= _handler` VOR `+=` in `DataContextChanged` |
+| Service-Events auf Background-Thread, UI crasht | IMMER `Dispatcher.UIThread.Post` für alle Property-Änderungen aus Service-Callbacks |
 | TerrainViewModel wird N× trianguliert bei Projekt-Load | `ReplacePoints` + `PointsReset` statt `AddPoint` für Batch-Load verwenden |
 | `SettingsViewModel` crasht auf Android | `IAppPaths` per DI, NIEMALS `Environment.GetFolderPath` direkt |

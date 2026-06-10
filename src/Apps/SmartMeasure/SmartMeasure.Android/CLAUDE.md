@@ -24,10 +24,8 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 | `Ar/ArPrecisionHelpers.cs` | Depth-Sanity, Ground-Plane, Semantic-Label, Sky-Check. Delegiert Math an `ArMathHelpers` (Shared). |
 | `Ar/ArOverlayState.cs` | Snapshot-Record: alle Render-Parameter + lokalisierte Labels + System-Banner. |
 | `Ar/MediaStoreGallery.cs` | Speichert Screenshots (Bild) + Aufnahmen (Video) via MediaStore in `Pictures/SmartMeasure` / `Movies/SmartMeasure` (IS_PENDING-geschuetzt, Cleanup bei Fehler). Sichtbar in der Galerie, ueberlebt Deinstall, keine Permission ab API 29. |
-| `Services/AndroidBleService.cs` | BLE GATT-Kommunikation zum RTK-Stab. MTU 247, Write-Queue, Reconnect-Backoff. |
 | `Services/AndroidAppPaths.cs` | `IAppPaths`-Impl: `Context.FilesDir` + `GetExternalFilesDir("Exports")` → sandbox-sichere Pfade. |
 | `Services/AndroidVoiceAnnotationService.cs` | `IVoiceAnnotationService`-Impl: Android `SpeechRecognizer`, 5 s Aufnahme, liefert Transkript. |
-| `Services/MeasurementForegroundService.cs` | Android Foreground-Service (Notification), verhindert Doze-Kill während BLE aktiv. |
 
 ---
 
@@ -37,7 +35,6 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 
 ```
 App.AppPathsFactory = () => new AndroidAppPaths(this)
-App.BleServiceFactory = sp => new AndroidBleService(this, sp.GetRequiredService<IGeoidService>())
 App.ArCaptureServiceFactory = _ => _arCaptureService   (AndroidArCaptureService)
 App.VoiceAnnotationServiceFactory = _ => new AndroidVoiceAnnotationService(this)
 UriLauncher.PlatformShareFile = ShareFileViaIntent
@@ -50,13 +47,10 @@ UriLauncher.PlatformOpenFile  = OpenFileViaIntent
 _mainVm aus App.Services holen
 ExitHintRequested    → Toast (double-back)
 MessageRequested     → Toast (lange Toasts für Fehler)
-ForegroundServiceRequested → MeasurementForegroundService.Start/Stop
-RequestBlePermissionsIfNeeded()
+RequestLocationPermissionIfNeeded()
 ```
 
 **Back-Button:** `OnBackPressed()` delegiert an `_mainVm.HandleBackPressed()`; sonst `base.OnBackPressed()`.
-
-**`OnDestroy`:** `MeasurementForegroundService.Stop(this)` — FG-Service sterben lassen wenn Activity endet.
 
 ---
 
@@ -64,9 +58,7 @@ RequestBlePermissionsIfNeeded()
 
 | Permission | Wann | Grund |
 |-----------|------|-------|
-| `BLUETOOTH_SCAN` | Runtime, API 31+ | BLE-Scan |
-| `BLUETOOTH_CONNECT` | Runtime, API 31+ | BLE GATT-Verbindung |
-| `ACCESS_FINE_LOCATION` | Runtime, alle Level | Mapsui + AR-Georeferenzierung |
+| `ACCESS_FINE_LOCATION` | Runtime, alle Level | Mapsui + AR-Georeferenzierung (Geospatial API) |
 | `CAMERA` | Runtime, von `ArCaptureActivity` selbst angefragt | ARCore |
 
 `OperatingSystem.IsAndroidVersionAtLeast(31)` statt `Build.VERSION.SdkInt` (Static-Analyzer-konform).
@@ -97,15 +89,6 @@ Authority: `{packageId}.fileprovider` → `AndroidX.Core.Content.FileProvider.Ge
 Manifest: `<provider android:authorities="${applicationId}.fileprovider" android:grantUriPermissions="true" .../>`.
 Pfade: `Resources/xml/provider_paths.xml`.
 `UriLauncher.PlatformShareFile` → `Intent.ActionSend`, `PlatformOpenFile` → `Intent.ActionView`.
-
----
-
-## AndroidBleService — Wichtige Details
-
-- `RequestMtu(247)` in `OnConnected` VOR `DiscoverServices` (BLE 5.3 DLE, 48-Byte-Pakete brauchen mehr als MTU 23).
-- Write-Queue via `SemaphoreSlim` + `OnCharacteristicWrite`-Acknowledgment (BLE-Writes nicht parallel!).
-- `BinaryPrimitives.ReadDoubleLittleEndian` statt `BitConverter` (ESP32 = little-endian, explizit sicherer).
-- Exponential-Backoff-Reconnect: 1 s → 2 s → 4 s → 8 s → 10 s (cap), max 5 Versuche. Formel: `Math.Min(1000 * 2^(attempt-1), 10000)`.
 
 ---
 

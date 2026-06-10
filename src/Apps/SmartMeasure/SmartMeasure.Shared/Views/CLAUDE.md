@@ -1,6 +1,6 @@
 # Views — AXAML-Views & UI-Patterns
 
-9 Views mit `x:CompileBindings="True"` und `x:DataType`. Alle folgen ViewModel-First
+7 Views mit `x:CompileBindings="True"` und `x:DataType`. Alle folgen ViewModel-First
 (DataContext kommt von außen, Views erzeugen keine VMs).
 Generische MVVM/View-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
@@ -11,13 +11,11 @@ Generische MVVM/View-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md)
 | Datei | Besonderheit |
 |-------|-------------|
 | `MainView.axaml.cs` | Lazy-MapView: `MapContainer` wird erst bei erster Aktivierung mit `MapView` befüllt |
-| `SurveyView.axaml.cs` | `SKCanvasView` für Kompass, Handler-Dedup im `DataContextChanged` |
+| `SurveyView.axaml.cs` | Kein Code-Behind-Logik (AR-Hero-CTA + Punkte-Liste sind reine Bindings) |
 | `TerrainView.axaml.cs` | Touch/Mouse-Handler: Drag=Rotation, Rechts/Mitte=Pan, Wheel=Zoom |
 | `GardenPlanView.axaml.cs` | `SKCanvasView` für Gartenplan-Renderer, Tap-to-draw + Pan + Zoom, Materialliste + Volumen-Panel unten |
 | `MapView.axaml.cs` | Mapsui `MapControl` (Lazy-Init über MainView) |
 | `ProjectsView.axaml.cs` | `EnsureInitializedAsync()` on `Loaded` (einmaliges Init-Trigger-Pattern) |
-| `ConnectView.axaml.cs` | BLE-Scan-Liste, NTRIP-Formular, GNSS-Condition-Panel |
-| `StakeoutView.axaml.cs` | `SKCanvasView` für `StakeoutRenderer` |
 | `SettingsView.axaml.cs` | Einstellungsformular, kein Code-Behind-Logik |
 
 ---
@@ -39,7 +37,7 @@ mapContainer.Child = new MapView { DataContext = vm.MapVm };
 
 ---
 
-## SKCanvasView-Pattern (SurveyView, TerrainView, GardenPlanView, StakeoutView)
+## SKCanvasView-Pattern (TerrainView, GardenPlanView)
 
 SKCanvasView benötigt Code-Behind, weil `PaintSurface` und `InvalidateSurface()` nicht über
 reine Bindings zugänglich sind. Schematisch:

@@ -1,4 +1,4 @@
-# Services — Geo-Algorithmen, Persistenz, BLE, AR, Export
+# Services — Geo-Algorithmen, Persistenz, AR, Export
 
 Alle Services sind Singleton (DI). Interfaces in diesem Ordner, plattform-spezifische
 Implementierungen in `SmartMeasure.Android/Services/` oder `SmartMeasure.Android/Ar/`.
@@ -11,8 +11,6 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | Interface | Impl | Zweck |
 |-----------|------|-------|
 | `IAppPaths` | `AppPaths` (Desktop), `AndroidAppPaths` | Sandbox-sichere Pfade |
-| `IHardwareModeService` | `HardwareModeService` | Adaptiver Betriebsmodus AR-First vs RTK (`ShowRtkUi`). Persistiert Erst-Verbindung, `Changed`-Event vom BLE-Thread. Details → [App-CLAUDE.md](../../CLAUDE.md) "Adaptiver Betriebsmodus" |
-| `IBleService` | `MockBleService` (Desktop), `AndroidBleService` | BLE-Kommunikation zum Rover-Stab. `GetStateSnapshot()` liefert eine in sich konsistente Kopie (alle Felder aus DEMSELBEN BLE-Paket) für threadsichere Mehrfeld-Lesungen — `CurrentState` ist das vom GATT-Thread feldweise mutierte Live-Objekt (nur für UI-Binding) |
 | `IArCaptureService` | `MockArCaptureService` (Desktop), `AndroidArCaptureService` | AR-Kamera-Erfassung |
 | `IArTransferService` | `ArTransferService` | AR-Punkte → SurveyPoints (GPS-Fusion, Heading-Rotation, Geoid) |
 | `IMeasurementService` | `MeasurementService` | Punkt-Verwaltung, Abstände, Flächen. `ReplacePoints` + `PointsReset`-Event |
@@ -24,7 +22,6 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `IExportService` | `ExportService` | CSV, GeoJSON, DXF, KMZ, PDF |
 | `IBlenderExportService` | `BlenderExportService` | OBJ + MTL (kein Y/Z-Swap — UTM ist schon Z-up) |
 | `IDifferentialSnapshotService` | `DifferentialSnapshotService` | Greedy-Nearest-Neighbor Snapshot-Vergleich (Moved/Added/Removed/Unchanged) |
-| `IGnssConditionService` | `GnssConditionService` | NOAA Kp + F10.7 via HTTP (Cache 1h). Good/Fair/Poor-Klassifikation |
 | `IVolumeService` | `VolumeService` | Prism/Layered/Frustum-Volumen + Material-Schätzung (8 Materialien) |
 | `ITotalStationService` | `TotalStationService` | Stationierung + Radial-Projektion (Distanz+Bearing+Pitch → Lat/Lon) |
 | `ILeastSquaresAdjustmentService` | `LeastSquaresAdjustmentService` | Position-based-Dynamics-Netzausgleich, gewichtet 1/σ² |
@@ -58,7 +55,7 @@ Betroffen: `ProjectService`, `ExportService`, `SettingsViewModel`, `SurveyReport
 
 | Methode | Event | Wann |
 |---------|-------|------|
-| `AddPoint(p)` | `PointAdded` | Einzelner RTK-Punkt (Live-Messung) |
+| `AddPoint(p)` | `PointAdded` | Einzelner Punkt (AR-Transfer) |
 | `ReplacePoints(list)` | `PointsReset` | Projekt-Load oder ClearPoints (feuert EIN Event für N Punkte) |
 
 `PointsReset` verhindert O(N²)-Triangulation: TerrainViewModel hört auf `PointsReset` und ruft
@@ -79,13 +76,12 @@ Betroffen: `ProjectService`, `ExportService`, `SettingsViewModel`, `SurveyReport
 - `EllipsoidToGeoid(lat, lon, altEllipsoid)` → NN-Höhe (Geoid-Undulation ~−48 m in DE).
 - Hardcoded 2°-Grid 46–56°N, 4–16°E, bilineare Interpolation.
 - Außerhalb: 48 m Pauschal-Fallback + Debug-Warnung.
-- `IsClientCorrectionEnabled = false` wenn Firmware bereits MSL sendet.
 
 ### TerrainService (Bowyer-Watson Delaunay)
 
 | Härtung | Grund |
 |---------|-------|
-| Punkt-Dedup bei 1 mm | RTK-Streuung → numerisch instabile Circumcircle-Determinante |
+| Punkt-Dedup bei 1 mm | Mess-Streuung → numerisch instabile Circumcircle-Determinante |
 | CCW-Winding (`NormalizeWinding`) | Circumcircle-Test setzt CCW voraus |
 | Epsilon `1e-12` in `IsInCircumcircle` | Endless-Loop bei quasi-kollinearen Punkten |
 | Super-Triangle Faktor 10 | Robustheit bei engen Point-Sets |
@@ -127,12 +123,10 @@ sind das Lat/Lon-Grad statt Meter → Warning + 0 zurückgeben.
 | `LocalApplicationData` crasht auf Android | `IAppPaths`-Pattern, NIEMALS direkt aufrufen |
 | O(N²)-Triangulation bei Projekt-Load | `MeasurementService.ReplacePoints` statt N× `AddPoint` |
 | GardenElement-Konturen driften bei Schwerpunkt-Änderung | PointsJson v2 (WGS84) + `LocalPoints` transient neu projiziert |
-| RTK-Höhe ~48 m Offset zu NN | `IGeoidService.EllipsoidToGeoid` in `ParsePointData` + `ArTransferService` |
-| Stab-Neigung sabotiert Präzision | App-seitige Tilt-Korrektur: vertikal immer, horizontal nur bei `MagAccuracy ≥ 2` |
+| GPS-/Geospatial-Höhe ~48 m Offset zu NN | `IGeoidService.EllipsoidToGeoid` in `ArTransferService` (Ellipsoid → NN) |
 | Shoelace-Fläche auf ungeordneten Punkten | Convex-Hull (Andrew's Monotone Chain) vorher |
 | CSV-Labels mit `;` / Newline | RFC 4180 Quote-Escape in `ExportService.EscapeCsv` |
 | Blender Y/Z-Swap → falsche Normalen | KEIN Swap — UTM-Koords sind bereits Blender-Standard (Z-up) |
 | Fan-Triangulation kaputt bei konkaven Polygonen | Ear-Clipping in `BlenderExportService` |
-| NTRIP-Mountpoint mit `:` | `CanSendNtripConfig`-Validation: kein `:` im Mountpoint |
 | PdfSharpCore crasht auf Android | Lazy XFont-Properties + `AndroidFontResolver` (/system/fonts/) |
 | FileProvider fehlt für Share-Intents | `<provider>` im Manifest + `Resources/xml/provider_paths.xml` |

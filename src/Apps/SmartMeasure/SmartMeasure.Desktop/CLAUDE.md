@@ -12,26 +12,12 @@ App-Überblick, Build-Befehle, generische Conventions → [App-CLAUDE.md](../CLA
 → `StartWithClassicDesktopLifetime(args)`.
 
 Desktop nutzt die Shared-Fallbacks aus `App.axaml.cs` (Factories null → Mocks):
-- `IBleService` → `MockBleService` (simuliert RTK-Daten + Edge-Cases)
-- `IArCaptureService` → `MockArCaptureService` (deterministischer Seed, 12×8 m Grundstück)
+- `IArCaptureService` → `MockArCaptureService` (deterministischer Seed, 12×8 m Grundstück,
+  optional `SimulateGeospatial` für den VPS-Pfad und `SimulateNoisyPoint` für die
+  Confidence-Pipeline)
 - `IVoiceAnnotationService` → `NullVoiceAnnotationService`
 - `IAppPaths` → `AppPaths` (`Environment.SpecialFolder.LocalApplicationData`)
 
 Warum Fallbacks statt Plattform-Factories: `MainActivity.OnCreate` (der Factory-Setter) gibt
-es auf Desktop nicht — `App.axaml.cs` prüft zur DI-Build-Zeit ob eine Factory gesetzt ist und
+es auf Desktop nicht — `App.axaml.cs` liest die Factory lazy im Resolve-Lambda und
 weicht auf den Mock aus. Details zum Lazy-Factory-Pattern → [Shared-CLAUDE.md](../SmartMeasure.Shared/CLAUDE.md).
-
----
-
-## Mock-Debug-Panel (`SurveyView`)
-
-Bei `IsMockMode = true` schaltet die `SurveyView` ein Debug-Panel frei. Buttons für
-Edge-Cases, die im Feld nicht reproduzierbar sind:
-
-| Button | `MockBleService`-Methode | Testet |
-|--------|--------------------------|--------|
-| CycleFixDegradation | `CycleFixDegradation()` | Fix 4 → 5 → 2 → 0 → 4 (RTK/Float/DGPS/NoFix) |
-| SimulatePacketLoss | `SimulatePacketLoss(int seconds)` | Position-Updates einfrieren |
-| SimulateBatteryDrain | `SimulateBatteryDrain()` | ~3 %/s bis 15 % (Low-Battery-Warnung) |
-| SimulateMagLoss | `SimulateMagLoss()` | MagAccuracy 0 → Kompass-Warnung + Tilt-Korrektur nur vertikal |
-| SimulateSpuriousDisconnect | `SimulateSpuriousDisconnect()` | Unerwarteter Disconnect ohne User-Aktion |

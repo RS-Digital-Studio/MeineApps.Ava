@@ -238,6 +238,19 @@ namespace HandwerkerImperium.Editor
             MakeSign("Radius", new Vector3(-6f, 1.1f, 0f), 0.26f, new Color(0.35f, 0.85f, 0.35f));
             MakeSign("Tragkraft", new Vector3(-6f, 1.1f, -2.5f), 0.26f, new Color(0.45f, 0.55f, 0.95f));
 
+            // Wahrzeichen des Stadt-Wiederaufbaus (GDD §6.4): Ruine -> Hold-to-Pay-Sanierung -> saniertes Modell.
+            // Ids = LandmarkCatalog (Domain); Index-frei per Id verdrahtet (Alt-Save-robust).
+            MakeLandmark("brunnen", "Brunnen", new Vector3(12f, 0f, 0f), 2.4f,
+                ModelDir + "/landmark_fountain_ruined.glb", ModelDir + "/landmark_fountain_restored.glb", controller);
+            MakeLandmark("glockenturm", "Glockenturm", new Vector3(-12f, 0f, 0f), 5.0f,
+                ModelDir + "/landmark_clocktower_ruined.glb", ModelDir + "/landmark_clocktower_restored.glb", controller);
+            MakeLandmark("stadttor", "Stadttor", new Vector3(0f, 0f, 15f), 4.5f,
+                ModelDir + "/landmark_gate_ruined.glb", ModelDir + "/landmark_gate_restored.glb", controller);
+
+            // Kunden-Vielfalt an der Tresen-Queue
+            MakeBystander("Customer_Woman", ModelDir + "/customer_woman.glb", new Vector3(1.4f, 0f, 4.3f), 195f, 1.62f);
+            MakeBystander("Customer_Elder", ModelDir + "/customer_elder.glb", new Vector3(-1.5f, 0f, 4.6f), 165f, 1.6f);
+
             // Avatar-/Kamera-Verdrahtung. WICHTIG: Start-Position UND Start-Rotation setzen —
             // FollowCamera richtet erst im Play-Mode aus, sonst schaut die Edit-Game-View horizontal in den Himmel.
             SetRef(avatar, "controller", controller);
@@ -399,6 +412,53 @@ namespace HandwerkerImperium.Editor
             return SavePrefab(go, prefabName);
         }
 
+        /// <summary>
+        /// Wahrzeichen-Plot: Ruinen- + Saniert-Modell (LandmarkView tauscht beim Abschluss), Sanieren-Zone
+        /// (Hold-to-Pay) Richtung Hof-Mitte, Namens-Schild + dynamisches Fortschritts-Schild ("2/4").
+        /// </summary>
+        private static void MakeLandmark(string id, string displayName, Vector3 pos, float height,
+            string ruinedGlb, string restoredGlb, GreyboxGameController controller)
+        {
+            var root = new GameObject("Landmark_" + id);
+            root.transform.position = pos;
+            Vector3 toCenter = (Vector3.zero - pos).WithY(0f);
+            toCenter = toCenter.sqrMagnitude < 0.01f ? Vector3.back : toCenter.normalized;
+            root.transform.rotation = Quaternion.LookRotation(toCenter);
+
+            var ruined = new GameObject("Ruined");
+            ruined.transform.SetParent(root.transform, false);
+            AttachModel(ruined.transform, ruinedGlb, height);
+            var restored = new GameObject("Restored");
+            restored.transform.SetParent(root.transform, false);
+            AttachModel(restored.transform, restoredGlb, height);
+            restored.SetActive(false); // LandmarkView blendet beim Sanierungs-Abschluss um
+
+            var pay = MakeTriggerZone($"Landmark_{id}_Sanieren", pos + toCenter * (height * 0.5f + 2.0f) + Vector3.up * 0.9f, new Vector3(2.8f, 2f, 2.6f));
+            var view = pay.AddComponent<LandmarkView>();
+
+            MakeSign(displayName, pos + toCenter * 1.6f + Vector3.up * 2.5f, 0.36f,
+                new Color(0.99f, 0.96f, 0.90f), new Color(0.30f, 0.24f, 0.18f));
+            var progSign = MakeSign("0/0", pos + toCenter * 1.6f + Vector3.up * 1.75f, 0.30f,
+                new Color(1.0f, 0.85f, 0.25f), new Color(0.25f, 0.20f, 0.12f));
+            var progText = progSign.GetComponentInChildren<TextMesh>();
+
+            SetString(view, "landmarkId", id);
+            SetRef(view, "controller", controller);
+            SetRef(view, "ruinedVisual", ruined);
+            SetRef(view, "restoredVisual", restored);
+            SetRef(view, "progressText", progText);
+        }
+
+        /// <summary>Statischer NPC-Statist (Kunden-Vielfalt an der Queue) mit Idle-Atmen.</summary>
+        private static void MakeBystander(string name, string glbPath, Vector3 pos, float yRotation, float height)
+        {
+            var root = new GameObject(name);
+            root.transform.position = pos;
+            root.transform.rotation = Quaternion.Euler(0f, yRotation, 0f);
+            var visual = AttachModel(root.transform, glbPath, height);
+            visual.AddComponent<ToonBob>();
+        }
+
         private static GameObject SavePrefab(GameObject go, string name)
         {
             string path = $"{PrefabDir}/{name}.prefab";
@@ -552,6 +612,13 @@ namespace HandwerkerImperium.Editor
             var so = new SerializedObject(target);
             var p = so.FindProperty(field);
             if (p != null) { p.enumValueIndex = enumIndex; so.ApplyModifiedPropertiesWithoutUndo(); }
+        }
+
+        private static void SetString(Object target, string field, string value)
+        {
+            var so = new SerializedObject(target);
+            var p = so.FindProperty(field);
+            if (p != null) { p.stringValue = value; so.ApplyModifiedPropertiesWithoutUndo(); }
         }
 
         private static void SetRefArray(Object target, string field, Object[] values)

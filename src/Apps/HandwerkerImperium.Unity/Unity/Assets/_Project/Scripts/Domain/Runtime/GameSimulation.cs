@@ -108,7 +108,7 @@ namespace HandwerkerImperium.Domain.Runtime
             m.Idle = GreyboxSimState.CreateNew(idleBal);
             m.Idle.LastSeenUtcTicks = lastSeen;
             m.Orders = new OrderQueueState();
-            m.Landmarks.Clear();
+            m.Landmarks = LandmarkCatalog.CreateStates(); // neue Stadt -> frische, ruinierte Wahrzeichen
             m.Rush = new RushEventState();
             return true;
         }

@@ -59,7 +59,10 @@ namespace HandwerkerImperium.Domain.Tests.Runtime
             Assert.That(m2.Idle.Stations[3].Unlocked, Is.True);
             Assert.That(m2.Idle.LastSeenUtcTicks, Is.EqualTo(999L));
             Assert.That(m2.Orders.TotalServed, Is.EqualTo(80));
-            Assert.That(m2.Landmarks[0].PhasesComplete, Is.EqualTo(2));
+            var marktplatz = m2.Landmarks.Find(l => l.Id == "marktplatz");
+            Assert.That(marktplatz, Is.Not.Null, "zusaetzliches Wahrzeichen ueberlebt den Roundtrip");
+            Assert.That(marktplatz.PhasesComplete, Is.EqualTo(2));
+            Assert.That(m2.Landmarks.Find(l => l.Id == "brunnen"), Is.Not.Null, "Katalog-Wahrzeichen vorhanden (EnsureLandmarks)");
             Assert.That(m2.Meta.PrestigeMultiplier, Is.EqualTo(3m));
             Assert.That(m2.Meta.CurrentStar, Is.EqualTo(4));
             Assert.That(m2.Meta.MasteryLevel, Is.EqualTo(6));

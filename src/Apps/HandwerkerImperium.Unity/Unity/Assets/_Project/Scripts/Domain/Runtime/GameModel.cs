@@ -44,10 +44,15 @@ namespace HandwerkerImperium.Domain.Runtime
         /// <summary>Die 3 aktiven Tagesaufgaben des Tages (Laufzeit-Repräsentation, persistiert via Mapping).</summary>
         public List<DailyTaskRuntime> DailyTasks = new List<DailyTaskRuntime>();
 
-        /// <summary>Frischer Start aus dem Idle-Balancing (Stationen 1:1, Stock 0, Geld 0); Meta = Akt 1, Stadt 0.</summary>
+        /// <summary>Frischer Start aus dem Idle-Balancing (Stationen 1:1, Stock 0, Geld 0); Meta = Akt 1, Stadt 0;
+        /// Wahrzeichen ruiniert aus dem Katalog (Stadt-Wiederaufbau, GDD §6.4).</summary>
         public static GameModel CreateNew(IdleBalancing idleBalancing)
         {
-            var m = new GameModel { Idle = GreyboxSimState.CreateNew(idleBalancing) };
+            var m = new GameModel
+            {
+                Idle = GreyboxSimState.CreateNew(idleBalancing),
+                Landmarks = LandmarkCatalog.CreateStates()
+            };
             return m;
         }
     }

@@ -3,6 +3,8 @@ using UnityEngine;
 using VContainer;
 using HandwerkerImperium.Domain.Idle;
 using HandwerkerImperium.Domain.Orders;
+using HandwerkerImperium.Domain.Restoration;
+using HandwerkerImperium.Domain.Runtime;
 
 namespace HandwerkerImperium.Game
 {
@@ -104,6 +106,30 @@ namespace HandwerkerImperium.Game
         {
             if (runtime == null || runtime.Model == null || soldCount <= 0) return;
             OrderQueueFormulas.Serve(runtime.Model.Orders, soldCount);
+        }
+
+        /// <summary>Wahrzeichen-Zustand per Id (Index ist bei migrierten Saves nicht stabil). Nur gekoppelt; sonst null.</summary>
+        public LandmarkState GetLandmark(string id)
+        {
+            int idx = LandmarkIndex(id);
+            return idx >= 0 ? runtime.Model.Landmarks[idx] : null;
+        }
+
+        /// <summary>Investiert Geld in ein Wahrzeichen (Hold-to-Pay-Sanierung). Liefert die Anzahl neu abgeschlossener Phasen.</summary>
+        public int InvestLandmark(string id, decimal amount)
+        {
+            int idx = LandmarkIndex(id);
+            if (idx < 0) return 0;
+            return GameActions.InvestRestoration(runtime.Model, runtime.Balancing, idx, amount);
+        }
+
+        private int LandmarkIndex(string id)
+        {
+            if (runtime == null || runtime.Model == null || string.IsNullOrEmpty(id)) return -1;
+            var list = runtime.Model.Landmarks;
+            for (int i = 0; i < list.Count; i++)
+                if (list[i] != null && list[i].Id == id) return i;
+            return -1;
         }
 
         private void BindToRuntime()

@@ -105,6 +105,7 @@ namespace HandwerkerImperium.Domain.Runtime
             m.Landmarks.Clear();
             foreach (var lm in s.Restoration.Landmarks)
                 m.Landmarks.Add(new LandmarkState(lm.Id, lm.TotalPhases) { PhasesComplete = lm.PhasesComplete });
+            LandmarkCatalog.EnsureLandmarks(m.Landmarks); // Saves vor dem Katalog: fehlende Wahrzeichen ergänzen
 
             m.Meta.PrestigeCount = s.Franchise.PrestigeCount;
             m.Meta.CityIndex = s.Franchise.CityIndex;

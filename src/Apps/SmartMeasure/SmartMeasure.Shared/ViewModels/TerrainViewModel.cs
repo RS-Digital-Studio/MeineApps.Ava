@@ -43,7 +43,7 @@ public partial class TerrainViewModel : ViewModelBase
         _terrainService = terrainService;
         _coordinateService = coordinateService;
 
-        // Einzel-Messung: pro Punkt inkrementell neu triangulieren (RTK-Live-Ansicht)
+        // Einzel-Messung: pro Punkt inkrementell neu triangulieren (Live-Ansicht beim AR-Transfer)
         _measurementService.PointAdded += _ => RecalculateMesh();
         // Batch-Änderung (Projekt-Load, Clear): einmalige Neuberechnung statt N²
         _measurementService.PointsReset += RecalculateMesh;

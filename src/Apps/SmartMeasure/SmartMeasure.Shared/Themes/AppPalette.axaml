@@ -16,7 +16,7 @@
     <Color x:Key="SecondaryLightColor">#64B5F6</Color>
     <Color x:Key="SecondaryDarkColor">#1565C0</Color>
 
-    <!-- Akzent: Gruen (RTK Fix, Rasen, Erfolg) -->
+    <!-- Akzent: Gruen (Rasen, Erfolg) -->
     <Color x:Key="AccentColor">#4CAF50</Color>
     <Color x:Key="AccentLightColor">#66BB6A</Color>
     <Color x:Key="AccentDarkColor">#2E7D32</Color>
@@ -26,11 +26,6 @@
     <Color x:Key="WarningColor">#FFC107</Color>
     <Color x:Key="DangerColor">#EF5350</Color>
     <Color x:Key="InfoColor">#2196F3</Color>
-
-    <!-- RTK Fix-Status Farben -->
-    <Color x:Key="RtkFixColor">#4CAF50</Color>
-    <Color x:Key="RtkFloatColor">#FFC107</Color>
-    <Color x:Key="RtkNoFixColor">#EF5350</Color>
 
     <!-- AR-Modus Farben (Kontur-Cyan, aktive Kontur, Auswahl) -->
     <Color x:Key="ArContourColor">#00BCD4</Color>
@@ -86,9 +81,6 @@
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
     <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
     <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
-    <SolidColorBrush x:Key="RtkFixBrush" Color="{StaticResource RtkFixColor}" />
-    <SolidColorBrush x:Key="RtkFloatBrush" Color="{StaticResource RtkFloatColor}" />
-    <SolidColorBrush x:Key="RtkNoFixBrush" Color="{StaticResource RtkNoFixColor}" />
     <SolidColorBrush x:Key="ArContourBrush" Color="{StaticResource ArContourColor}" />
     <SolidColorBrush x:Key="ArActiveBrush" Color="{StaticResource ArActiveColor}" />
     <SolidColorBrush x:Key="ArSelectedBrush" Color="{StaticResource ArSelectedColor}" />

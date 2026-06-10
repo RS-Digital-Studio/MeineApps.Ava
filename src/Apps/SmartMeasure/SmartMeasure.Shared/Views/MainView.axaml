@@ -52,79 +52,15 @@
 
     <Grid RowDefinitions="Auto,*,Auto">
 
-        <!-- Status-Bar oben (adaptiv: AR-Modus schlank, RTK-Modus voll mit Hardware-Werten) -->
+        <!-- Status-Bar oben: schlanke Marken-Leiste -->
         <Border Grid.Row="0" Background="{DynamicResource BgSecondaryBrush}" Padding="12,6">
-            <Panel>
-                <!-- AR-Modus: schlanke Marken-Leiste + dezenter Modus-Chip -->
-                <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding !ShowRtkUi}">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <mi:MaterialIcon Kind="TapeMeasure" Width="18" Height="18"
-                                         Foreground="{DynamicResource PrimaryBrush}" />
-                        <TextBlock Text="SmartMeasure" FontWeight="SemiBold" FontSize="14"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
-                    <Border Grid.Column="2" CornerRadius="10" Padding="8,3"
-                            Background="{DynamicResource BgCardBrush}">
-                        <StackPanel Orientation="Horizontal" Spacing="5">
-                            <mi:MaterialIcon Kind="CubeScan" Width="13" Height="13"
-                                             Foreground="{DynamicResource ArContourBrush}"
-                                             VerticalAlignment="Center" />
-                            <TextBlock Text="AR-Modus" FontSize="11" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-
-                <!-- RTK-Modus: volle Hardware-Statusleiste -->
-                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" IsVisible="{Binding ShowRtkUi}">
-                    <!-- BLE-Status -->
-                    <mi:MaterialIcon Grid.Column="0" Kind="Bluetooth"
-                                     IsVisible="{Binding IsBleConnected}"
-                                     Foreground="{DynamicResource AccentBrush}"
-                                     Width="16" Height="16" />
-                    <mi:MaterialIcon Grid.Column="0" Kind="BluetoothOff"
-                                     IsVisible="{Binding !IsBleConnected}"
-                                     Foreground="{DynamicResource DangerBrush}"
-                                     Width="16" Height="16" />
-
-                    <!-- Fix-Status -->
-                    <Border Grid.Column="1" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
-                            Background="{DynamicResource BgCardBrush}">
-                        <TextBlock Text="{Binding FixStatusText}"
-                                   FontWeight="Bold" FontSize="11"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                    </Border>
-
-                    <!-- Spacer -->
-                    <Panel Grid.Column="2" />
-
-                    <!-- Genauigkeit -->
-                    <TextBlock Grid.Column="3" VerticalAlignment="Center"
-                               FontSize="10" Margin="0,0,8,0"
-                               Foreground="{DynamicResource TextSecondaryBrush}">
-                        <Run Text="±" /><Run Text="{Binding HorizontalAccuracy, StringFormat='{}{0:F1}'}" /><Run Text="cm" />
-                    </TextBlock>
-
-                    <!-- Satelliten -->
-                    <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="3" Margin="0,0,8,0">
-                        <mi:MaterialIcon Kind="Satellite" Width="12" Height="12"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
-                        <TextBlock Text="{Binding SatelliteCount}" FontSize="10"
-                                   Foreground="{DynamicResource TextMutedBrush}" />
-                    </StackPanel>
-
-                    <!-- Akku -->
-                    <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="3">
-                        <mi:MaterialIcon Kind="Battery80" Width="12" Height="12"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
-                        <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}">
-                            <Run Text="{Binding BatteryLevel}" /><Run Text="%" />
-                        </TextBlock>
-                    </StackPanel>
-                </Grid>
-            </Panel>
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="TapeMeasure" Width="18" Height="18"
+                                 Foreground="{DynamicResource PrimaryBrush}" />
+                <TextBlock Text="SmartMeasure" FontWeight="SemiBold" FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
         </Border>
 
         <!-- Content (alle Views per Opacity umgeschaltet, MapView lazy) -->
@@ -143,12 +79,6 @@
             <Border x:Name="MapContainer" Classes="TabContent" Classes.Active="{Binding IsMapActive}" />
             <Border Classes="TabContent" Classes.Active="{Binding IsProjectsActive}">
                 <views:ProjectsView DataContext="{Binding ProjectsVm}" />
-            </Border>
-            <Border Classes="TabContent" Classes.Active="{Binding IsStakeoutActive}">
-                <views:StakeoutView DataContext="{Binding StakeoutVm}" />
-            </Border>
-            <Border Classes="TabContent" Classes.Active="{Binding IsConnectActive}">
-                <views:ConnectView DataContext="{Binding ConnectVm}" />
             </Border>
             <Border Classes="TabContent" Classes.Active="{Binding IsSettingsActive}">
                 <views:SettingsView DataContext="{Binding SettingsVm}" />
@@ -204,9 +134,7 @@
             </Border>
         </Panel>
 
-        <!-- Tab-Bar unten (adaptiv: AR-Modus 6 Tabs, RTK-Modus 8 Tabs).
-             UniformGrid verteilt nur die SICHTBAREN Buttons gleichmaessig — Abstecken + BLE
-             sind im reinen AR-Modus ausgeblendet (Hardware-only), Optionen bleibt letzter Tab. -->
+        <!-- Tab-Bar unten (6 Tabs) -->
         <Border Grid.Row="2" Background="{DynamicResource TabBarGradientBrush}"
                 BorderBrush="{DynamicResource BgCardBrush}" BorderThickness="0,1,0,0">
             <UniformGrid Rows="1" Height="56">
@@ -253,26 +181,6 @@
                         <mi:MaterialIcon Kind="FolderMultiple" Width="22" Height="22" />
                         <TextBlock Text="Projekte" FontSize="9" HorizontalAlignment="Center" />
                         <Ellipse Classes="TabDot" Classes.Active="{Binding IsProjectsActive}" />
-                    </StackPanel>
-                </Button>
-                <!-- Absteckung (nur RTK-Modus — braucht cm-genaue Live-Position) -->
-                <Button Classes="TabBtn" Classes.Active="{Binding IsStakeoutActive}"
-                        IsVisible="{Binding ShowRtkUi}"
-                        Command="{Binding NavigateCommand}" CommandParameter="Stakeout">
-                    <StackPanel Spacing="1" HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="TargetVariant" Width="22" Height="22" />
-                        <TextBlock Text="Abstecken" FontSize="9" HorizontalAlignment="Center" />
-                        <Ellipse Classes="TabDot" Classes.Active="{Binding IsStakeoutActive}" />
-                    </StackPanel>
-                </Button>
-                <!-- Verbinden (nur RTK-Modus) -->
-                <Button Classes="TabBtn" Classes.Active="{Binding IsConnectActive}"
-                        IsVisible="{Binding ShowRtkUi}"
-                        Command="{Binding NavigateCommand}" CommandParameter="Connect">
-                    <StackPanel Spacing="1" HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="BluetoothConnect" Width="22" Height="22" />
-                        <TextBlock Text="BLE" FontSize="9" HorizontalAlignment="Center" />
-                        <Ellipse Classes="TabDot" Classes.Active="{Binding IsConnectActive}" />
                     </StackPanel>
                 </Button>
                 <!-- Optionen -->

@@ -35,12 +35,6 @@ public sealed class AndroidArCaptureService : IArCaptureService
     /// <summary>Plan Kap. 4.3: Status der letzten Capture-Operation.</summary>
     public ArCaptureCompletionStatus LastCompletionStatus { get; private set; }
 
-    /// <summary>Plan Kap. 5.9: Delegiert an die statische Bruecke in
-    /// <see cref="ArCaptureActivity.SetStakeoutTargets"/>, die die Targets in OnCreate
-    /// uebernimmt.</summary>
-    public void SetStakeoutTargets(IReadOnlyList<StakeoutTarget>? targets)
-        => ArCaptureActivity.SetStakeoutTargets(targets);
-
     /// <summary>Plan Kap. 5.2: Delegiert an die statische Bruecke in
     /// <see cref="ArCaptureActivity.SetSitePoints"/>.</summary>
     public void SetSitePoints(IReadOnlyList<SurveyPoint>? points)
@@ -50,11 +44,6 @@ public sealed class AndroidArCaptureService : IArCaptureService
     /// Bruecke in <see cref="ArCaptureActivity.SetPreloadPoints"/>.</summary>
     public void SetPreloadPoints(IReadOnlyList<SurveyPoint>? points)
         => ArCaptureActivity.SetPreloadPoints(points);
-
-    /// <summary>Plan Kap. 5.7: Delegiert an die statische Bruecke in
-    /// <see cref="ArCaptureActivity.SetReferenceMarkers"/>.</summary>
-    public void SetReferenceMarkers(IReadOnlyList<ArReferenceMarker>? markers)
-        => ArCaptureActivity.SetReferenceMarkers(markers);
 
     public AndroidArCaptureService(Activity activity)
     {

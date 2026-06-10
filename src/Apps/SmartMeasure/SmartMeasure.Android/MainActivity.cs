@@ -13,7 +13,6 @@ using SmartMeasure.Android.Services;
 using SmartMeasure.Shared;
 using SmartMeasure.Shared.Services;
 using SmartMeasure.Shared.ViewModels;
-using AndroidBleService = SmartMeasure.Android.Services.AndroidBleService;
 using AndroidUri = global::Android.Net.Uri;
 
 namespace SmartMeasure.Android;
@@ -28,11 +27,10 @@ namespace SmartMeasure.Android;
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
 public class MainActivity : AvaloniaMainActivity
 {
-    private const int BleRuntimePermissionRequestCode = 9001;
+    private const int LocationPermissionRequestCode = 9001;
 
     private MainViewModel? _mainVm;
     private AndroidArCaptureService? _arCaptureService;
-    private IBleService? _bleService;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -49,10 +47,6 @@ public class MainActivity : AvaloniaMainActivity
         // Context.FilesDir garantiert sandbox-sicheren Pfad auf allen Android-ROMs.
         App.AppPathsFactory = () => new AndroidAppPaths(this);
 
-        // BLE-Service für Verbindung zum Vermessungsstab.
-        // IGeoidService wird nach DI-Build aufgelöst — rechnet Ellipsoid → Geoid-Höhe (NN).
-        App.BleServiceFactory = sp => new AndroidBleService(this, sp.GetRequiredService<IGeoidService>());
-
         // Share-Sheet + Öffnen via FileProvider (Authority: ${applicationId}.fileprovider)
         UriLauncher.PlatformShareFile = ShareFileViaIntent;
         UriLauncher.PlatformOpenFile = OpenFileViaIntent;
@@ -67,7 +61,6 @@ public class MainActivity : AvaloniaMainActivity
         base.OnCreate(savedInstanceState);
 
         _mainVm = App.Services?.GetService(typeof(MainViewModel)) as MainViewModel;
-        _bleService = App.Services?.GetService(typeof(IBleService)) as IBleService;
 
         if (_mainVm != null)
         {
@@ -77,48 +70,24 @@ public class MainActivity : AvaloniaMainActivity
             // Error-UX: MessageRequested aus VM → Toast
             _mainVm.MessageRequested += (title, body) =>
                 RunOnUiThread(() => Toast.MakeText(this, $"{title}: {body}", ToastLength.Long)?.Show());
-
-            // Foreground-Service automatisch mit BLE-Status koppeln
-            _mainVm.ForegroundServiceRequested += active =>
-            {
-                if (active) MeasurementForegroundService.Start(this);
-                else MeasurementForegroundService.Stop(this);
-            };
         }
 
-        // Permissions proaktiv anfordern — User kann nicht scannen/verbinden ohne diese
-        RequestBlePermissionsIfNeeded();
+        // Permission proaktiv anfordern — Karte + AR-Georeferenzierung brauchen Standort
+        RequestLocationPermissionIfNeeded();
     }
 
     /// <summary>
-    /// Android 12+ (API 31) verlangt BLUETOOTH_SCAN + BLUETOOTH_CONNECT als Runtime-Permissions.
-    /// ACCESS_FINE_LOCATION ist für BLE-Scans auf Android 6-11 nötig (wir haben es als Fallback).
+    /// ACCESS_FINE_LOCATION für Mapsui + AR-Georeferenzierung (Geospatial API).
     /// CAMERA wird separat von ArCaptureActivity gehandhabt.
     /// </summary>
-    private void RequestBlePermissionsIfNeeded()
+    private void RequestLocationPermissionIfNeeded()
     {
-        var permissions = new List<string>();
-
-        // Android 12+ (API 31): BLUETOOTH_SCAN + BLUETOOTH_CONNECT sind Runtime-Permissions
-        if (OperatingSystem.IsAndroidVersionAtLeast(31))
-        {
-            if (ContextCompat.CheckSelfPermission(this, global::Android.Manifest.Permission.BluetoothScan)
-                != Permission.Granted)
-                permissions.Add(global::Android.Manifest.Permission.BluetoothScan);
-
-            if (ContextCompat.CheckSelfPermission(this, global::Android.Manifest.Permission.BluetoothConnect)
-                != Permission.Granted)
-                permissions.Add(global::Android.Manifest.Permission.BluetoothConnect);
-        }
-
-        // Location bleibt für Mapsui + AR-Georeferenzierung nötig, unabhängig von API-Level
         if (ContextCompat.CheckSelfPermission(this, global::Android.Manifest.Permission.AccessFineLocation)
-            != Permission.Granted)
-            permissions.Add(global::Android.Manifest.Permission.AccessFineLocation);
+            == Permission.Granted)
+            return;
 
-        if (permissions.Count == 0) return;
-
-        ActivityCompat.RequestPermissions(this, permissions.ToArray(), BleRuntimePermissionRequestCode);
+        ActivityCompat.RequestPermissions(this,
+            [global::Android.Manifest.Permission.AccessFineLocation], LocationPermissionRequestCode);
     }
 
     protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
@@ -134,13 +103,13 @@ public class MainActivity : AvaloniaMainActivity
         // AR-Capture hat eigenes Permission-Handling (Camera)
         _arCaptureService?.HandlePermissionResult(requestCode, grantResults);
 
-        if (requestCode == BleRuntimePermissionRequestCode)
+        if (requestCode == LocationPermissionRequestCode)
         {
             var allGranted = grantResults.Length > 0 && grantResults.All(r => r == Permission.Granted);
             if (!allGranted)
             {
                 RunOnUiThread(() => Toast.MakeText(this,
-                    "Ohne Bluetooth-Berechtigung kann der Vermessungsstab nicht verbunden werden",
+                    "Ohne Standort-Berechtigung sind Karte und Georeferenzierung eingeschränkt",
                     ToastLength.Long)?.Show());
             }
         }
@@ -155,13 +124,6 @@ public class MainActivity : AvaloniaMainActivity
         base.OnBackPressed();
     }
 #pragma warning restore CA1422
-
-    protected override void OnDestroy()
-    {
-        // FG-Service stoppen wenn Activity stirbt — sonst läuft er weiter ohne UI
-        MeasurementForegroundService.Stop(this);
-        base.OnDestroy();
-    }
 
     /// <summary>Share-Sheet mit Intent.ActionSend. Braucht FileProvider + grantUriPermissions.</summary>
     private void ShareFileViaIntent(string filePath, string mimeType, string? title)

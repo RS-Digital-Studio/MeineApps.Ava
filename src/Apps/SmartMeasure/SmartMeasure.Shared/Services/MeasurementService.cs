@@ -72,8 +72,8 @@ public class MeasurementService : IMeasurementService
     }
 
     /// <summary>
-    /// Berechnet die Polygonfläche in m². Nutzt UTM-Projektion für Präzision auf
-    /// RTK-Niveau (±2cm) und bildet die konvexe Hülle, da Messpunkte in beliebiger
+    /// Berechnet die Polygonfläche in m². Nutzt UTM-Projektion für hohe Präzision
+    /// und bildet die konvexe Hülle, da Messpunkte in beliebiger
     /// Reihenfolge vorliegen können und Shoelace auf ungeordneten Punkten
     /// komplett falsche Ergebnisse liefern würde.
     /// </summary>
@@ -82,7 +82,7 @@ public class MeasurementService : IMeasurementService
         if (points.Count < 3) return 0;
 
         // UTM statt naive 111320-Approximation — auf 100m würde die Approximation
-        // ~8cm Fehler einführen, inakzeptabel bei ±2cm RTK-Anspruch.
+        // ~8cm Fehler einführen.
         var lats = points.Select(p => p.Latitude).ToArray();
         var lons = points.Select(p => p.Longitude).ToArray();
         var alts = new double[points.Count]; // Höhe irrelevant für 2D-Fläche

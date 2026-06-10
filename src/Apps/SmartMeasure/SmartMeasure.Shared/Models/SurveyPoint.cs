@@ -2,7 +2,7 @@ using SQLite;
 
 namespace SmartMeasure.Shared.Models;
 
-/// <summary>Ein vermessener Punkt mit RTK-GPS Position und Stab-Neigung</summary>
+/// <summary>Ein vermessener Punkt (AR-Kamera, WGS84-georeferenziert)</summary>
 public class SurveyPoint
 {
     [PrimaryKey, AutoIncrement]
@@ -26,26 +26,11 @@ public class SurveyPoint
     /// <summary>Vertikale Genauigkeit in cm</summary>
     public float VerticalAccuracy { get; set; }
 
-    /// <summary>Stab-Neigung beim Messen in Grad (vom Lot)</summary>
-    public float TiltAngle { get; set; }
-
-    /// <summary>Kompass-Richtung der Neigung in Grad (true north)</summary>
-    public float TiltAzimuth { get; set; }
-
-    /// <summary>RTK Fix-Quality (0=NoFix, 1=GPS, 2=DGPS, 4=RTK-Fix, 5=RTK-Float)</summary>
-    public int FixQuality { get; set; }
-
-    /// <summary>Anzahl sichtbare Satelliten</summary>
-    public int SatelliteCount { get; set; }
-
-    /// <summary>BNO085 Magnetometer-Accuracy (0-3, >= 2 fuer Horizontal-Korrektur)</summary>
-    public int MagAccuracy { get; set; }
-
     /// <summary>
-    /// Mess-Konfidenz 0..1 (1 = sehr sicher). Bei AR-Punkten die echte ARCore-Confidence
-    /// aus Hit-Quality, Multi-Frame-Streuung und Tracking-Stabilitaet (siehe <c>ArPoint.Confidence</c>).
-    /// Bei RTK-Stab-Punkten 1.0 (cm-genau). 0 = unbekannt/nicht gesetzt. Wird in der Punkte-Liste
-    /// und im PDF-Bericht angezeigt, damit der Nutzer den Wert seiner Messung einschaetzen kann.
+    /// Mess-Konfidenz 0..1 (1 = sehr sicher). Die echte ARCore-Confidence aus Hit-Quality,
+    /// Multi-Frame-Streuung und Tracking-Stabilitaet (siehe <c>ArPoint.Confidence</c>).
+    /// 0 = unbekannt/nicht gesetzt. Wird in der Punkte-Liste und im PDF-Bericht angezeigt,
+    /// damit der Nutzer den Wert seiner Messung einschaetzen kann.
     /// </summary>
     public float Confidence { get; set; }
 

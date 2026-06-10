@@ -14,9 +14,6 @@ public class App : Application
 {
     public static IServiceProvider Services { get; private set; } = null!;
 
-    /// <summary>Plattform-spezifischer BleService (Android: native, Desktop: InTheHand)</summary>
-    public static Func<IServiceProvider, IBleService>? BleServiceFactory { get; set; }
-
     /// <summary>Plattform-spezifischer AR-Capture-Service (Android: ARCore, Desktop: Mock)</summary>
     public static Func<IServiceProvider, IArCaptureService>? ArCaptureServiceFactory { get; set; }
 
@@ -115,16 +112,9 @@ public class App : Application
         // Preferences (JSON-Persistenz für User-Settings)
         services.AddSingleton<IPreferencesService>(_ => new PreferencesService("SmartMeasure"));
 
-        // BLE-Service (plattform-spezifisch oder Mock) — lazy, siehe IAppPaths-Hinweis oben.
-        services.AddSingleton<IBleService>(sp =>
-            BleServiceFactory != null ? BleServiceFactory(sp) : new MockBleService());
-
         // AR-Capture-Service (plattform-spezifisch oder Mock) — lazy, siehe IAppPaths-Hinweis oben.
         services.AddSingleton<IArCaptureService>(sp =>
             ArCaptureServiceFactory != null ? ArCaptureServiceFactory(sp) : new MockArCaptureService());
-
-        // Adaptiver Betriebsmodus (AR-First vs RTK-Stab) — haengt von IBleService + Preferences ab.
-        services.AddSingleton<IHardwareModeService, HardwareModeService>();
 
         // Services
         services.AddSingleton<IMeasurementService, MeasurementService>();
@@ -137,7 +127,6 @@ public class App : Application
         services.AddSingleton<IBlenderExportService, BlenderExportService>();
         services.AddSingleton<IArTransferService, ArTransferService>();
         services.AddSingleton<IDifferentialSnapshotService, DifferentialSnapshotService>();
-        services.AddSingleton<IGnssConditionService, GnssConditionService>();
         services.AddSingleton<IVolumeService, VolumeService>();
         services.AddSingleton<ITotalStationService, TotalStationService>();
         services.AddSingleton<ILeastSquaresAdjustmentService, LeastSquaresAdjustmentService>();
@@ -152,13 +141,11 @@ public class App : Application
 
         // ViewModels
         services.AddSingleton<MainViewModel>();
-        services.AddSingleton<ConnectViewModel>();
         services.AddSingleton<SurveyViewModel>();
         services.AddSingleton<TerrainViewModel>();
         services.AddSingleton<GardenPlanViewModel>();
         services.AddSingleton<MapViewModel>();
         services.AddSingleton<ProjectsViewModel>();
-        services.AddSingleton<StakeoutViewModel>();
         services.AddSingleton<SettingsViewModel>();
     }
 }

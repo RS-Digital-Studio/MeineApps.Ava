@@ -61,7 +61,6 @@ namespace SmartMeasure.Shared.Resources.Strings {
         public static string TabGarden => ResourceManager.GetString("TabGarden", resourceCulture) ?? "";
         public static string TabMap => ResourceManager.GetString("TabMap", resourceCulture) ?? "";
         public static string TabProjects => ResourceManager.GetString("TabProjects", resourceCulture) ?? "";
-        public static string TabConnect => ResourceManager.GetString("TabConnect", resourceCulture) ?? "";
         public static string TabSettings => ResourceManager.GetString("TabSettings", resourceCulture) ?? "";
 
         // Survey: Position
@@ -138,39 +137,14 @@ namespace SmartMeasure.Shared.Resources.Strings {
         public static string ExportPdf => ResourceManager.GetString("ExportPdf", resourceCulture) ?? "";
 
         // Connect
-        public static string Connection => ResourceManager.GetString("Connection", resourceCulture) ?? "";
-        public static string Scan => ResourceManager.GetString("Scan", resourceCulture) ?? "";
-        public static string Connect => ResourceManager.GetString("Connect", resourceCulture) ?? "";
-        public static string Disconnect => ResourceManager.GetString("Disconnect", resourceCulture) ?? "";
-        public static string Connecting => ResourceManager.GetString("Connecting", resourceCulture) ?? "";
-        public static string Connected => ResourceManager.GetString("Connected", resourceCulture) ?? "";
-        public static string NotConnected => ResourceManager.GetString("NotConnected", resourceCulture) ?? "";
-        public static string ConnectionFailed => ResourceManager.GetString("ConnectionFailed", resourceCulture) ?? "";
-        public static string StickHeight => ResourceManager.GetString("StickHeight", resourceCulture) ?? "";
-        public static string StickHeightDescription => ResourceManager.GetString("StickHeightDescription", resourceCulture) ?? "";
-        public static string SetHeight => ResourceManager.GetString("SetHeight", resourceCulture) ?? "";
-        public static string NtripConfig => ResourceManager.GetString("NtripConfig", resourceCulture) ?? "";
-        public static string NtripSend => ResourceManager.GetString("NtripSend", resourceCulture) ?? "";
-        public static string WifiConfig => ResourceManager.GetString("WifiConfig", resourceCulture) ?? "";
-        public static string WifiSend => ResourceManager.GetString("WifiSend", resourceCulture) ?? "";
-        public static string Server => ResourceManager.GetString("Server", resourceCulture) ?? "";
-        public static string Port => ResourceManager.GetString("Port", resourceCulture) ?? "";
-        public static string Mountpoint => ResourceManager.GetString("Mountpoint", resourceCulture) ?? "";
-        public static string Username => ResourceManager.GetString("Username", resourceCulture) ?? "";
-        public static string Password => ResourceManager.GetString("Password", resourceCulture) ?? "";
-        public static string CalibrateImu => ResourceManager.GetString("CalibrateImu", resourceCulture) ?? "";
 
         // Settings
         public static string Settings => ResourceManager.GetString("Settings", resourceCulture) ?? "";
         public static string Units => ResourceManager.GetString("Units", resourceCulture) ?? "";
         public static string Metric => ResourceManager.GetString("Metric", resourceCulture) ?? "";
         public static string Imperial => ResourceManager.GetString("Imperial", resourceCulture) ?? "";
-        public static string MinFixQuality => ResourceManager.GetString("MinFixQuality", resourceCulture) ?? "";
-        public static string MinFixQualityHint => ResourceManager.GetString("MinFixQualityHint", resourceCulture) ?? "";
-        public static string StickLengthSetting => ResourceManager.GetString("StickLengthSetting", resourceCulture) ?? "";
         public static string AppVersion => ResourceManager.GetString("AppVersion", resourceCulture) ?? "";
         public static string AppDescription => ResourceManager.GetString("AppDescription", resourceCulture) ?? "";
-        public static string AppAccuracyNote => ResourceManager.GetString("AppAccuracyNote", resourceCulture) ?? "";
 
         // Common
         public static string OK => ResourceManager.GetString("OK", resourceCulture) ?? "";
@@ -194,11 +168,6 @@ namespace SmartMeasure.Shared.Resources.Strings {
         public static string Finish => ResourceManager.GetString("Finish", resourceCulture) ?? "";
 
         // Fix Status
-        public static string NoFix => ResourceManager.GetString("NoFix", resourceCulture) ?? "";
-        public static string Gps => ResourceManager.GetString("Gps", resourceCulture) ?? "";
-        public static string Dgps => ResourceManager.GetString("Dgps", resourceCulture) ?? "";
-        public static string RtkFix => ResourceManager.GetString("RtkFix", resourceCulture) ?? "";
-        public static string RtkFloat => ResourceManager.GetString("RtkFloat", resourceCulture) ?? "";
 
         // Back Button
         public static string PressBackAgainToExit => ResourceManager.GetString("PressBackAgainToExit", resourceCulture) ?? "";

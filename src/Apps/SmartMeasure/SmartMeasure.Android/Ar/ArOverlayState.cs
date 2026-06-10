@@ -276,42 +276,10 @@ public sealed class ArOverlayState
     /// <summary>Grundrissfläche der Vorschau in m² — für das Mittelpunkt-Label.</summary>
     public float RectangleAreaMeters { get; init; }
 
-    /// <summary>Plan-Kap. 5.9: True wenn der Stakeout-Modus aktiv ist.</summary>
-    public bool IsStakeoutMode { get; init; }
-
-    /// <summary>Distanz zum aktiven Stakeout-Target in Metern. null wenn keine Position
-    /// verfuegbar oder kein Target.</summary>
-    public double? StakeoutDistanceMeters { get; init; }
-
-    /// <summary>Relative Pfeil-Richtung in Grad (0=Vorderseite Kamera/Display, im
-    /// Uhrzeigersinn). Berechnet aus geografischem Bearing - aktuelles Heading. Null wenn
-    /// nicht berechenbar.</summary>
-    public double? StakeoutRelativeBearingDeg { get; init; }
-
-    /// <summary>Anzeige-Label des aktuellen Targets (z.B. "Grenzpunkt 1"). null wenn alle
-    /// Targets erreicht sind.</summary>
-    public string? StakeoutTargetLabel { get; init; }
-
-    /// <summary>Anzahl Targets, die in dieser Session bereits erreicht wurden — fuer
-    /// Fortschritts-Anzeige.</summary>
-    public int StakeoutReachedCount { get; init; }
-
-    /// <summary>Gesamt-Anzahl Targets.</summary>
-    public int StakeoutTotalCount { get; init; }
-
     /// <summary>Plan-Kap. 5.2: Site-Marker (Earth-Anchor-Cache). Screen-Position +
     /// Label bestehender Projekt-Punkte. Wird als kleine graue Kreise mit Label
     /// gerendert — visuell deutlich abgesetzt von aktiven (orange) Punkten.</summary>
     public IReadOnlyList<(float screenX, float screenY, string label)>? SiteMarkerScreenPoints { get; init; }
-
-    /// <summary>Plan-Kap. 5.8: Aktuelle RTK-Stab-Position im AR-Frame (Screen-Koordinaten).
-    /// null wenn kein Earth-Anchor verfuegbar bzw. kein RTK-Fix.</summary>
-    public (float screenX, float screenY)? RtkStabScreenPos { get; init; }
-
-    /// <summary>Plan-Kap. 5.8: Aktuelle Fix-Quality des RTK-Stabs (0=kein Fix, 1=GPS,
-    /// 2=DGPS, 4=RTK-Fix, 5=Float). Bestimmt die Marker-Farbe in
-    /// <c>DrawRtkStabMarker</c>.</summary>
-    public int RtkStabFixQuality { get; init; }
 
     /// <summary>Plan-Kap. 5.15: Quality-Heatmap-Patches in einem festen Grid (Spalten x
     /// Zeilen). Jeder Wert ist 0..1 (0=schlecht=Rot, 1=optimal=Gruen). null wenn der

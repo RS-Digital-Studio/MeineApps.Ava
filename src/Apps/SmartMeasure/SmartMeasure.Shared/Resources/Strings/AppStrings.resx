@@ -46,9 +46,6 @@
   <data name="TabProjects" xml:space="preserve">
     <value>Projekte</value>
   </data>
-  <data name="TabConnect" xml:space="preserve">
-    <value>BLE</value>
-  </data>
   <data name="TabSettings" xml:space="preserve">
     <value>Optionen</value>
   </data>
@@ -244,71 +241,6 @@
     <value>PDF</value>
   </data>
 
-  <!-- Connect -->
-  <data name="Connection" xml:space="preserve">
-    <value>Stab-Verbindung</value>
-  </data>
-  <data name="Scan" xml:space="preserve">
-    <value>Scannen</value>
-  </data>
-  <data name="Connect" xml:space="preserve">
-    <value>Verbinden</value>
-  </data>
-  <data name="Disconnect" xml:space="preserve">
-    <value>Trennen</value>
-  </data>
-  <data name="Connecting" xml:space="preserve">
-    <value>Verbinde...</value>
-  </data>
-  <data name="Connected" xml:space="preserve">
-    <value>Verbunden</value>
-  </data>
-  <data name="NotConnected" xml:space="preserve">
-    <value>Nicht verbunden</value>
-  </data>
-  <data name="ConnectionFailed" xml:space="preserve">
-    <value>Verbindung fehlgeschlagen</value>
-  </data>
-  <data name="StickHeight" xml:space="preserve">
-    <value>Stabl&#228;nge</value>
-  </data>
-  <data name="StickHeightDescription" xml:space="preserve">
-    <value>Abstand GPS-Antenne (oben) bis Spitze (Boden)</value>
-  </data>
-  <data name="SetHeight" xml:space="preserve">
-    <value>Setzen</value>
-  </data>
-  <data name="NtripConfig" xml:space="preserve">
-    <value>NTRIP (Korrekturdaten)</value>
-  </data>
-  <data name="NtripSend" xml:space="preserve">
-    <value>NTRIP senden</value>
-  </data>
-  <data name="WifiConfig" xml:space="preserve">
-    <value>WiFi (Hotspot)</value>
-  </data>
-  <data name="WifiSend" xml:space="preserve">
-    <value>WiFi senden</value>
-  </data>
-  <data name="Server" xml:space="preserve">
-    <value>Server (IP oder Hostname)</value>
-  </data>
-  <data name="Port" xml:space="preserve">
-    <value>Port</value>
-  </data>
-  <data name="Mountpoint" xml:space="preserve">
-    <value>Mountpoint</value>
-  </data>
-  <data name="Username" xml:space="preserve">
-    <value>Benutzer</value>
-  </data>
-  <data name="Password" xml:space="preserve">
-    <value>Passwort</value>
-  </data>
-  <data name="CalibrateImu" xml:space="preserve">
-    <value>IMU kalibrieren</value>
-  </data>
-
   <!-- Settings -->
   <data name="Settings" xml:space="preserve">
     <value>Einstellungen</value>
@@ -322,23 +254,11 @@
   <data name="Imperial" xml:space="preserve">
     <value>Imperial</value>
   </data>
-  <data name="MinFixQuality" xml:space="preserve">
-    <value>Minimale Fix-Quality</value>
-  </data>
-  <data name="MinFixQualityHint" xml:space="preserve">
-    <value>5 = Float (empfohlen), 4 = nur RTK Fix</value>
-  </data>
-  <data name="StickLengthSetting" xml:space="preserve">
-    <value>Stabl&#228;nge (Antenne &#8594; Spitze, in m)</value>
-  </data>
   <data name="AppVersion" xml:space="preserve">
     <value>Version</value>
   </data>
   <data name="AppDescription" xml:space="preserve">
     <value>3D-Grundst&#252;cksvermessung + Gartenplanung</value>
-  </data>
-  <data name="AppAccuracyNote" xml:space="preserve">
-    <value>RTK-GPS Vermessungsstab mit &#177;2cm Genauigkeit</value>
   </data>
 
   <!-- Common -->
@@ -394,23 +314,6 @@
   </data>
   <data name="Finish" xml:space="preserve">
     <value>Fertig</value>
-  </data>
-
-  <!-- Fix Status -->
-  <data name="NoFix" xml:space="preserve">
-    <value>KEIN FIX</value>
-  </data>
-  <data name="Gps" xml:space="preserve">
-    <value>GPS</value>
-  </data>
-  <data name="Dgps" xml:space="preserve">
-    <value>DGPS</value>
-  </data>
-  <data name="RtkFix" xml:space="preserve">
-    <value>RTK FIX</value>
-  </data>
-  <data name="RtkFloat" xml:space="preserve">
-    <value>RTK FLOAT</value>
   </data>
 
   <!-- Back Button -->

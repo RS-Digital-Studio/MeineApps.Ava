@@ -7,7 +7,7 @@ namespace SmartMeasure.Shared.Services;
 /// (Marching Triangles), Flächen- und Volumen-Berechnung.
 ///
 /// Robustheit:
-/// - Duplikat-Dedup via Epsilon (±2cm RTK-Genauigkeit → Punkte < 1cm Abstand werden gemergt)
+/// - Duplikat-Dedup via Epsilon (Punkte < 1mm Abstand werden gemergt)
 /// - CCW-Orientation für alle neu erzeugten Dreiecke (Delaunay-Test korrekt)
 /// - Vertex-Höhe-Perturbation bei Konturlinien (vermeidet doppelte Segmente)
 /// - Konvex-Hüllen-Shoelace für Flächenberechnung aus ungeordneten Mess-Punkten
@@ -15,7 +15,7 @@ namespace SmartMeasure.Shared.Services;
 /// </summary>
 public class TerrainService : ITerrainService
 {
-    /// <summary>Mindest-Abstand zwischen Messpunkten für Delaunay (RTK ±2cm → 1mm Epsilon reicht)</summary>
+    /// <summary>Mindest-Abstand zwischen Messpunkten für Delaunay (1mm Epsilon)</summary>
     private const double PointMergeEpsilon = 0.001;
 
     /// <summary>Toleranz für Barizentrisch-Tests (Punkt auf Dreiecks-Kante)</summary>
@@ -32,7 +32,7 @@ public class TerrainService : ITerrainService
             return BuildMesh(x, y, z, Array.Empty<int>());
         }
 
-        // 1. Duplikate mergen (RTK-Streuung kann dicht benachbarte Messwiederholungen erzeugen)
+        // 1. Duplikate mergen (Mess-Streuung kann dicht benachbarte Messwiederholungen erzeugen)
         var (uniqueX, uniqueY, uniqueZ) = DeduplicatePoints(x, y, z);
 
         if (uniqueX.Length < 3)

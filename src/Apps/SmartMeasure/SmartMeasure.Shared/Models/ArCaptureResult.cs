@@ -7,8 +7,6 @@ public enum ArGpsSource
     None = 0,
     /// <summary>Android-LocationManager (Handy-GPS, typisch ±3–8m).</summary>
     AndroidLocation = 1,
-    /// <summary>RTK-Rover via BLE (Plan 3.1 — typisch ±2–5cm).</summary>
-    RtkRover = 2,
 }
 
 /// <summary>Ergebnis einer AR-Capture-Session (Punkte + Konturen + Metadaten)</summary>
@@ -17,9 +15,6 @@ public class ArCaptureResult
     /// <summary>Quelle der GPS-Referenz — relevant für Accuracy-Berechnung in ArTransferService.</summary>
     public ArGpsSource GpsSource { get; set; } = ArGpsSource.None;
 
-    /// <summary>RTK Fix-Quality wenn <see cref="GpsSource"/> = <see cref="ArGpsSource.RtkRover"/>.
-    /// 4=RTK-Fix, 5=Float — entscheidet ob Genauigkeit ±2cm oder ±20cm angesetzt wird.</summary>
-    public int RtkFixQuality { get; set; }
     /// <summary>Alle gesetzten Einzelpunkte</summary>
     public List<ArPoint> Points { get; set; } = [];
 

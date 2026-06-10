@@ -95,19 +95,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// wenn sie nahe genug liegt (Robert-Wunsch: gefuehrtes Quadrat ohne Millimeter-Pingelei).</summary>
     private const bool RectangleSquareSnapEnabled = true;
 
-    /// <summary>Plan-Kap. 5.9: Statische Bruecke fuer Stakeout-Targets. Der Caller
-    /// (MainViewModel, StakeoutViewModel) setzt die Liste vor dem Activity-Start;
-    /// ArCaptureActivity liest sie in OnCreate und reset im OnDestroy.</summary>
-    private static readonly object _stakeoutTargetsLock = new();
-    private static IReadOnlyList<StakeoutTarget>? _pendingStakeoutTargets;
-
-    /// <summary>Wird vom Caller vor <c>StartActivityForResult</c> aufgerufen, damit der
-    /// Stakeout-Modus echte Ziele bekommt.</summary>
-    public static void SetStakeoutTargets(IReadOnlyList<StakeoutTarget>? targets)
-    {
-        lock (_stakeoutTargetsLock) _pendingStakeoutTargets = targets;
-    }
-
     /// <summary>Plan-Kap. 5.2: Statische Bruecke fuer Site-Points. Bestehende
     /// Projekt-Punkte werden als Earth-Anchors visualisiert, damit der User neue Punkte
     /// im selben Koordinatensystem erfasst.</summary>
@@ -129,18 +116,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         lock (_preloadPointsLock) _pendingPreloadPoints = points;
     }
 
-    /// <summary>Plan-Kap. 5.7: Statische Bruecke fuer Referenz-Marker. Augmented-Images-
-    /// Datenbank wird beim Activity-Start aus dieser Liste aufgebaut.</summary>
-    private static readonly object _markerLock = new();
-    private static IReadOnlyList<ArReferenceMarker>? _pendingMarkers;
-    public static void SetReferenceMarkers(IReadOnlyList<ArReferenceMarker>? markers)
-    {
-        lock (_markerLock) _pendingMarkers = markers;
-    }
-
-    private IReadOnlyList<ArReferenceMarker>? _referenceMarkers;
-    private readonly Dictionary<string, ArReferenceMarker> _markersByImageName = [];
-
     /// <summary>Site-Points dieser Session (Snapshot zu OnCreate). Werden NICHT ins
     /// ArCaptureResult zurueckgegeben — reine Visualisierungs-Layer.</summary>
     private IReadOnlyList<SurveyPoint>? _sitePoints;
@@ -161,38 +136,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private readonly List<ArPoint> _sitePointAnchors = [];
     private int _siteAnchorsCreated;
 
-    /// <summary>Plan-Kap. 5.8: Aktueller RTK-Stab-Anchor (immer max einer). Wird einmal
-    /// pro Sekunde an die aktuelle BLE-Stab-Position aktualisiert — alte Anchors werden
-    /// detacht. null wenn kein RTK-Fix oder noch nicht erzeugt.</summary>
-    private ArPoint? _rtkStabAnchor;
-
-    /// <summary>Frame-Zaehler fuer das 1Hz-Refresh des Stab-Anchors (RTK-Stab bewegt sich
-    /// gelegentlich, aber 30fps-Refresh wuerde Anchor-Hard-Limit erschoepfen).</summary>
-    private int _rtkStabRefreshFrameCounter;
-
-    /// <summary>Letzte gemeldete Fix-Quality des Stabs — bestimmt die Marker-Farbe
-    /// (RTK-Fix=Gruen, Float=Gelb, sonst Rot/Aus).</summary>
-    private volatile int _rtkStabLastFixQuality;
-
-    /// <summary>Stakeout-Ziele dieser Session (Snapshot zu OnCreate). Veraenderungen an
-    /// <see cref="StakeoutTarget.IsReached"/> sind sichtbar fuer den UI-Layer weil
-    /// StakeoutTarget ein <c>ObservableObject</c> ist.</summary>
-    private IReadOnlyList<StakeoutTarget>? _stakeoutTargets;
-
-    /// <summary>Schwellwert fuer Target-erreicht in Metern (Plan-Kap. 5.9: 10 cm).</summary>
-    private const double StakeoutReachedThresholdMeters = 0.10;
-
-    /// <summary>Letzte Distanz zum aktiven Target — verhindert Spam-Haptic wenn der User
-    /// gerade ueber das Target hinausschwankt. Erst nach Verlassen erneut feuern.</summary>
-    private double _stakeoutLastDistance = double.PositiveInfinity;
-
-    /// <summary>Letzte berechnete Distanz/Bearing/Label des aktiven Targets. GL-Thread
-    /// schreibt unter _stakeoutSnapshotLock, BuildOverlayState liest.</summary>
-    private readonly object _stakeoutSnapshotLock = new();
-    private double? _stakeoutCurrentDistance;
-    private double? _stakeoutCurrentRelativeBearingDeg;
-    private string? _stakeoutCurrentTargetLabel;
-
     // Sensordaten zum Session-Start. _magneticHeading wird Cross-Thread geschrieben
     // (Sensor-Thread) und gelesen (GL-/UI-Thread) — Nullable<float> ist ein 8-Byte-Struct
     // und damit NICHT atomic. Lösung: int-Bits eines float, NaN = "kein Wert", via
@@ -207,21 +150,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private double? _gpsAltitude;
     private float? _gpsAccuracy;
 
-    /// <summary>Aktuelle Quelle der GPS-Referenz. Wird in das ArCaptureResult propagiert
-    /// und bestimmt in ArTransferService ob die Accuracy auf RTK-Niveau (±2 cm) oder
-    /// Android-Location (±5 m) angesetzt wird.</summary>
+    /// <summary>Aktuelle Quelle der GPS-Referenz. Wird in das ArCaptureResult propagiert.</summary>
     private ArGpsSource _gpsSource = ArGpsSource.None;
 
-    /// <summary>BLE-Stab als RTK-Quelle (Plan 3.1 RTK-AR-Fusion). Null wenn kein Rover
-    /// connected ist oder die App im Mock-Mode läuft. Wird im OnCreate aus App.Services
-    /// aufgelöst — ArCaptureActivity ist eine separate Activity ohne eigenen DI-Container.</summary>
-    private IBleService? _bleService;
-
-    /// <summary>Letzter RTK Fix-Quality (0=NoFix, 4=RTK-Fix, 5=Float) zur Session-Zeit.</summary>
-    private int _rtkFixQuality;
-
-    /// <summary>Listener-Handle für PositionUpdated — beim OnDestroy abmelden.</summary>
-    private Action<double, double, double>? _rtkPositionHandler;
     private float? _barometricAltitude;
 
     // Volatile-Bits eines float — sentinel NaN = "kein Wert".
@@ -482,36 +413,17 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // mid-session passieren nicht — die AR-Activity laeuft als Modal-Fullscreen.
         _overlayLabels = LoadLocalizedLabels();
 
-        // Stakeout-Targets aus statischer Bruecke uebernehmen (Plan-Kap. 5.9).
-        lock (_stakeoutTargetsLock) _stakeoutTargets = _pendingStakeoutTargets;
         // Site-Points aus statischer Bruecke uebernehmen (Plan-Kap. 5.2).
         lock (_sitePointsLock) _sitePoints = _pendingSitePoints;
         // Vorlade-Punkte aus statischer Bruecke uebernehmen (Geo-unabhaengiges "alles noch da").
         lock (_preloadPointsLock) _preloadPoints = _pendingPreloadPoints;
-        // Referenz-Marker aus statischer Bruecke uebernehmen (Plan-Kap. 5.7).
-        lock (_markerLock) _referenceMarkers = _pendingMarkers;
-        if (_referenceMarkers != null)
-        {
-            foreach (var m in _referenceMarkers)
-                _markersByImageName[m.ImageAssetName] = m;
-        }
 
         // Sample-Count an Gerät anpassen — auf leistungsstarken Chips mehr Samples
         // für höhere Präzision innerhalb der 800ms-Timeout
         _effectiveMultiFrameSampleTargetCount = IsHighEndDevice() ? 15 : 10;
 
-        // Plan 3.1 RTK-AR-Fusion: BleService aus App.Services holen. Wenn verfügbar UND
-        // ein Stab mit RTK-Fix verbunden ist, nutzen wir die RTK-Position als GPS-Anker
-        // (±2 cm statt ±5 m vom Handy-GPS) und überspringen den Android-LocationManager-Pfad.
-        try { _bleService = App.Services?.GetService<IBleService>(); }
-        catch { /* Mock-Pfad ohne DI: harmlos */ }
-
-        var rtkUsed = TryUseRtkAsGpsAnchor();
-        if (!rtkUsed)
-        {
-            // Sensordaten beim Start erfassen (Multi-Sample-Averaging läuft parallel über 2-5s)
-            CaptureGpsPosition();
-        }
+        // Sensordaten beim Start erfassen (Multi-Sample-Averaging läuft parallel über 2-5s)
+        CaptureGpsPosition();
         CaptureSensorData();
 
         // Bestehende Projekt-Punkte als sichtbare Vorlade-Punkte laden (Geo-unabhaengig, Lage
@@ -705,14 +617,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private void ShowMoreMenu(View anchor)
     {
         var menu = new global::Android.Widget.PopupMenu(this, anchor);
-        const int idTape = 1, idTapeReset = 2, idStakeout = 3, idTachy = 4,
+        const int idTape = 1, idTapeReset = 2, idTachy = 4,
                   idDelete = 5, idScreenshot = 6, idRecord = 7, idHelp = 8, idGrid = 9;
 
         var popupMenu = menu.Menu!;
         popupMenu.Add(0, idTape, 0, "Maßband (Ad-hoc-Distanz)");
         if (_captureMode == CaptureMode.TapeMeasure)
             popupMenu.Add(0, idTapeReset, 0, "Maßband zurücksetzen");
-        popupMenu.Add(0, idStakeout, 0, "Abstecken (Ziele finden)");
         popupMenu.Add(0, idTachy, 0, "Tachymeter (Stativ-Modus)");
         // Löschen nur aktivieren, wenn ein Punkt ausgewählt ist — sonst ist der Eintrag
         // ausgegraut statt einen toten Klick mit leiser "Kein Punkt"-Meldung zu erzeugen.
@@ -729,7 +640,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             {
                 case idTape: VibrateLight(); SetMode(CaptureMode.TapeMeasure); break;
                 case idTapeReset: VibrateMedium(); ResetTapeMeasure(); break;
-                case idStakeout: VibrateLight(); SetMode(CaptureMode.Stakeout); break;
                 case idTachy: VibrateLight(); ToggleTotalStationMode(); break;
                 case idDelete: ConfirmDeleteSelectedPoint(); break;
                 case idGrid: VibrateLight(); ToggleGroundGrid(); break;
@@ -775,26 +685,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Modus-Anzeige läuft jetzt über den Canvas-Chip (BuildModeChipLabel pro Frame) —
         // hier nur noch Toolbar-Button-Highlighting.
 
-        // Stakeout: Hint wenn keine Targets bereitstehen (Plan-Kap. 5.9)
-        if (mode == CaptureMode.Stakeout)
-        {
-            var hasTargets = _stakeoutTargets != null && _stakeoutTargets.Count > 0;
-            if (!hasTargets)
-                ShowTransientHint("Keine Stakeout-Ziele — aus Stakeout-Tab öffnen", TransientSeverity.Warning);
-            // Reset Cooldown-Distanz bei Mode-Aktivierung
-            _stakeoutLastDistance = double.PositiveInfinity;
-        }
-
         // Nur die beiden Mode-Buttons der Haupt-Toolbar werden hervorgehoben. Maßband/
-        // Abstecken/Tachymeter sitzen im "Mehr"-Menue — der aktive Modus steht im Modus-Chip.
+        // Tachymeter sitzen im "Mehr"-Menue — der aktive Modus steht im Modus-Chip.
         _btnPoint?.SetBackgroundColor(mode == CaptureMode.Point ? ToolbarAccent : ToolbarInactive);
         // Der "Fläche"-Button deckt sowohl Freihand-Kontur als auch Rechteck ab.
         _btnContour?.SetBackgroundColor(mode is CaptureMode.Contour or CaptureMode.Rectangle
             ? ToolbarAccent : ToolbarInactive);
         // "Mehr"-Button hervorheben, solange ein Spezial-Modus aus dem Overflow-Menü aktiv ist
-        // (Maßband/Abstecken/Tachymeter) — sonst leuchtet KEIN Button und der Nutzer merkt nicht,
+        // (Maßband/Tachymeter) — sonst leuchtet KEIN Button und der Nutzer merkt nicht,
         // dass er den Modus gewechselt hat (z.B. Tape-Punkte landen dann nicht im Projekt).
-        _btnMore?.SetBackgroundColor(mode is CaptureMode.TapeMeasure or CaptureMode.Stakeout or CaptureMode.TotalStation
+        _btnMore?.SetBackgroundColor(mode is CaptureMode.TapeMeasure or CaptureMode.TotalStation
             ? ToolbarAccent : ToolbarInactive);
     }
 
@@ -1044,7 +944,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // GPS-Anker atomar als EINEN konsistenten Fix lesen (mehrere BLE-/Location-Writer).
         double? gpsLat, gpsLon, gpsAlt;
         float? gpsAcc;
-        int rtkFix;
         ArGpsSource gpsSource;
         lock (_gpsLock)
         {
@@ -1052,7 +951,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             gpsLon = _gpsLongitude;
             gpsAlt = _gpsAltitude;
             gpsAcc = _gpsAccuracy;
-            rtkFix = _rtkFixQuality;
             gpsSource = _gpsSource;
         }
         var finalLat = geoSnap?.Latitude ?? gpsLat;
@@ -1083,11 +981,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             GeospatialActive = _geospatialActive,
             GeospatialHorizontalAccuracy = geoHAcc,
             GeospatialHeadingAccuracy = geoHeadingAcc,
-            // Plan 3.1: GPS-Source + RTK-FixQuality für Accuracy-Berechnung in ArTransferService
             GpsSource = gpsSource == ArGpsSource.None && finalLat.HasValue
                 ? ArGpsSource.AndroidLocation
                 : gpsSource,
-            RtkFixQuality = rtkFix,
         };
         lock (_lastResultLock) _lastResult = captureResult;
 
@@ -2164,76 +2060,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     #region Sensordaten (GPS + Heading + Barometer)
 
     /// <summary>
-    /// Plan 3.1 RTK-AR-Fusion: Wenn ein BLE-Stab mit RTK-Fix verbunden ist, nutze dessen
-    /// Position als GPS-Anker für die AR-Session. Liefert true wenn RTK aktiv übernommen
-    /// wurde — der Caller überspringt dann den Android-LocationManager-Pfad. Bei false
-    /// bleibt der bisherige Pfad (LocationManager) als Fallback aktiv.
-    ///
-    /// FixQuality: 4=RTK-Fix (cm), 5=RTK-Float (dm). Akzeptiert beides — alles besser
-    /// als ±5 m Handy-GPS. DGPS/Standard-GPS (1–2) verwerfen wir, da der Android-Pfad
-    /// gleichwertig ist und ohne BLE-Strom-Overhead läuft.
-    ///
-    /// PositionUpdated-Event wird abonniert, damit die Position über die gesamte Session
-    /// aktuell bleibt (User kann den Stab bewegen während er mit dem Phone misst).
-    /// </summary>
-    private bool TryUseRtkAsGpsAnchor()
-    {
-        if (_bleService == null) return false;
-        if (!_bleService.IsConnected) return false;
-
-        var state = _bleService.GetStateSnapshot();
-        if (state.FixQuality < 4) return false;
-        if (!state.Latitude.HasValue || !state.Longitude.HasValue) return false;
-
-        var lat = state.Latitude.Value;
-        var lon = state.Longitude.Value;
-
-        // StickState hat cm — wir konvertieren auf m und limitieren auf 2cm minimum.
-        // RTK-Float (FixQuality=5) kann 5-30cm Accuracy haben, RTK-Fix (4) typisch 1-3cm.
-        var rtkAcc = MathF.Max(state.HorizontalAccuracy / 100f, 0.02f);
-        lock (_gpsLock)
-        {
-            _gpsLatitude = lat;
-            _gpsLongitude = lon;
-            _gpsAltitude = state.Altitude;
-            _gpsAccuracy = rtkAcc;
-            _gpsSource = ArGpsSource.RtkRover;
-            _rtkFixQuality = state.FixQuality;
-        }
-
-        // GPS-Sample-Liste mit dem RTK-Wert seeden, damit FinalizeGpsAveraging nicht
-        // ein leeres Sample-Set nutzt.
-        lock (_gpsSamples)
-        {
-            _gpsSamples.Add((lat, lon, state.Altitude, rtkAcc));
-        }
-
-        // Live-Updates abonnieren (2 Hz vom Rover). User kann den Stab während der
-        // Session umstecken; jede neue Position aktualisiert den Anker.
-        _rtkPositionHandler = (newLat, newLon, newAlt) =>
-        {
-            // Läuft auf dem BLE-Thread und kann nach OnDestroy noch in-flight sein.
-            if (IsDestroyed || IsFinishing) return;
-            var s = _bleService.GetStateSnapshot();
-            if (s.FixQuality < 4) return; // Fix verloren → keinen schlechteren Wert übernehmen
-
-            lock (_gpsLock)
-            {
-                _gpsLatitude = newLat;
-                _gpsLongitude = newLon;
-                _gpsAltitude = newAlt;
-                _gpsAccuracy = MathF.Max(s.HorizontalAccuracy / 100f, 0.02f);
-                _rtkFixQuality = s.FixQuality;
-            }
-        };
-        _bleService.PositionUpdated += _rtkPositionHandler;
-
-        global::Android.Util.Log.Info("ArCapture",
-            $"RTK-AR-Fusion aktiv: FixQuality={state.FixQuality}, ±{state.HorizontalAccuracy:F1}cm horizontal");
-        return true;
-    }
-
-    /// <summary>
     /// GPS-Erfassung mit Multi-Sample-Averaging über 5 Sekunden. Vorher: einmaliger
     /// LastKnownLocation-Snapshot (kann mehrere Minuten alt sein und ±10m abweichen).
     /// Jetzt: aktive Request + Samples-Accumulation, gewichtetes Mittel nach Accuracy.
@@ -2577,45 +2403,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 }
                 catch { /* harmlos */ }
 
-                // Plan-Kap. 5.7: Augmented Images / ArUco-Marker als Referenz-Punkte.
-                // Wenn der Caller via SetReferenceMarkers Marker uebergeben hat, bauen
-                // wir eine AugmentedImageDatabase aus den ImageAssetName-Eintraegen und
-                // setzen sie auf die Config. ARCore versucht dann pro Frame die
-                // angegebenen Bilder zu erkennen — getrackte Marker liefern eine Pose,
-                // die wir mit der eingemessenen Geo-Position abgleichen koennen.
-                try
-                {
-                    if (_referenceMarkers != null && _referenceMarkers.Count > 0)
-                    {
-                        var db = new global::Google.AR.Core.AugmentedImageDatabase(_arSession);
-                        foreach (var m in _referenceMarkers)
-                        {
-                            try
-                            {
-                                using var stream = Assets?.Open(m.ImageAssetName);
-                                if (stream == null) continue;
-                                using var bmp = global::Android.Graphics.BitmapFactory.DecodeStream(stream);
-                                if (bmp == null) continue;
-                                // AddImage(name, bitmap, widthInMeters) registriert das Bild
-                                // mit bekannter physischer Groesse — verbessert die Pose-Genauigkeit
-                                // gegenueber dem groessenlosen Default.
-                                db.AddImage(m.ImageAssetName, bmp, m.WidthMeters);
-                            }
-                            catch (Exception ex)
-                            {
-                                global::Android.Util.Log.Warn("ArCapture",
-                                    $"Marker-Bild {m.ImageAssetName} nicht ladbar: {ex.Message}");
-                            }
-                        }
-                        config.SetAugmentedImageDatabase(db);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    global::Android.Util.Log.Warn("ArCapture",
-                        $"Augmented-Images-Setup fehlgeschlagen: {ex.Message}");
-                }
-
                 // Geospatial-API: VPS für globale Positionierung (±1-3m horizontal, ±5° Heading)
                 // statt Magnetometer (±15-30° in Metallumgebung). Benötigt Google Cloud API-Key
                 // in AndroidManifest + Internet während Session-Start. Bei Fehlschlag fallen wir
@@ -2921,14 +2708,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 // Detection in solchen Frames unzuverlaessig ist.
                 UpdateLightEstimate(frame);
 
-                // Plan-Kap. 5.7: ArUco-Marker erkennen + Re-Localisation
-                if (_referenceMarkers != null && _referenceMarkers.Count > 0)
-                    UpdateAugmentedImageRecognition();
-
-                // Plan-Kap. 5.9: Stakeout-Distanz + Pfeil-Richtung pro Frame neu berechnen.
-                if (_captureMode == CaptureMode.Stakeout)
-                    UpdateStakeout();
-
                 // Plan 3.3: Recovery-Punkte wieder mit Earth-Anchors verknüpfen, sobald
                 // Geospatial aktiv ist. Limitiert auf 2 Re-Attaches pro Frame, damit auch
                 // ein 100-Punkt-Restore die Render-Loop nicht blockt.
@@ -2937,13 +2716,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     ReattachPendingEarthAnchors(maxPerFrame: 2);
                     // Plan-Kap. 5.2: Bestehende Projekt-Punkte als Site-Marker verankern
                     CreatePendingSiteAnchors(maxPerFrame: 2);
-                    // Plan-Kap. 5.8: RTK-Stab-Live-Position einmal pro Sekunde refreshen
-                    _rtkStabRefreshFrameCounter++;
-                    if (_rtkStabRefreshFrameCounter >= 30)
-                    {
-                        _rtkStabRefreshFrameCounter = 0;
-                        UpdateRtkStabAnchor();
-                    }
                 }
 
                 // Plan-Kap. 5.15: Quality-Heatmap einmal pro Sekunde berechnen (zu teuer
@@ -3031,11 +2803,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// Anchor-Positionen bestehender Projekt-Punkte mit Label.</summary>
     private readonly List<(float screenX, float screenY, string label)> _projectedSiteMarkersBuilder = [];
 
-    /// <summary>Aktuelle Projektion des RTK-Stab-Anchors (Plan-Kap. 5.8). Wird in
-    /// <see cref="ProjectPointsToScreen"/> aktualisiert, in <see cref="BuildOverlayState"/>
-    /// in den Snapshot uebernommen. null = Anchor nicht sichtbar / kein RTK-Fix.</summary>
-    private (float screenX, float screenY)? _projectedRtkStab;
-
     // Plan-Kap. 5.15: Quality-Heatmap — 12x21-Grid (96 Patches), pro Patch 0..1.
     // Berechnung alle 30 Frames (~1Hz), Snapshot wird in ArOverlayState durchgereicht.
     private const int HeatmapCols = 12;
@@ -3112,14 +2879,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     _projectedSiteMarkersBuilder.Add((screen.Value.x, screen.Value.y, sm.Label ?? ""));
             }
 
-            // Plan-Kap. 5.8: RTK-Stab-Marker (eigener Render-Pfad mit Fix-Farbe)
-            _projectedRtkStab = null;
-            if (_rtkStabAnchor != null)
-            {
-                var screen = WorldToScreen(_rtkStabAnchor, _mvpMatrixScratch);
-                if (screen.HasValue)
-                    _projectedRtkStab = (screen.Value.x, screen.Value.y);
-            }
         }
 
         lock (_projectedPoints)
@@ -3895,8 +3654,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             if (_activeContour != null) allPoints.AddRange(_activeContour.Points);
             // Plan-Kap. 5.2: Site-Marker auch refreshen, sonst driften die alten Punkte
             allPoints.AddRange(_sitePointAnchors);
-            // Plan-Kap. 5.8: RTK-Stab-Live-Anchor mit refreshen
-            if (_rtkStabAnchor != null) allPoints.Add(_rtkStabAnchor);
         }
         _anchorManager.RefreshAnchors(allPoints);
     }
@@ -4585,10 +4342,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 return ("Maßband", tapeCount == 0
                     ? "Startpunkt antippen"
                     : $"{tapeCount} {PointsWord(tapeCount)}");
-            case CaptureMode.Stakeout:
-                var reached = _stakeoutTargets?.Count(t => t.IsReached) ?? 0;
-                var total = _stakeoutTargets?.Count ?? 0;
-                return ("Abstecken", total > 0 ? $"{reached}/{total} Ziele" : "Keine Ziele");
             case CaptureMode.TotalStation:
                 return ("Tachymeter", "Punkt anvisieren");
             default: // Point
@@ -5005,18 +4758,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             RectangleLengthMeters = rectLen,
             RectangleDepthMeters = rectDepth,
             RectangleAreaMeters = rectArea,
-            // Plan-Kap. 5.9: Stakeout-Daten fuer das Overlay
-            IsStakeoutMode = _captureMode == CaptureMode.Stakeout,
-            StakeoutDistanceMeters = ReadStakeoutDistance(),
-            StakeoutRelativeBearingDeg = ReadStakeoutBearing(),
-            StakeoutTargetLabel = ReadStakeoutLabel(),
-            StakeoutReachedCount = _stakeoutTargets?.Count(t => t.IsReached) ?? 0,
-            StakeoutTotalCount = _stakeoutTargets?.Count ?? 0,
             // Plan-Kap. 5.2: Site-Marker-Snapshot
             SiteMarkerScreenPoints = BuildSiteMarkerSnapshot(),
-            // Plan-Kap. 5.8: RTK-Stab-Live-Position
-            RtkStabScreenPos = _projectedRtkStab,
-            RtkStabFixQuality = _rtkStabLastFixQuality,
             // Plan-Kap. 5.15: Quality-Heatmap (Snapshot der letzten Berechnung)
             QualityHeatmapGrid = _heatmapEnabled ? CloneHeatmapGrid() : null,
             QualityHeatmapCols = HeatmapCols,
@@ -5037,19 +4780,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     {
         if (_projectedSiteMarkersBuilder.Count == 0) return null;
         return new List<(float, float, string)>(_projectedSiteMarkersBuilder);
-    }
-
-    private double? ReadStakeoutDistance()
-    {
-        lock (_stakeoutSnapshotLock) return _stakeoutCurrentDistance;
-    }
-    private double? ReadStakeoutBearing()
-    {
-        lock (_stakeoutSnapshotLock) return _stakeoutCurrentRelativeBearingDeg;
-    }
-    private string? ReadStakeoutLabel()
-    {
-        lock (_stakeoutSnapshotLock) return _stakeoutCurrentTargetLabel;
     }
 
     /// <summary>Snapshot der projizierten Tape-Measure-Punkte (Plan-Kap. 5.3) — sicheres
@@ -5092,112 +4822,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         for (var i = 1; i < _tapeMeasurePoints.Count; i++)
             total += _tapeMeasurePoints[i].DistanceTo(_tapeMeasurePoints[i - 1]);
         return total;
-    }
-
-    /// <summary>Plan-Kap. 5.9: Pro Frame Distanz + Bearing zum naechsten Stakeout-Target
-    /// neu berechnen. Aktuelle Position aus Geospatial-Pose (bevorzugt) oder RTK-Snapshot;
-    /// bei &lt;10cm wird Target.IsReached gesetzt und das naechste angesteuert.</summary>
-    private void UpdateStakeout()
-    {
-        if (_stakeoutTargets == null || _stakeoutTargets.Count == 0) return;
-
-        // Aktuelle Position: Geospatial-Pose zuerst (VPS), sonst RTK-Snapshot, sonst
-        // die initialen GPS-Werte (Activity-Start) — die letzteren bringen aber wenig,
-        // weil sie sich nicht aendern. Realistisch braucht Stakeout entweder Geospatial-
-        // Tracking oder einen aktiven RTK-Rover.
-        double? curLat = null, curLon = null;
-        double? curHeadingDeg = null;
-
-        var geoSnap = System.Threading.Volatile.Read(ref _lastGeoSnapshot);
-        if (geoSnap != null)
-        {
-            curLat = geoSnap.Latitude;
-            curLon = geoSnap.Longitude;
-            curHeadingDeg = geoSnap.Heading;
-        }
-        else if (_bleService is { IsConnected: true } && _bleService.CurrentState.FixQuality >= 4)
-        {
-            var s = _bleService.GetStateSnapshot();
-            curLat = s.Latitude;
-            curLon = s.Longitude;
-            curHeadingDeg = _magneticHeading;
-        }
-
-        if (!curLat.HasValue || !curLon.HasValue)
-        {
-            lock (_stakeoutSnapshotLock)
-            {
-                _stakeoutCurrentDistance = null;
-                _stakeoutCurrentRelativeBearingDeg = null;
-                _stakeoutCurrentTargetLabel = null;
-            }
-            return;
-        }
-
-        // Naechstes unerreichtes Target
-        StakeoutTarget? target = null;
-        foreach (var t in _stakeoutTargets)
-        {
-            if (!t.IsReached) { target = t; break; }
-        }
-
-        if (target == null)
-        {
-            lock (_stakeoutSnapshotLock)
-            {
-                _stakeoutCurrentDistance = null;
-                _stakeoutCurrentRelativeBearingDeg = null;
-                _stakeoutCurrentTargetLabel = null;
-            }
-            return;
-        }
-
-        var coords = App.Services?.GetService<ICoordinateService>();
-        if (coords == null) return;
-
-        var distanceM = coords.HaversineDistance(curLat.Value, curLon.Value, target.Latitude, target.Longitude);
-        var bearingTrue = coords.GetBearing(curLat.Value, curLon.Value, target.Latitude, target.Longitude);
-
-        // Relative Pfeil-Richtung = Bearing zum Target minus aktuelles Heading (Camera-Forward = "vorne")
-        double? relBearing = null;
-        if (curHeadingDeg.HasValue)
-        {
-            relBearing = bearingTrue - curHeadingDeg.Value;
-            // Normalisieren auf -180..180
-            while (relBearing > 180) relBearing -= 360;
-            while (relBearing < -180) relBearing += 360;
-        }
-
-        // Best-Distance fortschreiben
-        if (distanceM < target.BestDistance) target.BestDistance = distanceM;
-
-        // Reached-Detection mit Hysterese: erst feuern wenn der User von "weit weg"
-        // (>= 30cm) auf "<=10cm" geht — verhindert Wackler an der Schwelle.
-        if (_stakeoutLastDistance > 0.30 && distanceM <= StakeoutReachedThresholdMeters)
-        {
-            target.IsReached = true;
-            // Hysterese für das NÄCHSTE Target zurücksetzen: ein direkt benachbartes Ziel
-            // (bereits < 30 cm — im Vermessungs-Kontext der Normalfall) würde sonst klemmen,
-            // weil _stakeoutLastDistance auf ~10 cm steht und die ">30 cm → <10 cm"-Bedingung
-            // erst nach Weglaufen + Zurück greift.
-            _stakeoutLastDistance = double.PositiveInfinity;
-            RunOnUiThread(() =>
-            {
-                VibrateMedium();
-                ShowTransientHint($"{target.Label} erreicht! (Distanz {distanceM * 100:F1} cm)", TransientSeverity.Success);
-            });
-        }
-        else
-        {
-            _stakeoutLastDistance = distanceM;
-        }
-
-        lock (_stakeoutSnapshotLock)
-        {
-            _stakeoutCurrentDistance = distanceM;
-            _stakeoutCurrentRelativeBearingDeg = relBearing;
-            _stakeoutCurrentTargetLabel = target.Label;
-        }
     }
 
     /// <summary>Plan-Kap. 5.15: Echte Per-Patch-FeaturePoint-Density. Iteriert getrackte
@@ -5276,139 +4900,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         for (var c = 0; c < HeatmapCols; c++)
             for (var r = 0; r < HeatmapRows; r++)
                 _heatmapGrid[c, r] *= qualityScore;
-    }
-
-    /// <summary>Plan-Kap. 5.8: Refresht den Earth-Anchor des RTK-Stabs an seiner aktuellen
-    /// BLE-Position. Loescht den alten Anchor (Anchor-Hard-Limit) und erzeugt einen neuen.
-    /// Wird einmal pro Sekunde gerufen (30 Frames). _rtkStabAnchor.GeoLat/Lon/Alt bleiben
-    /// als Tooltip-Quelle erhalten. Wenn kein RTK-Fix → Anchor wird entfernt.</summary>
-    private void UpdateRtkStabAnchor()
-    {
-        if (_bleService is not { IsConnected: true })
-        {
-            ClearRtkStabAnchor();
-            return;
-        }
-        var state = _bleService.GetStateSnapshot();
-        if (state.FixQuality < 1 || !state.Latitude.HasValue || !state.Longitude.HasValue)
-        {
-            ClearRtkStabAnchor();
-            return;
-        }
-        var stabAltNn = state.Altitude ?? 0.0;
-
-        var earth = _arSession?.Earth;
-        if (earth == null || earth.TrackingState != TrackingState.Tracking) return;
-
-        // Alten Anchor freigeben (analog Anchor-Lifecycle in CloseActiveContour)
-        if (_rtkStabAnchor != null && !string.IsNullOrEmpty(_rtkStabAnchor.AnchorId))
-        {
-            _anchorManager.Detach(_rtkStabAnchor.AnchorId);
-            _rtkStabAnchor.AnchorId = null;
-        }
-
-        var newMarker = new ArPoint
-        {
-            Label = $"Stab ({FixQualityLabel(state.FixQuality)})",
-            Confidence = state.FixQuality >= 4 ? 0.95f : 0.6f,
-            HitQuality = 3,
-            GeoLatitude = state.Latitude,
-            GeoLongitude = state.Longitude,
-            GeoAltitude = state.Altitude,
-            Timestamp = DateTime.UtcNow,
-        };
-
-        // Stab-Altitude bereits NN-korrigiert von BleService.OnCharacteristicChanged.
-        // Earth.CreateAnchor erwartet Ellipsoid → grobe 48m-Naehrung (DE) wieder addieren.
-        var ellipsoidAlt = stabAltNn + 48.0;
-        if (_anchorManager.TryCreateEarthAnchor(earth, state.Latitude.Value, state.Longitude.Value,
-            ellipsoidAlt, newMarker))
-        {
-            lock (_dataLock) _rtkStabAnchor = newMarker;
-            _rtkStabLastFixQuality = state.FixQuality;
-        }
-    }
-
-    private void ClearRtkStabAnchor()
-    {
-        if (_rtkStabAnchor == null) return;
-        if (!string.IsNullOrEmpty(_rtkStabAnchor.AnchorId))
-            _anchorManager.Detach(_rtkStabAnchor.AnchorId);
-        lock (_dataLock) _rtkStabAnchor = null;
-        _rtkStabLastFixQuality = 0;
-    }
-
-    private static string FixQualityLabel(int fix) => fix switch
-    {
-        4 => "RTK-Fix",
-        5 => "RTK-Float",
-        2 => "DGPS",
-        1 => "GPS",
-        _ => "?",
-    };
-
-    /// <summary>Plan-Kap. 5.7: Per Frame die getrackten Augmented-Images abfragen. Wenn
-    /// ein bekannter Marker (Image-Name in <see cref="_markersByImageName"/>) im Status
-    /// Tracking gefunden wird, erzeugen wir EINMAL einen Earth-Anchor an der
-    /// vorab eingemessenen RTK-Position. Damit ist das Vermessungs-Koordinatensystem im
-    /// AR-Frame physisch verankert — der Marker dient als reale Referenz, das Anchor
-    /// haelt die Position drift-frei (via VPS).</summary>
-    private readonly HashSet<string> _markersAlreadyLocalized = [];
-    private void UpdateAugmentedImageRecognition()
-    {
-        if (_arSession == null) return;
-        var earth = _arSession.Earth;
-
-        try
-        {
-            var trackables = _arSession.GetAllTrackables(
-                Java.Lang.Class.FromType(typeof(global::Google.AR.Core.AugmentedImage)));
-            if (trackables == null) return;
-
-            foreach (var t in trackables)
-            {
-                if (t is not global::Google.AR.Core.AugmentedImage img) continue;
-                if (img.TrackingState != TrackingState.Tracking) continue;
-
-                var imageName = img.Name ?? string.Empty;
-                if (string.IsNullOrEmpty(imageName)) continue;
-                if (!_markersByImageName.TryGetValue(imageName, out var marker)) continue;
-                if (_markersAlreadyLocalized.Contains(imageName)) continue;
-
-                // Marker neu lokalisiert — Earth-Anchor an seiner vorab eingemessenen
-                // Position erzeugen. Visualisierung erfolgt via Site-Marker-Layer.
-                if (earth == null || earth.TrackingState != TrackingState.Tracking) continue;
-
-                var markerPoint = new ArPoint
-                {
-                    Label = $"Marker: {marker.Name}",
-                    Confidence = 0.98f,
-                    HitQuality = 3,
-                    GeoLatitude = marker.Latitude,
-                    GeoLongitude = marker.Longitude,
-                    GeoAltitude = marker.Altitude,
-                    GeoHorizontalAccuracy = marker.AccuracyCm / 100f,
-                    Timestamp = DateTime.UtcNow,
-                };
-                var ellipsoidAlt = marker.Altitude + 48.0;
-                if (_anchorManager.TryCreateEarthAnchor(earth, marker.Latitude, marker.Longitude,
-                    ellipsoidAlt, markerPoint))
-                {
-                    lock (_dataLock) _sitePointAnchors.Add(markerPoint);
-                    _markersAlreadyLocalized.Add(imageName);
-                    RunOnUiThread(() =>
-                    {
-                        ShowTransientHint($"Marker erkannt: {marker.Name}", TransientSeverity.Success);
-                        VibrateMedium();
-                    });
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            global::Android.Util.Log.Warn("ArCapture",
-                $"AugmentedImage-Recognition fehlgeschlagen: {ex.Message}");
-        }
     }
 
     /// <summary>Plan-Kap. 5.2: Erzeugt iterativ Earth-Anchors fuer alle bestehenden
@@ -5544,8 +5035,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     }
 
     /// <summary>Plan-Kap. 5.17: Total-Station-Modus aktivieren. Stationiert das Phone an
-    /// der aktuellen RTK-Stab-Position (wenn vorhanden) oder zeigt einen Hint dass kein
-    /// Stab connected ist.</summary>
+    /// der aktuellen Geospatial-Position (VPS) — ohne aktives Geospatial-Tracking gibt es
+    /// keine verlaessliche Stations-Referenz, dann Hint statt falscher Stationierung.</summary>
     private void ToggleTotalStationMode()
     {
         var ts = App.Services?.GetService<ITotalStationService>();
@@ -5555,26 +5046,17 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             return;
         }
 
-        // Origin = aktuelle RTK-Stab-Position (gestaubt durch BLE)
-        if (_bleService is not { IsConnected: true })
-        {
-            ShowTransientHint("Stab nicht verbunden — Total-Station braucht RTK-Anker", TransientSeverity.Warning);
-            return;
-        }
-        var s = _bleService.GetStateSnapshot();
-        if (s.FixQuality < 4 || !s.Latitude.HasValue || !s.Longitude.HasValue)
-        {
-            ShowTransientHint("Kein RTK-Fix am Stab — bitte warten oder NTRIP prüfen", TransientSeverity.Warning);
-            return;
-        }
-
-        // Heading aus Geospatial-Pose oder Magnetometer
+        // Origin = aktuelle Geospatial-Pose (VPS, ±1-3 m)
         var geoSnap = System.Threading.Volatile.Read(ref _lastGeoSnapshot);
-        var heading = geoSnap?.Heading ?? _magneticHeading ?? 0f;
+        if (geoSnap == null)
+        {
+            ShowTransientHint("Kein Geospatial-Tracking — Tachymeter braucht eine VPS-Position", TransientSeverity.Warning);
+            return;
+        }
 
-        ts.SetStationOrigin(s.Latitude.Value, s.Longitude.Value, s.Altitude ?? 0.0, heading);
+        ts.SetStationOrigin(geoSnap.Latitude, geoSnap.Longitude, geoSnap.Altitude, geoSnap.Heading);
         SetMode(CaptureMode.TotalStation);
-        ShowTransientHint($"Stationiert ({s.Latitude.Value:F6}, {s.Longitude.Value:F6})", TransientSeverity.Success);
+        ShowTransientHint($"Stationiert ({geoSnap.Latitude:F6}, {geoSnap.Longitude:F6})", TransientSeverity.Success);
         VibrateMedium();
     }
 
@@ -5696,14 +5178,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _activeLocationListeners.Clear();
         StopFusedLocationUpdates();
 
-        // RTK-PositionUpdated-Handler abmelden (Plan 3.1) — sonst hält der BleService
-        // die Lambda-Referenz auf diese Activity und verhindert GC.
-        if (_bleService != null && _rtkPositionHandler != null)
-        {
-            try { _bleService.PositionUpdated -= _rtkPositionHandler; } catch { /* OK */ }
-            _rtkPositionHandler = null;
-        }
-
         // Präzisions-Manager freigeben BEVOR Session geschlossen wird
         // (Anchors halten Session-Referenz)
         _stabilityMonitor?.Dispose();
@@ -5748,10 +5222,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         /// in einem separaten Buffer gehalten, NICHT ins Projekt uebertragen. Polylinie
         /// + Distanz-Labels zwischen Punkten + Gesamtsumme im Footer.</summary>
         TapeMeasure,
-        /// <summary>Plan-Kap. 5.9: Absteck-Modus. Zeigt Pfeil + Distanz zum naechsten
-        /// unerreichten Stakeout-Target. Bei &lt;10cm wird das Target als erreicht markiert.</summary>
-        Stakeout,
-        /// <summary>Plan-Kap. 5.17: Total-Station-Modus. Phone auf Stativ ueber RTK-Stab.
+        /// <summary>Plan-Kap. 5.17: Total-Station-Modus. Phone auf Stativ am Stationspunkt.
         /// Reticle-Hit liefert via Depth-API + ARCore-Heading die Ziel-Lat/Lon ueber
         /// <see cref="ITotalStationService"/>.</summary>
         TotalStation,

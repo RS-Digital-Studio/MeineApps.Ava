@@ -37,11 +37,6 @@ public interface IArCaptureService
     /// Bei <see cref="ArCaptureCompletionStatus.UserCancelled"/> null.</summary>
     string? LastError { get; }
 
-    /// <summary>Plan-Kap. 5.9: Stakeout-Targets fuer die naechste AR-Session vorbereiten.
-    /// Muss vor <see cref="CaptureAsync"/> gesetzt werden. Wird beim Activity-Start
-    /// uebernommen. Null = Stakeout-Mode in der Activity ist leer (Hint statt Pfeil).</summary>
-    void SetStakeoutTargets(IReadOnlyList<StakeoutTarget>? targets);
-
     /// <summary>Plan-Kap. 5.2: Persistente Sites — bestehende Projekt-Punkte werden in der
     /// AR-Session als Earth-Anchors visualisiert (graue Marker), damit der User neue
     /// Punkte im selben Koordinatensystem erfasst. Funktioniert ueber den Earth-Anchor-
@@ -56,10 +51,4 @@ public interface IArCaptureService
     /// fuer den reinen AR-Modus. Sie gehen bewusst NICHT ins ArCaptureResult zurueck (kein
     /// Duplikat, keine Geo-Ueberschreibung). Volle Bearbeitung mit Verankerung folgt spaeter.</summary>
     void SetPreloadPoints(IReadOnlyList<SurveyPoint>? points);
-
-    /// <summary>Plan-Kap. 5.7: ArUco-/Augmented-Image-Marker fuer die naechste AR-Session
-    /// vorbereiten. Sobald die Activity einen davon im Sichtfeld erkennt, kann sie sich
-    /// instantan im Vermessungs-Koordinatensystem ausrichten — Vorteil: funktioniert auch
-    /// ohne Geospatial-API-Coverage und ohne aktiven RTK-Stab.</summary>
-    void SetReferenceMarkers(IReadOnlyList<ArReferenceMarker>? markers);
 }

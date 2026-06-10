@@ -166,11 +166,6 @@ public class ProjectService : IProjectService
                         Altitude = point.Altitude,
                         HorizontalAccuracy = point.HorizontalAccuracy,
                         VerticalAccuracy = point.VerticalAccuracy,
-                        TiltAngle = point.TiltAngle,
-                        TiltAzimuth = point.TiltAzimuth,
-                        FixQuality = point.FixQuality,
-                        SatelliteCount = point.SatelliteCount,
-                        MagAccuracy = point.MagAccuracy,
                         Timestamp = point.Timestamp,
                         Label = point.Label
                     };

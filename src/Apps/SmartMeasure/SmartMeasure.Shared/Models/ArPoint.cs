@@ -73,8 +73,8 @@ public class ArPoint
 
     /// <summary>
     /// Kamera-Pitch in Grad zum Capture-Zeitpunkt (0 = horizontal, +90 = nach oben, -90 = nach unten).
-    /// Wird aus ARCore-Camera-Pose extrahiert und ist nicht der RTK-Stab-Tilt — hier zählt die
-    /// Phone-Orientierung, weil sie die Mess-Genauigkeit beeinflusst (steiler Pitch → größerer Depth-Fehler).
+    /// Wird aus der ARCore-Camera-Pose extrahiert — die Phone-Orientierung beeinflusst die
+    /// Mess-Genauigkeit (steiler Pitch → größerer Depth-Fehler).
     /// </summary>
     public float CameraPitchDeg { get; set; }
 

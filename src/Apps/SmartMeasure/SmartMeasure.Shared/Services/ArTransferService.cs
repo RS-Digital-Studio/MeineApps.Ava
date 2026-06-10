@@ -11,9 +11,6 @@ public class ArTransferService : IArTransferService
     private readonly IMeasurementService _measurementService;
     private readonly IGeoidService _geoidService;
 
-    /// <summary>FixQuality-Wert fuer AR-erfasste Punkte</summary>
-    private const int ArFixQuality = 10;
-
     /// <summary>Minimale geschaetzte AR-Genauigkeit in cm</summary>
     private const float MinArAccuracyCm = 50f;
 
@@ -142,12 +139,6 @@ public class ArTransferService : IArTransferService
         var headingDeg = result.MagneticHeading ?? 0f;
         var gpsAccuracy = result.GpsAccuracy ?? 5f;
 
-        // Plan 3.1: Bei RTK-Quelle ist die GPS-Accuracy bereits cm-genau — wir respektieren
-        // sie statt das 50cm-Minimum (MinArAccuracyCm) anzuwenden. Das ist der ganze Punkt
-        // der RTK-Fusion: nicht die AR-Schätzung als Fehler-Ceiling, sondern den echten
-        // RTK-Fehler durchreichen.
-        var isRtk = result.GpsSource == ArGpsSource.RtkRover;
-
         // ARCore-Session-Ursprung liegt typisch in Augen-/Brusthöhe (1.0-1.7m über Boden).
         // Wenn der ArCaptureService eine horizontale Ground-Plane gefunden hat, ist deren
         // Y-Wert die Boden-Höhe relativ zum Session-Ursprung — wir ziehen diesen Offset
@@ -155,11 +146,7 @@ public class ArTransferService : IArTransferService
         var groundOffset = result.GroundPlaneY ?? 0f;
 
         // Fallback-Accuracy wenn Geospatial nicht aktiv (cm, aus GPS * Faktor).
-        // Bei RTK: kein 50cm-Minimum, kein 100x-Faktor — die RTK-Accuracy ist bereits cm-genau.
-        // Wir addieren nur einen kleinen ARCore-Drift-Term (5cm) auf den GPS-Wert.
-        var fallbackAccuracyCm = isRtk
-            ? Math.Max(gpsAccuracy * 100f + 5f, 2f) // RTK in m → cm + 5cm AR-Drift, min 2cm
-            : Math.Max(gpsAccuracy * GpsToArAccuracyFactor, MinArAccuracyCm);
+        var fallbackAccuracyCm = Math.Max(gpsAccuracy * GpsToArAccuracyFactor, MinArAccuracyCm);
 
         // Heading-Rotation nur als Fallback — Geospatial-Koords pro Punkt werden bevorzugt
         var headingRad = headingDeg * Math.PI / 180.0;
@@ -202,22 +189,13 @@ public class ArTransferService : IArTransferService
 
             // Android Location.Altitude / ARCore-Geospatial-Altitude sind WGS84-Ellipsoid →
             // nach NN korrigieren (in DE ~48m Differenz).
-            // AUSNAHME: Bei RTK-Quelle OHNE VPS-Punkt ist gpsAlt bereits MSL (der BLE-Service hat
-            // die Geoid-Korrektur schon angewandt). Eine zweite Korrektur würde die Höhe ~48m zu
-            // tief machen — genau im genauesten (±2cm) Modus.
-            var altIsAlreadyMsl = isRtk && !arPoint.GeoLatitude.HasValue;
-            var finalAlt = altIsAlreadyMsl
-                ? finalAltEllipsoid
-                : _geoidService.EllipsoidToGeoid(finalLat, finalLon, finalAltEllipsoid);
+            var finalAlt = _geoidService.EllipsoidToGeoid(finalLat, finalLon, finalAltEllipsoid);
 
             // VerticalAccuracy ist nach Plan-Kap. 4.1 konservativ schlechter als die
             // horizontale (GPS-Höhe hat höheres VDOP, AR-Höhe kommt zusätzlich aus
             // Ground-Plane-Schätzung). 1.8× ist ein vorsichtiger Mittelwert.
             var verticalAccCm = finalAccuracyCm * VerticalToHorizontalAccFactor;
 
-            // TiltAngle/MagAccuracy werden pro AR-Punkt aus der Camera-Pose und dem Magnetometer
-            // beim Capture-Zeitpunkt übernommen — gibt späterer Tilt-Korrektur / Quality-Berechnung
-            // belastbare Daten. TiltAzimuth bleibt 0, weil AR kein "Stab-Azimuth" hat.
             points.Add(new SurveyPoint
             {
                 ProjectId = projectId,
@@ -226,20 +204,8 @@ public class ArTransferService : IArTransferService
                 Altitude = finalAlt,
                 HorizontalAccuracy = finalAccuracyCm,
                 VerticalAccuracy = verticalAccCm,
-                TiltAngle = arPoint.CameraPitchDeg,
-                TiltAzimuth = 0f,
-                FixQuality = ArFixQuality,
-                SatelliteCount = 0,
-                MagAccuracy = arPoint.MagAccuracyAtCapture,
-                // Echte Mess-Konfidenz: Die RTK-Position ist nur der GPS-Anker des Session-
-                // Ursprungs — die einzelnen Punkt-Lagen (X/Z lokal) stammen weiterhin aus
-                // ARCore-HitTests. Der RTK-Fix wirkt daher als CEILING (Fix=1.0, Float=0.7)
-                // und wird mit der echten ARCore-Punktgüte (Hit-Quality + Streuung + Tracking)
-                // MULTIPLIZIERT, statt sie zu ersetzen. Sonst bekäme ein Punkt mit 8 cm
-                // Streuung und Instant-Placement fälschlich Confidence 1.0.
-                Confidence = isRtk
-                    ? arPoint.Confidence * (result.RtkFixQuality == 4 ? 1f : 0.7f)
-                    : arPoint.Confidence,
+                // Echte ARCore-Punktgüte (Hit-Quality + Streuung + Tracking-Stabilitaet)
+                Confidence = arPoint.Confidence,
                 Timestamp = arPoint.Timestamp,
                 Label = arPoint.Label,
                 // Plan-Kap. 5.6: Foto-Annotation pro Punkt durchreichen

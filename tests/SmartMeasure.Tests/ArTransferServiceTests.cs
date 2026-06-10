@@ -147,19 +147,6 @@ public class ArTransferServiceTests
     }
 
     [Fact]
-    public void ConvertToSurveyPoints_FixQualityIst10_FuerARPunkte()
-    {
-        // AR-Punkte sollen sich von RTK-Punkten (4/5) unterscheiden lassen.
-        var (svc, _, _) = MakeService();
-        var result = MakeResult();
-        result.Points.Add(new ArPoint());
-
-        var points = svc.ConvertToSurveyPoints(result, 1);
-
-        points[0].FixQuality.Should().Be(10);
-    }
-
-    [Fact]
     public void ConvertToSurveyPoints_NutztUtmStatt111320Approximation()
     {
         // Bei 100m Distanz auf 48° N sollte UTM gegenueber 111320-Approximation
@@ -284,45 +271,6 @@ public class ArTransferServiceTests
 
         points[0].VerticalAccuracy.Should().BeApproximately(
             points[0].HorizontalAccuracy * 1.8f, 0.01f);
-    }
-
-    [Fact]
-    public void ConvertToSurveyPoints_UebernimmtTiltUndMagAccuracyAusArPoint()
-    {
-        // Plan Kap. 4.2 — CameraPitch und MagAccuracy wandern aus ArPoint in SurveyPoint
-        var (svc, _, _) = MakeService();
-        var result = MakeResult();
-        result.Points.Add(new ArPoint
-        {
-            CameraPitchDeg = -42.5f,
-            MagAccuracyAtCapture = 2,
-        });
-
-        var points = svc.ConvertToSurveyPoints(result, 1);
-
-        points[0].TiltAngle.Should().Be(-42.5f);
-        points[0].MagAccuracy.Should().Be(2);
-        points[0].TiltAzimuth.Should().Be(0f); // AR hat kein Azimuth-Konzept
-    }
-
-    [Fact]
-    public void ConvertToSurveyPoints_RtkSource_LiefertCmAccuracyOhne50cmMinimum()
-    {
-        // Plan 3.1 RTK-AR-Fusion: Bei RTK-Quelle keine MinArAccuracyCm-Untergrenze.
-        // GpsAccuracy 0.03 m (3 cm) → SurveyPoint sollte ~8 cm bekommen
-        // (3 cm GPS + 5 cm AR-Drift), NICHT auf 50 cm hochgezogen werden.
-        var (svc, _, _) = MakeService();
-        var result = MakeResult();
-        result.GpsAccuracy = 0.03f; // 3 cm RTK-Fix
-        result.GpsSource = ArGpsSource.RtkRover;
-        result.RtkFixQuality = 4;
-        result.Points.Add(new ArPoint());
-
-        var points = svc.ConvertToSurveyPoints(result, 1);
-
-        // 3 cm * 100 = 3 cm + 5 cm AR-Drift = 8 cm. Kein 50-cm-Minimum.
-        points[0].HorizontalAccuracy.Should().BeLessThan(15f); // unter 15 cm
-        points[0].HorizontalAccuracy.Should().BeGreaterThan(5f); // mindestens 5 cm
     }
 
     [Fact]

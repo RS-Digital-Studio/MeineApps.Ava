@@ -1,55 +1,34 @@
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
-using SmartMeasure.Shared.Models;
 using SmartMeasure.Shared.Services;
 
 namespace SmartMeasure.Shared.ViewModels;
 
-/// <summary>Haupt-ViewModel: Navigation (6 Tabs + Verbindung), Status-Bar, Back-Button, AR-Transfer</summary>
+/// <summary>Haupt-ViewModel: Navigation (6 Tabs), Back-Button, AR-Transfer, Export-Banner</summary>
 public partial class MainViewModel : ViewModelBase
 {
-    private readonly IBleService _bleService;
     private readonly IArTransferService _arTransferService;
     private readonly IMeasurementService _measurementService;
     private readonly IProjectService _projectService;
-    private readonly IHardwareModeService _hardwareMode;
     private readonly BackPressHelper _backPressHelper = new();
 
     // Child-ViewModels
-    public ConnectViewModel ConnectVm { get; }
     public SurveyViewModel SurveyVm { get; }
     public TerrainViewModel TerrainVm { get; }
     public GardenPlanViewModel GardenPlanVm { get; }
     public MapViewModel MapVm { get; }
     public ProjectsViewModel ProjectsVm { get; }
-    public StakeoutViewModel StakeoutVm { get; }
     public SettingsViewModel SettingsVm { get; }
 
-    // Navigation (7 Haupttabs + Verbindung als Overlay/Sub)
+    // Navigation (6 Haupttabs)
     [ObservableProperty] private bool _isSurveyActive = true;
     [ObservableProperty] private bool _isTerrainActive;
     [ObservableProperty] private bool _isGardenActive;
     [ObservableProperty] private bool _isMapActive;
     [ObservableProperty] private bool _isProjectsActive;
-    [ObservableProperty] private bool _isStakeoutActive;
-    [ObservableProperty] private bool _isConnectActive;
     [ObservableProperty] private bool _isSettingsActive;
-
-    // Status-Bar
-    [ObservableProperty] private bool _isBleConnected;
-    [ObservableProperty] private int _batteryLevel;
-    [ObservableProperty] private int _fixQuality;
-    [ObservableProperty] private string _fixStatusText = "KEIN FIX";
-    [ObservableProperty] private int _satelliteCount;
-    [ObservableProperty] private float _horizontalAccuracy;
-
-    /// <summary>Adaptiver Betriebsmodus: true = RTK-Hardware-UI zeigen (Status-Bar voll,
-    /// BLE- + Abstecken-Tab sichtbar). false = reiner AR-Modus (schlanke Status-Bar,
-    /// Hardware-Tabs ausgeblendet). Wird vom <see cref="IHardwareModeService"/> gespeist.</summary>
-    [ObservableProperty] private bool _showRtkUi;
 
     // Export-Share-Banner: Nach erfolgreichem Export sichtbar, bietet Teilen/Öffnen an
     [ObservableProperty] private string? _lastExportPath;
@@ -62,57 +41,26 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Fehler-/Status-Nachricht anzeigen (Android: Toast, Desktop: Log)</summary>
     public event Action<string, string>? MessageRequested;
 
-    /// <summary>
-    /// Foreground-Service-Status anfordern. true = starten (BLE verbunden oder AR aktiv),
-    /// false = stoppen. Android nutzt das gegen Doze-Kill. Desktop ignoriert es.
-    /// </summary>
-    public event Action<bool>? ForegroundServiceRequested;
-
     public MainViewModel(
-        IBleService bleService,
         IArTransferService arTransferService,
         IMeasurementService measurementService,
         IProjectService projectService,
-        IHardwareModeService hardwareMode,
-        ConnectViewModel connectVm,
         SurveyViewModel surveyVm,
         TerrainViewModel terrainVm,
         GardenPlanViewModel gardenPlanVm,
         MapViewModel mapVm,
         ProjectsViewModel projectsVm,
-        StakeoutViewModel stakeoutVm,
         SettingsViewModel settingsVm)
     {
-        _bleService = bleService;
         _arTransferService = arTransferService;
         _measurementService = measurementService;
         _projectService = projectService;
-        _hardwareMode = hardwareMode;
-        ConnectVm = connectVm;
         SurveyVm = surveyVm;
         TerrainVm = terrainVm;
         GardenPlanVm = gardenPlanVm;
         MapVm = mapVm;
         ProjectsVm = projectsVm;
-        StakeoutVm = stakeoutVm;
         SettingsVm = settingsVm;
-
-        // BLE-Status Events (kommen vom Background-Thread, daher Dispatcher)
-        _bleService.StateChanged += state => Dispatcher.UIThread.Post(() => OnStateChanged(state));
-        _bleService.FixQualityChanged += q => Dispatcher.UIThread.Post(() =>
-        {
-            FixQuality = q;
-            FixStatusText = _bleService.CurrentState.FixStatusText;
-        });
-        _bleService.AccuracyUpdated += (h, _) => Dispatcher.UIThread.Post(() => HorizontalAccuracy = h);
-
-        // Adaptiver Betriebsmodus: initial setzen + auf Aenderungen hoeren.
-        // Changed kommt vom BLE-Background-Thread → Dispatcher.
-        ShowRtkUi = _hardwareMode.ShowRtkUi;
-        _hardwareMode.Changed += () => Dispatcher.UIThread.Post(OnHardwareModeChanged);
-
-        // Settings → "RTK-Stab verbinden" navigiert zum (im AR-Modus ausgeblendeten) Connect-Screen.
-        SettingsVm.NavigationRequested += route => Navigate(route);
 
         // Back-Button
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
@@ -124,7 +72,6 @@ public partial class MainViewModel : ViewModelBase
             {
                 ProjectsVm.SelectedProject = project;
                 GardenPlanVm.CurrentProjectId = project.Id;
-                StakeoutVm.CurrentProjectId = project.Id;
 
                 // Punkte in MeasurementService laden für TerrainView/MapView/GardenPlanView.
                 // ReplacePoints feuert nur EIN PointsReset-Event — TerrainViewModel rechnet
@@ -134,7 +81,6 @@ public partial class MainViewModel : ViewModelBase
                 {
                     _measurementService.ReplacePoints(full.Points);
                     await GardenPlanVm.LoadElementsFromProjectAsync(project.Id);
-                    await StakeoutVm.LoadTargetsAsync();
                 }
 
                 Navigate("Survey");
@@ -156,10 +102,6 @@ public partial class MainViewModel : ViewModelBase
 
         ProjectsVm.ExportFailed += reason =>
             MessageRequested?.Invoke("Export fehlgeschlagen", reason);
-
-        // BLE-Fehler/Status aus ConnectView als Toast anzeigen
-        ConnectVm.MessageRequested += msg =>
-            MessageRequested?.Invoke("Verbindung", msg);
 
         // GardenPlan-Fehler (z.B. Zeichnung ohne Referenz verworfen)
         GardenPlanVm.MessageRequested += msg =>
@@ -211,20 +153,7 @@ public partial class MainViewModel : ViewModelBase
         IsGardenActive = page == "Garden";
         IsMapActive = page == "Map";
         IsProjectsActive = page == "Projects";
-        IsStakeoutActive = page == "Stakeout";
-        IsConnectActive = page == "Connect";
         IsSettingsActive = page == "Settings";
-    }
-
-    /// <summary>Reagiert auf Moduswechsel (Stab verbunden/getrennt oder AR-Reset).
-    /// Aktualisiert die Tab-/Status-Bar-Sichtbarkeit und holt den Nutzer von einem
-    /// Tab weg, der im AR-Modus nicht mehr existiert (BLE/Abstecken).</summary>
-    private void OnHardwareModeChanged()
-    {
-        ShowRtkUi = _hardwareMode.ShowRtkUi;
-
-        if (!ShowRtkUi && (IsConnectActive || IsStakeoutActive))
-            Navigate("Survey");
     }
 
     public bool HandleBackPressed()
@@ -238,20 +167,6 @@ public partial class MainViewModel : ViewModelBase
 
         // Double-Back-to-Exit
         return _backPressHelper.HandleDoubleBack("Nochmal drücken zum Beenden");
-    }
-
-    private void OnStateChanged(StickState state)
-    {
-        var wasConnected = IsBleConnected;
-        IsBleConnected = state.IsConnected;
-        BatteryLevel = state.BatteryLevel;
-        SatelliteCount = state.SatelliteCount;
-        HorizontalAccuracy = state.HorizontalAccuracy;
-
-        // Foreground-Service parallel zum BLE-Status koppeln.
-        // Android blockiert den BLE-Stream im Doze-Mode ohne FG-Service.
-        if (wasConnected != state.IsConnected)
-            ForegroundServiceRequested?.Invoke(state.IsConnected);
     }
 
     /// <summary>Letzten Export teilen (Share-Sheet via UriLauncher).</summary>

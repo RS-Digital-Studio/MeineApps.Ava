@@ -104,7 +104,7 @@ public class ExportService : IExportService
     public string ExportToCsv(SurveyProject project)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("Nr;Label;Latitude;Longitude;Hoehe_m;H-Genauigkeit_cm;V-Genauigkeit_cm;Fix;Satelliten;Zeitpunkt");
+        sb.AppendLine("Nr;Label;Latitude;Longitude;Hoehe_m;H-Genauigkeit_cm;V-Genauigkeit_cm;Konfidenz_pct;Zeitpunkt");
 
         int nr = 1;
         foreach (var point in project.Points)
@@ -119,8 +119,7 @@ public class ExportService : IExportService
                 point.Altitude.ToString("F3", CultureInfo.InvariantCulture),
                 point.HorizontalAccuracy.ToString("F1", CultureInfo.InvariantCulture),
                 point.VerticalAccuracy.ToString("F1", CultureInfo.InvariantCulture),
-                point.FixQuality.ToString(CultureInfo.InvariantCulture),
-                point.SatelliteCount.ToString(CultureInfo.InvariantCulture),
+                Math.Round(point.Confidence * 100f).ToString(CultureInfo.InvariantCulture),
                 point.Timestamp.ToString("O")));
         }
 
@@ -162,8 +161,7 @@ public class ExportService : IExportService
                     altitude_m = Math.Round(point.Altitude, 3),
                     h_accuracy_cm = Math.Round(point.HorizontalAccuracy, 1),
                     v_accuracy_cm = Math.Round(point.VerticalAccuracy, 1),
-                    fix_quality = point.FixQuality,
-                    satellites = point.SatelliteCount,
+                    confidence_pct = Math.Round(point.Confidence * 100f),
                     timestamp = point.Timestamp.ToString("O")
                 }
             });
@@ -311,7 +309,7 @@ public class ExportService : IExportService
         {
             // Tabellen-Header
             var colWidths = new double[] { 30, 80, 90, 90, 60, 55, 55, 55 };
-            var colHeaders = new[] { "Nr", "Label", "Latitude", "Longitude", "Hoehe m", "H-Acc cm", "V-Acc cm", "Fix" };
+            var colHeaders = new[] { "Nr", "Label", "Latitude", "Longitude", "Hoehe m", "H-Acc cm", "V-Acc cm", "Konfidenz" };
 
             // Header-Zeile
             var headerBrush = new XSolidBrush(HeaderBgColor);
@@ -365,7 +363,7 @@ public class ExportService : IExportService
                     pt.Altitude.ToString("F3", CultureInfo.InvariantCulture),
                     pt.HorizontalAccuracy.ToString("F1", CultureInfo.InvariantCulture),
                     pt.VerticalAccuracy.ToString("F1", CultureInfo.InvariantCulture),
-                    FormatFixQuality(pt.FixQuality)
+                    $"{Math.Round(pt.Confidence * 100f)}%"
                 };
 
                 xCol = leftMargin + 4;
@@ -531,18 +529,6 @@ public class ExportService : IExportService
         gfx.DrawString($"Erstellt: {DateTime.UtcNow.ToLocalTime():dd.MM.yyyy HH:mm}", FooterFont, XBrushes.Gray,
             page.Width - 170, footerY);
     }
-
-    /// <summary>Fix-Quality als lesbaren Text formatieren</summary>
-    private static string FormatFixQuality(int fix) => fix switch
-    {
-        0 => "Kein Fix",
-        1 => "GPS",
-        2 => "DGPS",
-        4 => "RTK-Fix",
-        5 => "RTK-Float",
-        10 => "AR",
-        _ => fix.ToString()
-    };
 
     /// <summary>Material-Zusammenfassung aus Elementen berechnen (gleiche Materialien zusammenfassen)</summary>
     private static List<(string material, double quantity, string unit)> CalculateMaterialSummary(
@@ -838,7 +824,7 @@ public class ExportService : IExportService
             sb.AppendLine($"    <name>{EscapeXml(p.Label ?? "Punkt")}</name>");
             sb.AppendLine($"    <description>NN: {p.Altitude.ToString("F2", inv)}m | " +
                           $"±{p.HorizontalAccuracy.ToString("F1", inv)}cm | " +
-                          $"{StickState.GetFixStatusText(p.FixQuality)}</description>");
+                          $"Konfidenz {Math.Round(p.Confidence * 100f).ToString(inv)}%</description>");
             sb.AppendLine("    <styleUrl>#measurePoint</styleUrl>");
             sb.AppendLine("    <Point>");
             sb.AppendLine("      <altitudeMode>absolute</altitudeMode>");

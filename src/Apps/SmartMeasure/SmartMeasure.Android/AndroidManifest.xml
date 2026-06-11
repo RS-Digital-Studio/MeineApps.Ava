@@ -13,6 +13,10 @@
     <!-- Kamera (AR-Capture) -->
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!-- Haptik (Punkt-Setzen, Warnungen, Ziel erreicht) — ohne die Permission verschluckt
+         Android alle Vibrator-Aufrufe still. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <!-- Galerie-Speicherung (Screenshots/Aufnahmen via MediaStore). Ab Android 10 (API 29)
          braucht das Schreiben eigener Medien KEINE Permission — daher maxSdkVersion=28, nur
          fuer aeltere Geraete (minSdk 26). -->
@@ -34,8 +38,10 @@
         android:label="SmartMeasure"
         android:theme="@style/MyTheme.NoActionBar">
 
-        <!-- ARCore Required (Google Play Services for AR wird automatisch installiert) -->
-        <meta-data android:name="com.google.ar.core" android:value="required" />
+        <!-- ARCore Optional — konsistent zu uses-feature required="false" und zum Code
+             (IsAvailableAsync prueft Verfuegbarkeit, RequestInstall-Flow beim ersten Start).
+             "required" + optionales Feature war in sich widerspruechlich. -->
+        <meta-data android:name="com.google.ar.core" android:value="optional" />
 
         <!-- ARCore Geospatial API API-Key. Restriktiert auf SHA1 des Keystores +
              Package com.rsdigital.smartmeasure. Privat, funktioniert nur mit signierter App. -->

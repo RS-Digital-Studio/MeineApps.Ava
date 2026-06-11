@@ -541,6 +541,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     // Toolbar-Referenz für Nav-Bar-Safe-Area-Update bei OnApplyWindowInsets
     private HorizontalScrollView? _toolbarScrollView;
 
+    // Trennlinie an der Toolbar-Oberkante — wandert per InsetListener mit der Toolbar mit.
+    private View? _toolbarTopBorder;
+
     // Aktueller Kontur-Typ für Garten-Elemente (wird beim "Neue Linie" gewählt)
     private global::SmartMeasure.Shared.Models.ArContourType _currentContourType
         = global::SmartMeasure.Shared.Models.ArContourType.Grenze;
@@ -571,6 +574,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _toolbarScrollView = scrollView;
 
         // Subtile Trennlinie oben am Toolbar — markiert die Grenze zur Kamera-Sicht.
+        // Referenz behalten: der InsetListener schiebt die Toolbar um die Nav-Bar-Hoehe
+        // hoch — die Linie muss mitwandern (BottomMargin = Inset + 80 dp), sonst sitzt
+        // sie bei Edge-to-Edge mitten in der Toolbar.
         var topBorder = new View(this);
         topBorder.SetBackgroundColor(Color.Argb(80, 255, 255, 255));
         var borderParams = new FrameLayout.LayoutParams(
@@ -581,6 +587,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             BottomMargin = (int)(80 * density),
         };
         topBorder.LayoutParameters = borderParams;
+        _toolbarTopBorder = topBorder;
         root.AddView(topBorder);
 
         var toolbar = new LinearLayout(this)
@@ -3530,6 +3537,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                         {
                             lp.BottomMargin = (int)activity._bottomInsetPx;
                             tb.LayoutParameters = lp;
+                        }
+
+                        // Trennlinie wandert mit der Toolbar mit (Inset + Toolbar-Hoehe) —
+                        // sonst sitzt sie bei Edge-to-Edge mitten in der Toolbar.
+                        var border = activity._toolbarTopBorder;
+                        if (border?.LayoutParameters is FrameLayout.LayoutParams blp)
+                        {
+                            var d = activity.Resources?.DisplayMetrics?.Density ?? 1f;
+                            blp.BottomMargin = (int)(activity._bottomInsetPx + 80 * d);
+                            border.LayoutParameters = blp;
                         }
                     });
                 }

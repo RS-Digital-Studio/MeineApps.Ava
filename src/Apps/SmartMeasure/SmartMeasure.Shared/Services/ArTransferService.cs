@@ -63,9 +63,15 @@ public class ArTransferService : IArTransferService
             var existing = await _projectService.GetProjectAsync(projectId);
             if (existing != null && existing.Points.Count > 0)
             {
-                result.GpsLatitude = existing.Points.Average(p => p.Latitude);
-                result.GpsLongitude = existing.Points.Average(p => p.Longitude);
-                result.GpsAltitude ??= existing.Points.Average(p => p.Altitude);
+                var avgLat = existing.Points.Average(p => p.Latitude);
+                var avgLon = existing.Points.Average(p => p.Longitude);
+                result.GpsLatitude = avgLat;
+                result.GpsLongitude = avgLon;
+                // SurveyPoint.Altitude ist NN (bereits geoid-korrigiert) — GpsAltitude wird in
+                // ConvertToSurveyPoints aber als ELLIPSOID behandelt und erneut korrigiert.
+                // Ohne Rueckwandlung laegen alle neuen Punkte ~48 m unter dem Projekt.
+                result.GpsAltitude ??= _geoidService.GeoidToEllipsoid(
+                    avgLat, avgLon, existing.Points.Average(p => p.Altitude));
             }
             else
             {

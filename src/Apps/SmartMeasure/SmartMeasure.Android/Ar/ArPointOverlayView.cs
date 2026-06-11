@@ -1773,7 +1773,9 @@ public sealed partial class ArPointOverlayView : View
 
         var refPixels = (float)(refMeters * pixelsPerMeter);
         var baseX = 24 * _density;
-        var baseY = height - 80 * _density;
+        // BottomInset einrechnen (Edge-to-Edge: Toolbar belegt [H - Inset - 80dp, H - Inset]) —
+        // mit festem 80-dp-Offset laege der Balken INNERHALB der opaken Toolbar (analog Footer).
+        var baseY = height - (80 * _density + _state.BottomInsetPixels) - 12 * _density;
 
         canvas.DrawLine(baseX, baseY, baseX + refPixels, baseY, _scalePaint);
         canvas.DrawLine(baseX, baseY - 5 * _density, baseX, baseY + 5 * _density, _scalePaint);

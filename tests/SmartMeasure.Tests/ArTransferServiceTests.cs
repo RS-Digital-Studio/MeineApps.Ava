@@ -274,6 +274,34 @@ public class ArTransferServiceTests
     }
 
     [Fact]
+    public async Task TransferToProjectAsync_OhneGps_MitBestandspunkten_KeineDoppelteGeoidKorrektur()
+    {
+        // SurveyPoint.Altitude ist NN — der Fallback-Ursprung muss sie nach Ellipsoid
+        // zurueckwandeln, sonst wird die Undulation (~48 m in DE) doppelt abgezogen und
+        // neue AR-Punkte liegen 48 m unter dem Projekt (48-m-Stufe im Gelaendemodell).
+        var (svc, projects, _) = MakeService();
+        const double bestandNn = 520.0;
+        var projektMitBestand = new SurveyProject
+        {
+            Id = 1,
+            Points = [new SurveyPoint { Latitude = Munich_Lat, Longitude = Munich_Lon, Altitude = bestandNn }],
+        };
+        projects.GetProjectAsync(Arg.Any<int>()).Returns(projektMitBestand);
+
+        SurveyPoint? added = null;
+        await projects.AddPointAsync(Arg.Any<int>(), Arg.Do<SurveyPoint>(p => added = p));
+
+        var result = new ArCaptureResult(); // kein GPS
+        result.Points.Add(new ArPoint { X = 0, Y = 0, Z = -1 });
+
+        await svc.TransferToProjectAsync(result, 1);
+
+        // Neuer Punkt muss auf NN-Niveau des Bestands liegen (± Geoid-Genauigkeit, NICHT -48 m).
+        added.Should().NotBeNull();
+        added!.Altitude.Should().BeApproximately(bestandNn, 1.5);
+    }
+
+    [Fact]
     public void ConvertToSurveyPoints_RestoredWithoutGeo_DegradiertAccuracyUndConfidence()
     {
         // Recovery-Punkte ohne Geo-Bezug stammen aus dem Koordinatensystem einer ANDEREN

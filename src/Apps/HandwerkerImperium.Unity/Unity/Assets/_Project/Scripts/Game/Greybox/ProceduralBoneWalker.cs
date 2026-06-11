@@ -5,22 +5,24 @@ namespace HandwerkerImperium.Game
 {
     /// <summary>
     /// Prozeduraler Walk-Cycle auf den UniRig-Skeletten (generische Bone-Namen, Generic-Rig aus glTFast):
-    /// klassifiziert die Gliedmaßen positionsbasiert (Oberschenkel = hüfthohe seitliche Bones mit
-    /// tiefer laufender Kette, Oberarme = die äußersten Bones der oberen Hälfte) und schwingt sie beim
-    /// Laufen gegenphasig um die Quer-Achse der Figur — echte Gelenk-Animation ohne Animations-Clips.
-    /// Im Stand kehren die Glieder weich in die Bind-Pose zurück (+ sanftes Atmen über den Wurzel-Bone).
-    /// Findet die Klassifikation keine 4 Gliedmaßen, fällt die Figur auf reinen Lauf-Bob zurück.
+    /// klassifiziert die Gliedmaßen <b>topologie-basiert</b> — UniRig-Humanoide haben eine Hüfte
+    /// (Wurzel-Bone) mit Bein-Ketten, die bis zum Boden laufen, und eine Wirbelsäulen-Kette, an deren
+    /// Brust-Knoten Kopf + zwei Arm-Ketten abzweigen. (Höhenband-Heuristiken scheitern an gedrungenen
+    /// Toon-Proportionen: herabhängende Arme reichen bis Hüfthöhe.) Beim Laufen schwingen Oberschenkel
+    /// gegenphasig mit Knie-Nachbeugung, die Oberarme gegenläufig dazu; im Stand kehren die Glieder
+    /// weich in die Bind-Pose zurück (+ Atmen). Ohne erkennbare Gliedmaßen: Fallback auf Lauf-Bob.
     /// Sitzt wie <see cref="ToonBob"/> auf dem Visual-Kind; misst die eigene Root-Bewegung.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class ProceduralBoneWalker : MonoBehaviour
     {
         [Header("Laufen")]
-        [SerializeField] private float legSwingDegrees = 32f;
-        [SerializeField] private float armSwingDegrees = 22f;
-        [SerializeField] private float stepFrequency = 5.5f;
+        [SerializeField] private float legSwingDegrees = 30f;
+        [SerializeField] private float kneeBendDegrees = 24f;
+        [SerializeField] private float armSwingDegrees = 16f;
+        [SerializeField] private float stepFrequency = 4.5f;
         [SerializeField] private float speedThreshold = 0.15f;
-        [SerializeField] private float bobAmplitude = 0.035f;
+        [SerializeField] private float bobAmplitude = 0.03f;
 
         [Header("Stand (Atmen)")]
         [SerializeField] private float breatheAmplitude = 0.012f;
@@ -28,8 +30,8 @@ namespace HandwerkerImperium.Game
 
         private Transform _root;        // bewegtes Objekt (Avatar-/NPC-Root)
         private Transform _hips;        // Wurzel-Bone des Skeletts
-        private Transform _thighL, _thighR, _armL, _armR;
-        private Quaternion _thighLBase, _thighRBase, _armLBase, _armRBase; // relativ zur Root
+        private Transform _thighL, _thighR, _kneeL, _kneeR, _armL, _armR;
+        private Quaternion _thighLBase, _thighRBase, _kneeLBase, _kneeRBase, _armLBase, _armRBase; // relativ zur Root
         private Vector3 _hipsBasePos;
         private Vector3 _lastRootPos;
         private float _phase;
@@ -46,50 +48,67 @@ namespace HandwerkerImperium.Game
         {
             var smr = GetComponentInChildren<SkinnedMeshRenderer>();
             if (smr == null || smr.bones == null || smr.bones.Length < 6) return;
-            var bones = smr.bones;
-
-            // Bounds des Skeletts im Root-Raum
-            float minY = float.MaxValue, maxY = float.MinValue, maxAbsX = 0f;
-            var local = new Vector3[bones.Length];
-            for (int i = 0; i < bones.Length; i++)
+            var boneSet = new HashSet<Transform>();
+            float minY = float.MaxValue, maxY = float.MinValue;
+            foreach (var b in smr.bones)
             {
-                if (bones[i] == null) continue;
-                local[i] = _root.InverseTransformPoint(bones[i].position);
-                minY = Mathf.Min(minY, local[i].y);
-                maxY = Mathf.Max(maxY, local[i].y);
-                maxAbsX = Mathf.Max(maxAbsX, Mathf.Abs(local[i].x));
+                if (b == null) continue;
+                boneSet.Add(b);
+                float y = _root.InverseTransformPoint(b.position).y;
+                minY = Mathf.Min(minY, y);
+                maxY = Mathf.Max(maxY, y);
             }
             float h = Mathf.Max(0.01f, maxY - minY);
-            float sideEps = Mathf.Max(0.02f, maxAbsX * 0.25f);
 
-            _hips = smr.rootBone != null ? smr.rootBone : bones[0];
+            // Hüfte = Wurzel-Bone des Skeletts
+            _hips = smr.rootBone != null && boneSet.Contains(smr.rootBone) ? smr.rootBone : null;
+            if (_hips == null)
+                foreach (var b in boneSet) { if (b.parent == null || !boneSet.Contains(b.parent)) { _hips = b; break; } }
+            if (_hips == null) return;
             _hipsBasePos = _hips.localPosition;
 
-            // Oberschenkel: seitliche Bones im Hüftband (35-60 % Höhe), deren Kette nach unten führt —
-            // je Seite der höchste Kandidat.
-            float bestL = float.MinValue, bestR = float.MinValue;
-            for (int i = 0; i < bones.Length; i++)
+            // Direkte Hüft-Kinder: Ketten, deren Ende nahe dem Boden liegt = Beine; die übrige Kette = Wirbelsäule.
+            Transform spineStart = null;
+            foreach (Transform child in _hips)
             {
-                var b = bones[i];
-                if (b == null) continue;
-                float ny = (local[i].y - minY) / h;
-                if (ny < 0.30f || ny > 0.65f) continue;
-                if (Mathf.Abs(local[i].x) < sideEps) continue;
-                if (!HasDescendantBelow(b, local[i].y)) continue;
-                if (local[i].x < 0f && local[i].y > bestL) { bestL = local[i].y; _thighL = b; }
-                if (local[i].x > 0f && local[i].y > bestR) { bestR = local[i].y; _thighR = b; }
+                if (!boneSet.Contains(child)) continue;
+                var leaf = FollowToLeaf(child, boneSet);
+                float leafNy = (_root.InverseTransformPoint(leaf.position).y - minY) / h;
+                if (leafNy < 0.2f)
+                {
+                    float x = _root.InverseTransformPoint(child.position).x;
+                    if (x < 0f && _thighL == null) _thighL = child;
+                    else if (x >= 0f && _thighR == null) _thighR = child;
+                    else if (_thighL == null) _thighL = child;
+                }
+                else
+                {
+                    spineStart = child;
+                }
             }
+            if (_thighL != null) _kneeL = FirstChildIn(_thighL, boneSet);
+            if (_thighR != null) _kneeR = FirstChildIn(_thighR, boneSet);
 
-            // Oberarme: die am weitesten außen liegenden Bones der oberen Hälfte (Schulter-Band)
-            float widestL = 0f, widestR = 0f;
-            for (int i = 0; i < bones.Length; i++)
+            // Wirbelsäule hochlaufen bis zum Brust-Knoten (>= 3 Kinder: Hals + 2 Arme) — Arme = die 2 seitlichsten.
+            var spine = spineStart;
+            while (spine != null)
             {
-                var b = bones[i];
-                if (b == null || b == _thighL || b == _thighR) continue;
-                float ny = (local[i].y - minY) / h;
-                if (ny < 0.55f) continue;
-                if (local[i].x < -sideEps && -local[i].x > widestL) { widestL = -local[i].x; _armL = b; }
-                if (local[i].x > sideEps && local[i].x > widestR) { widestR = local[i].x; _armR = b; }
+                var children = new List<Transform>();
+                foreach (Transform c in spine) if (boneSet.Contains(c)) children.Add(c);
+                if (children.Count >= 3)
+                {
+                    children.Sort((a, b2) => Mathf.Abs(_root.InverseTransformPoint(b2.position).x)
+                        .CompareTo(Mathf.Abs(_root.InverseTransformPoint(a.position).x)));
+                    var s1 = children[0]; var s2 = children[1];
+                    bool s1Left = _root.InverseTransformPoint(s1.position).x < _root.InverseTransformPoint(s2.position).x;
+                    var shoulderL = s1Left ? s1 : s2;
+                    var shoulderR = s1Left ? s2 : s1;
+                    // Schwingen am Oberarm (Kind der Schulter) wirkt natürlicher als an der Schulter selbst
+                    _armL = FirstChildIn(shoulderL, boneSet) ?? shoulderL;
+                    _armR = FirstChildIn(shoulderR, boneSet) ?? shoulderR;
+                    break;
+                }
+                spine = children.Count > 0 ? children[0] : null;
             }
 
             if (_thighL != null && _thighR != null)
@@ -97,20 +116,30 @@ namespace HandwerkerImperium.Game
                 Quaternion inv = Quaternion.Inverse(_root.rotation);
                 _thighLBase = inv * _thighL.rotation;
                 _thighRBase = inv * _thighR.rotation;
+                if (_kneeL != null) _kneeLBase = inv * _kneeL.rotation;
+                if (_kneeR != null) _kneeRBase = inv * _kneeR.rotation;
                 if (_armL != null) _armLBase = inv * _armL.rotation;
                 if (_armR != null) _armRBase = inv * _armR.rotation;
                 _ready = true;
             }
         }
 
-        private static bool HasDescendantBelow(Transform bone, float worldRefY)
+        private static Transform FollowToLeaf(Transform start, HashSet<Transform> boneSet)
         {
-            foreach (Transform child in bone)
+            var current = start;
+            while (true)
             {
-                if (child.position.y < bone.position.y - 0.01f) return true;
-                if (HasDescendantBelow(child, worldRefY)) return true;
+                Transform next = null;
+                foreach (Transform c in current) { if (boneSet.Contains(c)) { next = c; break; } }
+                if (next == null) return current;
+                current = next;
             }
-            return false;
+        }
+
+        private static Transform FirstChildIn(Transform bone, HashSet<Transform> boneSet)
+        {
+            foreach (Transform c in bone) if (boneSet.Contains(c)) return c;
+            return null;
         }
 
         private void LateUpdate()
@@ -138,6 +167,9 @@ namespace HandwerkerImperium.Game
                 float swing = Mathf.Sin(_phase);
                 ApplySwing(_thighL, _thighLBase, swing * legSwingDegrees);
                 ApplySwing(_thighR, _thighRBase, -swing * legSwingDegrees);
+                // Knie beugt nur beim Zurückschwingen des jeweiligen Beins (nie überstrecken)
+                if (_kneeL != null) ApplySwing(_kneeL, _kneeLBase, Mathf.Max(0f, -swing) * kneeBendDegrees);
+                if (_kneeR != null) ApplySwing(_kneeR, _kneeRBase, Mathf.Max(0f, swing) * kneeBendDegrees);
                 if (_armL != null) ApplySwing(_armL, _armLBase, -swing * armSwingDegrees);
                 if (_armR != null) ApplySwing(_armR, _armRBase, swing * armSwingDegrees);
                 _hips.localPosition = _hipsBasePos + new Vector3(0f, Mathf.Abs(Mathf.Cos(_phase)) * bobAmplitude, 0f);
@@ -148,6 +180,8 @@ namespace HandwerkerImperium.Game
                 float k = 10f * dt;
                 ReturnToBase(_thighL, _thighLBase, k);
                 ReturnToBase(_thighR, _thighRBase, k);
+                ReturnToBase(_kneeL, _kneeLBase, k);
+                ReturnToBase(_kneeR, _kneeRBase, k);
                 ReturnToBase(_armL, _armLBase, k);
                 ReturnToBase(_armR, _armRBase, k);
                 float breathe = Mathf.Sin(Time.time * breatheFrequency * Mathf.PI * 2f) * breatheAmplitude;

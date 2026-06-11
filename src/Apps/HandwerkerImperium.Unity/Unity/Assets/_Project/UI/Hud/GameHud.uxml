@@ -1,0 +1,29 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="GameHud.uss" />
+    <!-- Spiel-HUD (UI Toolkit): Statuskarten oben, Tagesaufgaben rechts, Hans-Toast unten.
+         picking-mode="Ignore" überall — das HUD darf die Touch-Steuerung des Avatars nie blockieren. -->
+    <ui:VisualElement name="hud-root" class="hud-root" picking-mode="Ignore">
+        <ui:VisualElement name="top-bar" class="top-bar" picking-mode="Ignore">
+            <ui:VisualElement name="card-money" class="stat-card" picking-mode="Ignore">
+                <ui:Label text="Geld" class="stat-title" picking-mode="Ignore"/>
+                <ui:Label name="money-value" text="0" class="stat-value money" picking-mode="Ignore"/>
+                <ui:Label name="income-value" text="+0,0/s" class="stat-sub" picking-mode="Ignore"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="card-gems" class="stat-card" picking-mode="Ignore">
+                <ui:Label text="Gems" class="stat-title" picking-mode="Ignore"/>
+                <ui:Label name="gems-value" text="0" class="stat-value gems" picking-mode="Ignore"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="card-city" class="stat-card" picking-mode="Ignore">
+                <ui:Label name="city-value" text="Hofstadt" class="stat-title" picking-mode="Ignore"/>
+                <ui:Label name="star-value" text="Stern 1/5" class="stat-value" picking-mode="Ignore"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="tasks-panel" class="tasks-panel" picking-mode="Ignore">
+            <ui:Label text="Tagesaufgaben" class="panel-title" picking-mode="Ignore"/>
+            <ui:Label name="task-0" text="" class="task-row" picking-mode="Ignore"/>
+            <ui:Label name="task-1" text="" class="task-row" picking-mode="Ignore"/>
+            <ui:Label name="task-2" text="" class="task-row" picking-mode="Ignore"/>
+        </ui:VisualElement>
+        <ui:Label name="story-toast" text="" class="story-toast story-toast--hidden" picking-mode="Ignore"/>
+    </ui:VisualElement>
+</ui:UXML>

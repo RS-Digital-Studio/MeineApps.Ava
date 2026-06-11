@@ -1,0 +1,93 @@
+/* Spiel-HUD — warme Werkstatt-Sprache (HWI-Amber #D97706 als Akzent auf dunklem Holzbraun).
+   Safe-Area-Ränder kommen aus dem Binder (Screen.safeArea), hier nur Gestaltung. */
+
+.hud-root {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+}
+
+.top-bar {
+    position: absolute;
+    left: 12px; top: 10px; right: 12px;
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.stat-card {
+    background-color: rgba(38, 27, 17, 0.88);
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: rgba(217, 119, 6, 0.55);
+    padding: 6px 14px 7px 14px;
+    margin-right: 10px;
+    min-width: 120px;
+}
+
+.stat-title {
+    color: rgb(214, 190, 160);
+    font-size: 12px;
+    -unity-font-style: bold;
+    margin: 0; padding: 0;
+}
+
+.stat-value {
+    color: rgb(250, 244, 232);
+    font-size: 22px;
+    -unity-font-style: bold;
+    margin: 0; padding: 0;
+}
+
+.stat-value.money { color: rgb(255, 211, 92); }
+.stat-value.gems { color: rgb(122, 216, 240); }
+
+.stat-sub {
+    color: rgb(168, 200, 120);
+    font-size: 12px;
+    margin: 0; padding: 0;
+}
+
+.tasks-panel {
+    position: absolute;
+    right: 12px; top: 86px;
+    background-color: rgba(38, 27, 17, 0.82);
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: rgba(217, 119, 6, 0.4);
+    padding: 7px 12px 9px 12px;
+    max-width: 300px;
+}
+
+.panel-title {
+    color: rgb(232, 160, 64);
+    font-size: 13px;
+    -unity-font-style: bold;
+    margin-bottom: 3px;
+}
+
+.task-row {
+    color: rgb(230, 218, 198);
+    font-size: 12px;
+    margin: 1px 0 0 0; padding: 0;
+}
+
+.task-row--done { color: rgb(150, 220, 130); }
+
+.story-toast {
+    position: absolute;
+    bottom: 64px;
+    align-self: center;
+    background-color: rgba(38, 27, 17, 0.92);
+    border-radius: 14px;
+    border-width: 1px;
+    border-color: rgb(217, 119, 6);
+    color: rgb(250, 240, 220);
+    font-size: 16px;
+    padding: 10px 20px;
+    max-width: 70%;
+    white-space: normal;
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: 0.4s;
+}
+
+.story-toast--hidden { opacity: 0; }

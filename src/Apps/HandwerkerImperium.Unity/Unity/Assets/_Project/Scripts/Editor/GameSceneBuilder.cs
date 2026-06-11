@@ -86,6 +86,29 @@ namespace HandwerkerImperium.Editor
             var hud = runtimeGo.AddComponent<RuntimeHud>();
             SetRef(hud, "controller", runtime);
 
+            // Premium-HUD (UI Toolkit): Statuskarten/Tagesaufgaben/Hans-Toast (GameHud.uxml/.uss)
+            var panelSettings = LoadOrCreate<UnityEngine.UIElements.PanelSettings>(SceneDir + "/Runtime_PanelSettings.asset");
+            panelSettings.scaleMode = UnityEngine.UIElements.PanelScaleMode.ScaleWithScreenSize;
+            panelSettings.referenceResolution = new Vector2Int(1920, 1080);
+            panelSettings.match = 0.5f;
+            var theme = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.ThemeStyleSheet>("Assets/UI Toolkit/UnityThemes/UnityDefaultRuntimeTheme.tss");
+            if (theme != null) panelSettings.themeStyleSheet = theme;
+            EditorUtility.SetDirty(panelSettings);
+            var uxml = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.VisualTreeAsset>("Assets/_Project/UI/Hud/GameHud.uxml");
+            if (uxml != null)
+            {
+                var hudGo = new GameObject("GameHud");
+                var doc = hudGo.AddComponent<UnityEngine.UIElements.UIDocument>();
+                doc.panelSettings = panelSettings;
+                doc.visualTreeAsset = uxml;
+                var binder = hudGo.AddComponent<HandwerkerImperium.UI.Hud.GameHudBinder>();
+                SetRef(binder, "controller", runtime);
+            }
+            else
+            {
+                Debug.LogWarning("[GameSceneBuilder] GameHud.uxml nicht gefunden — Premium-HUD übersprungen (Import ausstehend?).");
+            }
+
             // Physik-Loop-Controller, an den Runtime gekoppelt (kein DI-Scope, kein eigener Tick/Save)
             var controllerGo = new GameObject("GreyboxGameController");
             var controller = controllerGo.AddComponent<GreyboxGameController>();

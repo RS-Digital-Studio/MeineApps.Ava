@@ -138,8 +138,7 @@ namespace HandwerkerImperium.Editor
             var cc = avatarGo.AddComponent<CharacterController>();
             cc.center = new Vector3(0f, 1f, 0f);
             cc.height = 2f; cc.radius = 0.4f;
-            var avatarVisual = AttachModel(avatarGo.transform, ModelDir + "/avatar_hans.glb", 1.8f);
-            avatarVisual.AddComponent<ToonBob>(); // Lauf-Hüpfen + Idle-Atmen (bis zur Auto-Rig-Stufe)
+            AttachCharacter(avatarGo.transform, "avatar_hans", 1.8f); // geriggt: ProceduralBoneWalker, sonst ToonBob
             var carryAnchor = new GameObject("CarryAnchor").transform;
             carryAnchor.SetParent(avatarGo.transform);
             carryAnchor.localPosition = new Vector3(0f, 2.05f, 0f);
@@ -168,8 +167,7 @@ namespace HandwerkerImperium.Editor
             var customerRoot = new GameObject("Customer");
             customerRoot.transform.position = new Vector3(0f, 0f, 3.1f);   // Kunden-Seite, mit Abstand (überlappt sonst aus Kamerasicht den Tresen)
             customerRoot.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // schaut zum Tresen
-            var customerVisual = AttachModel(customerRoot.transform, ModelDir + "/customer_npc.glb", 1.65f);
-            customerVisual.AddComponent<ToonBob>(); // Idle-Atmen
+            AttachCharacter(customerRoot.transform, "customer_npc", 1.65f);
             MakeSign("Verkauf", counterGo.transform.position + new Vector3(0f, 1.9f, 0f), 0.34f,
                 new Color(0.98f, 0.95f, 0.88f), new Color(0.30f, 0.22f, 0.15f));
 
@@ -290,8 +288,8 @@ namespace HandwerkerImperium.Editor
                 ModelDir + "/landmark_gate_ruined.glb", ModelDir + "/landmark_gate_restored.glb", controller);
 
             // Kunden-Vielfalt an der Tresen-Queue
-            MakeBystander("Customer_Woman", ModelDir + "/customer_woman.glb", new Vector3(1.4f, 0f, 4.3f), 195f, 1.62f);
-            MakeBystander("Customer_Elder", ModelDir + "/customer_elder.glb", new Vector3(-1.5f, 0f, 4.6f), 165f, 1.6f);
+            MakeBystander("Customer_Woman", "customer_woman", new Vector3(1.4f, 0f, 4.3f), 195f, 1.62f);
+            MakeBystander("Customer_Elder", "customer_elder", new Vector3(-1.5f, 0f, 4.6f), 165f, 1.6f);
 
             // Avatar-/Kamera-Verdrahtung. WICHTIG: Start-Position UND Start-Rotation setzen —
             // FollowCamera richtet erst im Play-Mode aus, sonst schaut die Edit-Game-View horizontal in den Himmel.
@@ -439,10 +437,28 @@ namespace HandwerkerImperium.Editor
         private static GameObject MakeWorkerPrefab()
         {
             var go = new GameObject("Game_Worker");
-            var visual = AttachModel(go.transform, ModelDir + "/worker.glb", 1.6f);
-            visual.AddComponent<ToonBob>(); // läuft Station<->Tresen -> Lauf-Bob
+            AttachCharacter(go.transform, "worker", 1.6f); // läuft Station<->Tresen -> echter Walk-Cycle
             go.AddComponent<WorkerNpc>();
             return SavePrefab(go, "Game_Worker");
+        }
+
+        /// <summary>
+        /// Charakter-Visual: bevorzugt das UniRig-geriggte Modell (<c>{name}_rigged.glb</c>) mit
+        /// <see cref="ProceduralBoneWalker"/> (echte Gelenk-Animation); Fallback aufs ungeriggte
+        /// Modell mit <see cref="ToonBob"/>. Liefert das Visual.
+        /// </summary>
+        private static GameObject AttachCharacter(Transform parent, string baseName, float height)
+        {
+            string riggedPath = ModelDir + "/" + baseName + "_rigged.glb";
+            if (AssetDatabase.LoadMainAssetAtPath(riggedPath) != null)
+            {
+                var visual = AttachModel(parent, riggedPath, height);
+                visual.AddComponent<ProceduralBoneWalker>();
+                return visual;
+            }
+            var fallback = AttachModel(parent, ModelDir + "/" + baseName + ".glb", height);
+            fallback.AddComponent<ToonBob>();
+            return fallback;
         }
 
         /// <summary>Gewerk-eigene Trag-Ware als Prefab (Modell, ~0,42 m). Fehlendes GLB -> null (Fallback generisch).</summary>
@@ -492,13 +508,12 @@ namespace HandwerkerImperium.Editor
         }
 
         /// <summary>Statischer NPC-Statist (Kunden-Vielfalt an der Queue) mit Idle-Atmen.</summary>
-        private static void MakeBystander(string name, string glbPath, Vector3 pos, float yRotation, float height)
+        private static void MakeBystander(string name, string baseName, Vector3 pos, float yRotation, float height)
         {
             var root = new GameObject(name);
             root.transform.position = pos;
             root.transform.rotation = Quaternion.Euler(0f, yRotation, 0f);
-            var visual = AttachModel(root.transform, glbPath, height);
-            visual.AddComponent<ToonBob>();
+            AttachCharacter(root.transform, baseName, height);
         }
 
         private static GameObject SavePrefab(GameObject go, string name)

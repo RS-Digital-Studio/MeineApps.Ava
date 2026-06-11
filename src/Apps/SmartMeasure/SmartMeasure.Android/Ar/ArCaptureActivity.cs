@@ -1377,7 +1377,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 if (dist < bestDist)
                 {
                     bestDist = dist;
-                    _selectedPointIndex = i;
+                    // WELT-Index (ptIdx) speichern, NICHT den Lauf-Index der Projektions-Liste:
+                    // frustum-geclippte Punkte fehlen in _projectedPoints, die Indizes laufen
+                    // auseinander — sonst wird der falsche Punkt verschoben/geloescht
+                    // (gleiches Gotcha wie bei den Kontur-Segment-Pillen).
+                    _selectedPointIndex = ptIdx;
                     _isContourPointSelected = false;
                 }
             }

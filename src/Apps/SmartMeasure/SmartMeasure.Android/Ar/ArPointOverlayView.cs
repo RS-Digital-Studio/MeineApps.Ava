@@ -408,9 +408,20 @@ public sealed partial class ArPointOverlayView : View
     {
         _state = state;
         if (!string.IsNullOrEmpty(state.TransientHint))
+        {
+            // Hint LOKAL festhalten: Der State-Snapshot traegt ihn nur EINMAL (One-Shot via
+            // ConsumeTransientHint) — schon der naechste GL-Frame liefert wieder null. Ohne
+            // die Kopie waere jeder Hinweis nur einen einzigen Frame sichtbar.
+            _transientHintText = state.TransientHint;
+            _transientHintSeverity = state.TransientHintSeverity;
             _transientHintUntilMs = Java.Lang.JavaSystem.CurrentTimeMillis() + 1500;
+        }
         Invalidate();
     }
+
+    // Letzter nicht-leerer Transient-Hint (UI-Thread: UpdateState schreibt, OnDraw liest).
+    private string? _transientHintText;
+    private TransientSeverity _transientHintSeverity;
 
     public void SetShowPlanes(bool show)
     {
@@ -1927,18 +1938,22 @@ public sealed partial class ArPointOverlayView : View
 
     private void DrawTransientHint(Canvas canvas, int width, int height)
     {
-        if (string.IsNullOrEmpty(_state.TransientHint)) return;
-        if (Java.Lang.JavaSystem.CurrentTimeMillis() > _transientHintUntilMs) return;
+        if (string.IsNullOrEmpty(_transientHintText)) return;
+        if (Java.Lang.JavaSystem.CurrentTimeMillis() > _transientHintUntilMs)
+        {
+            _transientHintText = null;
+            return;
+        }
 
         // Schweregrad → Panel-Ton + Status-Dot (Info neutral, Erfolg grün, Warnung bernstein).
-        var (tone, dotColor) = _state.TransientHintSeverity switch
+        var (tone, dotColor) = _transientHintSeverity switch
         {
             TransientSeverity.Success => (PanelTone.Good, C.Good),
             TransientSeverity.Warning => (PanelTone.Medium, C.Medium),
             _ => (PanelTone.Neutral, C.Neutral),
         };
 
-        var textWidth = _transientHintTextPaint.MeasureText(_state.TransientHint);
+        var textWidth = _transientHintTextPaint.MeasureText(_transientHintText);
         var dotSpace = 18 * _density;
         var bannerW = textWidth + 32 * _density + dotSpace;
         var bannerH = 32 * _density;
@@ -1950,7 +1965,7 @@ public sealed partial class ArPointOverlayView : View
         var rect = _pillRect;
         DrawPanel(canvas, rect, RadiusPill, tone, raised: true);
         DrawStatusDot(canvas, left + 13 * _density, top + bannerH / 2f, dotColor);
-        canvas.DrawText(_state.TransientHint, left + dotSpace + (textWidth + 32 * _density) / 2f,
+        canvas.DrawText(_transientHintText, left + dotSpace + (textWidth + 32 * _density) / 2f,
             top + bannerH / 2f + 5 * _density, _transientHintTextPaint);
 
         // Nächster Redraw für Ablauf

@@ -91,8 +91,10 @@ Overseer-Technik, die einen gefallenen Bomber aus seinen **"Blast-Daten"** wiede
 Sprengst du dich durch alle 10 Sektoren bis zum **Core** des Overseers und detonierst ihn, **kollabiert
 das Grid** und baut sich **härter** neu auf. Du kehrst dank Reborn-Core **stärker** zurück — ein neuer,
 schwererer Durchlauf (**Master-Mode**, das NG+-Feature des Originals, narrativ verankert). Leitfrage:
-*das Grid endlos meistern — oder den Loop durchbrechen und zur "True Core" vordringen?* **Keine
-Idle-Prestige-Schleife** — Master-Mode ist ein klassischer NG+-Modus, der aktiv gespielt wird.
+*das Grid endlos meistern — oder den Loop durchbrechen und zur "True Core" vordringen?* Die **„True
+Core" ist ein bewusst offener Geheimnis-Hook** für das Master-Mode-Ende — Ausarbeitung in der
+Story-Phase, kein v0.5-Inhalt. **Keine Idle-Prestige-Schleife** — Master-Mode ist ein klassischer
+NG+-Modus, der aktiv gespielt wird.
 
 ### 2.3 Story-Beats (10 Sektor-Intros + 9 Outros)
 
@@ -115,7 +117,9 @@ Idle-Prestige-Schleife** — Master-Mode ist ein klassischer NG+-Modus, der akti
 ### 3.1 Struktur **[REUSE]**
 
 - **10 Sektoren × 10 Level = 100 Story-Level.** Jedes 10. Level = **Sektor-Warden** (Boss).
-- **Mini-Warden** auf L7/L17/…/L97 (Warden-Typ mit 50 % HP/Punkten, Trainings-Encounter).
+- **Mini-Warden (L7-Teaser):** auf L7/L17/…/L97 erscheint der **Sektor-Warden des jeweiligen Sektors**
+  (Zuordnung → §7.1) mit 50 % HP/Punkten als Trainings-Encounter — er ist **nicht** der Sektor-Boss;
+  der **Sektor-Warden (L10-Boss)** wartet in voller Stärke am Sektor-Ende.
 - **Bonus-Level** auf jedem 5. Level (außer Boss).
 - **Layout-Pool pro Sektor:** 8 von 12 Layouts; Sektor 1 einsteigerfreundlich, Sektor 5+ voller Pool.
 - **Mutatoren** ab Sektor 4 (Intro nur L36), volle x3/x6/x9-Kadenz ab Sektor 5 (3 garantierte Sterne als Belohnung).
@@ -123,18 +127,23 @@ Idle-Prestige-Schleife** — Master-Mode ist ein klassischer NG+-Modus, der akti
 
 ### 3.2 Sektor-Themes (Arbeits-Namen, neu benannt) **[STORY]**
 
-| # | Sektor (Arbeitstitel) | Theme | Warden |
-|---|------------------------|-------|--------|
+| # | Sektor (Arbeitstitel) | Theme | Sektor-Warden (L10-Boss) |
+|---|------------------------|-------|--------------------------|
 | 1 | **Foundry** | Industrie/Stahl, Funken | Granite Warden |
-| 2 | **Cryo-Vault** | Eis/Kälte, Frost-Partikel | Frostwyrm (Mini) |
+| 2 | **Cryo-Vault** | Eis/Kälte, Frost-Partikel | Granite Warden |
 | 3 | **Reactor** | Energie/Plasma | Frostwyrm |
-| 4 | **Conveyor-Maze** | Förderbänder, enge Pfade | Magma Revenant (Mini) |
+| 4 | **Conveyor-Maze** | Förderbänder, enge Pfade | Frostwyrm |
 | 5 | **Magma-Core** | Lava, Hitze-Flimmern | Magma Revenant |
-| 6 | **Data-Vault** | Hologramm/Glitch | Null Phantom (Mini) |
+| 6 | **Data-Vault** | Hologramm/Glitch | Magma Revenant |
 | 7 | **Null-Zone** | Schatten/Leere | Null Phantom |
-| 8 | **Server-Spire** | vertikal, Neon-Türme | Overseer-Proxy |
-| 9 | **Firewall** | rot-glühend, Duo-Encounter | Null Phantom + Overseer |
+| 8 | **Server-Spire** | vertikal, Neon-Türme | Null Phantom |
+| 9 | **Firewall** | rot-glühend, Duo-Encounter | Null Phantom + The Overseer (Duo) |
 | 10 | **The Core** | Overseer-Zentrum | The Overseer (2×, Finale) |
+
+> Die Warden-Spalte folgt **kanonisch der 2er-Slot-Rotation aus §7.1** (Granite S1–2, Frostwyrm S3–4,
+> Magma Revenant S5–6, Null Phantom S7–8, The Overseer S9–10). Der **Mini-Warden (L7-Teaser)** jedes
+> Sektors ist derselbe Warden mit 50 % HP (siehe §3.1). In Sektor 8 darf ein **Overseer-Vorgeschmack**
+> als Story-Note (Cutscene/Dialog) angeteasert werden — er ist **kein** eigener Boss.
 
 > Themes/Layouts/Mechanik-Zellen (Ice/Conveyor/Teleporter/LavaCrack/PlatformGap) aus dem Original
 > wiederverwendet, nur neu eingekleidet. **[REUSE]**
@@ -159,6 +168,22 @@ Classic, Cross, Arena, Maze, TwoRooms, Spiral, Diagonal, BossArena, Labyrinth, S
 - **Pre-Turn-Buffering** (Turn bei 40 % Zellzentrum-Nähe) für flüssige Steuerung.
 - **[3D]** Grid als 3D-Bodenfläche mit erhöhten Block-Meshes, dynamische Schatten, 3D-Explosions-Volumen.
 - Steuerung **immer durch den Spieler** (Touch-Joystick / Gamepad / Keyboard).
+
+### 4.1 3D-Lesbarkeit (Pflicht) **[3D]**
+
+> Größtes 3D-Risiko: Bomberman lebt von exakter Grid-Lesbarkeit (welche Zellen trifft die Explosion?).
+> Die 3D-Darstellung darf diese Information niemals verschleiern — folgende Maßnahmen sind verbindlich:
+
+- **Boden-projizierter Bomb-Range-Indicator:** Ab dem Legen einer Bombe wird auf **allen betroffenen
+  Zellen** ein leuchtendes Kreuz auf den Boden projiziert (FireRange-genau, inkl. Kettenreaktions-Zellen).
+  Standard **AN**, in den Accessibility-Einstellungen abschaltbar.
+- **Occlusion-Handling:** Block-Meshes, die den Spieler oder aktive Bombenzellen verdecken, werden per
+  Dither/Fade transparent (URP-Shader) — alternativ Höhen-Cap der Block-Meshes, falls performanter.
+- **Projektion:** Start mit **perspektivischer Top-Down-Kamera (55–65°)**. Im Vertical Slice wird die
+  Grid-Lesbarkeit **empirisch auf dem Min-Spec-Device (Galaxy A50)** getestet — fällt der Test durch,
+  Wechsel auf nahezu isometrische Darstellung (Orthographic, ~45°).
+- **Tiefenachsen-Kompensation:** Grid-Linien und Zell-Highlights bleiben **immer sichtbar** (die
+  perspektivische Stauchung der Tiefenachse darf Zell-Grenzen nicht verschlucken).
 
 ---
 
@@ -242,7 +267,7 @@ Shielded, Fast, Healing, Summoner, Frenzy, Berserk, Reflective, Burning. Determi
 
 | Karte | Effekt | Rarity | Quelle |
 |-------|--------|--------|--------|
-| Standard | 3×3-Cross-Explosion | — (Default) | immer |
+| Standard | Kreuz-Explosion mit FireRange-Reichweite (Basis 1) | — (Default) | immer |
 | Ice | Frost 3 s, 50 % Slow | Common | Shop |
 | Fire | Lava-Feld 3 s, DoT | Common | Shop |
 | Sticky | Klebt 1.5 s + Kettenreaktion | Common | Shop |
@@ -322,9 +347,9 @@ Shielded, Fast, Healing, Summoner, Frenzy, Berserk, Reflective, Burning. Determi
 | **Quick-Play** | Zufalls-Level | Coins (kein Sterne-Update) |
 | **Survival** | Endlos bis Tod | Coins + Highscore |
 | **Anomaly-Dives** | Roguelike (siehe §12) | Dive-Cores, Buffs, Karten |
-| **Boss-Rush** | Warden-Sequenz, ISO-Wochen-Reset | Boss-Coins + Karten |
-| **Daily-Challenge** | tägliches deterministisches Level (Tages-Seed), Streak | Coins + Daily-Token |
-| **Daily-Race** | 1 deterministisches Tages-Level weltweit, schnellster Run | Race-Coins + Daily-Race-Liga |
+| **Boss-Rush** | Warden-Sequenz, ISO-Wochen-Reset | Coins + Karten |
+| **Daily-Challenge** | tägliches deterministisches Level (Tages-Seed), Streak | Coins (Streak-Bonus) |
+| **Daily-Race** | 1 deterministisches Tages-Level weltweit, schnellster Run | Coins + Daily-Race-Liga-Platzierung |
 
 Zusätzlich: **Weekly-Challenge** (5/Woche aus 17er-Pool, Montag-Reset) + **Daily-Missions** (3/Tag, Mitternacht-UTC).
 
@@ -404,15 +429,20 @@ Zentraler Coin-Sink, bleibt erhalten.
 
 ### 16.3 IAP / Werbung (lean)
 
+> Werbung gibt es **ausschließlich als opt-in Rewarded** — wie im Original (kein Banner, keine
+> Unterbrecher-Werbung).
+
 | Produkt | Inhalt |
 |---------|--------|
-| **Remove-Ads — 1,99 €** | Interstitials weg, Rewarded bleibt opt-in (Original-Preis) |
+| **Remove-Ads — 1,99 € (non-consumable)** | wirkt wie im Original als **Premium-Flag**: Rewarded-Belohnungen gibt es **ohne Video-Zwang** (IsPremium-Bypass in den Rewarded-Flows) + exklusive Premium-Skins |
+| **VIP-Abo — `vip_subscription_monthly`, 9,99 €/Monat** | Abo aus dem Original (dort produktiv), Vorteile sinngemäß übernommen |
+| **BattlePass-Plus — `battle_pass_plus_season`, 4,99 €/Saison** | aktiviert den Premium-Track der laufenden Battle-Pass-Saison (klare Rewards, kein Zufall) — wie im Original |
 | **Gem-Pakete** | optional, mehrere Größen |
-| **Battle-Pass-Premium** | Saison-Premium-Track (klare Rewards) |
 | **Starter-Pack** | einmaliges faires Einsteiger-Angebot |
 
-**5 Rewarded-Placements (opt-in):** `continue` (Coins ×2), `level_skip`, `power_up` (ab L20), `score_double`,
-`revival` (+ Lucky-Spin, Dive-Retry). Hybrid-Cooldown (TickCount64 + persistierte UTC, 60 s).
+**7 Rewarded-Placements (opt-in):** `continue` (Coins ×2), `level_skip`, `power_up` (ab L20), `score_double`,
+`revival`, `lucky_spin_extra` (Extra-Spin), `dive_retry`. Hybrid-Cooldown (`Stopwatch.GetTimestamp()` +
+persistierte UTC, 60 s).
 
 ### 16.4 Ethik
 
@@ -423,7 +453,8 @@ kompetitiven Modi. Saison-Content auch über Gameplay erreichbar.
 
 ## 17. Cosmetics & Spieler-Identität **[REUSE+3D]**
 
-- **98 Definitionen:** 32 Trails + 33 Frames + 33 Victories + Spieler-/Hero-Skins (`CustomizationService`).
+- **98 Cosmetics** (32 Trails / 33 Frames / 33 Victories) **+ Skins** (Spieler-/Hero-Skins, separat —
+  siehe [PARITY.md](PARITY.md) `CustomizationService`).
 - **[3D]** Trails als 3D-VFX, Frames als 3D-Overlays, Victories als 3D-Animationen.
 - **Quellen:** Battle-Pass, Grid-Ranking-Tiers, Achievements, Event-Drops, Cosmetic-Shop (Gems), Lucky-Spin.
 - **[STORY]** Karriere-Cosmetics neu thematisiert: „Reborn-Aura", „Overseer-Slayer", „Champion".
@@ -450,7 +481,8 @@ kompetitiven Modi. Saison-Content auch über Gameplay erreichbar.
 - **T3 PowerUps** — BombUp/Fire/Speed, Combo-Einführung.
 
 ### 19.2 Feature-Unlock-Choreographie (`IFeatureUnlockChoreographer`)
-L10 Daily-Challenge · L20 Anomaly-Dives · L30 LineBomb · L40 PowerBomb · L50 Boss-Rush · L60 hero_trait_slot2 ·
+L10 Daily-Challenge · L20 Anomaly-Dives · L30 LineBomb · L40 PowerBomb · L50 Boss-Rush ·
+L60 dive_ascension (Anomaly-Dives: Ascension-Stufe = Endlos-Skalierung ab Floor 11, siehe §12) ·
 L70 boss_modifier_preview · L80 cosmetic_legendary_tier · L90 master_mode_preview · L100 Master-Mode ·
 `ach_master_100` Champion-Skin. Queue-basiert, Pref-Flag pro Feature.
 
@@ -499,7 +531,7 @@ Zentrale Hit-Test-Aggregate (`IsAnyOverlayOpen`/`IsAnyDialogOpen`) gegen Android
 
 ## 23. 3D-Visuals & Game Juice **[3D+REUSE]**
 
-- **Übernommene Juice-Patterns (in 3D):** Floating-Text, Currency-Pulse, Iris-Wipe, Slow-Mo (Combo ×4+/letzter Kill),
+- **Übernommene Juice-Patterns (in 3D):** Floating-Text, Currency-Pulse, Iris-Wipe, Slow-Mo (ab Combo ×5 = MEGA / letzter Kill),
   Hit-Pause (Kill 50 ms/Death 100 ms), Squash & Stretch, prozedurale Walk-Animation, Boss-Banner, Confetti,
   saisonale Partikel, Trauma-Screen-Shake, Vignette-Flash (ULTRA/Damage), i-Frame-Visualisierung,
   Anticipation-Frames, Outline-Pass, First-Win-/Warden-Reveal-/Victory-Cinematic.

@@ -72,7 +72,9 @@ Nur reale Sachkosten — **keine Personalkosten, keine Photon-/Server-Match-Kost
 | **6 Soft-Launch DACH** | 11–12 | Saison 1, Stabilisierung |
 | **7 Skalierung** | 13+ | EU → Global, weitere Saisons & Content. **Kein** Multiplayer, **kein** iOS/Steam |
 
-**Realistischer Soft-Launch ~Monat 12.**
+**Realistischer Soft-Launch ~Monat 12.** Phase 7 „Monat 13+" ist ein **offenes Startfenster**; die
+Konkretisierung steht in [§11](#11-post-launch-saisons): EU-Rollout mit Saison 2 (~Monat 14–16),
+Global-Skalierung ab Saison 4+ (~Monat 18+).
 
 ---
 
@@ -84,7 +86,9 @@ Nur reale Sachkosten — **keine Personalkosten, keine Photon-/Server-Match-Kost
 - **PEGI/USK/ESRB:** stilisierte Bomben-Action ohne Blut → erwartbar **PEGI 7–12**; Rating-Fragebögen
   wahrheitsgemäß (keine Lootboxen, keine Echtgeld-Glücksmechanik).
 - **Lootbox-Regulierung (UK/BE/NL etc.):** **keine Lootboxen.** Lucky-Spin mit **transparenten Drop-Rates +
-  Pity-Counter** (`GetDropRates()`-Disclosure). Battle-Pass mit klaren Rewards pro Tier (kein Zufall).
+  Pity-Counter** (`GetDropRates()`-Disclosure). **Lucky-Spin-Tickets sind ausschließlich durch Gameplay
+  (1×/Tag gratis) und Rewarded-Ads erhältlich — niemals durch Gems/IAP kaufbar; damit keine
+  Echtgeld-Glücksmechanik (PEGI-/BE-NL-relevant).** Battle-Pass mit klaren Rewards pro Tier (kein Zufall).
 - **Werbung:** Rewarded opt-in, kein Banner; 1,99 € Remove-Ads. Consent für Ad-SDK (UMP/Consent-SDK).
 
 ---
@@ -93,8 +97,10 @@ Nur reale Sachkosten — **keine Personalkosten, keine Photon-/Server-Match-Kost
 
 Kein Online-Match → kein server-autoritatives Anti-Cheat. Fokus auf **lokale Integrität**:
 
-- **Zeit-Manipulation:** Hybrid-Timer (`Environment.TickCount64` **+** persistierte `DateTime.UtcNow`,
-  OR-verknüpft) für Daily-Bonus/Cooldowns/Comeback.
+- **Zeit-Manipulation:** Hybrid-Timer (persistierte `DateTime.UtcNow` **+** monotones
+  `System.Diagnostics.Stopwatch.GetTimestamp()`-Delta, OR-verknüpft) für Daily-Bonus/Cooldowns/Comeback.
+  Die im Original genutzte `Environment`-Tick-API ist unter Unity/netstandard2.1 nicht verfügbar —
+  Stopwatch liefert denselben monotonen Schutz.
 - **Save-Integrität:** Overflow-Guards (`(long)+amount`-Clamp), `PersistenceHealth`-Corruption-Flag,
   Cloud-Pull-statt-Push bei erkannter Korruption (kein Data-Loss).
 - **Grid-Rankings (async):** Firebase-Security-Rules + Server-Timestamp + Write-Rate-Limit; Score-Plausibilität
@@ -169,10 +175,13 @@ Kein Online-Match → kein server-autoritatives Anti-Cheat. Fokus auf **lokale I
 
 | Saison | Monat | Inhalt |
 |--------|-------|--------|
-| 1 | 12–14 | Launch-Saison, alle 5 Helden + 10 Sektoren, BP-Theme Classic |
-| 2 | 14–16 | BP-Theme Cyberpunk; neues saisonales Event; Balancing-Pass aus Beta-Daten |
+| 1 | 12–14 | Launch-Saison (DACH), alle 5 Helden + 10 Sektoren, BP-Theme Classic |
+| 2 | 14–16 | **EU-Rollout**; BP-Theme Cyberpunk; neues saisonales Event; Balancing-Pass aus Beta-Daten |
 | 3 | 16–18 | BP-Theme aus Rotation; neue Cosmetics; ggf. neuer Bomben-/Karten-Inhalt |
-| 4+ | 18+ | EU/Global-Skalierung, weitere Saisons, optional 6. Held als echte Content-Erweiterung |
+| 4+ | 18+ | **Global-Skalierung**, weitere Saisons, optional 6. Held als echte Content-Erweiterung |
+
+> Diese Tabelle konkretisiert Phase 7 aus [§3](#3-roadmap-12-monate) (offenes Startfenster „Monat 13+"):
+> EU mit Saison 2 (~Monat 14–16), Global ab Saison 4+ (~Monat 18+).
 
 > Reine Single-Player-Content-Updates. **Kein** Versus/Co-op/Esports.
 

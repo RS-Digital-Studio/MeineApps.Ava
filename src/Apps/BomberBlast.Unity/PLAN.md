@@ -11,7 +11,8 @@
 > **Plattformen:** Android (primär, wie das Original) + Desktop (Test). Kein iOS/Steam geplant.
 > **Team:** Solo-Indie + KI-Assistenz (right-sized).
 > **Monetarisierung:** **Lean / fair** wie das 2D-Original: kostenlos + Rewarded-Ads (kein Banner),
-> 1,99 € Remove-Ads. Keine Lootboxen, kein Pay-to-Win.
+> 1,99 € Remove-Ads, optional VIP-Abo + BattlePass-Plus (beide im Original produktiv). Keine Lootboxen,
+> kein Pay-to-Win.
 
 Dieses Dokument ist die **Master-Übersicht**. Tiefe in:
 
@@ -220,11 +221,18 @@ des Originals auf, neu benannt und inszeniert.
 > Entscheidung: **BomberBlast-Modell** — fair, schlank, kein Banner, kein P2W, keine Lootboxen.
 > Details → [DESIGN.md §16](DESIGN.md).
 
-- **Remove-Ads (1,99 €):** entfernt Interstitials; Rewarded bleibt opt-in. Kern-IAP wie im Original.
+- **Remove-Ads (1,99 €, non-consumable):** wirkt wie im Original als **Premium-Flag** — Rewarded-Belohnungen
+  gibt es **ohne Video-Zwang** (IsPremium-Bypass in den Rewarded-Flows) + exklusive Premium-Skins.
+  Werbung existiert ausschließlich als opt-in Rewarded (wie im Original — keine Unterbrecher-Werbung).
 - **Rewarded-Ads (opt-in):** Continue (Coins verdoppeln), Level-Skip, PowerUp (ab L20), Score-Double,
-  Revival, Lucky-Spin, Anomaly-Retry. Hybrid-Cooldown.
+  Revival, Lucky-Spin-Extra, Dive-Retry. Hybrid-Cooldown.
+- **VIP-Abo (`vip_subscription_monthly`, 9,99 €/Monat):** im Original produktiv — wird übernommen,
+  Vorteile sinngemäß aus dem Original.
+- **BattlePass-Plus (`battle_pass_plus_season`, 4,99 €/Saison):** aktiviert den Premium-Track der
+  laufenden Saison — wie im Original.
 - **Gems** (erspielbar + optionaler IAP): Deck-Slot, Helden-Direktkauf, Premium-Karten, Anomaly-Eintritt.
-- **Battle-Pass (Saison):** Free + optional Premium-Track — klare Rewards pro Tier, **keine** Zufalls-Boxen.
+- **Battle-Pass (Saison):** Free-Track + Premium-Track (via BattlePass-Plus) — klare Rewards pro Tier,
+  **keine** Zufalls-Boxen.
 - **Cosmetics:** Trails/Frames/Victories/Skins über Gems, Battle-Pass, Events.
 - **Ethik:** keine Pay-to-Win-Stats in kompetitiven Modi, Saison-Content auch über Gameplay erreichbar,
   transparente Drop-Rates (Lucky-Spin mit Pity).
@@ -247,10 +255,10 @@ des Originals auf, neu benannt und inszeniert.
 
 | KPI | Ziel |
 |-----|------|
-| Sessions pro DAU | ≥ 3.5 |
+| Sessions pro DAU | ≥ 3,5 |
 | Session-Länge median | 8–12 Min |
 | Tutorial-Completion | ≥ 85 % |
-| Sektor-2-Erreichung (D7) | ≥ 60 % |
+| Sektor-2-Erreichung (Anteil der an D7 aktiven Nutzer) | ≥ 60 % |
 | Dives-Teilnahme (ab L20) | ≥ 40 % |
 | Liga-Teilnahme (MAU) | ≥ 30 % |
 
@@ -261,16 +269,16 @@ des Originals auf, neu benannt und inszeniert.
 | D1 | ≥ 35 % | ≥ 28 % |
 | D7 | ≥ 14 % | ≥ 10 % |
 | D30 | ≥ 8 % | ≥ 5 % |
-| Crash-Free-Users | ≥ 99 % | ≥ 99.5 % |
+| Crash-Free-Users | ≥ 99 % | ≥ 99,5 % |
 
 ### 10.3 Monetarisierung (lean)
 
 | KPI | Ziel |
 |-----|------|
-| ARPDAU | 0.08–0.15 € (werbegestützt, fair) |
+| ARPDAU | 0,08–0,15 € (werbegestützt, fair) |
 | Remove-Ads-Conversion (1,99 €) | ≥ 3 % |
 | Rewarded-Opt-In-Rate (Sessions) | ≥ 40 % |
-| Battle-Pass-Premium (pro Saison) | ≥ 6 % MAU |
+| BattlePass-Plus (pro Saison) | ≥ 6 % MAU |
 
 ### 10.4 Technik
 
@@ -278,7 +286,7 @@ des Originals auf, neu benannt und inszeniert.
 |-----|------|
 | FPS High-End / Low-End (z.B. Galaxy A50) | 60 / 30 |
 | App-Größe (AAB, mit Play-Asset-Delivery) | < 250 MB |
-| Cloud-Save-Sync-Success | ≥ 99.5 % |
+| Cloud-Save-Sync-Success | ≥ 99,5 % |
 
 ---
 
@@ -303,7 +311,7 @@ des Originals auf, neu benannt und inszeniert.
 
 ## 12. Risiko-Summary
 
-> Vollständiges Register → [ROADMAP.md](ROADMAP.md#risiken). Top-6:
+> Vollständiges Register → [ROADMAP.md §8](ROADMAP.md#8-risiko-register). Top-6:
 
 | # | Risiko | Wkt. | Impact | Mitigation |
 |---|--------|------|--------|------------|
@@ -318,14 +326,20 @@ des Originals auf, neu benannt und inszeniert.
 
 ## 13. Nächste konkrete Schritte
 
-### Sofort (Woche 1–2)
-1. **Diesen Plan + DESIGN.md reviewen** → Story & Modernisierungs-Umfang bestätigen (siehe §14).
-2. **Unity-Projekt** `src/Apps/BomberBlast.Unity/Unity/` (Unity 6 + URP) anlegen + Git-LFS + `.gitignore`.
-3. **Pure-Domain-Code-Port** planen (Combo/Layout/Pathfinding/RNG — keine Unity-API → 1:1).
+### Erledigt
+1. **Plan + DESIGN.md reviewt** — Richtung v0.5 (Story & Modernisierungs-Umfang) bestätigt.
+2. **Unity-Projekt-Skelett** existiert unter `src/Apps/BomberBlast.Unity/Unity/` (Unity 6 + URP) —
+   Setup-Doku in [SETUP.md](SETUP.md), Slice-Plan in [VERTICAL_SLICE.md](VERTICAL_SLICE.md).
+
+### Sofort
+3. **Editor-Open-Verifikation** — Projekt in der installierten Unity-6-Version öffnen, sauber kompilieren
+   ([SETUP.md](SETUP.md)).
+4. **Aktiver Bomberman-Vertical-Slice** (1 Sektor, 1 Warden) in 3D — Spielgefühl zuerst
+   ([VERTICAL_SLICE.md](VERTICAL_SLICE.md)), inkl. Pure-Domain-Code-Port (Combo/Layout/Pathfinding/RNG —
+   keine Unity-API → 1:1).
 
 ### Mittelfrist (Monat 1–4)
-4. **CI/CD** (game-ci, EditMode-Tests + Determinismus-Replay).
-5. **Aktiver Bomberman-Vertical-Slice** (1 Sektor, 1 Boss) in 3D — Spielgefühl zuerst.
+5. **CI/CD** (game-ci, EditMode-Tests + Determinismus-Replay).
 6. **Concept-Art/3D-Sprint** für Bomber + Sektor 1 (Neon-Arcade-Stil, 3D).
 
 ---

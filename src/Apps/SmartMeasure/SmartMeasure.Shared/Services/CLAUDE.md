@@ -92,13 +92,19 @@ Betroffen: `ProjectService`, `ExportService`, `SettingsViewModel`, `SurveyReport
 
 ### ArMathHelpers / ARCore Koordinatensystem
 
-ARCore: +X = rechts, +Y = oben, **+Z = hinten** (vom Gerät weg). Bei heading=0 zeigt -Z nach Norden.
-Korrekte Rotation (KRITISCH — naive Formel bricht bei heading ≠ 0°):
+ARCore: +X = rechts, +Y = oben, **+Z = hinten** (vom Gerät weg). Das `heading` in
+`RotateAndProject` ist der **Azimut des ARCore-Weltframes** (in welche Kompass-Richtung -Z
+der Session-Welt zeigt). Korrekte Rotation (KRITISCH — naive Formel bricht bei heading ≠ 0°):
 
 ```csharp
 eastOffset = arX * cosH - arZ * sinH
 nordOffset = -arX * sinH - arZ * cosH
 ```
+
+**Yaw ≠ Kompass-Heading:** `ExtractHeadingFromQuaternion` liefert das Kamera-Yaw RELATIV zum
+azimutal willkürlichen Session-Weltframe — erst die Fusion mit einer Nordreferenz
+(Frame-Azimut = Magnetometer/VPS-Heading − Yaw desselben Moments) macht daraus eine
+geografische Richtung. Nur der EUS-Frame der Geospatial-API ist nordreferenziert.
 
 ### ExportService
 

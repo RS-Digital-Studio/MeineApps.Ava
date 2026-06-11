@@ -65,7 +65,18 @@ ArCaptureActivity → ConsumeLastResult → AndroidArCaptureService → TCS
     → RotateAndProject (ARCore +Z = hinten — Rotations-Formel siehe Services-CLAUDE.md)
     → IGeoidService für Höhen-Korrektur
     → ProjectService.AddPointAsync + AddGardenElementAsync
+  → MainViewModel: IArCaptureService.ConfirmResultPersisted()
+    → erst JETZT wird der AR-Session-Recovery-State geloescht (Prozess-Tod/
+      Transfer-Fehler im Uebergabefenster bleiben wiederherstellbar)
 ```
+
+**Heading-Konvention (KRITISCH):** `ArCaptureResult.MagneticHeading` ist der **Azimut des
+ARCore-Weltframes** (true north, inkl. Deklination) — gewonnen als zirkulärer Mittelwert der
+(Magnetometer − ARCore-Yaw)-Paare bzw. via VPS (`geoHeading − Kamera-Yaw` desselben Frames).
+Das rohe ARCore-Kamera-Yaw ist relativ zum azimutal willkürlichen Session-Start und darf NIE
+direkt als Kompass-Heading verwendet werden. Der GPS-Anker des Results ist die aufgelöste
+Geo-Pose des **Session-Ursprungs** (`earth.GetGeospatialPose(identity)`, 1×/s), nicht die
+Kamera-Position vom Session-Ende.
 
 ### Projekt-Load (Batch, NICHT iterativ)
 
@@ -160,7 +171,7 @@ Die Activity hat keine Avalonia-DI. Lokalisierte Strings werden einmalig in `OnC
 | Raw Depth + Confidence | Pixel mit Confidence > 0,3 (Random-Noise-Filter) |
 | Scene Semantics | `SemanticMode.Enabled` — Sky + Instant-Placement-Kombi wird abgelehnt, sonst Label in `ArPoint.SemanticLabel` |
 | Light-Estimation | `LightEstimate.PixelIntensity` — Helligkeits-Sprung > 40 % bricht laufendes Sampling ab (2 s Cooldown) |
-| Session Recovery | State in SharedPreferences nach jedem Punkt, max 30 Min alt (nur nicht-abgeschlossene Sessions; bei "Fertig" geloescht) |
+| Session Recovery | State in SharedPreferences nach jeder Mutation (Punkt setzen/loeschen/verschieben, Kontur schliessen), max 30 Min alt. Geloescht erst nach BESTAETIGTER Projekt-Uebernahme (`ConfirmResultPersisted`) bzw. bewusstem Verwerfen — nie schon in FinishCapture. Restore reaktiviert die letzte offene Kontur als aktive; Punkte ohne Geo-Bezug tragen `ArPoint.RestoredWithoutGeo` (Transfer wertet auf >= 5 m / Konfidenz <= 0,3 ab) |
 | Vorlade-Punkte | Bestehende Projekt-Punkte werden beim AR-Start GEO-UNABHAENGIG relativ als `ArPoint.IsPreloaded` in `_points` geladen (Bridge `SetPreloadPoints`), gedaempft + "Lage relativ" gekennzeichnet. Gehen NIE ins Result/Recovery und sind aus allen Mess-Berechnungen + Snap ausgeschlossen (Korruptions-/Duplikat-Schutz). Ergaenzt die Earth-Anchor-Site-Marker (die VPS brauchen) |
 | Screenshot/Recording | In die Galerie via MediaStore (`Pictures/SmartMeasure` / `Movies/SmartMeasure`, `MediaStoreGallery`), nicht mehr app-intern. Recording cache-then-copy (App-Cache → Galerie nach Stop/OnPause). `SetAutoStopOnPause(true)` |
 
@@ -217,10 +228,20 @@ confidence =
 
 ### S25-Ultra-Spezifika
 
-- `LightEstimationMode.EnvironmentalHdr` wenn RAM ≥ 8 GB
-- Multi-Sample-Count: 15 (High-End) / 10 (Normal) / 5 (Thermal Severe)
-- `PowerManager.CurrentThermalStatus` alle 60 Frames prüfen
-- `OnApplyWindowInsets` liest Punch-Hole-Cutout → `ArOverlayState.TopInsetPixels`
+- **Frame-Gate in OnDrawFrame:** Bei `LatestCameraImage` + `RENDERMODE_CONTINUOUSLY` läuft die
+  GL-Loop mit Display-Rate (LTPO bis 120 Hz), die Kamera liefert ~30 fps — `frame.Timestamp`
+  wird verglichen, nur ECHTE neue Kamera-Frames durchlaufen Sampling/Projektion/Timer
+  (sonst Duplikat-Samples → StdDev gegen 0 → Confidence überschätzt, 4× CPU-Last/Thermal).
+- `LightEstimationMode.EnvironmentalHdr` wenn RAM ≥ 8 GB; bei Thermal Severe+ Laufzeit-Downgrade
+  auf AmbientIntensity (`Configure` auf dem GL-Thread), nach Abkühlung zurück.
+- Multi-Sample-Count: 15 (High-End) / 10 (Normal) / reduziert bei Thermal (nie unter
+  `MinValidSampleCount`).
+- `PowerManager.CurrentThermalStatus` ~1×/s prüfen (30 echte Kamera-Frames).
+- `OnApplyWindowInsets` liest Punch-Hole-Cutout → `ArOverlayState.TopInsetPixels`; Bottom-Inset
+  (Edge-to-Edge ab targetSdk 35) geht in Toolbar, Trennlinie, Footer UND Maßstab-Balken ein.
+- Beide Activities mit breiten `configChanges` (UiMode/SmallestScreenSize/ScreenLayout/Density/
+  FontScale) — der zeitgesteuerte One-UI-Dark-Mode-Wechsel würde die AR-Session sonst mid-Messung
+  zerstören; `ArCaptureActivity` zusätzlich `ResizeableActivity=false`.
 
 ---
 

@@ -15,7 +15,7 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `GardenElement.cs` | SQLite-Entity: Polygon/Linie mit `PointsJson` (v2: WGS84, v1: legacy UTM). `LocalPoints` ist `[Ignore]` + transient. `GardenElementType`-Enum: Weg, Beet, Rasen, Mauer, Zaun, Terrasse, Grenze, Gebäude, Wasser, Kante |
 | `TerrainMesh.cs` | Immutable Delaunay-Gitter: Vertex-Arrays X/Y/Z, Triangle-Index-Array, vorberechnete Normalen, Bounding Box. `ContourLine` (Isohypse) ebenfalls in dieser Datei |
 | `MaterialEstimate.cs` | Berechneter Materialbedarf: `Material`-String, Menge, Einheit, `QuantityWithSafety` (+15 %). Kein Typ-Enum — `Material` ist Freitext |
-| `ArPoint.cs` | AR-Messpunkt: ARCore-Koordinaten + Confidence + SemanticLabel (`ArSemanticLabel`-Enum) + PhotoPath + optionale Geo-Koordinaten (VPS) + Tracking-Metadaten |
+| `ArPoint.cs` | AR-Messpunkt: ARCore-Koordinaten + Confidence + SemanticLabel (`ArSemanticLabel`-Enum) + PhotoPath + optionale Geo-Koordinaten (VPS) + Tracking-Metadaten. Flags: `IsPreloaded` (Vorlade-Punkt, nie ins Result), `RestoredWithoutGeo` (Recovery ohne Geo-Bezug → Transfer wertet Accuracy/Konfidenz drastisch ab) |
 | `ArContour.cs` | AR-Kontur aus mehreren `ArPoint`s. Nicht zwingend geschlossen (`IsClosed`-Flag). `ArContourType`-Enum: Grenze, Weg, Beet, Mauer, Zaun, Terrasse, Gebäude, Wasser, Kante |
 | `ArCaptureResult.cs` | Übergabe-Objekt von `ArCaptureActivity` → `IArCaptureService.CaptureAsync()`. Enthält alle Punkte + Konturen + `TotalPointCount`, GPS-Anker, Geospatial-Metadaten, `ArGpsSource`-Enum |
 

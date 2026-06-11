@@ -35,11 +35,17 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 
 ```
 App.AppPathsFactory = () => new AndroidAppPaths(this)
-App.ArCaptureServiceFactory = _ => _arCaptureService   (AndroidArCaptureService)
+App.ArCaptureServiceFactory = _ => _arCaptureService   (STATISCHE AndroidArCaptureService-Instanz)
 App.VoiceAnnotationServiceFactory = _ => new AndroidVoiceAnnotationService(this)
 UriLauncher.PlatformShareFile = ShareFileViaIntent
 UriLauncher.PlatformOpenFile  = OpenFileViaIntent
 ```
+
+**AR-Service ist STATISCH + wiederangehängt:** `AndroidArCaptureService` lebt als
+DI-Singleton über MainActivity-Recreates hinweg (laufende TCS!). Pro `OnCreate` wird nur die
+Activity-Referenz via `AttachActivity(this)` erneuert — eine NEUE Instanz pro Activity würde
+nach einem Recreate die `OnActivityResult`-Zustellung von der awaitenden TCS trennen
+(CaptureAsync hinge für immer, AR-Button dauerhaft tot).
 
 **NACH `base.OnCreate`:**
 
@@ -58,8 +64,9 @@ RequestLocationPermissionIfNeeded()
 
 | Permission | Wann | Grund |
 |-----------|------|-------|
-| `ACCESS_FINE_LOCATION` | Runtime, alle Level | Mapsui + AR-Georeferenzierung (Geospatial API) |
-| `CAMERA` | Runtime, von `ArCaptureActivity` selbst angefragt | ARCore |
+| `ACCESS_FINE_LOCATION` | Runtime, alle Level | Mapsui + AR-Georeferenzierung (Geospatial API) — KEINE harte AR-Voraussetzung |
+| `CAMERA` | Runtime, vom AR-Service angefragt | ARCore (einzige harte Voraussetzung) |
+| `VIBRATE` | Manifest | Haptik (Punkt-Setzen, Warnungen) — ohne sie verschluckt Android Vibrator-Calls still |
 
 `OperatingSystem.IsAndroidVersionAtLeast(31)` statt `Build.VERSION.SdkInt` (Static-Analyzer-konform).
 
@@ -76,10 +83,13 @@ SurveyViewModel.StartArCaptureAsync()
   → AndroidArCaptureService startet ArCaptureActivity (Intent)
   → ArCaptureActivity.FinishCapture()  → TCS.SetResult()
   → ConsumeLastResult() gibt ArCaptureResult zurück
+  → nach erfolgreichem Transfer: ConfirmResultPersisted() → ClearRecoveryState
 ```
 
 `HandleActivityResult` / `HandlePermissionResult` in `AndroidArCaptureService` müssen von
 `MainActivity.OnActivityResult` / `OnRequestPermissionsResult` delegiert werden.
+Permissions: nur CAMERA ist harte AR-Voraussetzung (Location degradiert sauber zur
+Relativ-Messung); bei dauerhaftem Camera-Deny öffnet der Service die App-Einstellungen.
 
 ---
 

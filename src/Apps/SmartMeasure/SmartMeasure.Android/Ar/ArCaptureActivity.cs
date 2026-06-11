@@ -318,8 +318,51 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private volatile bool _groundPlaneYSet;
     private float _groundPlaneYValue;
 
-    // ARCore-basiertes Heading (Sensor-Fusion aus Kamera-Pose)
-    private readonly List<float> _arCoreHeadingSamples = [];
+    // Frame-Azimut-Fusion: Paare (Magnetometer-Heading − ARCore-Kamera-Yaw) aus demselben
+    // Moment. Der zirkulaere Mittelwert der Differenzen ist der AZIMUT DES ARCORE-WELTFRAMES
+    // (in welche Kompass-Richtung -Z der Session-Welt zeigt). Das rohe ARCore-Yaw alleine ist
+    // relativ zum azimutal willkuerlichen Session-Start und darf NIE als Kompass-Heading
+    // verwendet werden — sonst ist die gesamte Nicht-VPS-Georeferenzierung um den
+    // Start-Azimut verdreht.
+    private readonly List<float> _frameAzimuthSamples = [];
+
+    /// <summary>Finalisierter Azimut des ARCore-Weltframes in Grad (true north, inkl.
+    /// Deklination). NaN-Bits-Sentinel wie bei <c>_magneticHeading</c> (Cross-Thread).</summary>
+    private int _arFrameAzimuthBits = BitConverter.SingleToInt32Bits(float.NaN);
+    private float? _arFrameAzimuth
+    {
+        get
+        {
+            var f = BitConverter.Int32BitsToSingle(System.Threading.Volatile.Read(ref _arFrameAzimuthBits));
+            return float.IsNaN(f) ? null : f;
+        }
+        set => System.Threading.Volatile.Write(ref _arFrameAzimuthBits,
+            BitConverter.SingleToInt32Bits(value ?? float.NaN));
+    }
+
+    /// <summary>Letztes ARCore-Kamera-Yaw (Grad, relativ zum Session-Weltframe) — vom
+    /// GL-Thread pro Frame gesetzt, fuer Live-Nordpfeil + Tachymeter-Bearing gelesen.</summary>
+    private int _lastArYawBits = BitConverter.SingleToInt32Bits(float.NaN);
+    private float? _lastArYaw
+    {
+        get
+        {
+            var f = BitConverter.Int32BitsToSingle(System.Threading.Volatile.Read(ref _lastArYawBits));
+            return float.IsNaN(f) ? null : f;
+        }
+        set => System.Threading.Volatile.Write(ref _lastArYawBits,
+            BitConverter.SingleToInt32Bits(value ?? float.NaN));
+    }
+
+    /// <summary>Magnetische Deklination am Standort in Grad (magnetisch → geografisch Nord,
+    /// in DE ~+3-4°). Einmal pro Session aus der ersten GPS-Position via GeomagneticField.
+    /// 0 solange keine Position vorliegt.</summary>
+    private volatile float _magneticDeclinationDeg;
+
+    /// <summary>ARCore-Kamera-Yaw zum Zeitpunkt der Tachymeter-Stationierung. Ziel-Bearing =
+    /// Stations-Heading + (aktuelles Yaw − dieses Yaw) — die Yaw-Differenz lebt im selben
+    /// Session-Weltframe, der willkuerliche Frame-Azimut kuerzt sich heraus.</summary>
+    private volatile float _stationArYawDeg;
 
     // Magnetometer-Accuracy (0=keine bis 3=hoch) — vom Sensor-Thread geschrieben, GL-Thread gelesen
     private volatile int _magneticAccuracy = 3;
@@ -355,12 +398,31 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// (Altitude − CameraLocalY) ergibt sich der konstante Offset ARCore-Y → VPS-Ellipsoidhöhe,
     /// mit dem die Höhe eines beliebigen Hit-Punkts berechnet wird: <c>Altitude + (hitY − CameraLocalY)</c>.
     /// Ohne das bekäme jeder Punkt die Kamera-/Augenhöhe statt seiner Gelände-Höhe.</param>
+    /// <param name="CameraLocalX">ARCore-Welt-X der Kamera zum Snapshot-Zeitpunkt — fuer die
+    /// horizontale Distanz Kamera→Hit im Accuracy-Fallback von <c>ResolveHitGeoPose</c>.</param>
+    /// <param name="CameraLocalZ">ARCore-Welt-Z der Kamera zum Snapshot-Zeitpunkt (wie X).</param>
+    /// <param name="OriginLatitude">Geo-Position des AR-SESSION-URSPRUNGS (lokal 0/0/0), via
+    /// <c>earth.GetGeospatialPose(identityPose)</c> aufgeloest. Das ist der korrekte GPS-Anker
+    /// fuer den Heading-Fallback-Transfer — die Kamera-Position vom Session-Ende waere um die
+    /// gesamte Laufstrecke des Nutzers versetzt. Null wenn (noch) nicht aufloesbar.</param>
+    /// <param name="FrameAzimuth">Azimut des ARCore-Weltframes (true north, Grad) aus
+    /// VPS-Heading − Kamera-Yaw desselben Frames. Praeziser (±5°) als die Magnetometer-Fusion
+    /// und exakt das Heading, das <c>ArTransferService.RotateAndProject</c> erwartet.</param>
     private sealed record GeospatialSnapshot(
         double Latitude, double Longitude, double Altitude,
         float HorizontalAccuracy, float Heading, float HeadingAccuracy,
-        float CameraLocalY);
+        float CameraLocalY, float CameraLocalX, float CameraLocalZ,
+        double? OriginLatitude, double? OriginLongitude, double? OriginAltitude,
+        float? FrameAzimuth);
 
     private GeospatialSnapshot? _lastGeoSnapshot; // gelesen via Volatile.Read
+
+    /// <summary>Gecachte Identity-Pose (lokal 0/0/0) fuer die Origin-Aufloesung.</summary>
+    private Pose? _identityPose;
+
+    /// <summary>Frame-Zaehler: Origin-Geo-Pose nur 1x/s aufloesen (JNI-/Alloc-Kosten).</summary>
+    private int _originResolveCounter;
+    private double? _lastOriginLat, _lastOriginLon, _lastOriginAlt;
 
     /// <summary>
     /// Punkte aus Recovery-Restore, die einen Earth-Anchor brauchen sobald Geospatial-Tracking
@@ -953,15 +1015,24 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             gpsAcc = _gpsAccuracy;
             gpsSource = _gpsSource;
         }
-        var finalLat = geoSnap?.Latitude ?? gpsLat;
-        var finalLon = geoSnap?.Longitude ?? gpsLon;
-        var finalAlt = geoSnap?.Altitude ?? gpsAlt;
+        // Stale-Schutz: _lastGeoSnapshot wird bei Earth-Tracking-Verlust nicht genullt —
+        // ohne das Gate wuerde ein Minuten-alter VPS-Snapshot frische GPS-Werte verdraengen.
+        var geoSnapValid = _geospatialActive ? geoSnap : null;
+
+        // GPS-Anker = Geo-Position des SESSION-URSPRUNGS (lokal 0/0/0). Die VPS-KAMERA-Position
+        // vom Session-Ende waere um die gesamte Laufstrecke des Nutzers versetzt — der
+        // ArTransferService interpretiert den Anker als Geo-Position des lokalen Nullpunkts.
+        var finalLat = geoSnapValid?.OriginLatitude ?? gpsLat;
+        var finalLon = geoSnapValid?.OriginLongitude ?? gpsLon;
+        var finalAlt = geoSnapValid?.OriginAltitude ?? gpsAlt;
         var finalGpsAcc = _geospatialActive && geoHAcc.HasValue
             ? geoHAcc.Value
             : gpsAcc;
-        var finalHeading = _geospatialActive && geoSnap != null
-            ? geoSnap.Heading
-            : _magneticHeading;
+
+        // Heading = Azimut des ARCORE-WELTFRAMES (das erwartet RotateAndProject) — VPS-Variante
+        // (geoHeading − Kamera-Yaw desselben Frames) bevorzugt, sonst die Magnetometer-Fusion.
+        // Das rohe Kamera-Heading vom Session-Ende waere um die Enddrehung des Nutzers verdreht.
+        var finalHeading = geoSnapValid?.FrameAzimuth ?? _arFrameAzimuth ?? _magneticHeading;
 
         var captureResult = new ArCaptureResult
         {
@@ -1619,7 +1690,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Geo-Position des HIT-PUNKTS (Lat/Lon/Ellipsoid-Alt) — exakt via ARCore-Earth, sonst
         // Kamera-Snapshot + ARCore-Höhenkorrektur. Vorher bekam jeder Punkt die KAMERA-Position
         // (Lat/Lon + Augenhöhe) statt seiner echten Gelände-Position → Geländemodell flach + Lage versetzt.
-        var (hitGeoLat, hitGeoLon, hitGeoAlt, hitGeoHAcc) = ResolveHitGeoPose(anchorPose, y, geoSnapshot);
+        var (hitGeoLat, hitGeoLon, hitGeoAlt, hitGeoHAcc, hitGeoExact) =
+            ResolveHitGeoPose(anchorPose, x, y, z, geoSnapshot);
 
         // Camera-Pitch zum Capture-Zeitpunkt (Plan Kap. 4.2). Steiler Pitch ⇒ ungenauere Tiefe;
         // wird in den SurveyPoint übernommen und kann später in Berichten/Quality-Score genutzt werden.
@@ -1663,16 +1735,20 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             SampleTrackingContinuity = continuity,
         };
 
-        // Anchor erstellen — Earth-Anchor bevorzugen (drift-frei + persistent)
-        // wenn Geospatial aktiv, sonst lokaler Session-Anchor.
+        // Anchor erstellen — Earth-Anchor bevorzugen (drift-frei + persistent), aber NUR an
+        // der exakten HIT-Geo-Position. Niemals an der Kamera-/Snapshot-Position verankern:
+        // RefreshAnchors zieht den Punkt sonst pro Frame zur Standposition des Nutzers
+        // (Fehler = volle Messdistanz). Ohne exakte Hit-Geo-Pose ist der lokale
+        // Session-Anchor (anchorPose) die korrekte Wahl.
         var hasAnchor = false;
-        if (_geospatialActive && geoSnapshot != null && _arSession?.Earth != null)
+        if (_geospatialActive && _arSession?.Earth != null
+            && hitGeoExact && hitGeoLat.HasValue && hitGeoLon.HasValue && hitGeoAlt.HasValue)
         {
             hasAnchor = _anchorManager.TryCreateEarthAnchor(
                 _arSession.Earth,
-                geoSnapshot.Latitude,
-                geoSnapshot.Longitude,
-                geoSnapshot.Altitude,
+                hitGeoLat.Value,
+                hitGeoLon.Value,
+                hitGeoAlt.Value,
                 arPoint);
         }
 
@@ -3549,30 +3625,26 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     #region Heading-Averaging
 
     /// <summary>
-    /// Finalisiert Heading-Averaging aus den gesammelten Samples (Median statt Mean,
-    /// weil Magnetometer-Ausreisser sonst alles kaputtmachen).
+    /// Liefert den zirkulaeren Mittelwert der Magnetometer-Samples (robust gegen den
+    /// 360°-Sprung; Ausreisser werden durch die Mittelung gedaempft). Wird nur als
+    /// Frame-Azimut-FALLBACK genutzt, wenn keine (Mag − AR-Yaw)-Paare vorliegen.
+    /// Ueberschreibt <c>_magneticHeading</c> bewusst NICHT — das bleibt der Live-Kompasswert.
     /// </summary>
-    private void FinalizeHeadingAveraging()
+    private float? FinalizeHeadingAveraging()
     {
         float[] samples;
         lock (_headingSamples) samples = _headingSamples.ToArray();
-        if (samples.Length == 0) return;
+        if (samples.Length == 0) return null;
 
-        // Circular median: Winkel können um 360° springen
-        var sinSum = samples.Sum(h => MathF.Sin(h * MathF.PI / 180f));
-        var cosSum = samples.Sum(h => MathF.Cos(h * MathF.PI / 180f));
-        var medianRad = MathF.Atan2(sinSum / samples.Length, cosSum / samples.Length);
-        var medianDeg = medianRad * 180f / MathF.PI;
-        if (medianDeg < 0) medianDeg += 360f;
-
-        _magneticHeading = medianDeg;
+        var meanDeg = CircularMeanDeg(samples);
 
         // Plan Kap. 4.5: nach Averaging Sample-Listen freigeben.
         lock (_headingSamples) _headingSamples.Clear();
-        lock (_arCoreHeadingSamples) _arCoreHeadingSamples.Clear();
+        lock (_frameAzimuthSamples) _frameAzimuthSamples.Clear();
 
         global::Android.Util.Log.Info("ArCapture",
-            $"Heading-Averaging: {samples.Length} samples → {medianDeg:F1}°");
+            $"Heading-Averaging (Magnetometer-Fallback): {samples.Length} samples → {meanDeg:F1}°");
+        return meanDeg;
     }
 
     #endregion
@@ -3700,22 +3772,64 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var elapsedMs = (DateTime.UtcNow - _sessionStart).TotalMilliseconds;
         if (elapsedMs < 5000) return;
 
-        // Sensor-Fusion: bevorzugt ARCore-Heading (stabiler), Magnetometer als Fallback
-        var arHeadingFinal = FinalizeArCoreHeading();
-        if (arHeadingFinal.HasValue)
+        // Magnetische Deklination am Standort (magnetisch → geografisch Nord, DE ~+3-4°).
+        // Ohne die Korrektur ist der Magnetometer-Pfad systematisch um die Deklination
+        // verdreht (~6 cm Querversatz pro Meter Messdistanz).
+        UpdateMagneticDeclination();
+
+        // Frame-Azimut: zirkulaerer Mittelwert der (Magnetometer − ARCore-Yaw)-Paare —
+        // der Azimut des ARCore-Weltframes, genau das Heading das RotateAndProject erwartet.
+        // Fallback ohne AR-Paare: Magnetometer-Median als Naeherung (ARCore richtet den
+        // Weltframe beim Start mit -Z ~ Blickrichtung aus).
+        var frameAzimuth = FinalizeFrameAzimuth() ?? FinalizeHeadingAveraging();
+        if (frameAzimuth.HasValue)
         {
-            _magneticHeading = arHeadingFinal.Value;
+            _arFrameAzimuth = NormalizeDeg(frameAzimuth.Value + _magneticDeclinationDeg);
             global::Android.Util.Log.Info("ArCapture",
-                $"Heading-Final: ARCore-Fusion → {arHeadingFinal.Value:F1}°");
-        }
-        else
-        {
-            FinalizeHeadingAveraging();
-            global::Android.Util.Log.Info("ArCapture",
-                $"Heading-Final: Magnetometer-Fallback → {_magneticHeading:F1}°");
+                $"Heading-Final: Frame-Azimut {frameAzimuth.Value:F1}° + Deklination {_magneticDeclinationDeg:F1}° → {_arFrameAzimuth:F1}°");
         }
 
+        // Sample-Listen freigeben (Plan Kap. 4.5) — FinalizeHeadingAveraging raeumt selbst auf,
+        // aber im Erfolgsfall der Paar-Fusion laeuft es nicht.
+        lock (_headingSamples) _headingSamples.Clear();
+        lock (_frameAzimuthSamples) _frameAzimuthSamples.Clear();
+
         _sensorAveragingFinalized = true;
+    }
+
+    /// <summary>Live-Kompass-Heading fuer den Nordpfeil: ARCore-Yaw (pro Frame, gyro-stabil)
+    /// + Frame-Azimut (Nordreferenz). Vor der Fusion-Finalisierung der rohe Live-Magnetometer-
+    /// Wert. Vorher fror der Nordpfeil nach 5 s ein (Sensor-Listener abgemeldet, Wert statisch).</summary>
+    private float ComputeLiveCompassHeading()
+    {
+        var yaw = _lastArYaw;
+        var azimuth = _arFrameAzimuth;
+        if (yaw.HasValue && azimuth.HasValue)
+            return NormalizeDeg(yaw.Value + azimuth.Value);
+        return _magneticHeading ?? 0f;
+    }
+
+    /// <summary>Berechnet die magnetische Deklination aus der ersten GPS-Position
+    /// (GeomagneticField-Modell). Bleibt 0 wenn keine Position vorliegt.</summary>
+    private void UpdateMagneticDeclination()
+    {
+        try
+        {
+            double? lat, lon, alt;
+            lock (_gpsLock)
+            {
+                lat = _gpsLatitude;
+                lon = _gpsLongitude;
+                alt = _gpsAltitude;
+            }
+            if (!lat.HasValue || !lon.HasValue) return;
+
+            using var field = new global::Android.Hardware.GeomagneticField(
+                (float)lat.Value, (float)lon.Value, (float)(alt ?? 0.0),
+                Java.Lang.JavaSystem.CurrentTimeMillis());
+            _magneticDeclinationDeg = field.Declination;
+        }
+        catch { /* Deklination optional — 0 ist besser als Crash */ }
     }
 
     /// <summary>
@@ -4113,9 +4227,45 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             var pose = earth.CameraGeospatialPose;
             if (pose == null) return;
 
-            // ARCore-Welt-Y der Kamera zum selben Zeitpunkt wie die VPS-Höhe festhalten —
-            // erlaubt später, die echte Gelände-Höhe jedes Hit-Punkts statt der Kamerahöhe abzuleiten.
-            var camLocalY = camera?.Pose?.Ty() ?? 0f;
+            // ARCore-Welt-Position der Kamera zum selben Zeitpunkt wie die VPS-Pose festhalten —
+            // Y fuer die Gelaende-Hoehen-Ableitung, X/Z fuer die Distanz-Schaetzung im
+            // ResolveHitGeoPose-Accuracy-Fallback.
+            var camPose = camera?.Pose;
+            var camLocalY = camPose?.Ty() ?? 0f;
+            var camLocalX = camPose?.Tx() ?? 0f;
+            var camLocalZ = camPose?.Tz() ?? 0f;
+
+            // Frame-Azimut aus VPS: pose.Heading ist das Kamera-Azimut (true north), das
+            // Kamera-Yaw desselben Frames ist relativ zum Session-Weltframe — die Differenz
+            // ist der Azimut des Weltframes selbst (das Heading fuer RotateAndProject).
+            float? frameAzimuth = null;
+            if (camPose != null)
+            {
+                var arYaw = ArPrecisionHelpers.ExtractHeadingFromCameraPose(camPose);
+                if (arYaw.HasValue)
+                    frameAzimuth = NormalizeDeg((float)pose.Heading - arYaw.Value);
+            }
+
+            // Geo-Position des SESSION-URSPRUNGS (lokal 0/0/0) aufloesen — der korrekte
+            // GPS-Anker fuer den Fallback-Transfer. Nur 1x/s (JNI-/Alloc-Kosten), dazwischen
+            // den letzten Wert fortschreiben; VPS verfeinert sich ueber die Session.
+            _originResolveCounter++;
+            if (_originResolveCounter >= 30 || _lastOriginLat == null)
+            {
+                _originResolveCounter = 0;
+                try
+                {
+                    _identityPose ??= new Pose([0f, 0f, 0f], [0f, 0f, 0f, 1f]);
+                    var originGeo = earth.GetGeospatialPose(_identityPose);
+                    if (originGeo != null)
+                    {
+                        _lastOriginLat = originGeo.Latitude;
+                        _lastOriginLon = originGeo.Longitude;
+                        _lastOriginAlt = originGeo.Altitude;
+                    }
+                }
+                catch { /* Origin-Aufloesung optional — Fallback ist der GPS-Anker */ }
+            }
 
             var snapshot = new GeospatialSnapshot(
                 Latitude: pose.Latitude,
@@ -4124,7 +4274,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 HorizontalAccuracy: (float)pose.HorizontalAccuracy,
                 Heading: (float)pose.Heading,
                 HeadingAccuracy: (float)pose.HeadingAccuracy,
-                CameraLocalY: camLocalY);
+                CameraLocalY: camLocalY,
+                CameraLocalX: camLocalX,
+                CameraLocalZ: camLocalZ,
+                OriginLatitude: _lastOriginLat,
+                OriginLongitude: _lastOriginLon,
+                OriginAltitude: _lastOriginAlt,
+                FrameAzimuth: frameAzimuth);
             System.Threading.Volatile.Write(ref _lastGeoSnapshot, snapshot);
 
             // Samples für Final-Report (Median)
@@ -4149,14 +4305,17 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// <summary>
     /// Liefert die Geo-Position (Lat/Lon/WGS84-Ellipsoid-Alt/H-Acc) eines HIT-PUNKTS, nicht der
     /// Kamera. Primär via <c>earth.GetGeospatialPose(hitPose)</c> (ARCore rechnet die exakte
-    /// Geo-Position der lokalen Pose). Fallback: Kamera-Snapshot, dessen Höhe per ARCore-Y-Differenz
-    /// (hitY − Kamera-Y) auf die Hit-Höhe korrigiert wird (Lat/Lon bleibt dann kamera-nah).
+    /// Geo-Position der lokalen Pose) → <c>exact=true</c>. Fallback: Kamera-Snapshot, dessen Höhe
+    /// per ARCore-Y-Differenz (hitY − Kamera-Y) auf die Hit-Höhe korrigiert wird — Lat/Lon bleibt
+    /// dann kamera-nah, deshalb wird die horizontale Distanz Kamera→Hit ehrlich auf die Accuracy
+    /// aufgeschlagen (sonst saehe ein um Meter versetzter Punkt vertrauenswuerdig aus) und
+    /// <c>exact=false</c> gemeldet (kein Earth-Anchor an dieser Naeherungs-Position!).
     /// Liefert (null,…) wenn Geospatial inaktiv.
     /// </summary>
-    private (double? lat, double? lon, double? alt, float? hAcc) ResolveHitGeoPose(
-        Pose? hitPose, float hitY, GeospatialSnapshot? snapshot)
+    private (double? lat, double? lon, double? alt, float? hAcc, bool exact) ResolveHitGeoPose(
+        Pose? hitPose, float hitX, float hitY, float hitZ, GeospatialSnapshot? snapshot)
     {
-        if (!_geospatialActive) return (null, null, null, null);
+        if (!_geospatialActive) return (null, null, null, null, false);
 
         // Primär: exakte Geo-Pose des Hit-Punkts direkt von ARCore-Earth.
         if (hitPose != null)
@@ -4168,7 +4327,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 {
                     var gp = earth.GetGeospatialPose(hitPose);
                     if (gp != null)
-                        return (gp.Latitude, gp.Longitude, gp.Altitude, (float)gp.HorizontalAccuracy);
+                        return (gp.Latitude, gp.Longitude, gp.Altitude, (float)gp.HorizontalAccuracy, true);
                 }
             }
             catch (Exception ex)
@@ -4179,10 +4338,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         // Fallback: Kamera-Snapshot, Höhe per ARCore-Y-Differenz auf den Hit-Punkt korrigiert.
         if (snapshot != null)
+        {
+            var dx = hitX - snapshot.CameraLocalX;
+            var dz = hitZ - snapshot.CameraLocalZ;
+            var horizontalOffsetM = MathF.Sqrt(dx * dx + dz * dz);
             return (snapshot.Latitude, snapshot.Longitude,
-                    snapshot.Altitude + (hitY - snapshot.CameraLocalY), snapshot.HorizontalAccuracy);
+                    snapshot.Altitude + (hitY - snapshot.CameraLocalY),
+                    snapshot.HorizontalAccuracy + horizontalOffsetM, false);
+        }
 
-        return (null, null, null, null);
+        return (null, null, null, null, false);
     }
 
     /// <summary>Median-Accuracy aus Geospatial-Samples berechnen (für Report).</summary>
@@ -4205,8 +4370,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     }
 
     /// <summary>
-    /// Sammelt ARCore-Heading aus der Kamera-Pose (Sensor-fusioniert).
-    /// Stabiler als rohes Magnetometer, vor allem in Metallumgebung.
+    /// Sammelt pro Frame das ARCore-Kamera-Yaw (fuer Live-Nordpfeil + Tachymeter) und —
+    /// solange das Magnetometer-Sampling laeuft — Frame-Azimut-Paare: Die Differenz
+    /// (Magnetometer-Heading − ARCore-Yaw) desselben Moments ist der Azimut des
+    /// ARCore-Weltframes. Das rohe Yaw selbst ist KEIN Kompass-Heading (Session-Frame
+    /// ist azimutal willkuerlich); erst die Fusion macht daraus eine Nordreferenz, die
+    /// die Gyro-Stabilitaet von ARCore mit der Absolut-Referenz des Magnetometers verbindet.
     /// </summary>
     private void SampleArCoreHeading(Google.AR.Core.Camera camera)
     {
@@ -4215,34 +4384,54 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             var pose = camera.Pose;
             if (pose == null) return;
 
-            var heading = ArPrecisionHelpers.ExtractHeadingFromCameraPose(pose);
-            if (!heading.HasValue) return;
+            var arYaw = ArPrecisionHelpers.ExtractHeadingFromCameraPose(pose);
+            if (!arYaw.HasValue) return;
 
-            lock (_arCoreHeadingSamples)
+            _lastArYaw = arYaw.Value;
+
+            // Paar-Bildung mit dem Live-Magnetometer-Wert (Sensor laeuft @~50 Hz, der Wert
+            // ist damit hoechstens ~20 ms alt — bei Hand-Drehgeschwindigkeit <=2° Paar-Fehler,
+            // ueber die Sample-Menge gemittelt vernachlaessigbar).
+            var magNow = _magneticHeading;
+            if (!magNow.HasValue) return;
+
+            lock (_frameAzimuthSamples)
             {
-                if (_arCoreHeadingSamples.Count < HeadingSampleTargetCount)
-                    _arCoreHeadingSamples.Add(heading.Value);
+                if (_frameAzimuthSamples.Count < HeadingSampleTargetCount)
+                    _frameAzimuthSamples.Add(NormalizeDeg(magNow.Value - arYaw.Value));
             }
         }
         catch { /* harmlos */ }
     }
 
     /// <summary>
-    /// Zirkulärer MITTELWERT der ARCore-Heading-Samples (atan2 der sin-/cos-Summen) — robust
+    /// Zirkulärer MITTELWERT der Frame-Azimut-Paare (atan2 der sin-/cos-Summen) — robust
     /// gegen den 360°-/0°-Sprung. Liefert null wenn zu wenige Samples.
     /// </summary>
-    private float? FinalizeArCoreHeading()
+    private float? FinalizeFrameAzimuth()
     {
         float[] samples;
-        lock (_arCoreHeadingSamples) samples = _arCoreHeadingSamples.ToArray();
+        lock (_frameAzimuthSamples) samples = _frameAzimuthSamples.ToArray();
         if (samples.Length < 5) return null;
 
+        return CircularMeanDeg(samples);
+    }
+
+    /// <summary>Zirkulaerer Mittelwert in Grad (0-360).</summary>
+    private static float CircularMeanDeg(float[] samples)
+    {
         var sinSum = samples.Sum(h => MathF.Sin(h * MathF.PI / 180f));
         var cosSum = samples.Sum(h => MathF.Cos(h * MathF.PI / 180f));
         var meanRad = MathF.Atan2(sinSum / samples.Length, cosSum / samples.Length);
-        var meanDeg = meanRad * 180f / MathF.PI;
-        if (meanDeg < 0) meanDeg += 360f;
-        return meanDeg;
+        return NormalizeDeg(meanRad * 180f / MathF.PI);
+    }
+
+    /// <summary>Winkel auf 0-360° normalisieren.</summary>
+    private static float NormalizeDeg(float deg)
+    {
+        deg %= 360f;
+        if (deg < 0) deg += 360f;
+        return deg;
     }
 
     /// <summary>
@@ -4711,7 +4900,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             HitHeightDelta = _reticleHeightDelta,
             DetectedPlaneCount = planeCount,
             SessionSeconds = (long)(DateTime.UtcNow - _sessionStart).TotalSeconds,
-            CompassHeading = _magneticHeading ?? 0f,
+            CompassHeading = ComputeLiveCompassHeading(),
             LiveAreaSquareMeters = liveArea,
             LiveLengthMeters = liveLength,
             HeightRangeMeters = heightRange,
@@ -5054,6 +5243,17 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             return;
         }
 
+        // Das AR-Yaw zum Stationierungs-Zeitpunkt festhalten: Bearing eines Ziels =
+        // Stations-Heading + (arYawJetzt − arYawBeimStationieren). Das rohe Welt-Yaw als
+        // absolutes Bearing zu verwenden waere um den willkuerlichen Session-Azimut verdreht.
+        var stationYaw = _lastArYaw;
+        if (!stationYaw.HasValue)
+        {
+            ShowTransientHint("AR-Tracking noch nicht bereit — kurz warten und erneut aktivieren", TransientSeverity.Warning);
+            return;
+        }
+        _stationArYawDeg = stationYaw.Value;
+
         ts.SetStationOrigin(geoSnap.Latitude, geoSnap.Longitude, geoSnap.Altitude, geoSnap.Heading);
         SetMode(CaptureMode.TotalStation);
         ShowTransientHint($"Stationiert ({geoSnap.Latitude:F6}, {geoSnap.Longitude:F6})", TransientSeverity.Success);
@@ -5090,11 +5290,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         var q = camPose.GetRotationQuaternion();
         if (q == null || q.Length < 4) return null;
 
-        var relHeading = ArMathHelpers.ExtractHeadingFromQuaternion(q[0], q[1], q[2], q[3]) ?? 0f;
+        var arYawNow = ArMathHelpers.ExtractHeadingFromQuaternion(q[0], q[1], q[2], q[3]) ?? 0f;
         var pitch = ArMathHelpers.ExtractPitchFromQuaternion(q[0], q[1], q[2], q[3]);
 
-        // Bearing relativ zur Stativ-Heading: ARCore-Heading absolut → relative Differenz
-        var (lat, lon, alt) = ts.ProjectTarget(depth.Value, relHeading - (float)ts.Station.Value.headingDeg, pitch);
+        // Bearing relativ zum Stations-Heading = AR-Yaw-DIFFERENZ seit dem Stationieren
+        // (beide Yaws leben im selben Session-Weltframe, der willkuerliche Frame-Azimut
+        // kuerzt sich heraus). ProjectTarget addiert das absolute Stations-Heading auf.
+        var bearingRelDeg = NormalizeDeg(arYawNow - _stationArYawDeg);
+        var (lat, lon, alt) = ts.ProjectTarget(depth.Value, bearingRelDeg, pitch);
 
         return new ArPoint
         {

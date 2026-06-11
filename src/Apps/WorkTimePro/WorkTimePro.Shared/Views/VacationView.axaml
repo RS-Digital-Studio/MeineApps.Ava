@@ -128,7 +128,7 @@
             <!-- Type -->
             <ComboBox ItemsSource="{Binding VacationTypes}"
                       AutomationProperties.AutomationId="Vacation_CbxType"
-                      SelectedItem="{Binding NewType}"
+                      SelectedItem="{Binding NewTypeItem}"
                       HorizontalAlignment="Stretch">
               <ComboBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:VacationTypeItem">

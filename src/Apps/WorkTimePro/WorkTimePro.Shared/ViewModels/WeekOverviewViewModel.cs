@@ -131,13 +131,14 @@ public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSo
         {
             IsLoading = true;
 
-            // Fallback-Werte VOR DB-Zugriff setzen (damit bei Exception zumindest Titel sichtbar ist)
-            var culture = System.Globalization.CultureInfo.CurrentCulture;
-            var cal = culture.Calendar;
-            var weekNum = cal.GetWeekOfYear(SelectedDate, System.Globalization.CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+            // Fallback-Werte VOR DB-Zugriff setzen (damit bei Exception zumindest Titel sichtbar ist).
+            // ISO-Wochennummer + ISO-Jahr wie die Datenseite (CalculateWeekAsync) —
+            // GetWeekOfYear weicht am Jahreswechsel von ISO 8601 ab und zeigte dann
+            // eine andere KW als tatsächlich geladen wurde.
+            var weekNum = _calculation.GetIsoWeekNumber(SelectedDate);
             WeekDisplay = string.Format(
                 AppStrings.WeekNumberFormat ?? "CW {0} / {1}",
-                weekNum, SelectedDate.Year);
+                weekNum, System.Globalization.ISOWeek.GetYear(SelectedDate));
 
             // Montag bis Sonntag der aktuellen Woche
             var dayOfWeek = ((int)SelectedDate.DayOfWeek + 6) % 7;

@@ -313,8 +313,6 @@ public partial class TodayView : UserControl
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        base.OnDetachedFromVisualTree(e);
-
         // Timer stoppen UND Tick-Handler abmelden (Symmetrie zur Erzeugung in StartCountUp;
         // bei Re-Attach wird der Timer samt Handler neu aufgebaut)
         if (_countUpTimer != null)
@@ -330,5 +328,7 @@ public partial class TodayView : UserControl
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             _viewModel = null;
         }
+
+        base.OnDetachedFromVisualTree(e);
     }
 }

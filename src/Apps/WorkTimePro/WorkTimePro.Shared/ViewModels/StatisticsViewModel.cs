@@ -498,14 +498,16 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource,
     {
         var weeklyTarget = settings.WeeklyHours;
 
+        // Nach (ISO-Jahr, ISO-Woche) gruppieren — nur die Wochennummer würde am
+        // Jahreswechsel Tage aus KW 52/53 des Vorjahres mit gleichnamigen KW mischen
         var weeks = workDays
             .Where(w => w.ActualWorkMinutes > 0)
-            .GroupBy(w => _calculation.GetIsoWeekNumber(w.Date))
-            .OrderBy(g => g.Key)
+            .GroupBy(w => (Year: ISOWeek.GetYear(w.Date), Week: _calculation.GetIsoWeekNumber(w.Date)))
+            .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Week)
             .Take(12)
             .ToList();
 
-        WeeklyLabels = weeks.Select(g => string.Format(AppStrings.WeekNumberShort ?? "CW {0}", g.Key)).ToArray();
+        WeeklyLabels = weeks.Select(g => string.Format(AppStrings.WeekNumberShort ?? "CW {0}", g.Key.Week)).ToArray();
         WeeklyHoursData = weeks.Select(g => (float)(g.Sum(w => w.ActualWorkMinutes) / 60.0)).ToArray();
         WeeklyTargetHours = (float)weeklyTarget;
 

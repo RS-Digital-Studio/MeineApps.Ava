@@ -428,6 +428,8 @@ public partial class ShiftDayItem : ObservableObject
     private string _patternColor = AppColors.StatusIdle;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WorkTimeDisplay))]
+    [NotifyPropertyChangedFor(nameof(DayOpacity))]
     private int _workMinutes;
 
     public string WorkTimeDisplay => WorkMinutes > 0

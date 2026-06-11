@@ -453,31 +453,13 @@ public sealed class CalculationService : ICalculationService
         return warnings;
     }
 
-    public int GetIsoWeekNumber(DateTime date)
-    {
-        var cal = CultureInfo.InvariantCulture.Calendar;
-        var day = cal.GetDayOfWeek(date);
-
-        // ISO 8601: Week starts on Monday
-        if (day >= DayOfWeek.Monday && day <= DayOfWeek.Wednesday)
-        {
-            date = date.AddDays(3);
-        }
-
-        return cal.GetWeekOfYear(date, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
-    }
+    // ISO-8601-Wochenlogik über das BCL-eigene ISOWeek — die frühere Handrechnung
+    // (DayOfWeek.Monday - jan4.DayOfWeek) lieferte eine Woche zu spät, wenn der
+    // 4. Januar ein Sonntag ist (z.B. 2026: KW 1 beginnt am 29.12.2025, nicht 05.01.).
+    public int GetIsoWeekNumber(DateTime date) => ISOWeek.GetWeekOfYear(date);
 
     public DateTime GetFirstDayOfWeek(int year, int weekNumber)
-    {
-        // January 4th is always in week 1
-        var jan4 = new DateTime(year, 1, 4);
-        var daysOffset = DayOfWeek.Monday - jan4.DayOfWeek;
-
-        var firstMonday = jan4.AddDays(daysOffset);
-        var firstWeekDay = firstMonday.AddDays((weekNumber - 1) * 7);
-
-        return firstWeekDay;
-    }
+        => ISOWeek.ToDateTime(year, weekNumber, DayOfWeek.Monday);
 
     /// <summary>
     /// Berechnet Brutto-Arbeitsminuten aus CheckIn/CheckOut-Paaren.

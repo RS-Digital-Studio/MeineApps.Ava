@@ -1,3 +1,4 @@
+using WorkTimePro.Helpers;
 using WorkTimePro.Models;
 
 namespace WorkTimePro.Services;
@@ -246,7 +247,10 @@ public sealed class TimeTrackingService : ITimeTrackingService
 
     public async Task<TimeSpan> GetCurrentWorkTimeAsync()
     {
-        var today = await GetTodayAsync();
+        // Aktiven Tag verwenden (3-Tage-Rückblick) — bei Nachtschicht über Mitternacht
+        // liegt die offene Session auf dem Vortag; "heute" wäre leer und die
+        // Live-Anzeige spränge auf 0:00 (Buchungspfade nutzen denselben Rückblick).
+        var today = await GetActiveWorkDayAsync();
         var entries = await _database.GetTimeEntriesAsync(today.Id);
         var pauses = await _database.GetPauseEntriesAsync(today.Id);
 
@@ -267,7 +271,9 @@ public sealed class TimeTrackingService : ITimeTrackingService
             }
             else if (entry.Type == EntryType.CheckOut && lastCheckIn != null)
             {
-                totalWork += entry.Timestamp - lastCheckIn.Timestamp;
+                // DST-bewusst wie der Persistenzpfad (CalculateBruttoMinutes) — sonst
+                // divergieren Live-Anzeige und gebuchter Wert um ±1h bei Zeitumstellung
+                totalWork += DurationMath.RealElapsed(lastCheckIn.Timestamp, entry.Timestamp);
                 lastCheckIn = null;
             }
         }
@@ -275,7 +281,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
         // Noch eingecheckt? (auch während Pause die laufende Session zählen)
         if (lastCheckIn != null && CurrentStatus != TrackingStatus.Idle)
         {
-            totalWork += DateTime.Now - lastCheckIn.Timestamp;
+            totalWork += DurationMath.RealElapsed(lastCheckIn.Timestamp, DateTime.Now);
         }
 
         // Pausen abziehen
@@ -287,7 +293,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
         var activePause = pauses.FirstOrDefault(p => p.EndTime == null);
         if (activePause != null)
         {
-            totalPauses += (DateTime.Now - activePause.StartTime).TotalMinutes;
+            totalPauses += DurationMath.RealElapsedMinutes(activePause.StartTime, DateTime.Now);
         }
 
         var result = totalWork - TimeSpan.FromMinutes(totalPauses);
@@ -300,7 +306,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
 
     public async Task<TimeSpan> GetCurrentPauseTimeAsync()
     {
-        var today = await GetTodayAsync();
+        var today = await GetActiveWorkDayAsync();
         var pauses = await _database.GetPauseEntriesAsync(today.Id);
 
         var totalPauses = pauses
@@ -311,7 +317,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
         var activePause = pauses.FirstOrDefault(p => p.EndTime == null);
         if (activePause != null)
         {
-            totalPauses += (DateTime.Now - activePause.StartTime).TotalMinutes;
+            totalPauses += DurationMath.RealElapsedMinutes(activePause.StartTime, DateTime.Now);
         }
 
         return TimeSpan.FromMinutes(totalPauses);
@@ -444,7 +450,10 @@ public sealed class TimeTrackingService : ITimeTrackingService
     /// </summary>
     public async Task<LiveDataSnapshot> GetLiveDataSnapshotAsync()
     {
-        var today = await GetTodayAsync();
+        // Aktiver Tag statt "heute": bei Nachtschicht über Mitternacht liegt die offene
+        // Session auf dem Vortag — sonst zeigt der Live-Timer nach 00:00 plötzlich 0:00
+        // (Buchungspfade CheckOut/Pause nutzen denselben 3-Tage-Rückblick).
+        var today = await GetActiveWorkDayAsync();
         var entries = await _database.GetTimeEntriesAsync(today.Id);
         var pauses = await _database.GetPauseEntriesAsync(today.Id);
 
@@ -461,7 +470,9 @@ public sealed class TimeTrackingService : ITimeTrackingService
             }
             else if (entry.Type == EntryType.CheckOut && lastCheckIn != null)
             {
-                totalWork += entry.Timestamp - lastCheckIn.Timestamp;
+                // DST-bewusst wie der Persistenzpfad — sonst weicht die Live-Anzeige
+                // bei Zeitumstellung um ±1h vom später gebuchten Wert ab
+                totalWork += DurationMath.RealElapsed(lastCheckIn.Timestamp, entry.Timestamp);
                 lastCheckIn = null;
             }
         }
@@ -469,7 +480,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
         // Noch eingecheckt? (auch während Pause die laufende Session zählen)
         if (lastCheckIn != null && CurrentStatus != TrackingStatus.Idle)
         {
-            totalWork += DateTime.Now - lastCheckIn.Timestamp;
+            totalWork += DurationMath.RealElapsed(lastCheckIn.Timestamp, DateTime.Now);
         }
 
         // ALLE Pausen abziehen (manuell + auto) für korrekte Netto-Arbeitszeit.
@@ -495,7 +506,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
         // Aktive Pause
         if (activePause != null)
         {
-            var activeDuration = (DateTime.Now - activePause.StartTime).TotalMinutes;
+            var activeDuration = DurationMath.RealElapsedMinutes(activePause.StartTime, DateTime.Now);
             totalPauseMinutes += activeDuration;
             manualPauseMinutes += activeDuration;
         }

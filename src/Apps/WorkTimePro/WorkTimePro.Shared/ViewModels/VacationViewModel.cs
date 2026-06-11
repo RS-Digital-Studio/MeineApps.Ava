@@ -83,8 +83,11 @@ public sealed partial class VacationViewModel : ViewModelBase, INavigationSource
     [ObservableProperty]
     private string _newNote = "";
 
+    // SelectedItem-Binding braucht den Item-Typ der ItemsSource (VacationTypeItem) —
+    // ein DayStatus-Enum würde nie zurückgeschrieben (Typ-Mismatch, Auswahl bliebe
+    // still immer "Urlaub"). Analog zu CalendarViewModel.OverlaySelectedType.
     [ObservableProperty]
-    private DayStatus _newType = DayStatus.Vacation;
+    private VacationTypeItem? _newTypeItem;
 
     [ObservableProperty]
     private int _calculatedDays;
@@ -121,12 +124,21 @@ public sealed partial class VacationViewModel : ViewModelBase, INavigationSource
         // die View ist gecacht, ohne Notify bliebe die alte Sprache stehen.
         _localization.LanguageChanged += OnLanguageChanged;
 
+        NewTypeItem = VacationTypes[0];
         SelectedYear = DateTime.Today.Year;
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(VacationTypes)));
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            // Liste neu aufbauen (lokalisierte Namen) und die Auswahl statusgleich
+            // auf die neue Instanz umsetzen (SelectedItem matcht per Referenz)
+            var selectedStatus = NewTypeItem?.Status ?? DayStatus.Vacation;
+            _vacationTypes = null;
+            OnPropertyChanged(nameof(VacationTypes));
+            NewTypeItem = VacationTypes.FirstOrDefault(t => t.Status == selectedStatus) ?? VacationTypes[0];
+        });
     }
 
     public void Dispose()
@@ -218,7 +230,7 @@ public sealed partial class VacationViewModel : ViewModelBase, INavigationSource
             StartDate = NewStartDate,
             EndDate = NewEndDate,
             Days = CalculatedDays,
-            Type = NewType,
+            Type = NewTypeItem?.Status ?? DayStatus.Vacation,
             Note = string.IsNullOrWhiteSpace(NewNote) ? null : NewNote
         };
 
@@ -228,7 +240,7 @@ public sealed partial class VacationViewModel : ViewModelBase, INavigationSource
         NewStartDate = DateTime.Today;
         NewEndDate = DateTime.Today;
         NewNote = "";
-        NewType = DayStatus.Vacation;
+        NewTypeItem = VacationTypes[0];
 
         await LoadDataAsync();
     }
@@ -356,7 +368,11 @@ public sealed partial class VacationViewModel : ViewModelBase, INavigationSource
         _pendingAction = null;
     }
 
-    public List<VacationTypeItem> VacationTypes => new()
+    // Gecacht (Instanz-Stabilität für SelectedItem-Referenzvergleich);
+    // wird bei Sprachwechsel invalidiert (OnLanguageChanged)
+    private List<VacationTypeItem>? _vacationTypes;
+
+    public List<VacationTypeItem> VacationTypes => _vacationTypes ??= new()
     {
         new() { Status = DayStatus.Vacation, Name = AppStrings.Vacation },
         new() { Status = DayStatus.Sick, Name = AppStrings.Illness },

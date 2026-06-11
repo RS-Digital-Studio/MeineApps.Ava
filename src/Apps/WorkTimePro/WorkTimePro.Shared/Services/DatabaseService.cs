@@ -147,13 +147,13 @@ public sealed class DatabaseService : IDatabaseService, IBackupDataAccess
 
         var settings = await GetSettingsAsync();
 
-        // Individuelle Stunden pro Tag berücksichtigen
+        // Individuelle Stunden pro Tag berücksichtigen — über GetDailyMinutesForDay
+        // (kaufmännisch gerundet), damit das persistierte Tages-Soll identisch mit der
+        // Wochen-/Monats-Aggregation ist (Truncation lieferte z.B. bei 8,2h 491 statt 492).
         int targetMinutes = 0;
         if (settings.IsWorkDay(date.DayOfWeek))
         {
-            var ourDay = date.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)date.DayOfWeek;
-            var hoursForDay = settings.GetHoursForDay(ourDay);
-            targetMinutes = (int)(hoursForDay * 60);
+            targetMinutes = settings.GetDailyMinutesForDay(date.DayOfWeek);
         }
         workDay = new WorkDay
         {

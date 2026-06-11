@@ -137,9 +137,11 @@ public sealed class CalendarExportService : ICalendarExportService
 
         if (sessions.Count == 0)
         {
-            // Fallback: 08:00 bis 08:00 + Arbeitszeit
+            // Fallback: 08:00 bis 08:00 + Präsenzzeit (Brutto = Netto + Pausen) —
+            // ActualWorkMinutes allein wäre um die Pausenzeit zu kurz für die Event-Spanne
             var fallbackStart = day.Date.AddHours(8);
-            sessions.Add((fallbackStart, fallbackStart.AddMinutes(day.ActualWorkMinutes)));
+            var presenceMinutes = day.ActualWorkMinutes + day.ManualPauseMinutes + day.AutoPauseMinutes;
+            sessions.Add((fallbackStart, fallbackStart.AddMinutes(presenceMinutes)));
         }
 
         // Titel: "Arbeitszeit: 8:30 (+0:30)" oder "Arbeitszeit: 6:00 (-2:00)"

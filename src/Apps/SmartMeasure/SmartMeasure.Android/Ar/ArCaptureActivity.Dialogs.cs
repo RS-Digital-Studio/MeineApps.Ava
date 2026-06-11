@@ -402,10 +402,18 @@ public partial class ArCaptureActivity
             rows.Add(($"Geospatial-VPS: {(_geospatialActive ? "aktiv" : _geospatialEnabled ? "lokalisiert noch" : "deaktiviert")}",
                 _geospatialActive ? good : _geospatialEnabled ? medium : info));
 
-            // GPS
-            var gpsAcc = _gpsAccuracy.HasValue ? $"±{_gpsAccuracy.Value:F1}m" : "—";
-            rows.Add(($"GPS: {(_gpsLatitude.HasValue ? "Fix" : "kein Fix")} ({gpsAcc})",
-                _gpsLatitude.HasValue ? good : poor));
+            // GPS — unter _gpsLock lesen (Lock-Vertrag: Nullable<double>/<float> sind nicht
+            // atomar, die Location-Listener schreiben die Felder vom Background-Thread).
+            double? gpsLat;
+            float? gpsAccuracy;
+            lock (_gpsLock)
+            {
+                gpsLat = _gpsLatitude;
+                gpsAccuracy = _gpsAccuracy;
+            }
+            var gpsAcc = gpsAccuracy.HasValue ? $"±{gpsAccuracy.Value:F1}m" : "—";
+            rows.Add(($"GPS: {(gpsLat.HasValue ? "Fix" : "kein Fix")} ({gpsAcc})",
+                gpsLat.HasValue ? good : poor));
 
             // Tracking-Continuity — reine Info
             var ratio = _frameCountTotal > 0 ? (float)_frameCountTracking / _frameCountTotal : 1f;

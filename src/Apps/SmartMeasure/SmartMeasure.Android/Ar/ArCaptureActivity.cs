@@ -747,7 +747,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
             // Transiente Rechteck-Ecken beim Modus-Wechsel verwerfen — sonst koennte eine
             // halb gesetzte Basiskante in einem anderen Modus weiterleben.
-            _rectangleCorners.Clear();
+            DetachAndClearRectangleCorners();
         }
 
         _captureMode = mode;
@@ -912,11 +912,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// </summary>
     private void HandleRectangleCornerPlaced(ArPoint corner)
     {
-        // Phase 1: Basiskante sammeln (Ecke 1 + 2)
+        // Phase 1: Basiskante sammeln (Ecke 1 + 2). Foto macht der Aufrufer NACH dem
+        // _dataLock-Block (17-MB-Bitmap-Allokation gehoert nicht unter den Render-Lock).
         if (_rectangleCorners.Count < 2)
         {
             _rectangleCorners.Add(corner);
-            CapturePhotoForPoint(corner);
             ShowTransientHint(_rectangleCorners.Count == 1
                 ? "Ecke 1/2 gesetzt — zweite Ecke der Basiskante anvisieren"
                 : "Basiskante steht — jetzt die Tiefe anvisieren und tippen");
@@ -936,16 +936,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Original-Messecken (mit Anchor) wiederverwenden; Anchors detachen, damit
         // RefreshAllAnchors die konstruierte, starre Rechteck-Form nicht verzieht
         // (analog CloseActiveContour — eine fertige Flaeche ist eine fertige Messung).
+        // Auch der dritte Tipp-Punkt (corner) traegt einen Anchor aus FinalizeSampling —
+        // er dient nur der Tiefen-Bestimmung und wird verworfen → ohne Detach ein Orphan.
         var c0 = _rectangleCorners[0];
         var c1 = _rectangleCorners[1];
-        foreach (var p in new[] { c0, c1 })
-        {
-            if (!string.IsNullOrEmpty(p.AnchorId))
-            {
-                _anchorManager.Detach(p.AnchorId);
-                p.AnchorId = null;
-            }
-        }
+        DetachAnchorOf(c0);
+        DetachAnchorOf(c1);
+        DetachAnchorOf(corner);
 
         // Position der Messecken exakt auf die Ergebnis-Ebene setzen (no-op bei flachem
         // Boden, korrigiert minimale Hoehen-Inkonsistenz bei Neigung).
@@ -1003,7 +1000,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             FinalizeOrDiscardActiveContour();
 
             // Eine halb gesetzte Rechteck-Basiskante ist unfertig → verwerfen (analog SetMode).
-            _rectangleCorners.Clear();
+            DetachAndClearRectangleCorners();
 
             // KORRUPTIONS-/DUPLIKAT-SCHUTZ: Vorgeladene Projekt-Punkte (IsPreloaded) gehen NIE ins
             // Result. Sonst wuerden sie in ArTransferService.TransferToProjectAsync via AddPoint
@@ -1353,7 +1350,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             if (_dragStartPos.HasValue && p != null)
             {
                 var (oldX, oldY, oldZ) = _dragStartPos.Value;
-                _undoStack.Push(new MovePointAction(p, oldX, oldY, oldZ, p.X, p.Y, p.Z,
+                _undoStack.Push(new MovePointAction(_dataLock, p, oldX, oldY, oldZ, p.X, p.Y, p.Z,
                     _dragStartAnchorId, p.AnchorId));
                 _redoStack.Clear();
                 // Verschieben persistieren — Crash-Restore stuende sonst auf der alten Position.
@@ -1450,7 +1447,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 {
                     // Undo-Eintrag wie im Point-Modus — sonst nimmt "Zurück" den falschen
                     // Punkt zurück und der Tachymeter-Punkt bleibt unentfernbar.
-                    _undoStack.Push(new AddPointAction(_dataLock, _points, tsPoint));
+                    _undoStack.Push(new AddPointAction(_dataLock, _points, tsPoint, DetachAnchorOf));
                     _redoStack.Clear();
                     _points.Add(tsPoint);
                 }
@@ -1805,6 +1802,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // uebertragene Session als "unterbrochen" reanimieren (Duplikat-Restore).
             if (_finished != 0) return;
 
+            // Foto-Annotation NACH dem Lock — CapturePhotoForPoint allokiert ein ~17-MB-
+            // ARGB8888-Bitmap + HandlerThread; unter _dataLock wuerde das den GL-Thread
+            // (der pro Frame um den Lock konkurriert) bei jedem Punkt-Setzen stallen.
+            ArPoint? photoPoint = null;
             lock (_dataLock)
             {
                 if (_captureMode == CaptureMode.TapeMeasure)
@@ -1817,34 +1818,38 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 }
                 else if (_captureMode == CaptureMode.Point)
                 {
-                    _undoStack.Push(new AddPointAction(_dataLock, _points, arPoint));
+                    _undoStack.Push(new AddPointAction(_dataLock, _points, arPoint, DetachAnchorOf));
                     _redoStack.Clear();
                     _points.Add(arPoint);
                     ShowTransientHint($"Punkt {_points.Count}  Streuung {stdDev * 100:F1}cm  ({validCount} Samples)", TransientSeverity.Success);
                     // Plan-Kap. 5.6: Foto-Annotation pro Punkt (nicht im Tape-Modus —
                     // Ad-hoc-Messung braucht kein Foto, das wuerde nur Storage fressen).
-                    CapturePhotoForPoint(arPoint);
+                    photoPoint = arPoint;
                 }
                 else if (_captureMode == CaptureMode.Rectangle)
                 {
                     // Gefuehrtes 3-Punkt-Rechteck: erste zwei Tipps = Basiskante, dritter
                     // schliesst die rechtwinklige Flaeche ab. Laeuft unter _dataLock.
+                    // Foto nur fuer die Basis-Ecken (der dritte Tipp wird verworfen).
+                    var isBaseCorner = _rectangleCorners.Count < 2;
                     HandleRectangleCornerPlaced(arPoint);
+                    if (isBaseCorner) photoPoint = arPoint;
                 }
                 else
                 {
                     // Aktive Kontur mit aktuell gewähltem Typ (aus ShowContourTypeDialog)
                     _activeContour ??= new ArContour { ContourType = _currentContourType };
-                    _undoStack.Push(new AddContourPointAction(_dataLock, _activeContour, arPoint));
+                    _undoStack.Push(new AddContourPointAction(_dataLock, _activeContour, arPoint, DetachAnchorOf));
                     _redoStack.Clear();
                     _activeContour.Points.Add(arPoint);
                     var typeLabel = ContourTypeLabel(_activeContour.ContourType);
                     var ptCount = _activeContour.Points.Count;
                     ShowTransientHint($"{typeLabel}: {ptCount} {PointsWord(ptCount)}", TransientSeverity.Success);
                     // Foto auch fuer Kontur-Punkte (z.B. "Ecke Mauer Nord" mit Sichtbeleg).
-                    CapturePhotoForPoint(arPoint);
+                    photoPoint = arPoint;
                 }
             }
+            if (photoPoint != null) CapturePhotoForPoint(photoPoint);
             UpdateCounter();
             _overlayView?.Invalidate();
 
@@ -2136,6 +2141,24 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         }
     }
 
+    /// <summary>Detacht den ARCore-Anchor eines Punkts und nullt die AnchorId. Zentraler
+    /// Anchor-Release fuer Loeschen/Undo — Orphan-Anchors fressen sonst das 300er-Hard-Limit
+    /// und verfaelschen Anchor-Zaehler/Quality-Score bis zum Session-Ende.</summary>
+    private void DetachAnchorOf(ArPoint point)
+    {
+        if (string.IsNullOrEmpty(point.AnchorId)) return;
+        _anchorManager.Detach(point.AnchorId);
+        point.AnchorId = null;
+    }
+
+    /// <summary>Verwirft halb gesetzte Rechteck-Ecken INKLUSIVE ihrer Anchors (jede Ecke
+    /// traegt einen aus FinalizeSampling). MUSS unter <see cref="_dataLock"/> laufen.</summary>
+    private void DetachAndClearRectangleCorners()
+    {
+        foreach (var p in _rectangleCorners) DetachAnchorOf(p);
+        _rectangleCorners.Clear();
+    }
+
     /// <summary>Ausgewaehlten Punkt loeschen (Einzel- und Kontur-Punkte)</summary>
     private void DeleteSelectedPoint()
     {
@@ -2143,7 +2166,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             lock (_dataLock)
             {
-                _undoStack.Push(new DeletePointAction(_dataLock, _points, _selectedPointIndex, _points[_selectedPointIndex]));
+                var point = _points[_selectedPointIndex];
+                // Anchor sofort freigeben — Undo bringt den Punkt statisch zurueck.
+                DetachAnchorOf(point);
+                _undoStack.Push(new DeletePointAction(_dataLock, _points, _selectedPointIndex, point));
                 _redoStack.Clear();
                 _points.RemoveAt(_selectedPointIndex);
             }
@@ -2159,6 +2185,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 if (contour != null && _selectedContourPointIdx >= 0 && _selectedContourPointIdx < contour.Points.Count)
                 {
                     var point = contour.Points[_selectedContourPointIdx];
+                    DetachAnchorOf(point);
                     _undoStack.Push(new DeleteContourPointAction(_dataLock, contour, _selectedContourPointIdx, point));
                     _redoStack.Clear();
                     contour.Points.RemoveAt(_selectedContourPointIdx);
@@ -3555,48 +3582,69 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         {
             PixelCopy.Request(glView, bitmap, new PixelCopyListener(result =>
             {
-                try
+                void Cleanup()
                 {
-                    if (result != (int)PixelCopyResult.Success)
+                    try { bitmap.Recycle(); bitmap.Dispose(); } catch { /* OK */ }
+                    handlerThread.QuitSafely();
+                }
+
+                if (result != (int)PixelCopyResult.Success)
+                {
+                    RunOnUiThread(() =>
                     {
-                        bitmap.Recycle();
-                        bitmap.Dispose();
-                        RunOnUiThread(() =>
-                        {
-                            Toast.MakeText(this, $"Screenshot fehlgeschlagen (Code {result})",
-                                ToastLength.Short)?.Show();
-                        });
+                        Toast.MakeText(this, $"Screenshot fehlgeschlagen (Code {result})",
+                            ToastLength.Short)?.Show();
+                    });
+                    Cleanup();
+                    return;
+                }
+
+                // Overlay-Compositing auf dem UI-THREAD: View.Draw ist nicht thread-safe —
+                // die View teilt Scratch-Rects/Paints mit dem parallel laufenden OnDraw
+                // (Invalidate-Loop). Compositing ist schnell; das langsame PNG-Encoding +
+                // MediaStore laeuft danach wieder auf dem Background-Handler.
+                RunOnUiThread(() =>
+                {
+                    try
+                    {
+                        using var canvas = new Canvas(bitmap);
+                        overlay.Draw(canvas);
+                    }
+                    catch (Exception drawEx)
+                    {
+                        global::Android.Util.Log.Warn("ArCapture",
+                            $"Screenshot-Overlay-Compositing fehlgeschlagen: {drawEx.Message}");
+                        Toast.MakeText(this, "Screenshot fehlgeschlagen", ToastLength.Short)?.Show();
+                        Cleanup();
                         return;
                     }
 
-                    // Overlay drüber compositen — auf einem temporären Canvas
-                    using var canvas = new Canvas(bitmap);
-                    overlay.Draw(canvas);
-
-                    // In die Galerie schreiben (MediaStore) — laeuft hier bereits auf dem
-                    // PixelCopy-Background-Thread, blockt also den UI-Thread nicht.
-                    var galleryUri = SaveBitmapAsPng(bitmap);
-                    RunOnUiThread(() =>
+                    handler.Post(() =>
                     {
-                        if (galleryUri != null)
+                        try
                         {
-                            Toast.MakeText(this, "Screenshot in Galerie gespeichert",
-                                ToastLength.Short)?.Show();
-                            ShowTransientHint("Screenshot in Galerie gespeichert", TransientSeverity.Success);
+                            var galleryUri = SaveBitmapAsPng(bitmap);
+                            RunOnUiThread(() =>
+                            {
+                                if (galleryUri != null)
+                                {
+                                    Toast.MakeText(this, "Screenshot in Galerie gespeichert",
+                                        ToastLength.Short)?.Show();
+                                    ShowTransientHint("Screenshot in Galerie gespeichert", TransientSeverity.Success);
+                                }
+                                else
+                                {
+                                    Toast.MakeText(this, "Screenshot konnte nicht gespeichert werden",
+                                        ToastLength.Short)?.Show();
+                                }
+                            });
                         }
-                        else
+                        finally
                         {
-                            Toast.MakeText(this, "Screenshot konnte nicht gespeichert werden",
-                                ToastLength.Short)?.Show();
+                            Cleanup();
                         }
                     });
-                }
-                finally
-                {
-                    bitmap.Recycle();
-                    bitmap.Dispose();
-                    handlerThread.QuitSafely();
-                }
+                });
             }), handler);
         }
         catch (Exception ex)
@@ -3813,6 +3861,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             if (_activeContour != null) allPoints.AddRange(_activeContour.Points);
             // Plan-Kap. 5.2: Site-Marker auch refreshen, sonst driften die alten Punkte
             allPoints.AddRange(_sitePointAnchors);
+            // Massband-Punkte haben aus FinalizeSampling ebenfalls Anchors — ohne Refresh
+            // wuerden sie driften (und der Anchor waere nutzlos teurer Ballast).
+            allPoints.AddRange(_tapeMeasurePoints);
         }
         _anchorManager.RefreshAnchors(allPoints);
     }
@@ -5472,10 +5523,15 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         };
     }
 
-    /// <summary>Plan-Kap. 5.3: Tape-Buffer leeren — Long-Click auf den Mass-Button.</summary>
+    /// <summary>Plan-Kap. 5.3: Tape-Buffer leeren — Long-Click auf den Mass-Button.
+    /// Anchors der Tape-Punkte werden detacht (sonst Orphan-Anchors bis Session-Ende).</summary>
     private void ResetTapeMeasure()
     {
-        lock (_dataLock) _tapeMeasurePoints.Clear();
+        lock (_dataLock)
+        {
+            foreach (var p in _tapeMeasurePoints) DetachAnchorOf(p);
+            _tapeMeasurePoints.Clear();
+        }
         ShowTransientHint("Maßband zurückgesetzt", TransientSeverity.Success);
         _overlayView?.Invalidate();
     }
@@ -5603,9 +5659,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
     // Undo/Redo-Actions sperren über _dataLock damit Render-Thread nicht während
     // List-Mutation iteriert. Vorher: Race-Crash mit IndexOutOfRangeException möglich.
-    private sealed class AddPointAction(object lockObj, List<ArPoint> list, ArPoint point) : IArAction
+    private sealed class AddPointAction(object lockObj, List<ArPoint> list, ArPoint point,
+        Action<ArPoint>? releaseAnchor = null) : IArAction
     {
-        public void Undo() { lock (lockObj) list.Remove(point); }
+        // Undo entfernt den Punkt mit LEBENDEM Anchor aus der Welt — ohne Release waere der
+        // Anchor ein Orphan (frisst das 300er-Hard-Limit, verfaelscht den Quality-Score),
+        // sobald der Redo-Stack geleert oder die Action aus dem BoundedStack evicted wird.
+        // Redo bringt den Punkt statisch (ohne Anchor) zurueck — konsistent zu Recovery-Punkten.
+        public void Undo() { lock (lockObj) { list.Remove(point); releaseAnchor?.Invoke(point); } }
         public void Redo() { lock (lockObj) list.Add(point); }
     }
 
@@ -5615,12 +5676,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         public void Redo() { lock (lockObj) list.Remove(point); }
     }
 
-    private sealed class AddContourPointAction(object lockObj, ArContour contour, ArPoint point) : IArAction
+    private sealed class AddContourPointAction(object lockObj, ArContour contour, ArPoint point,
+        Action<ArPoint>? releaseAnchor = null) : IArAction
     {
         // IsClosed-Schutz: Nach Kontur-Schluss (Bowditch-korrigiert) darf ein Undo keinen Punkt
         // mehr aus der fertigen Fläche entfernen/einfügen — das würde sie korrumpieren. Die ganze
         // geschlossene Kontur wird stattdessen über die AddContourAction zurückgenommen.
-        public void Undo() { lock (lockObj) { if (!contour.IsClosed) contour.Points.Remove(point); } }
+        // Anchor-Release beim Undo analog AddPointAction (kein Orphan-Anchor).
+        public void Undo() { lock (lockObj) { if (!contour.IsClosed) { contour.Points.Remove(point); releaseAnchor?.Invoke(point); } } }
         public void Redo() { lock (lockObj) { if (!contour.IsClosed) contour.Points.Add(point); } }
     }
 
@@ -5639,15 +5702,17 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         public void Redo() { lock (lockObj) { if (!contour.IsClosed) contour.Points.Remove(point); } }
     }
 
-    private sealed class MovePointAction(ArPoint point,
+    private sealed class MovePointAction(object lockObj, ArPoint point,
         float oldX, float oldY, float oldZ,
         float newX, float newY, float newZ,
         string? oldAnchorId, string? newAnchorId) : IArAction
     {
         // AnchorId mitrestaurieren — sonst zieht RefreshAllAnchors den Punkt im nächsten Frame
         // wieder auf die Move-Position (Undo wirkte ohne das nur einen Frame lang).
-        public void Undo() { point.X = oldX; point.Y = oldY; point.Z = oldZ; point.AnchorId = oldAnchorId; }
-        public void Redo() { point.X = newX; point.Y = newY; point.Z = newZ; point.AnchorId = newAnchorId; }
+        // Mutation unter _dataLock wie alle anderen Actions — der GL-Thread liest X/Y/Z
+        // parallel (ProjectPointsToScreen), ohne Lock waeren zerrissene Tripel moeglich.
+        public void Undo() { lock (lockObj) { point.X = oldX; point.Y = oldY; point.Z = oldZ; point.AnchorId = oldAnchorId; } }
+        public void Redo() { lock (lockObj) { point.X = newX; point.Y = newY; point.Z = newZ; point.AnchorId = newAnchorId; } }
     }
 
     /// <summary>

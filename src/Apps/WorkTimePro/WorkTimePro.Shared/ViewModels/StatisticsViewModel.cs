@@ -533,7 +533,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource,
         }
 
         OvertimeDailyBalance = orderedDays.Select(w => (float)(w.BalanceMinutes / 60.0)).ToArray();
-        OvertimeDateLabels = orderedDays.Select(w => w.Date.ToString("dd.MM")).ToArray();
+        OvertimeDateLabels = orderedDays.Select(w => TimeFormatter.FormatDayMonth(w.Date)).ToArray();
 
         // Kumulativ berechnen
         var cumulative = new float[orderedDays.Count];
@@ -718,7 +718,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource,
             .Select(w => new WorkDayTableItem
             {
                 Date = w.Date,
-                DateDisplay = w.Date.ToString("ddd, dd.MM"),
+                DateDisplay = $"{w.Date:ddd}, {TimeFormatter.FormatDayMonth(w.Date)}",
                 Status = w.Status,
                 StatusIconKind = GetStatusIconKind(w.Status),
                 StatusName = TimeFormatter.GetStatusName(w.Status),

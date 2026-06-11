@@ -4,6 +4,7 @@ using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
+using WorkTimePro.Helpers;
 using WorkTimePro.Models;
 using WorkTimePro.Resources.Strings;
 using WorkTimePro.Services;
@@ -342,7 +343,7 @@ public sealed partial class ShiftPlanViewModel : ViewModelBase, INavigationSourc
     private void UpdateWeekDisplay()
     {
         var weekEnd = CurrentWeekStart.AddDays(6);
-        WeekDisplay = $"{CurrentWeekStart:dd.MM.} - {weekEnd:dd.MM.yyyy}";
+        WeekDisplay = $"{TimeFormatter.FormatDayMonth(CurrentWeekStart)} - {weekEnd.ToString("d")}";
     }
 
     private async Task LoadWeekAsync()
@@ -360,7 +361,7 @@ public sealed partial class ShiftPlanViewModel : ViewModelBase, INavigationSourc
             {
                 Date = date,
                 DayName = GetDayName(date.DayOfWeek),
-                DateDisplay = date.ToString("dd.MM."),
+                DateDisplay = TimeFormatter.FormatDayMonth(date),
                 IsToday = date.Date == DateTime.Today,
                 IsWeekend = date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday,
                 AssignedPattern = assignment?.ShiftPattern,

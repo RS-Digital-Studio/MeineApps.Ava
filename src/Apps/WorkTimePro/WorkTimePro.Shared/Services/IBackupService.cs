@@ -78,7 +78,7 @@ public class BackupInfo
     }
 
     /// <summary>
-    /// Formatted date
+    /// Formatted date (kulturbasiert, z.B. de: "11.06.2026 14:30", en-US: "6/11/2026 2:30 PM")
     /// </summary>
-    public string DateDisplay => CreatedAt.ToString("dd.MM.yyyy HH:mm");
+    public string DateDisplay => CreatedAt.ToString("g");
 }

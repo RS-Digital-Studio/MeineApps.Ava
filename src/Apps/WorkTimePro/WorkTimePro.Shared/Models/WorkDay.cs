@@ -143,10 +143,10 @@ public class WorkDay
     public string DayName => Date.ToString("ddd");
 
     /// <summary>
-    /// Short date display (e.g. "05.02.")
+    /// Short date display, kulturbasiert (de: "05.02", en-US: "2/5")
     /// </summary>
     [Ignore]
-    public string DateShortDisplay => Date.ToString("dd.MM.");
+    public string DateShortDisplay => FormatDayMonth(Date);
 
     /// <summary>
     /// Formatierte Soll-Zeit für Anzeige

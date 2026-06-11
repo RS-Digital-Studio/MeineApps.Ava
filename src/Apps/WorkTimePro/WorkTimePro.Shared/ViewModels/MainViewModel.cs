@@ -117,9 +117,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IsAdBannerVisible = _adService.BannerVisible;
         _adService.AdsStateChanged += OnAdsStateChanged;
 
-        // Banner beim Start anzeigen (fuer Desktop + Fallback falls AdMobHelper fehlschlaegt)
-        if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-            _adService.ShowBanner();
+        // Banner-Sichtbarkeit zentral steuern: Premium UND aktiver Trial sind werbefrei
+        // (Trial verspricht "ohne Werbung"). Status-Wechsel (Kauf, Trial-Start/-Ablauf)
+        // aktualisieren den Banner live.
+        UpdateBannerVisibility();
+        _trialService.TrialStatusChanged += OnTrialStatusChanged;
+        _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
 
         // Child VMs
         WeekVm = weekVm;
@@ -704,6 +707,27 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IsAdBannerVisible = _adService.BannerVisible;
     }
 
+    private void OnTrialStatusChanged(object? sender, EventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(UpdateBannerVisibility);
+    }
+
+    private void OnPremiumStatusChanged(object? sender, EventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(UpdateBannerVisibility);
+    }
+
+    /// <summary>
+    /// Banner anzeigen, solange weder Premium gekauft noch ein Trial aktiv ist.
+    /// </summary>
+    private void UpdateBannerVisibility()
+    {
+        if (_adService.AdsEnabled && !_purchaseService.IsPremium && !_trialService.IsTrialActive)
+            _adService.ShowBanner();
+        else
+            _adService.HideBanner();
+    }
+
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -889,6 +913,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _localization.LanguageChanged -= OnLanguageChanged;
         _rewardedAdService.AdUnavailable -= OnAdUnavailable;
         _adService.AdsStateChanged -= OnAdsStateChanged;
+        _trialService.TrialStatusChanged -= OnTrialStatusChanged;
+        _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
         SettingsVm.SettingsChanged -= OnSettingsChanged;
 
         // Sub-Page Navigation/Message Events abmelden (typed statt Reflection)

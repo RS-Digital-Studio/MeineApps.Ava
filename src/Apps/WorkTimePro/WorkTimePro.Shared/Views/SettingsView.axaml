@@ -34,7 +34,7 @@
 
   <Grid>
   <ScrollViewer VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="Settings_ScrollViewer"
-                IsHitTestVisible="{Binding !IsImportConfirmVisible}">
+                IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
     <StackPanel Spacing="12" Margin="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Settings_RootPanel">
 
       <!-- Header -->
@@ -730,6 +730,40 @@
                     Command="{Binding ConfirmImportCommand}"
                     AutomationProperties.AutomationId="Settings_ImportConfirmButton" />
           </StackPanel>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- Kauf-Optionen: Trial (einmalig), Monatsabo oder Lifetime — explizite Wahl
+         statt stillem Trial-Start beim Kauf-Klick. -->
+    <Border IsVisible="{Binding IsPurchaseOptionsVisible}"
+            Background="{DynamicResource ModalBackdropBrush}"
+            AutomationProperties.AutomationId="Settings_PurchaseOptionsOverlay">
+      <Border Classes="Card" MaxWidth="360" Margin="32"
+              VerticalAlignment="Center" HorizontalAlignment="Center">
+        <StackPanel Spacing="{StaticResource SpacingLg}">
+          <TextBlock Classes="SectionTitle" Text="{loc:Translate PurchaseOptionTitle}" TextWrapping="Wrap" />
+
+          <Button Classes="Secondary" Content="{loc:Translate TrialOfferStart}"
+                  IsVisible="{Binding CanStartTrial}"
+                  Command="{Binding StartTrialCommand}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  AutomationProperties.AutomationId="Settings_StartTrialButton" />
+
+          <Button Classes="Primary" Content="{loc:Translate PurchaseOptionMonthly}"
+                  Command="{Binding PurchaseMonthlyCommand}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  AutomationProperties.AutomationId="Settings_PurchaseMonthlyButton" />
+
+          <Button Classes="Primary" Content="{loc:Translate PurchaseOptionLifetime}"
+                  Command="{Binding PurchaseLifetimeCommand}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  AutomationProperties.AutomationId="Settings_PurchaseLifetimeButton" />
+
+          <Button Classes="Text" Content="{loc:Translate Cancel}"
+                  Command="{Binding CancelPurchaseOptionsCommand}"
+                  HorizontalAlignment="Right"
+                  AutomationProperties.AutomationId="Settings_PurchaseCancelButton" />
         </StackPanel>
       </Border>
     </Border>

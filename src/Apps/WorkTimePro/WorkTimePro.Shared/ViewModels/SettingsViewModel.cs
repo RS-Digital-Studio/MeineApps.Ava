@@ -400,6 +400,13 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     [ObservableProperty]
     private bool _isLoading;
 
+    [ObservableProperty]
+    private bool _isPurchaseOptionsVisible;
+
+    /// <summary>Trial-Option im Kauf-Overlay nur anbieten, solange noch nie ein Trial lief.</summary>
+    [ObservableProperty]
+    private bool _canStartTrial;
+
     // Localized texts
     public string AppVersion
     {
@@ -698,24 +705,41 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     }
 
     [RelayCommand]
-    private async Task PurchasePremiumAsync()
+    private void PurchasePremium()
+    {
+        // Kauf-Optionen-Overlay öffnen: Trial (falls noch nie gestartet), Monatsabo
+        // oder Lifetime. Kein stiller Trial-Start mehr — die Kauf-Intention des
+        // Nutzers wird nicht umgeleitet.
+        CanStartTrial = !_trialService.IsTrialStarted;
+        IsPurchaseOptionsVisible = true;
+    }
+
+    [RelayCommand]
+    private void StartTrial()
+    {
+        IsPurchaseOptionsVisible = false;
+        _trialService.MarkTrialOfferAsSeen();
+        _trialService.StartTrial();
+        MessageRequested?.Invoke(AppStrings.Info, string.Format(AppStrings.TrialStartedMessage, _trialService.DaysRemaining));
+        UpdatePremiumStatus();
+    }
+
+    [RelayCommand]
+    private async Task PurchaseMonthlyAsync() => await PurchaseAsync(_purchaseService.PurchaseMonthlyAsync);
+
+    [RelayCommand]
+    private async Task PurchaseLifetimeAsync() => await PurchaseAsync(_purchaseService.PurchaseLifetimeAsync);
+
+    [RelayCommand]
+    private void CancelPurchaseOptions() => IsPurchaseOptionsVisible = false;
+
+    private async Task PurchaseAsync(Func<Task<bool>> purchase)
     {
         try
         {
-            // If trial is active, go directly to purchase
-            // If trial not started and offer not seen, show dialog
-            if (!_trialService.IsTrialActive && !_trialService.HasSeenTrialOffer && !_trialService.IsTrialStarted)
-            {
-                // Start trial by default in Avalonia (no action sheet available)
-                _trialService.MarkTrialOfferAsSeen();
-                _trialService.StartTrial();
-                MessageRequested?.Invoke(AppStrings.Info, string.Format(AppStrings.TrialStartedMessage, _trialService.DaysRemaining));
-                UpdatePremiumStatus();
-                return;
-            }
-
+            IsPurchaseOptionsVisible = false;
             IsLoading = true;
-            bool success = await _purchaseService.PurchaseLifetimeAsync();
+            bool success = await purchase();
 
             if (success)
             {
@@ -783,6 +807,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
     [ObservableProperty]
     private string _importConfirmText = "";
+
+    /// <summary>Gate für den ScrollViewer-Hit-Test, solange irgendein Overlay offen ist.</summary>
+    public bool IsAnyOverlayVisible => IsImportConfirmVisible || IsPurchaseOptionsVisible;
+
+    partial void OnIsImportConfirmVisibleChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
+    partial void OnIsPurchaseOptionsVisibleChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
 
     private string? _pendingImportPath;
 

@@ -59,6 +59,11 @@ public sealed class DesktopNotificationService : INotificationService
 
     public bool CanScheduleExactAlarms() => true;
 
+    public void RequestExactAlarmPermission()
+    {
+        // Desktop: keine Exact-Alarm-Permission nötig — No-Op
+    }
+
     public bool AreNotificationsEnabled() => true;
 
     public Task CancelNotificationAsync(string id)

@@ -428,12 +428,24 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     /// <summary>
     /// Hinweis, wenn ein Reminder eingeschaltet wird, System-Benachrichtigungen aber deaktiviert
     /// sind (sonst würden Erinnerungen still verschluckt). Nutzt das verdrahtete MessageRequested.
+    /// Prüft zusätzlich die Exact-Alarm-Permission (Android 13+ gewährt SCHEDULE_EXACT_ALARM
+    /// nicht mehr automatisch → Reminder feuern sonst nur ungenau) und führt den Nutzer
+    /// direkt zur System-Einstellung "Wecker und Erinnerungen".
     /// </summary>
     private void WarnIfNotificationsDisabled()
     {
         if (_isInitializing) return;
         if (!_notificationService.AreNotificationsEnabled())
+        {
             MessageRequested?.Invoke(AppStrings.Info, AppStrings.ReminderNotificationsOff);
+            return;
+        }
+
+        if (!_notificationService.CanScheduleExactAlarms())
+        {
+            MessageRequested?.Invoke(AppStrings.Info, AppStrings.ExactAlarmPermissionHint);
+            _notificationService.RequestExactAlarmPermission();
+        }
     }
     partial void OnLegalComplianceEnabledChanged(bool value) => ScheduleAutoSave();
     partial void OnSelectedRegionIndexChanged(int value) => ScheduleAutoSave();

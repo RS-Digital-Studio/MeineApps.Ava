@@ -70,6 +70,27 @@ public class MainActivity : AvaloniaMainActivity
         });
     }
 
+    public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)
+    {
+        base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        // POST_NOTIFICATIONS gewährt → Reminder neu planen (sie wurden ggf. vor der
+        // Permission geplant und wären sonst bis zur nächsten Settings-Änderung stumm).
+        if (requestCode == 100 && grantResults.Length > 0 && grantResults[0] == Permission.Granted)
+        {
+            try
+            {
+                var reminderService = App.Services.GetRequiredService<WorkTimePro.Services.IReminderService>();
+                _ = reminderService.RescheduleAsync();
+            }
+            catch
+            {
+                // App.Services ggf. noch nicht bereit — Reminder werden beim nächsten
+                // Settings-Save ohnehin neu geplant.
+            }
+        }
+    }
+
     // === Zurück-Taste: Navigation oder Double-Back-to-Exit ===
 
 #pragma warning disable CS0672 // OnBackPressed ist deprecated ab API 33, aber Avalonia nutzt es intern

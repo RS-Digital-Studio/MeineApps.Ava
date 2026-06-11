@@ -571,4 +571,5 @@
   <data name="Taken" xml:space="preserve"><value>Genommen</value></data>
   <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
   <data name="ReminderNotificationsOff" xml:space="preserve"><value>Benachrichtigungen sind für WorkTime Pro deaktiviert — Erinnerungen werden erst zugestellt, wenn du sie in den Systemeinstellungen aktivierst.</value></data>
+  <data name="ExactAlarmPermissionHint" xml:space="preserve"><value>Für pünktliche Erinnerungen bitte „Wecker und Erinnerungen" für WorkTime Pro in den Systemeinstellungen erlauben — sonst können Erinnerungen verzögert eintreffen.</value></data>
 </root>

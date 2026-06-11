@@ -571,4 +571,5 @@
   <data name="Taken" xml:space="preserve"><value>Presi</value></data>
   <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
   <data name="ReminderNotificationsOff" xml:space="preserve"><value>Le notifiche sono disattivate per WorkTime Pro — i promemoria non verranno recapitati finché non le attivi nelle impostazioni di sistema.</value></data>
+  <data name="ExactAlarmPermissionHint" xml:space="preserve"><value>Per promemoria puntuali, consenti «Sveglie e promemoria» per WorkTime Pro nelle impostazioni di sistema — altrimenti i promemoria potrebbero arrivare in ritardo.</value></data>
 </root>

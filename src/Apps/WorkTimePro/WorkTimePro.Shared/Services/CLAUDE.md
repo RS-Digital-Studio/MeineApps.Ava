@@ -83,6 +83,18 @@ Android-Share via `IFileShareService` (FileProvider `com.meineapps.worktimepro.f
 
 Subscribed auf `ITimeTrackingService.StatusChanged`. `RescheduleAsync()` bei Settings-Änderungen.
 
+**Prozessbindung (bewusste Design-Wahl):** Morgen/Abend/Weekly laufen über `AlarmManager`
+(überleben Prozess-Tod und Reboot via BootReceiver). **Pausen- und Überstunden-Reminder**
+laufen dagegen über In-Memory-Timer (`Task.Delay`) — sie feuern nur, solange der Prozess
+lebt ("best effort"). Bei App-Kill durch das System entfallen sie bis zum nächsten Start.
+
+**Exact-Alarm-Permission (Android 13+):** `SCHEDULE_EXACT_ALARM` wird ab API 33 nicht mehr
+automatisch gewährt → ohne Nutzer-Aktion läuft die Planung im inexakten Fallback
+(`SetAndAllowWhileIdle`, Verzögerung im Doze möglich). Beim Aktivieren eines Reminders prüft
+`SettingsViewModel.WarnIfNotificationsDisabled` daher `CanScheduleExactAlarms()` und führt
+den Nutzer per `RequestExactAlarmPermission()` (Settings-Intent
+`ACTION_REQUEST_SCHEDULE_EXACT_ALARM`) zur System-Einstellung "Wecker und Erinnerungen".
+
 ## DesktopNotificationService
 
 - Windows: PowerShell-Toast via `Base64-EncodedCommand` (Injection-sicher).

@@ -1334,6 +1334,15 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die dem Exact-Alarm-Permission-Hinweis ähnelt.
+        /// </summary>
+        internal static string ExactAlarmPermissionHint {
+            get {
+                return ResourceManager.GetString("ExactAlarmPermissionHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Charts ähnelt.
         /// </summary>
         internal static string Charts {

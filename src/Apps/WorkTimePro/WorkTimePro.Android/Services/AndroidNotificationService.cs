@@ -81,6 +81,7 @@ public sealed class AndroidNotificationService : INotificationService
     public Task ScheduleNotificationAsync(string id, string title, string body, DateTime triggerAt)
     {
         var context = Application.Context;
+        if (context == null) return Task.CompletedTask;
         var alarmManager = (AlarmManager?)context.GetSystemService(Context.AlarmService);
         if (alarmManager == null) return Task.CompletedTask;
 
@@ -119,6 +120,28 @@ public sealed class AndroidNotificationService : INotificationService
         if (context == null) return false;
         var alarmManager = (AlarmManager?)context.GetSystemService(Context.AlarmService);
         return alarmManager?.CanScheduleExactAlarms() ?? false;
+    }
+
+    public void RequestExactAlarmPermission()
+    {
+        // Erst ab Android 12 (API 31) existiert die Exact-Alarm-Permission/-Einstellung
+        if (!OperatingSystem.IsAndroidVersionAtLeast(31)) return;
+
+        var context = Application.Context;
+        if (context == null) return;
+
+        try
+        {
+            var intent = new Intent(global::Android.Provider.Settings.ActionRequestScheduleExactAlarm);
+            intent.SetData(global::Android.Net.Uri.Parse($"package:{context.PackageName}"));
+            intent.AddFlags(ActivityFlags.NewTask);
+            context.StartActivity(intent);
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("AndroidNotificationService",
+                $"RequestExactAlarmPermission fehlgeschlagen: {ex.Message}");
+        }
     }
 
     public bool AreNotificationsEnabled()

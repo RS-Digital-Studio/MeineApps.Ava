@@ -130,21 +130,16 @@ public sealed class CalendarExportService : ICalendarExportService
     /// </summary>
     private static void AppendWorkDayEvent(StringBuilder sb, WorkDay day, List<TimeEntry> entries)
     {
-        var checkIns = entries.Where(e => e.Type == EntryType.CheckIn).OrderBy(e => e.Timestamp).ToList();
-        var checkOuts = entries.Where(e => e.Type == EntryType.CheckOut).OrderByDescending(e => e.Timestamp).ToList();
+        // CheckIn/CheckOut chronologisch zu Sessions paaren — mehrere Arbeitsblöcke pro Tag
+        // ergeben mehrere VEVENTs. Ein einzelnes First-CheckIn→Last-CheckOut-Event würde
+        // die Lücke dazwischen (z.B. lange Mittagspause) fälschlich als Arbeitszeit zeigen.
+        var sessions = PairSessions(entries);
 
-        DateTime eventStart, eventEnd;
-
-        if (checkIns.Count > 0 && checkOuts.Count > 0)
-        {
-            eventStart = checkIns.First().Timestamp;
-            eventEnd = checkOuts.First().Timestamp;
-        }
-        else
+        if (sessions.Count == 0)
         {
             // Fallback: 08:00 bis 08:00 + Arbeitszeit
-            eventStart = day.Date.AddHours(8);
-            eventEnd = eventStart.AddMinutes(day.ActualWorkMinutes);
+            var fallbackStart = day.Date.AddHours(8);
+            sessions.Add((fallbackStart, fallbackStart.AddMinutes(day.ActualWorkMinutes)));
         }
 
         // Titel: "Arbeitszeit: 8:30 (+0:30)" oder "Arbeitszeit: 6:00 (-2:00)"
@@ -152,26 +147,59 @@ public sealed class CalendarExportService : ICalendarExportService
         var balanceDisplay = TimeFormatter.FormatBalance(day.BalanceMinutes);
         var title = $"{AppStrings.WorkTime}: {workDisplay} ({balanceDisplay})";
 
-        // Beschreibung mit Details
-        var desc = BuildWorkDayDescription(day, checkIns.FirstOrDefault(), checkOuts.FirstOrDefault());
+        // Beschreibung mit Details (Tages-Gesamtwerte, für alle Sessions identisch)
+        var firstCheckIn = entries.Where(e => e.Type == EntryType.CheckIn).OrderBy(e => e.Timestamp).FirstOrDefault();
+        var lastCheckOut = entries.Where(e => e.Type == EntryType.CheckOut).OrderByDescending(e => e.Timestamp).FirstOrDefault();
+        var desc = BuildWorkDayDescription(day, firstCheckIn, lastCheckOut);
 
-        IcsLine(sb,"BEGIN:VEVENT");
-        IcsLine(sb,$"UID:worktimepro-day-{day.Date:yyyyMMdd}@meineapps");
-        IcsLine(sb,$"DTSTAMP:{DateTime.UtcNow:yyyyMMdd'T'HHmmss'Z'}");
-        IcsLine(sb,$"DTSTART:{eventStart:yyyyMMdd'T'HHmmss}");
-        IcsLine(sb,$"DTEND:{eventEnd:yyyyMMdd'T'HHmmss}");
-        IcsLine(sb,$"SUMMARY:{EscapeIcsText(title)}");
-        IcsLine(sb,$"DESCRIPTION:{EscapeIcsText(desc)}");
-        IcsLine(sb,"STATUS:CONFIRMED");
-        IcsLine(sb,"TRANSP:OPAQUE");
+        for (var i = 0; i < sessions.Count; i++)
+        {
+            var (eventStart, eventEnd) = sessions[i];
+            var uidSuffix = sessions.Count > 1 ? $"-{i + 1}" : string.Empty;
 
-        // Farbkategorie basierend auf Saldo
-        if (day.BalanceMinutes >= 0)
-            IcsLine(sb,"CATEGORIES:Arbeitszeit,Positiv");
-        else
-            IcsLine(sb,"CATEGORIES:Arbeitszeit,Negativ");
+            IcsLine(sb,"BEGIN:VEVENT");
+            IcsLine(sb,$"UID:worktimepro-day-{day.Date:yyyyMMdd}{uidSuffix}@meineapps");
+            IcsLine(sb,$"DTSTAMP:{DateTime.UtcNow:yyyyMMdd'T'HHmmss'Z'}");
+            IcsLine(sb,$"DTSTART:{eventStart:yyyyMMdd'T'HHmmss}");
+            IcsLine(sb,$"DTEND:{eventEnd:yyyyMMdd'T'HHmmss}");
+            IcsLine(sb,$"SUMMARY:{EscapeIcsText(title)}");
+            IcsLine(sb,$"DESCRIPTION:{EscapeIcsText(desc)}");
+            IcsLine(sb,"STATUS:CONFIRMED");
+            IcsLine(sb,"TRANSP:OPAQUE");
 
-        IcsLine(sb,"END:VEVENT");
+            // Farbkategorie basierend auf Saldo
+            if (day.BalanceMinutes >= 0)
+                IcsLine(sb,"CATEGORIES:Arbeitszeit,Positiv");
+            else
+                IcsLine(sb,"CATEGORIES:Arbeitszeit,Negativ");
+
+            IcsLine(sb,"END:VEVENT");
+        }
+    }
+
+    /// <summary>
+    /// Paart CheckIn/CheckOut-Einträge chronologisch zu abgeschlossenen Arbeits-Sessions.
+    /// Ein offener CheckIn ohne folgenden CheckOut wird ignoriert (noch laufende Session).
+    /// </summary>
+    private static List<(DateTime Start, DateTime End)> PairSessions(List<TimeEntry> entries)
+    {
+        var sessions = new List<(DateTime, DateTime)>();
+        DateTime? openCheckIn = null;
+
+        foreach (var entry in entries.OrderBy(e => e.Timestamp))
+        {
+            if (entry.Type == EntryType.CheckIn)
+            {
+                openCheckIn ??= entry.Timestamp;
+            }
+            else if (entry.Type == EntryType.CheckOut && openCheckIn != null)
+            {
+                sessions.Add((openCheckIn.Value, entry.Timestamp));
+                openCheckIn = null;
+            }
+        }
+
+        return sessions;
     }
 
     /// <summary>

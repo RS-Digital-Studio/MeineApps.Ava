@@ -41,22 +41,26 @@ public sealed class VacationService : IVacationService
         quota.PlannedDays = planned;
 
         // Verfall des Übertrags zum Stichtag (BUrlG: regulär 31.03.) — NUR in-memory für die
-        // Anzeige, der persistierte Datensatz bleibt unangetastet. Bereits genutzter Übertrag
-        // (durch Urlaub vor dem Stichtag) bleibt erhalten, der ungenutzte Rest verfällt.
+        // Anzeige, der persistierte Datensatz bleibt unangetastet. Nur der BIS ZUM STICHTAG
+        // tatsächlich genutzte Übertrag bleibt erhalten — Urlaub nach dem Stichtag stammt
+        // aus dem regulären Jahresanspruch und rettet den Übertrag nicht.
         var settings = await _database.GetSettingsAsync();
-        if (quota.CarryOverDays > 0 && IsCarryOverExpired(year, settings))
+        if (quota.CarryOverDays > 0 && TryGetExpiredCarryOverDeadline(year, settings, out var deadline))
         {
-            quota.CarryOverDays = Math.Min(quota.TakenDays, quota.CarryOverDays);
+            var takenUntilDeadline = await CalculateTakenUntilAsync(entries, deadline);
+            quota.CarryOverDays = Math.Min(takenUntilDeadline, quota.CarryOverDays);
         }
 
         return quota;
     }
 
     /// <summary>
-    /// Prüft, ob der Resturlaub-Übertrag für ein Jahr zum konfigurierten Stichtag verfallen ist.
+    /// Prüft, ob der Resturlaub-Übertrag für ein Jahr zum konfigurierten Stichtag verfallen ist,
+    /// und liefert den Stichtag zurück.
     /// </summary>
-    private static bool IsCarryOverExpired(int year, WorkSettings settings)
+    private static bool TryGetExpiredCarryOverDeadline(int year, WorkSettings settings, out DateTime deadline)
     {
+        deadline = default;
         if (!settings.VacationCarryOverExpires)
             return false;
 
@@ -64,9 +68,34 @@ public sealed class VacationService : IVacationService
         var month = Math.Clamp(settings.VacationCarryOverExpiryMonth, 1, 12);
         var maxDay = DateTime.DaysInMonth(year, month);
         var day = Math.Clamp(settings.VacationCarryOverExpiryDay, 1, maxDay);
-        var deadline = new DateTime(year, month, day);
+        deadline = new DateTime(year, month, day);
 
         return DateTime.Today > deadline;
+    }
+
+    /// <summary>
+    /// Zählt die bis einschließlich Stichtag genommenen Urlaubstage. Einträge, die komplett
+    /// vor dem Stichtag liegen, nutzen die gespeicherten Tage; Einträge, die den Stichtag
+    /// überspannen, werden bis zum Stichtag werktags-genau gezählt.
+    /// </summary>
+    private async Task<int> CalculateTakenUntilAsync(List<VacationEntry> entries, DateTime deadline)
+    {
+        var taken = 0;
+
+        foreach (var e in entries.Where(e => e.Type == DayStatus.Vacation && e.StartDate.Date <= deadline))
+        {
+            if (e.EndDate.Date <= deadline)
+            {
+                taken += e.Days;
+            }
+            else
+            {
+                var days = await CalculateWorkDaysAsync(e.StartDate, deadline);
+                taken += Math.Clamp(days, 0, Math.Max(0, e.Days));
+            }
+        }
+
+        return taken;
     }
 
     public async Task SaveQuotaAsync(VacationQuota quota)

@@ -31,24 +31,12 @@ public sealed class TimeTrackingService : ITimeTrackingService
 
     public async Task LoadStatusAsync()
     {
-        var today = await GetTodayAsync();
-        var lastEntry = await _database.GetLastTimeEntryAsync(today.Id);
-        var activePause = await _database.GetActivePauseAsync(today.Id);
-
-        // Auch gestern prüfen (Mitternachts-Übergang bei Nachtarbeit)
-        if (lastEntry == null || lastEntry.Type != EntryType.CheckIn)
-        {
-            var yesterday = await _database.GetWorkDayAsync(DateTime.Today.AddDays(-1));
-            if (yesterday != null)
-            {
-                var yesterdayLast = await _database.GetLastTimeEntryAsync(yesterday.Id);
-                if (yesterdayLast?.Type == EntryType.CheckIn)
-                {
-                    lastEntry = yesterdayLast;
-                    activePause = await _database.GetActivePauseAsync(yesterday.Id);
-                }
-            }
-        }
+        // Gleiche Rückwärts-Reichweite wie GetActiveWorkDayAsync (3 Tage) — sonst meldet
+        // der Status nach App-Neustart Idle, während ein CheckOut noch einen offenen
+        // Alt-Tag finden würde (inkonsistenter Zustand zwischen Anzeige und Buchung).
+        var activeDay = await GetActiveWorkDayAsync();
+        var lastEntry = await _database.GetLastTimeEntryAsync(activeDay.Id);
+        var activePause = await _database.GetActivePauseAsync(activeDay.Id);
 
         if (activePause != null)
         {

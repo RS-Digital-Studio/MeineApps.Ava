@@ -354,6 +354,7 @@ public class CalculationServiceTests
     public async Task CheckLegalComplianceAsync_NormalerArbeitstag_KeineWarnungen()
     {
         // Vorbereitung: 7h Arbeit, 30min Pause → keine Verstöße
+        // (Compliance prüft die UNGERUNDETE Netto-Zeit, nicht ActualWorkMinutes)
         var db = ErstelleDbMock();
         var sut = new CalculationService(db);
         var arbeitstag = new WorkDay
@@ -361,6 +362,7 @@ public class CalculationServiceTests
             Id = 1,
             Date = new DateTime(2026, 1, 13),
             ActualWorkMinutes = 420,   // 7h
+            UnroundedWorkMinutes = 420,
             ManualPauseMinutes = 30,
             AutoPauseMinutes = 0
         };
@@ -376,6 +378,7 @@ public class CalculationServiceTests
     public async Task CheckLegalComplianceAsync_UeberMaximalzeit_GibtWarnung()
     {
         // Vorbereitung: 11h Arbeit überschreitet ArbZG-Maximum (10h)
+        // (Compliance prüft die UNGERUNDETE Netto-Zeit, nicht ActualWorkMinutes)
         var db = ErstelleDbMock();
         var sut = new CalculationService(db);
         var arbeitstag = new WorkDay
@@ -383,6 +386,7 @@ public class CalculationServiceTests
             Id = 1,
             Date = new DateTime(2026, 1, 13),
             ActualWorkMinutes = 660, // 11h
+            UnroundedWorkMinutes = 660,
             ManualPauseMinutes = 45,
             AutoPauseMinutes = 0
         };
@@ -398,6 +402,7 @@ public class CalculationServiceTests
     public async Task CheckLegalComplianceAsync_UeberSechsStundenOhnePause_GibtWarnung()
     {
         // Vorbereitung: 7h Arbeit, keine Pause → Verstoß gegen 30min-Regelung
+        // (Compliance prüft die UNGERUNDETE Netto-Zeit, nicht ActualWorkMinutes)
         var db = ErstelleDbMock();
         var sut = new CalculationService(db);
         var arbeitstag = new WorkDay
@@ -405,6 +410,7 @@ public class CalculationServiceTests
             Id = 1,
             Date = new DateTime(2026, 1, 13),
             ActualWorkMinutes = 420, // 7h
+            UnroundedWorkMinutes = 420,
             ManualPauseMinutes = 0,
             AutoPauseMinutes = 0
         };

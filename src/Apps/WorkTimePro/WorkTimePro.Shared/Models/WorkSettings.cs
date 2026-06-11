@@ -404,14 +404,16 @@ public class WorkSettings
 
         var workHours = workMinutes / 60.0;
 
-        // Über 9 Stunden: 45 Minuten
-        if (workHours > 9)
+        // Unter der konfigurierten Schwelle greift NIE eine Auto-Pause — auch die
+        // 9h-Stufe nicht (sonst würde z.B. AutoPauseAfterHours=10 bei 9,5h übergangen).
+        if (workHours <= AutoPauseAfterHours)
+            return 0;
+
+        // Über 9 Stunden (bzw. über der höheren konfigurierten Schwelle): 45 Minuten
+        if (workHours > Math.Max(9.0, AutoPauseAfterHours))
             return AutoPauseMinutesOver9Hours;
 
-        // Über 6 Stunden: 30 Minuten
-        if (workHours > AutoPauseAfterHours)
-            return AutoPauseMinutes;
-
-        return 0;
+        // Über der Schwelle (Standard 6h): 30 Minuten
+        return AutoPauseMinutes;
     }
 }

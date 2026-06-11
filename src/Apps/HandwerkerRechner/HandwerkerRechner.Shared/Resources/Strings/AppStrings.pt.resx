@@ -2183,6 +2183,18 @@ O rendimento diminui em superfícies rugosas!</value>
   <data name="AdInterstitialButton" xml:space="preserve">
     <value>Ver vídeo → Continuar</value>
   </data>
+  <data name="AdOfferTitle" xml:space="preserve">
+    <value>Ocultar o banner de publicidade?</value>
+  </data>
+  <data name="AdOfferMessage" xml:space="preserve">
+    <value>Assistir a um breve vídeo publicitário e ocultar o banner durante os próximos 10 cálculos?</value>
+  </data>
+  <data name="AdOfferWatchButton" xml:space="preserve">
+    <value>Ver vídeo</value>
+  </data>
+  <data name="AdOfferDeclineButton" xml:space="preserve">
+    <value>Não, obrigado</value>
+  </data>
   <data name="PremiumFeatures" xml:space="preserve">
     <value>Sem anúncios em vídeo • Sem banner • Histórico ilimitado • Exportação direta</value>
   </data>

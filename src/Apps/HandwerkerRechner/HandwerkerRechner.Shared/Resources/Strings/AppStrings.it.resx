@@ -2181,6 +2181,18 @@ Su superfici ruvide la resa diminuisce!</value>
   <data name="AdInterstitialButton" xml:space="preserve">
     <value>Guarda video → Continua</value>
   </data>
+  <data name="AdOfferTitle" xml:space="preserve">
+    <value>Nascondere il banner pubblicitario?</value>
+  </data>
+  <data name="AdOfferMessage" xml:space="preserve">
+    <value>Guardare un breve video pubblicitario e nascondere il banner per i prossimi 10 calcoli?</value>
+  </data>
+  <data name="AdOfferWatchButton" xml:space="preserve">
+    <value>Guarda il video</value>
+  </data>
+  <data name="AdOfferDeclineButton" xml:space="preserve">
+    <value>No, grazie</value>
+  </data>
   <data name="PremiumFeatures" xml:space="preserve">
     <value>Senza pubblicità video • Senza banner • Cronologia illimitata • Esportazione diretta</value>
   </data>

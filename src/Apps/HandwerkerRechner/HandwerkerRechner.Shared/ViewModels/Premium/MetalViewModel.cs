@@ -48,7 +48,7 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalcul
         _priceService = priceService;
 
         // Standard-Materialpreis laden
-        PricePerKg = _priceService.GetPrice("steel_flat")?.EffectivePrice ?? 0;
+        PricePerKg = (double)(_priceService.GetPrice("steel_flat")?.EffectivePrice ?? 0);
     }
 
     /// <summary>
@@ -189,7 +189,11 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalcul
             switch (SelectedCalculator)
             {
                 case 0: // Metal Weight
-                    if (Length <= 0 || Dimension1 <= 0)
+                    var selectedProfile = (ProfileType)SelectedProfile;
+
+                    // FlatBar/Angle brauchen Dimension2 (Breite bzw. 2. Schenkel) — sonst Gewicht 0 statt Meldung
+                    if (Length <= 0 || Dimension1 <= 0 ||
+                        (selectedProfile is ProfileType.FlatBar or ProfileType.Angle && Dimension2 <= 0))
                     {
                         HasResult = false;
                         MessageRequested?.Invoke(
@@ -199,7 +203,6 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalcul
                     }
 
                     // Wandstärke bei Hohlprofilen begrenzen: darf nicht größer als halber Außendurchmesser sein
-                    var selectedProfile = (ProfileType)SelectedProfile;
                     if (selectedProfile is ProfileType.RoundTube or ProfileType.SquareTube &&
                         WallThickness >= Dimension1 / 2)
                     {
@@ -585,7 +588,13 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalcul
     /// <summary>
     /// Räumt Event-Subscriptions und Timer auf (wird von MainViewModel beim Navigieren aufgerufen)
     /// </summary>
-    public void Cleanup() => _debounceTimer?.Dispose();
+    public void Cleanup()
+    {
+        // Timer nullen, damit ein nachfolgendes ScheduleAutoCalculate keinen
+        // Change() auf einem disposed Timer wirft (Pattern wie TileCalculatorViewModel)
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
 
     public void Dispose()
     {

@@ -75,7 +75,7 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
         _unitConverter.UnitSystemChanged += OnUnitSystemChanged;
 
         // Standard-Materialpreis laden
-        PricePerRoll = _priceService.GetPrice("wallpaper_standard")?.EffectivePrice ?? 0;
+        PricePerRoll = (double)(_priceService.GetPrice("wallpaper_standard")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

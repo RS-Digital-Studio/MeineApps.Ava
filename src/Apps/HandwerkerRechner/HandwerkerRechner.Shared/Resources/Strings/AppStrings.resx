@@ -1654,6 +1654,18 @@ Coverage decreases on rough surfaces!</value>
   <data name="AdInterstitialButton" xml:space="preserve">
     <value>Watch Video → Continue</value>
   </data>
+  <data name="AdOfferTitle" xml:space="preserve">
+    <value>Hide banner ads?</value>
+  </data>
+  <data name="AdOfferMessage" xml:space="preserve">
+    <value>Watch a short ad video and hide the banner for your next 10 calculations?</value>
+  </data>
+  <data name="AdOfferWatchButton" xml:space="preserve">
+    <value>Watch video</value>
+  </data>
+  <data name="AdOfferDeclineButton" xml:space="preserve">
+    <value>No, thanks</value>
+  </data>
   <data name="AccessGranted" xml:space="preserve">
     <value>Access granted!</value>
   </data>

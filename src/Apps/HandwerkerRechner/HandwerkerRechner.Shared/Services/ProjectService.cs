@@ -142,6 +142,8 @@ public sealed class ProjectService : IProjectService
                 }
                 catch (Exception)
                 {
+                    // Korrupte Datei sichern statt beim nächsten Save endgültig zu überschreiben
+                    TryBackupCorruptFile(_projectsFilePath);
                     _cachedProjects = [];
                 }
             }
@@ -173,6 +175,19 @@ public sealed class ProjectService : IProjectService
         {
             // Speichern fehlgeschlagen — Daten bleiben im Cache; UI benachrichtigen statt stillem Verlust
             SaveFailed?.Invoke();
+        }
+    }
+
+    /// <summary>Best-Effort-Backup einer korrupten JSON-Datei nach "&lt;name&gt;.bak".</summary>
+    private static void TryBackupCorruptFile(string filePath)
+    {
+        try
+        {
+            File.Copy(filePath, filePath + ".bak", overwrite: true);
+        }
+        catch
+        {
+            // Best Effort — Backup darf das Laden nie blockieren
         }
     }
 }

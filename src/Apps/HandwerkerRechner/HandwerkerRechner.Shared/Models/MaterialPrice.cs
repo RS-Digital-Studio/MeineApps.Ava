@@ -16,13 +16,13 @@ public class MaterialPrice
     public string Unit { get; set; } = string.Empty;
 
     /// <summary>Regionaler Durchschnittspreis (Deutschland)</summary>
-    public double DefaultPrice { get; set; }
+    public decimal DefaultPrice { get; set; }
 
-    /// <summary>Benutzerdefinierter Preis (-1 = nicht überschrieben)</summary>
-    public double CustomPrice { get; set; } = -1;
+    /// <summary>Benutzerdefinierter Preis (null = nicht überschrieben)</summary>
+    public decimal? CustomPrice { get; set; }
 
     /// <summary>Effektiver Preis: CustomPrice wenn gesetzt, sonst DefaultPrice</summary>
-    public double EffectivePrice => CustomPrice >= 0 ? CustomPrice : DefaultPrice;
+    public decimal EffectivePrice => CustomPrice ?? DefaultPrice;
 
     /// <summary>Kategorie für Gruppierung (z.B. "flooring", "electrical", "wall")</summary>
     public string Category { get; set; } = string.Empty;

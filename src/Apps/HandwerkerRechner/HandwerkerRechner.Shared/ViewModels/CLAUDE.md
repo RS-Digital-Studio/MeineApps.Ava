@@ -48,8 +48,12 @@ setzen `CurrentPage = null` und triggern bei Projects/History automatisch einen 
 **Route-Format:** `"TileCalculatorPage"` (einfach) oder `"TileCalculatorPage?projectId=abc123"`
 (mit Projekt-Daten). Routing mit Query-String-Parsing im `CreateCalculatorVm`.
 
-**Rewarded-Counter:** `_calculationCount` wird bei jedem `CalculationPerformed`-Event erhöht.
-Ab 3 Berechnungen → `_rewardedAdService.ShowAdAsync("calculation_ad")` (außer bei Premium).
+**Rewarded-Counter (Opt-in):** `_calculationCount` wird bei jedem `CalculationPerformed`-Event
+erhöht. Ab 3 Berechnungen → Inline-Opt-in-Overlay (`ShowAdOfferDialog`, kein erzwungenes Video —
+AdMob-Policy). `WatchAdCommand` → `ShowAdAsync("calculation_ad")`; bei Erfolg
+`_adFreeCalculationsRemaining = 10` + `HideBanner()` — pro Berechnung dekrementiert, bei 0
+`ShowBanner()` (session-only, keine Persistenz). `DeclineAdOfferCommand` → Counter zurück auf 0,
+nächstes Angebot nach 3 weiteren Berechnungen. Premium-User: kein Counter, kein Angebot.
 
 **Favoriten:** `IFavoritesService` → `FavoriteCalculators`-Collection (ObservableCollection<FavoriteItem>).
 20 `IsFavXxx`-Properties für Compiled-Binding-kompatibles Stern-Toggle.
@@ -58,8 +62,10 @@ Ab 3 Berechnungen → `_rewardedAdService.ShowAdAsync("calculation_ad")` (außer
 **Localization:** Gezielte Invalidierung via `LocalizedPropertyNames`-Array (nicht
 `OnPropertyChanged(string.Empty)` — das würde alle Bindings im Visual-Tree auslösen → 50-150ms Stutter).
 
-**Back-Navigation:** 1. SaveDialog schließen → 2. Calculator schließen → 3. Nicht-Calculator-VM
-schließen (Templates, Quotes) → 4. Nicht-Home-Tab → Home → 5. Double-Back-to-Exit via `BackPressHelper`.
+**Back-Navigation:** 1. App-Overlays schließen (Message-Dialog, Ad-Angebot) → 2. Projekt-Dialoge
+schließen (Lösch-Bestätigung, Notizen-Editor) → 3. SaveDialog schließen → 4. Calculator schließen →
+5. Templates: Apply-Dialog schließen statt Seite → 6. Quotes: `GoBackCommand` (behandelt IsEditing) →
+7. Nicht-Calculator-VM schließen → 8. Nicht-Home-Tab → Home → 9. Double-Back-to-Exit via `BackPressHelper`.
 
 ## ICalculatorViewModel — Vertrag
 

@@ -149,7 +149,43 @@ namespace HandwerkerRechner.Resources.Strings {
                 return ResourceManager.GetString("AdInterstitialTitle", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No, thanks ähnelt.
+        /// </summary>
+        internal static string AdOfferDeclineButton {
+            get {
+                return ResourceManager.GetString("AdOfferDeclineButton", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Watch a short ad video and hide the banner for your next 10 calculations? ähnelt.
+        /// </summary>
+        internal static string AdOfferMessage {
+            get {
+                return ResourceManager.GetString("AdOfferMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Hide banner ads? ähnelt.
+        /// </summary>
+        internal static string AdOfferTitle {
+            get {
+                return ResourceManager.GetString("AdOfferTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Watch video ähnelt.
+        /// </summary>
+        internal static string AdOfferWatchButton {
+            get {
+                return ResourceManager.GetString("AdOfferWatchButton", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die No ad video is currently available. Please try again later. ähnelt.
         /// </summary>

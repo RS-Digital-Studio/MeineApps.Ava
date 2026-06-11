@@ -7,7 +7,8 @@
              x:CompileBindings="True">
 
   <ScrollViewer AutomationProperties.AutomationId="Settings_ScrollRoot" VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="16" Spacing="12">
+    <!-- Bottom-Margin 120dp: Content darf nicht hinter dem Ad-Banner verschwinden (Pattern wie QuoteView/ProjectTemplatesView) -->
+    <StackPanel Margin="16,16,16,120" Spacing="12">
 
       <!-- Header -->
       <TextBlock AutomationProperties.AutomationId="Settings_TxtTitle"
@@ -272,9 +273,6 @@
           </Button>
         </StackPanel>
       </Border>
-
-      <!-- Bottom Spacer -->
-      <Border Height="60" />
 
     </StackPanel>
   </ScrollViewer>

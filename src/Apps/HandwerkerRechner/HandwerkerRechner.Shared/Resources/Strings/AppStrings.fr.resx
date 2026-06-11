@@ -2181,6 +2181,18 @@ Le rendement diminue sur les surfaces rugueuses !</value>
   <data name="AdInterstitialButton" xml:space="preserve">
     <value>Regarder la vidéo → Continuer</value>
   </data>
+  <data name="AdOfferTitle" xml:space="preserve">
+    <value>Masquer la bannière publicitaire ?</value>
+  </data>
+  <data name="AdOfferMessage" xml:space="preserve">
+    <value>Regarder une courte vidéo publicitaire et masquer la bannière pendant les 10 prochains calculs ?</value>
+  </data>
+  <data name="AdOfferWatchButton" xml:space="preserve">
+    <value>Regarder la vidéo</value>
+  </data>
+  <data name="AdOfferDeclineButton" xml:space="preserve">
+    <value>Non, merci</value>
+  </data>
   <data name="PremiumFeatures" xml:space="preserve">
     <value>Sans publicité vidéo • Sans bannière • Historique illimité • Export direct</value>
   </data>

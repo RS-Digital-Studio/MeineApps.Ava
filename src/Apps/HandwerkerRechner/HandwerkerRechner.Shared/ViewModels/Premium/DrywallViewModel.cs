@@ -48,7 +48,7 @@ public sealed partial class DrywallViewModel : ViewModelBase, IDisposable, ICalc
         _priceService = priceService;
 
         // Standard-Materialpreis laden
-        PricePerSqm = _priceService.GetPrice("drywall_plate")?.EffectivePrice ?? 0;
+        PricePerSqm = (double)(_priceService.GetPrice("drywall_plate")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

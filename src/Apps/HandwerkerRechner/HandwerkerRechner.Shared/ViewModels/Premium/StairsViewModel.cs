@@ -51,7 +51,7 @@ public sealed partial class StairsViewModel : ViewModelBase, IDisposable, ICalcu
         _priceService = priceService;
 
         // Standard-Materialpreis laden
-        PricePerStep = _priceService.GetPrice("stair_step_wood")?.EffectivePrice ?? 0;
+        PricePerStep = (double)(_priceService.GetPrice("stair_step_wood")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

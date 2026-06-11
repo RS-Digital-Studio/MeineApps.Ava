@@ -11,8 +11,8 @@ Conventions, Architektur und Patterns → [Haupt-CLAUDE.md](../../../../../CLAUD
 | `CraftEngine.cs` | 28 Berechnungsalgorithmen + Result-Records + Enums. Schutz gegen Infinity/NaN. |
 | `Project.cs` | Gespeichertes Handwerker-Projekt: GUID-ID, Name, CalculatorType, DataJson, Fotos, Notizen. |
 | `ProjectTemplate.cs` | Vorlage mit `TemplateCalculatorEntry`-Liste (Route, CalculatorType, DefaultValues-Dictionary). |
-| `MaterialPrice.cs` | Material-Preis mit `DefaultPrice` (Deutschland-Durchschnitt) und `CustomPrice` (Benutzer-Override). `EffectivePrice` wählt automatisch. |
-| `Quote.cs` | Angebot: `QuoteItem`-Liste, MwSt/Marge-Berechnung, `QuoteStatus`-Enum, `QuoteItemType`-Enum. |
+| `MaterialPrice.cs` | Material-Preis (`decimal`) mit `DefaultPrice` (Deutschland-Durchschnitt) und `CustomPrice` (`decimal?`, null = kein Benutzer-Override). `EffectivePrice` wählt automatisch. |
+| `Quote.cs` | Angebot: `QuoteItem`-Liste, MwSt/Marge-Berechnung in `decimal`, `QuoteStatus`-Enum, `QuoteItemType`-Enum. |
 | `CalculatorCategory.cs` | Enum `CalculatorCategory` (Gruppen) + Enum `CalculatorType` (28 einzelne Rechner). |
 
 ## CraftEngine — Design-Entscheidungen
@@ -85,14 +85,20 @@ Kein Zustand in Results — Calculator-VMs cachen nur den jeweils letzten Result
 
 ## Quote — Berechnete Properties
 
-Alle Geldwerte in `Quote` sind **berechnete Properties** (kein Persistieren):
+Alle Geldwerte sind **`decimal`** (Kundenbeträge — keine double-Artefakte) und **berechnete
+Properties** (kein Persistieren). Endbeträge werden definiert kaufmännisch gerundet
+(`Math.Round(x, 2, MidpointRounding.AwayFromZero)`):
 
 ```csharp
-public double SubtotalNet  => Items.Sum(i => i.Total);
-public double MarginAmount => SubtotalNet * MarginPercent / 100;
-public double TotalNet     => SubtotalNet + MarginAmount;
-public double VatAmount    => TotalNet * VatPercent / 100;
-public double TotalGross   => TotalNet + VatAmount;
+public decimal SubtotalNet  => Math.Round(Items.Sum(i => i.Total), 2, MidpointRounding.AwayFromZero);
+public decimal MarginAmount => Math.Round(SubtotalNet * MarginPercent / 100m, 2, MidpointRounding.AwayFromZero);
+public decimal TotalNet     => SubtotalNet + MarginAmount;
+public decimal VatAmount    => Math.Round(TotalNet * VatPercent / 100m, 2, MidpointRounding.AwayFromZero);
+public decimal TotalGross   => TotalNet + VatAmount;
+// QuoteItem: Quantity bleibt double (Menge), UnitPrice ist decimal:
+public decimal Total => Math.Round((decimal)Quantity * UnitPrice, 2, MidpointRounding.AwayFromZero);
 ```
 
-Nur `Items`, `VatPercent`, `MarginPercent` werden persistiert.
+Nur `Items`, `VatPercent`, `MarginPercent` werden persistiert. Altdaten (double-JSON) werden von
+System.Text.Json verlustfrei in `decimal` deserialisiert — keine Migration nötig (Test:
+`QuoteTests.Quote_AltesDoubleJson_LaedtVerlustfreiInDecimal`).

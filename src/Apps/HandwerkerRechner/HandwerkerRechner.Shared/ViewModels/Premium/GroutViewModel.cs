@@ -51,7 +51,7 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
         _priceService = priceService;
 
         // Standard-Materialpreis laden
-        PricePerKg = _priceService.GetPrice("grout_standard")?.EffectivePrice ?? 0;
+        PricePerKg = (double)(_priceService.GetPrice("grout_standard")?.EffectivePrice ?? 0);
     }
 
     /// <summary>
@@ -414,7 +414,13 @@ public sealed partial class GroutViewModel : ViewModelBase, IDisposable, ICalcul
     [RelayCommand]
     private void GoBack() => NavigateTo("..");
 
-    public void Cleanup() => _debounceTimer?.Dispose();
+    public void Cleanup()
+    {
+        // Timer nullen, damit ein nachfolgendes ScheduleAutoCalculate keinen
+        // Change() auf einem disposed Timer wirft (Pattern wie TileCalculatorViewModel)
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
 
     public void Dispose()
     {

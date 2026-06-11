@@ -214,10 +214,16 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
         }
     }
 
-    private double CalculateRectangle() => Dimension1 * Dimension2;
+    // Negativ-Guards: zwei negative Eingaben würden sonst eine positive Fläche ergeben
+    // (z.B. Rechteck -5 × -4 = 20). Ungültige Eingaben → 0 → HasResult bleibt false.
+
+    private double CalculateRectangle() =>
+        Dimension1 <= 0 || Dimension2 <= 0 ? 0 : Dimension1 * Dimension2;
 
     private double CalculateLShape()
     {
+        if (Dimension1 <= 0 || Dimension2 <= 0 || Dimension3 < 0 || Dimension4 < 0) return 0;
+
         // Gesamtrechteck minus Eckausschnitt
         var total = Dimension1 * Dimension2;
         var cutout = Dimension3 * Dimension4;
@@ -226,6 +232,8 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
 
     private double CalculateTShape()
     {
+        if (Dimension1 <= 0 || Dimension2 <= 0 || Dimension3 < 0 || Dimension4 < 0) return 0;
+
         // Mittelteil + Querbalken (vereinfacht: T aus 2 Rechtecken)
         var stem = Dimension1 * Dimension2;
         var crossbar = Dimension3 * Dimension4;
@@ -234,18 +242,24 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
 
     private double CalculateTrapezoid()
     {
+        if (Dimension1 <= 0 || Dimension2 <= 0 || Dimension5 < 0) return 0;
+
         // (a + b) / 2 × h
         return (Dimension1 + Dimension5) / 2.0 * Dimension2;
     }
 
     private double CalculateTriangle()
     {
+        if (Dimension1 <= 0 || Dimension2 <= 0) return 0;
+
         // Basis × Höhe / 2
         return Dimension1 * Dimension2 / 2.0;
     }
 
     private double CalculateCircle()
     {
+        if (Dimension1 <= 0) return 0;
+
         // π × r²
         var radius = Dimension1 / 2.0;
         return Math.PI * radius * radius;

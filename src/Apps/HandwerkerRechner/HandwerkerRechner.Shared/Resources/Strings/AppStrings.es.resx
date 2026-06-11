@@ -2182,6 +2182,18 @@ Valores típicos:
   <data name="AdInterstitialButton" xml:space="preserve">
     <value>Ver vídeo → Continuar</value>
   </data>
+  <data name="AdOfferTitle" xml:space="preserve">
+    <value>¿Ocultar el banner publicitario?</value>
+  </data>
+  <data name="AdOfferMessage" xml:space="preserve">
+    <value>¿Quieres ver un breve vídeo publicitario y ocultar el banner durante los próximos 10 cálculos?</value>
+  </data>
+  <data name="AdOfferWatchButton" xml:space="preserve">
+    <value>Ver vídeo</value>
+  </data>
+  <data name="AdOfferDeclineButton" xml:space="preserve">
+    <value>No, gracias</value>
+  </data>
   <data name="PremiumFeatures" xml:space="preserve">
     <value>Sin anuncios de vídeo • Sin banner • Historial ilimitado • Exportación directa</value>
   </data>

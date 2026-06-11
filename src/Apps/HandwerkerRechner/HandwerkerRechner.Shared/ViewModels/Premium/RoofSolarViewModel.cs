@@ -48,7 +48,7 @@ public sealed partial class RoofSolarViewModel : ViewModelBase, IDisposable, ICa
         _priceService = priceService;
 
         // Standard-Materialpreis laden
-        PricePerTile = _priceService.GetPrice("roof_tile_standard")?.EffectivePrice ?? 0;
+        PricePerTile = (double)(_priceService.GetPrice("roof_tile_standard")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

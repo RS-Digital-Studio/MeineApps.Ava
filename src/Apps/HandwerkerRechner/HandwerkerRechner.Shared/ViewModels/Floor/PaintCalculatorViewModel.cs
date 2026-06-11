@@ -75,7 +75,7 @@ public sealed partial class PaintCalculatorViewModel : ViewModelBase, IDisposabl
         _unitConverter.UnitSystemChanged += OnUnitSystemChanged;
 
         // Standard-Materialpreis laden
-        PricePerLiter = _priceService.GetPrice("paint_standard")?.EffectivePrice ?? 0;
+        PricePerLiter = (double)(_priceService.GetPrice("paint_standard")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

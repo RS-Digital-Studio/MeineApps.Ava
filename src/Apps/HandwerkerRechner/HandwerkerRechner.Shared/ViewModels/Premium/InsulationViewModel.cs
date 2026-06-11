@@ -51,7 +51,7 @@ public sealed partial class InsulationViewModel : ViewModelBase, IDisposable, IC
         _priceService = priceService;
 
         // Standard-Materialpreis laden
-        PricePerSqm = _priceService.GetPrice("insulation_eps")?.EffectivePrice ?? 0;
+        PricePerSqm = (double)(_priceService.GetPrice("insulation_eps")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

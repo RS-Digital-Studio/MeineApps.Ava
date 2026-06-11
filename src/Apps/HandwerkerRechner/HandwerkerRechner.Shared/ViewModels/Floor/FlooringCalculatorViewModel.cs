@@ -75,7 +75,7 @@ public sealed partial class FlooringCalculatorViewModel : ViewModelBase, IDispos
         _unitConverter.UnitSystemChanged += OnUnitSystemChanged;
 
         // Standard-Materialpreis laden
-        PricePerBoard = _priceService.GetPrice("flooring_laminate")?.EffectivePrice ?? 0;
+        PricePerBoard = (double)(_priceService.GetPrice("flooring_laminate")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

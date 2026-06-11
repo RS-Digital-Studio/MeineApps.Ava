@@ -76,7 +76,7 @@ public sealed partial class ConcreteCalculatorViewModel : ViewModelBase, IDispos
         _unitConverter.UnitSystemChanged += OnUnitSystemChanged;
 
         // Standard-Materialpreis laden
-        PricePerBag = _priceService.GetPrice("concrete_sack_25kg")?.EffectivePrice ?? 0;
+        PricePerBag = (double)(_priceService.GetPrice("concrete_sack_25kg")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

@@ -53,7 +53,13 @@ public sealed partial class ProjectTemplatesViewModel : ViewModelBase
         _templateService = templateService;
         _projectService = projectService;
         _localization = localization;
+
+        // Speicher-Fehler des Services an die UI melden (statt stillem Datenverlust). Singleton↔Singleton → keine Abmeldung nötig.
+        _templateService.SaveFailed += OnSaveFailed;
     }
+
+    private void OnSaveFailed() => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        MessageRequested?.Invoke(_localization.GetString("Error"), _localization.GetString("SaveFailedMessage")));
 
     [RelayCommand]
     public async Task LoadTemplatesAsync()

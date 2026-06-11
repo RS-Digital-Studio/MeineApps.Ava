@@ -21,7 +21,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IFavoritesService _favoritesService;
 
-    // Zähler für Berechnungen: nach jeder 3. Berechnung wird ein Rewarded Video gezeigt
+    // Zähler für Berechnungen: nach jeder 3. Berechnung wird ein Opt-in-Ad-Angebot gezeigt
     private int _calculationCount;
 
     // Sub-ViewModels
@@ -345,8 +345,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     {
         UpdateNavTexts();
         UpdateHomeTexts();
+        UpdateFavorites();   // Favoriten-Labels in der neuen Sprache neu aufbauen
         SettingsViewModel.UpdateLocalizedTexts();
         HistoryViewModel.UpdateLocalizedTexts();
+        QuoteViewModel.UpdateLocalizedTexts();
     }
 
     #endregion
@@ -438,7 +440,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (vm is ICalculatorViewModel calc)
         {
             calc.NavigationRequested += OnCalculatorGoBack;
-            calc.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
+            calc.MessageRequested += OnChildMessage;
             calc.FloatingTextRequested += OnChildFloatingText;
             calc.ClipboardRequested += OnClipboardRequested;
             calc.CalculationPerformed += OnCalculationPerformed;
@@ -629,21 +631,99 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void NavigateToQuotes() => CurrentPage = "QuotePage";
 
-    #region Ad-Counter (alle 3 Berechnungen ein Rewarded Video)
+    #region Message-Dialog (Inline-Overlay)
+
+    [ObservableProperty]
+    private bool _showMessageDialog;
+
+    [ObservableProperty]
+    private string _messageDialogTitle = "";
+
+    [ObservableProperty]
+    private string _messageDialogText = "";
+
+    [RelayCommand]
+    private void DismissMessage() => ShowMessageDialog = false;
+
+    /// <summary>
+    /// Zeigt eine Meldung im Inline-Message-Overlay der MainView an.
+    /// Feuert zusätzlich das MessageRequested-Event (für externe Abonnenten).
+    /// </summary>
+    private void ShowMessage(string title, string text)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            MessageDialogTitle = title;
+            MessageDialogText = text;
+            ShowMessageDialog = true;
+        });
+        MessageRequested?.Invoke(title, text);
+    }
+
+    #endregion
+
+    #region Ad-Opt-in (nach jeder 3. Berechnung Angebot statt erzwungenem Video)
+
+    [ObservableProperty]
+    private bool _showAdOfferDialog;
+
+    // Verbleibende bannerfreie Berechnungen nach geschautem Video (session-only, keine Persistenz)
+    private int _adFreeCalculationsRemaining;
 
     /// <summary>
     /// Wird nach jeder erfolgreichen Berechnung aufgerufen.
-    /// Zeigt alle 3 Berechnungen ein Rewarded Video (außer Premium-User).
+    /// Nach jeder 3. Berechnung wird ein Opt-in-Angebot gezeigt (kein erzwungenes
+    /// Rewarded Video — AdMob-Policy: Rewarded nur mit Einwilligung + Belohnung).
     /// </summary>
-    private async void OnCalculationPerformed()
+    private void OnCalculationPerformed()
     {
         if (_purchaseService.IsPremium) return;
+
+        // Aktive Belohnung: Banner bleibt ausgeblendet, kein neues Angebot
+        if (_adFreeCalculationsRemaining > 0)
+        {
+            _adFreeCalculationsRemaining--;
+            if (_adFreeCalculationsRemaining == 0 && _adService.AdsEnabled)
+                _adService.ShowBanner();   // Belohnung aufgebraucht → Banner wieder einblenden
+            return;
+        }
+
         _calculationCount++;
         if (_calculationCount >= 3)
         {
             _calculationCount = 0;
-            await _rewardedAdService.ShowAdAsync("calculation_ad");
+            ShowAdOfferDialog = true;
         }
+    }
+
+    /// <summary>
+    /// Opt-in: Video ansehen → Banner für die nächsten 10 Berechnungen ausblenden.
+    /// </summary>
+    [RelayCommand]
+    private async Task WatchAd()
+    {
+        ShowAdOfferDialog = false;
+        try
+        {
+            var rewarded = await _rewardedAdService.ShowAdAsync("calculation_ad");
+            if (rewarded)
+            {
+                _adFreeCalculationsRemaining = 10;
+                _adService.HideBanner();
+            }
+            // false ohne Exception: Service feuert selbst AdUnavailable → OnAdUnavailable zeigt die Meldung
+        }
+        catch (Exception)
+        {
+            OnAdUnavailable();
+        }
+    }
+
+    [RelayCommand]
+    private void DeclineAdOffer()
+    {
+        ShowAdOfferDialog = false;
+        _calculationCount = 0;   // nächstes Angebot erst nach 3 weiteren Berechnungen
     }
 
     #endregion
@@ -653,14 +733,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     {
         if (_purchaseService.IsPremium)
         {
-            MessageRequested?.Invoke(_localization.GetString("AlreadyAdFree"), _localization.GetString("AlreadyAdFreeMessage"));
+            ShowMessage(_localization.GetString("AlreadyAdFree"), _localization.GetString("AlreadyAdFreeMessage"));
             return;
         }
 
         var success = await _purchaseService.PurchaseRemoveAdsAsync();
         if (success)
         {
-            MessageRequested?.Invoke(_localization.GetString("PurchaseSuccessful"), _localization.GetString("RemoveAdsPurchaseSuccessMessage"));
+            ShowMessage(_localization.GetString("PurchaseSuccessful"), _localization.GetString("RemoveAdsPurchaseSuccessMessage"));
             UpdateStatus();
         }
     }
@@ -674,10 +754,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         => IsAdBannerVisible = _adService.BannerVisible;
 
     private void OnChildMessage(string title, string msg)
-        => MessageRequested?.Invoke(title, msg);
+        => ShowMessage(title, msg);
 
     private void OnAdUnavailable()
-        => MessageRequested?.Invoke(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage);
+        => ShowMessage(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage);
 
     private void OnTemplateNavigation(string route)
     {
@@ -707,11 +787,35 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     /// <summary>
     /// Behandelt Android-Zurücktaste. Gibt true zurück wenn die App NICHT beendet werden soll.
-    /// Reihenfolge: Overlays → SaveDialog → Calculator → Tab → Home (Double-Tap-Exit)
+    /// Reihenfolge: Overlays → Projekt-Dialoge → SaveDialog → Calculator/Seiten-Dialoge → Tab → Home (Double-Tap-Exit)
     /// </summary>
     public bool HandleBackPressed()
     {
-        // 1. SaveDialog im aktuellen Calculator schließen
+        // 1. App-weite Overlays schließen (Message-Dialog, Ad-Angebot)
+        if (ShowMessageDialog)
+        {
+            ShowMessageDialog = false;
+            return true;
+        }
+        if (ShowAdOfferDialog)
+        {
+            DeclineAdOffer();
+            return true;
+        }
+
+        // 2. Projekt-Dialoge schließen (Lösch-Bestätigung, Notizen-Editor)
+        if (ProjectsViewModel.ShowDeleteConfirmation)
+        {
+            ProjectsViewModel.ShowDeleteConfirmation = false;
+            return true;
+        }
+        if (ProjectsViewModel.ShowNotesEditor)
+        {
+            ProjectsViewModel.ShowNotesEditor = false;
+            return true;
+        }
+
+        // 3. SaveDialog im aktuellen Calculator schließen
         if (CurrentCalculatorVm is ICalculatorViewModel calc)
         {
             if (calc.ShowSaveDialog)
@@ -720,26 +824,40 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 return true;
             }
 
-            // 3. Calculator schließen → zurück zur Tab-Ansicht
+            // 4. Calculator schließen → zurück zur Tab-Ansicht
             CurrentPage = null;
             return true;
         }
 
-        // Nicht-Calculator-Seiten (Templates, Quotes) → zurück zur Tab-Ansicht
+        // 5. Vorlagen-Seite: Anwenden-Dialog schließen statt Seite
+        if (CurrentPage == "ProjectTemplatesPage" && ProjectTemplatesViewModel.ShowApplyDialog)
+        {
+            ProjectTemplatesViewModel.ShowApplyDialog = false;
+            return true;
+        }
+
+        // 6. Angebots-Seite: GoBack-Logik des VM nutzen (behandelt IsEditing → Liste statt Seite schließen)
+        if (CurrentPage == "QuotePage")
+        {
+            QuoteViewModel.GoBackCommand.Execute(null);
+            return true;
+        }
+
+        // Nicht-Calculator-Seiten (Templates) → zurück zur Tab-Ansicht
         if (CurrentCalculatorVm != null)
         {
             CurrentPage = null;
             return true;
         }
 
-        // 4. Vom Projekt-/Settings-Tab zurück zum Home-Tab
+        // 7. Vom Projekt-/Settings-Tab zurück zum Home-Tab
         if (SelectedTab != 0)
         {
             SelectHomeTab();
             return true;
         }
 
-        // 5. Auf Home-Tab: Double-Tap-Exit
+        // 8. Auf Home-Tab: Double-Tap-Exit
         var msg = _localization.GetString("PressBackToExit") ?? "Press back again to exit";
         return _backPressHelper.HandleDoubleBack(msg);
     }

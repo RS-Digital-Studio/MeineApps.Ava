@@ -1672,6 +1672,18 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="AdInterstitialButton" xml:space="preserve">
     <value>Video schauen → Weiter</value>
   </data>
+  <data name="AdOfferTitle" xml:space="preserve">
+    <value>Werbebanner ausblenden?</value>
+  </data>
+  <data name="AdOfferMessage" xml:space="preserve">
+    <value>Kurzes Werbevideo ansehen und den Werbebanner für die nächsten 10 Berechnungen ausblenden?</value>
+  </data>
+  <data name="AdOfferWatchButton" xml:space="preserve">
+    <value>Video ansehen</value>
+  </data>
+  <data name="AdOfferDeclineButton" xml:space="preserve">
+    <value>Nein, danke</value>
+  </data>
   <data name="AccessGranted" xml:space="preserve">
     <value>Zugang freigeschaltet!</value>
   </data>

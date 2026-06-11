@@ -8,6 +8,9 @@ namespace HandwerkerRechner.Services;
 /// </summary>
 public interface IProjectTemplateService
 {
+    /// <summary>Wird ausgelöst, wenn das Speichern fehlschlägt (z.B. Speicher voll/Schreibschutz).</summary>
+    event Action? SaveFailed;
+
     /// <summary>Alle Vorlagen (eingebaut + benutzerdefiniert)</summary>
     Task<List<ProjectTemplate>> GetAllTemplatesAsync();
 

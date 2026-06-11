@@ -128,7 +128,7 @@
                         <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
                       </ItemsControl.ItemsPanel>
                       <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="vm:FavoriteItem">
                           <Button Background="Transparent" Padding="0"
                                   Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).OpenFavoriteCommand}"
                                   CommandParameter="{Binding Route}">
@@ -1500,6 +1500,80 @@
                                   x:Name="FloatingTextCanvas"
                                   Grid.RowSpan="3" ZIndex="15"
                                   IsHitTestVisible="False" />
+
+    <!-- Ad-Opt-in Overlay (Video ansehen → Banner für 10 Berechnungen ausblenden) -->
+    <Border AutomationProperties.AutomationId="Main_AdOfferOverlay"
+            Grid.RowSpan="3" ZIndex="200"
+            Background="#80000000"
+            IsVisible="{Binding ShowAdOfferDialog}">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="340"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock Text="{loc:Translate AdOfferTitle}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     TextWrapping="Wrap" TextAlignment="Center"
+                     HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Translate AdOfferMessage}"
+                     FontSize="14"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap" TextAlignment="Center" />
+          <Grid ColumnDefinitions="*,12,*">
+            <Button AutomationProperties.AutomationId="MainAdOfferDeclineButton"
+                    Grid.Column="0"
+                    Classes="Outlined"
+                    Command="{Binding DeclineAdOfferCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate AdOfferDeclineButton}" />
+            <Button AutomationProperties.AutomationId="MainAdOfferWatchButton"
+                    Grid.Column="2"
+                    Classes="Primary"
+                    Command="{Binding WatchAdCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate AdOfferWatchButton}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- Message-Dialog Overlay (MessageRequested → Inline-Anzeige, kein Avalonia-Popup) -->
+    <Border AutomationProperties.AutomationId="Main_MessageOverlay"
+            Grid.RowSpan="3" ZIndex="210"
+            Background="#80000000"
+            IsVisible="{Binding ShowMessageDialog}">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="340"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock AutomationProperties.AutomationId="MainMessageTitleText"
+                     Text="{Binding MessageDialogTitle}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     TextWrapping="Wrap" TextAlignment="Center"
+                     HorizontalAlignment="Center" />
+          <TextBlock AutomationProperties.AutomationId="MainMessageBodyText"
+                     Text="{Binding MessageDialogText}"
+                     FontSize="14"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap" TextAlignment="Center" />
+          <Button AutomationProperties.AutomationId="MainMessageOkButton"
+                  Classes="Primary"
+                  Command="{Binding DismissMessageCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Content="{loc:Translate OK}" />
+        </StackPanel>
+      </Border>
+    </Border>
 
   </Grid>
 

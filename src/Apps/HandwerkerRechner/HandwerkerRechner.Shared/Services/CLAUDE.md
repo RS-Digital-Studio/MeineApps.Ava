@@ -10,11 +10,11 @@ registriert (Ausnahme: `IPhotoPickerService` per Factory). Generische Service-Pa
 |-------|-------|
 | `ICalculatorFactoryService.cs` / `CalculatorFactoryService.cs` | Route → `Func<ObservableObject>` Dictionary für alle 19 Calculator-VMs. Einzige Stelle wo Routen definiert sind. |
 | `IProjectService.cs` / `ProjectService.cs` | JSON-Persistenz für `Project`-Objekte (inkl. Foto-Pfad-Liste). `SemaphoreSlim`-Lock + In-Memory-Cache. `SaveFailed`-Event bei I/O-Fehler. |
-| `IProjectTemplateService.cs` / `ProjectTemplateService.cs` | Eingebaute Templates (hardcodiert) + benutzerdefinierte Templates (JSON-Persistenz). Property-Key-Konsistenz mit Calculator-VM `LoadFromProjectIdAsync`. |
-| `IQuoteService.cs` / `QuoteService.cs` | Angebots-CRUD (JSON-Persistenz, `SemaphoreSlim`), `GenerateQuoteNumberAsync` (Format `"A-YYYY-NNN"`). `SaveFailed`-Event. Kein PDF-Export im Service — Export liegt in `IMaterialExportService`. |
+| `IProjectTemplateService.cs` / `ProjectTemplateService.cs` | Eingebaute Templates (hardcodiert) + benutzerdefinierte Templates (JSON-Persistenz, `SemaphoreSlim` + In-Memory-Cache). `SaveFailed`-Event bei I/O-Fehler. `GetAllTemplatesAsync` gibt eine Kopie heraus (Aufrufer enumerieren nie den Cache). Property-Key-Konsistenz mit Calculator-VM `LoadFromProjectIdAsync`. |
+| `IQuoteService.cs` / `QuoteService.cs` | Angebots-CRUD (JSON-Persistenz, `SemaphoreSlim`), `GenerateQuoteNumberAsync` (Format `"A-YYYY-NNN"`, **lokales Jahr** — bewusste Ausnahme vom UtcNow-Pattern, Geschäftsdokument). `SaveFailed`-Event. Kein PDF-Export im Service — Export liegt in `IMaterialExportService`. |
 | `IFavoritesService.cs` / `FavoritesService.cs` | Favorisierte Calculator-Routes; persistiert als kommagetrennte Liste in `IPreferencesService`. `FavoritesChanged`-Event, `IsFavorite(key)`, `Toggle(key)`. |
 | `IMaterialExportService.cs` / `MaterialExportService.cs` | PDF (PdfSharpCore A4, mehrere Seiten mit `EnsureSpace`) + CSV (Semikolon, UTF-8-BOM). Injiziert `ILocalizationService` + `IFileShareService`. Formula-Injection-Schutz in `EscapeCsv()`. |
-| `IMaterialPriceService.cs` / `MaterialPriceService.cs` | Regionale Durchschnittspreise + benutzerdefinierte Überschreibungen (Preferences). Filter nach Kategorie, Reset-Methoden. |
+| `IMaterialPriceService.cs` / `MaterialPriceService.cs` | Regionale Durchschnittspreise (`decimal`) + benutzerdefinierte Überschreibungen (JSON-Persistenz, `SemaphoreSlim` um Mutation + Save). `CustomPrice` ist `decimal?` (null = nicht überschrieben; Altdaten-Sentinel `-1` wird beim Laden zu null normalisiert). `SaveFailed`-Event bei I/O-Fehler. Filter nach Kategorie, Reset-Methoden. |
 | `IPhotoPickerService.cs` (Interface) | Foto-Auswahl-Kontrakt. Desktop-Impl: `DesktopPhotoPickerService` (StorageProvider, kopiert in `LocalApplicationData/MeineApps/HandwerkerRechner/photos/` mit GUID-Dateinamen). Android-Override via `PhotoPickerServiceFactory`. |
 
 ## Kritische Patterns
@@ -39,6 +39,20 @@ Built-in Templates in `ProjectTemplateService` müssen EXAKT die Property-Keys v
 die Calculator-VMs in `LoadFromProjectIdAsync` via `project.GetValue<T>("Key")` erwarten.
 `ProjectTemplatesViewModel.ParseTemplateValue` castet String-Defaults nach `bool`/`int`/`double`
 damit der JSON-Roundtrip funktioniert — Template-Defaults werden als strings gespeichert.
+
+### Korrupte JSON-Dateien — Backup statt Datenverlust
+
+`ProjectService`, `QuoteService` und `ProjectTemplateService` sichern bei einem Parse-Fehler
+die defekte Datei nach `<name>.json.bak` (Best Effort, `File.Copy overwrite:true`), bevor der
+Cache auf `[]` zurückgesetzt wird — der nächste Save zerstört die Originaldaten so nicht endgültig.
+
+### SaveFailed — UI-Benachrichtigung bei Speicherfehlern
+
+Alle vier persistierenden Services (`ProjectService`, `QuoteService`, `ProjectTemplateService`,
+`MaterialPriceService`) lösen bei einem I/O-Fehler `SaveFailed` aus. Abonniert in den
+Business-VMs (`ProjectsViewModel`, `QuoteViewModel`, `ProjectTemplatesViewModel`) und auf
+`MessageRequested` geroutet. `MaterialPriceService` hat aktuell keinen schreibenden VM-Konsumenten —
+das Event ist Teil des Interface-Vertrags und wird beim ersten Schreib-Konsumenten abonniert.
 
 ### MaterialExportService — Formula-Injection
 

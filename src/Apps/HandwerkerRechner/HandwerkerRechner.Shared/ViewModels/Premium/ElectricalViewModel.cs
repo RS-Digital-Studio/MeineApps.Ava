@@ -67,7 +67,7 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
         _priceService = priceService;
 
         // Standard-Materialpreis laden
-        CablePrice = _priceService.GetPrice("cable_2_5mm")?.EffectivePrice ?? 0;
+        CablePrice = (double)(_priceService.GetPrice("cable_2_5mm")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

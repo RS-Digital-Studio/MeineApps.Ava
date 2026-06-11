@@ -50,7 +50,8 @@
       <ScrollViewer AutomationProperties.AutomationId="History_ScrollList"
                     IsVisible="{Binding !IsEmpty}"
                     VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="12">
+        <!-- Bottom-Margin 200dp: Content darf nicht hinter dem Ad-Banner verschwinden (Pattern wie ProjectsView) -->
+        <StackPanel Spacing="12" Margin="0,0,0,200">
 
 
           <!-- Gruppen-Liste -->
@@ -152,9 +153,6 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-
-          <!-- Abstand unten (200dp für Ad-Banner Overlay + Scroll-Komfort) -->
-          <Border Height="200" />
 
         </StackPanel>
       </ScrollViewer>

@@ -48,9 +48,9 @@ public sealed partial class GardenViewModel : ViewModelBase, IDisposable, ICalcu
         _priceService = priceService;
 
         // Standard-Materialpreise laden
-        PricePerStone = _priceService.GetPrice("paving_standard")?.EffectivePrice ?? 0;
-        PricePerBag = _priceService.GetPrice("soil_bag")?.EffectivePrice ?? 0;
-        PricePerSqmLiner = _priceService.GetPrice("pond_liner")?.EffectivePrice ?? 0;
+        PricePerStone = (double)(_priceService.GetPrice("paving_standard")?.EffectivePrice ?? 0);
+        PricePerBag = (double)(_priceService.GetPrice("soil_bag")?.EffectivePrice ?? 0);
+        PricePerSqmLiner = (double)(_priceService.GetPrice("pond_liner")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

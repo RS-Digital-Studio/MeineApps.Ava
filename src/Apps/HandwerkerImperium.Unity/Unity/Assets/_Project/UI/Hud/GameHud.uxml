@@ -17,6 +17,7 @@
                 <ui:Label name="city-value" text="Hofstadt" class="stat-title" picking-mode="Ignore"/>
                 <ui:Label name="star-value" text="Stern 1/5" class="stat-value" picking-mode="Ignore"/>
             </ui:VisualElement>
+            <ui:Button name="prestige-button" text="Umzug bereit!" class="prestige-button prestige-button--hidden"/>
         </ui:VisualElement>
         <ui:VisualElement name="tasks-panel" class="tasks-panel" picking-mode="Ignore">
             <ui:Label text="Tagesaufgaben" class="panel-title" picking-mode="Ignore"/>
@@ -31,7 +32,22 @@
                 <ui:Label text="Willkommen zurück!" class="modal-title"/>
                 <ui:Label text="Während du weg warst, haben deine Arbeiter verdient:" class="modal-text"/>
                 <ui:Label name="offline-amount" text="0" class="modal-amount"/>
-                <ui:Button name="offline-continue" text="Einsammeln" class="modal-button"/>
+                <ui:VisualElement class="modal-button-row">
+                    <ui:Button name="offline-double" text="Verdoppeln (Werbung)" class="modal-button modal-button--gold"/>
+                    <ui:Button name="offline-continue" text="Einsammeln" class="modal-button"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <!-- Prestige-Modal: der grosse Akt-Abschluss (Umzug in die naechste Stadt) -->
+        <ui:VisualElement name="prestige-overlay" class="modal-overlay modal-overlay--hidden">
+            <ui:VisualElement name="prestige-card" class="modal-card">
+                <ui:Label text="Bereit für den Umzug!" class="modal-title"/>
+                <ui:Label text="Deine Stadt glänzt mit 5 Sternen. In der nächsten Stadt beginnst du neu — dein permanenter Einkommens-Multiplikator und alle Meisterschafts-Boni bleiben für immer." class="modal-text"/>
+                <ui:Label name="prestige-bonus" text="" class="modal-amount"/>
+                <ui:VisualElement class="modal-button-row">
+                    <ui:Button name="prestige-confirm" text="Umziehen" class="modal-button modal-button--gold"/>
+                    <ui:Button name="prestige-cancel" text="Noch bleiben" class="modal-button"/>
+                </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

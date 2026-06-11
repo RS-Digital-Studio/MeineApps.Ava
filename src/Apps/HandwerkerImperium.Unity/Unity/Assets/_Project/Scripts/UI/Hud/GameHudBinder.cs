@@ -40,8 +40,9 @@ namespace HandwerkerImperium.UI.Hud
             { "dt_cash_10000", "10.000 Geld ansammeln" },
         };
 
-        private Label _money, _income, _gems, _city, _star, _toast, _offlineAmount;
-        private VisualElement _offlineOverlay;
+        private Label _money, _income, _gems, _city, _star, _toast, _offlineAmount, _prestigeBonus;
+        private VisualElement _offlineOverlay, _prestigeOverlay;
+        private Button _prestigeButton;
         private readonly Label[] _tasks = new Label[3];
         private float _slowTimer;
         private float _toastTimer;
@@ -63,6 +64,32 @@ namespace HandwerkerImperium.UI.Hud
             var continueButton = root.Q<Button>("offline-continue");
             if (continueButton != null)
                 continueButton.clicked += () => _offlineOverlay?.AddToClassList("modal-overlay--hidden");
+            var doubleButton = root.Q<Button>("offline-double");
+            if (doubleButton != null)
+                doubleButton.clicked += () =>
+                {
+                    decimal extra = controller != null ? controller.DoubleOfflineOnce() : 0m;
+                    if (extra > 0m && _offlineAmount != null)
+                        _offlineAmount.text = "+" + MoneyFormat.Short(extra * 2m);
+                    doubleButton.SetEnabled(false); // einmalig je Start
+                };
+
+            _prestigeButton = root.Q<Button>("prestige-button");
+            _prestigeOverlay = root.Q<VisualElement>("prestige-overlay");
+            _prestigeBonus = root.Q<Label>("prestige-bonus");
+            if (_prestigeButton != null)
+                _prestigeButton.clicked += OpenPrestigeModal;
+            var prestigeConfirm = root.Q<Button>("prestige-confirm");
+            if (prestigeConfirm != null)
+                prestigeConfirm.clicked += () =>
+                {
+                    if (controller != null && controller.TryPrestige())
+                        _prestigeOverlay?.AddToClassList("modal-overlay--hidden");
+                };
+            var prestigeCancel = root.Q<Button>("prestige-cancel");
+            if (prestigeCancel != null)
+                prestigeCancel.clicked += () => _prestigeOverlay?.AddToClassList("modal-overlay--hidden");
+
             ApplySafeArea(root.Q<VisualElement>("top-bar"));
         }
 
@@ -93,6 +120,17 @@ namespace HandwerkerImperium.UI.Hud
                 _city.text = "Stadt " + (m.Meta.CityIndex + 1);
                 _star.text = "Stern " + m.Meta.CurrentStar + "/5";
                 UpdateTasks(m);
+
+                // Prestige-Button erscheint, sobald der Umzug möglich ist (5★, Limit nicht erreicht)
+                if (_prestigeButton != null)
+                {
+                    bool can = controller.CanPrestige();
+                    if (can == _prestigeButton.ClassListContains("prestige-button--hidden"))
+                    {
+                        if (can) _prestigeButton.RemoveFromClassList("prestige-button--hidden");
+                        else _prestigeButton.AddToClassList("prestige-button--hidden");
+                    }
+                }
             }
 
             UpdateToast();
@@ -141,6 +179,20 @@ namespace HandwerkerImperium.UI.Hud
                 if (_toastTimer <= 0f)
                     _toast.AddToClassList("story-toast--hidden");
             }
+        }
+
+        /// <summary>Öffnet das Prestige-Modal mit dem konkreten Multiplikator-Sprung (×alt → ×neu).</summary>
+        private void OpenPrestigeModal()
+        {
+            if (controller == null || controller.Model == null || _prestigeOverlay == null) return;
+            var meta = controller.Model.Meta;
+            var stages = controller.Balancing.Prestige.StageMultipliers;
+            if (_prestigeBonus != null && meta.PrestigeCount >= 0 && meta.PrestigeCount < stages.Count)
+            {
+                decimal next = meta.PrestigeMultiplier * stages[meta.PrestigeCount];
+                _prestigeBonus.text = "×" + meta.PrestigeMultiplier.ToString("0.#") + "  →  ×" + next.ToString("0.#");
+            }
+            _prestigeOverlay.RemoveFromClassList("modal-overlay--hidden");
         }
 
         /// <summary>Notch/Safe-Area (CLAUDE.md §8): obere Leiste unter die Aussparung schieben.</summary>

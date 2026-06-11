@@ -39,6 +39,20 @@ namespace HandwerkerImperium.Game
         public GameBalancing Balancing => _bal;
         /// <summary>Idle-Balancing (für die physische 3D-Loop-Kopplung, siehe GreyboxGameController).</summary>
         public IdleBalancing IdleBalancing => _idleBal;
+
+        private bool _offlineDoubled;
+
+        /// <summary>
+        /// Verdoppelt den Offline-Verdienst dieses Starts einmalig (UI: "Verdoppeln per Werbung" —
+        /// bis zum Ad-SDK ein direkter Stub). Liefert den zusätzlich gutgeschriebenen Betrag.
+        /// </summary>
+        public decimal DoubleOfflineOnce()
+        {
+            if (_offlineDoubled || LastOfflineEarned <= 0m || _model == null) return 0m;
+            _offlineDoubled = true;
+            _model.Idle.Money += LastOfflineEarned;
+            return LastOfflineEarned;
+        }
         public decimal LastOfflineEarned { get; private set; }
         public string LatestStoryBeat { get; private set; } = "";
         public int CollectedToolsCount => _model != null ? _model.CollectedMasterTools.Count : 0;

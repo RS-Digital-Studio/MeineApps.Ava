@@ -1,6 +1,8 @@
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using HandwerkerImperium.Game;
 using HandwerkerImperium.Domain.Idle;
 
@@ -63,21 +65,18 @@ namespace HandwerkerImperium.Editor
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            // Licht (warm, Werkstatt-Nachmittag)
+            // Licht (warm, Werkstatt-Nachmittag) mit weichen Schatten
             var lightGo = new GameObject("Directional Light");
             var light = lightGo.AddComponent<Light>();
             light.type = LightType.Directional;
             light.intensity = 1.15f;
             light.color = new Color(1.0f, 0.96f, 0.88f);
+            light.shadows = LightShadows.Soft;
+            light.shadowStrength = 0.75f;
             lightGo.transform.rotation = Quaternion.Euler(48f, -32f, 0f);
 
-            // Boden + warmes Ambiente
-            var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            ground.name = "Ground";
-            ground.transform.localScale = new Vector3(5.5f, 1f, 5.5f);
-            Paint(ground, new Color(0.62f, 0.55f, 0.45f)); // warmer Hof-Boden
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.52f, 0.50f, 0.47f); // weiche warme Schatten
+            // Landschaft: Himmel, Nebel-Tiefe, Gras-Welt, Pflaster-Hof + Plaza, Bäume/Hügel/Felsen
+            BuildEnvironment(light);
 
             // Runtime (einziger Ticker + HMAC-Save) + Diagnose-HUD
             var runtimeGo = new GameObject("RuntimeGameController");
@@ -149,11 +148,11 @@ namespace HandwerkerImperium.Editor
             var camGo = new GameObject("Main Camera");
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.55f, 0.70f, 0.82f);
+            cam.clearFlags = CameraClearFlags.Skybox; // echter Horizont statt Solid-Color
             cam.fieldOfView = 45f; // enger als der 60er-Default — weniger Verzerrung, Figuren größer
             camGo.AddComponent<AudioListener>();
             var follow = camGo.AddComponent<FollowCamera>();
+            BuildPostProcessing(cam);
 
             // Tresen + Kunde (echtes Modell) + Cash-Spawn
             var counterGo = MakeBox("Counter", new Vector3(0f, 0.5f, 0f), new Vector3(3.2f, 1f, 1.4f), new Color(0.38f, 0.30f, 0.23f), trigger: true);
@@ -195,8 +194,8 @@ namespace HandwerkerImperium.Editor
             var idleBalancing = idleConfig.ToDomain(); // für die Plot-Preise an den Bauzäunen
             int stationCount = stationModels.Length;
             var stationPos = new Vector3[stationCount];
-            for (int i = 0; i < 5; i++) stationPos[i] = new Vector3(-16f + i * 8f, 0f, 9f);    // Nord-Reihe
-            for (int i = 5; i < 10; i++) stationPos[i] = new Vector3(-16f + (i - 5) * 8f, 0f, -9f); // Süd-Reihe
+            for (int i = 0; i < 5; i++) stationPos[i] = new Vector3(-16f + i * 8f, 0f, 10f);    // Nord-Reihe
+            for (int i = 5; i < 10; i++) stationPos[i] = new Vector3(-16f + (i - 5) * 8f, 0f, -10f); // Süd-Reihe
 
             var fencePalette = new Color(0.85f, 0.68f, 0.20f); // Bauzaun-Gelb
             var stationTransforms = new Transform[stationCount];
@@ -310,6 +309,268 @@ namespace HandwerkerImperium.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log($"[GameSceneBuilder] Fertig: {ScenePath} — physischer Loop gekoppelt an den Runtime (echte 3D-Assets).");
+        }
+
+        // ── Landschaft & Stimmung ───────────────────────────────────────────
+
+        /// <summary>
+        /// Baut die komplette Kulisse: prozedurale Skybox (warmer Nachmittag) + Distanz-Nebel,
+        /// Gras-Welt (200 m, prozedurale Textur), Pflaster-Hof mit Plaza-Rondell um den Tresen,
+        /// Baum-Ring + Horizont-Hügel + Felsen als Rahmen. Alle Texturen/Materialien werden
+        /// deterministisch generiert und als Assets persistiert (Szene-Referenzen brauchen Assets).
+        /// </summary>
+        private static void BuildEnvironment(Light sun)
+        {
+            // Himmel + Atmosphäre
+            var sky = new Material(Shader.Find("Skybox/Procedural"));
+            sky.SetFloat("_SunSize", 0.045f);
+            sky.SetFloat("_AtmosphereThickness", 0.95f);
+            sky.SetColor("_SkyTint", new Color(0.50f, 0.66f, 0.86f));
+            sky.SetColor("_GroundColor", new Color(0.58f, 0.54f, 0.46f));
+            sky.SetFloat("_Exposure", 1.25f);
+            SaveEnvAsset(sky, "Mat_Sky.mat");
+            RenderSettings.skybox = sky;
+            RenderSettings.sun = sun;
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.58f, 0.64f, 0.72f);
+            RenderSettings.ambientEquatorColor = new Color(0.56f, 0.53f, 0.48f);
+            RenderSettings.ambientGroundColor = new Color(0.42f, 0.38f, 0.33f);
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogStartDistance = 55f;
+            RenderSettings.fogEndDistance = 170f;
+            RenderSettings.fogColor = new Color(0.74f, 0.80f, 0.88f); // Richtung Horizont-Farbe
+
+            var envRoot = new GameObject("Environment");
+
+            // Gras-Welt (trägt den CharacterController)
+            var grass = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            grass.name = "Ground_Grass";
+            grass.transform.SetParent(envRoot.transform, false);
+            grass.transform.localScale = new Vector3(20f, 1f, 20f); // 200 m
+            var grassMat = MakeTexturedMaterial(MakeGrassTexture(), Color.white, new Vector2(56f, 56f), "Mat_Grass");
+            grass.GetComponent<MeshRenderer>().sharedMaterial = grassMat;
+
+            // Pflaster-Hof: deckt den ganzen Spielbereich (Stationen ±16/±10, Wahrzeichen ±12 und z=15)
+            var yard = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            yard.name = "Ground_Yard";
+            Object.DestroyImmediate(yard.GetComponent<Collider>()); // rein visuell, 4 cm — Gras-Plane trägt
+            yard.transform.SetParent(envRoot.transform, false);
+            yard.transform.localScale = new Vector3(48f, 0.04f, 36f);
+            yard.transform.position = new Vector3(0f, 0.02f, 0.5f);
+            var cobbleTex = MakeCobbleTexture();
+            yard.GetComponent<MeshRenderer>().sharedMaterial =
+                MakeTexturedMaterial(cobbleTex, Color.white, new Vector2(16f, 12f), "Mat_Cobble_Yard");
+
+            // Plaza-Rondell um den Tresen (hellerer Blickfang im Zentrum)
+            var plaza = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            plaza.name = "Ground_Plaza";
+            Object.DestroyImmediate(plaza.GetComponent<Collider>());
+            plaza.transform.SetParent(envRoot.transform, false);
+            plaza.transform.localScale = new Vector3(13f, 0.025f, 13f);
+            plaza.transform.position = new Vector3(0f, 0.045f, 0f);
+            plaza.GetComponent<MeshRenderer>().sharedMaterial =
+                MakeTexturedMaterial(cobbleTex, new Color(1.08f, 1.04f, 0.96f), new Vector2(5f, 5f), "Mat_Cobble_Plaza");
+
+            // Vegetation + Horizont (deterministisch — gleicher Build, gleiche Welt)
+            Random.InitState(20260611);
+            for (int i = 0; i < 22; i++)
+            {
+                float angle = (i / 22f) * Mathf.PI * 2f + Random.Range(-0.10f, 0.10f);
+                float radius = Random.Range(30f, 46f);
+                var pos = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                MakeTree(envRoot.transform, pos, Random.Range(0.85f, 1.45f));
+            }
+            for (int i = 0; i < 10; i++)
+            {
+                float angle = (i / 10f) * Mathf.PI * 2f + Random.Range(-0.2f, 0.2f);
+                float radius = Random.Range(70f, 95f);
+                MakeHill(envRoot.transform, new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius),
+                    Random.Range(18f, 34f), Random.Range(6f, 12f));
+            }
+            for (int i = 0; i < 12; i++)
+            {
+                float angle = Random.Range(0f, Mathf.PI * 2f);
+                float radius = Random.Range(27f, 42f);
+                MakeRock(envRoot.transform, new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius),
+                    Random.Range(0.35f, 0.9f));
+            }
+        }
+
+        /// <summary>Stilisierter Low-Poly-Baum: Stamm + 2-3 versetzte Kronen-Kugeln mit Grün-Variation.</summary>
+        private static void MakeTree(Transform parent, Vector3 pos, float scale)
+        {
+            var root = new GameObject("Tree");
+            root.transform.SetParent(parent, false);
+            root.transform.position = pos;
+            root.transform.localScale = Vector3.one * scale;
+            root.transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+
+            var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            Object.DestroyImmediate(trunk.GetComponent<Collider>());
+            trunk.name = "Trunk";
+            trunk.transform.SetParent(root.transform, false);
+            trunk.transform.localScale = new Vector3(0.45f, 1.1f, 0.45f);
+            trunk.transform.localPosition = new Vector3(0f, 1.1f, 0f);
+            Paint(trunk, new Color(0.42f, 0.30f, 0.20f));
+
+            float hueShift = Random.Range(-0.06f, 0.06f);
+            var leaf = new Color(0.30f + hueShift, 0.52f + hueShift * 0.5f, 0.26f);
+            int crowns = Random.Range(2, 4);
+            for (int i = 0; i < crowns; i++)
+            {
+                var crown = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                Object.DestroyImmediate(crown.GetComponent<Collider>());
+                crown.name = "Crown";
+                crown.transform.SetParent(root.transform, false);
+                float s = Random.Range(1.6f, 2.4f);
+                crown.transform.localScale = Vector3.one * s;
+                crown.transform.localPosition = new Vector3(Random.Range(-0.5f, 0.5f), 2.3f + i * 0.7f, Random.Range(-0.5f, 0.5f));
+                Paint(crown, new Color(leaf.r + i * 0.025f, leaf.g + i * 0.03f, leaf.b));
+            }
+        }
+
+        /// <summary>Weicher Horizont-Hügel (plattgedrückte Kugel, sitzt im Distanz-Nebel).</summary>
+        private static void MakeHill(Transform parent, Vector3 pos, float width, float height)
+        {
+            var hill = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            Object.DestroyImmediate(hill.GetComponent<Collider>());
+            hill.name = "Hill";
+            hill.transform.SetParent(parent, false);
+            hill.transform.position = pos;
+            hill.transform.localScale = new Vector3(width, height * 2f, width);
+            hill.transform.position = new Vector3(pos.x, 0f, pos.z); // Kugel-Mitte auf 0 -> Halbkugel ragt heraus
+            Paint(hill, new Color(0.38f, 0.50f, 0.30f));
+        }
+
+        /// <summary>Kleiner Deko-Felsen (gestauchte, gedrehte Kugel).</summary>
+        private static void MakeRock(Transform parent, Vector3 pos, float scale)
+        {
+            var rock = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            Object.DestroyImmediate(rock.GetComponent<Collider>());
+            rock.name = "Rock";
+            rock.transform.SetParent(parent, false);
+            rock.transform.position = pos + new Vector3(0f, scale * 0.25f, 0f);
+            rock.transform.localScale = new Vector3(scale * 1.4f, scale * 0.8f, scale);
+            rock.transform.rotation = Quaternion.Euler(Random.Range(-12f, 12f), Random.Range(0f, 360f), Random.Range(-12f, 12f));
+            Paint(rock, new Color(0.55f, 0.53f, 0.50f));
+        }
+
+        /// <summary>URP-Post-Processing: Bloom + Vignette + ACES-Tonemapping + warme Farb-Justage (AAA-Look).</summary>
+        private static void BuildPostProcessing(Camera cam)
+        {
+            string path = SceneDir + "/Game_PostProfile.asset";
+            AssetDatabase.DeleteAsset(path); // frisch erzeugen — Sub-Assets sauber halten
+            var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            AssetDatabase.CreateAsset(profile, path);
+
+            var bloom = profile.Add<Bloom>();
+            bloom.name = "Bloom";
+            bloom.intensity.Override(0.45f);
+            bloom.threshold.Override(1.05f);
+            AssetDatabase.AddObjectToAsset(bloom, profile);
+
+            var vignette = profile.Add<Vignette>();
+            vignette.name = "Vignette";
+            vignette.intensity.Override(0.24f);
+            vignette.smoothness.Override(0.42f);
+            AssetDatabase.AddObjectToAsset(vignette, profile);
+
+            var tonemapping = profile.Add<Tonemapping>();
+            tonemapping.name = "Tonemapping";
+            tonemapping.mode.Override(TonemappingMode.ACES);
+            AssetDatabase.AddObjectToAsset(tonemapping, profile);
+
+            var colors = profile.Add<ColorAdjustments>();
+            colors.name = "ColorAdjustments";
+            colors.saturation.Override(10f);
+            colors.postExposure.Override(0.08f);
+            colors.colorFilter.Override(new Color(1.0f, 0.985f, 0.955f)); // warmer Hauch
+            AssetDatabase.AddObjectToAsset(colors, profile);
+
+            AssetDatabase.SaveAssets();
+
+            var volGo = new GameObject("PostProcessing");
+            var vol = volGo.AddComponent<Volume>();
+            vol.isGlobal = true;
+            vol.sharedProfile = profile;
+
+            var camData = cam.GetUniversalAdditionalCameraData();
+            camData.renderPostProcessing = true;
+            camData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+        }
+
+        /// <summary>Prozedurale Gras-Textur (Perlin-Mix zweier Grüntöne + feine Sprenkel, kachelbar genug bei niedrigem Kontrast).</summary>
+        private static Texture2D MakeGrassTexture()
+        {
+            const int size = 256;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, true);
+            var dark = new Color(0.33f, 0.47f, 0.24f);
+            var light = new Color(0.43f, 0.57f, 0.30f);
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float n = Mathf.PerlinNoise(x * 0.045f, y * 0.045f);
+                    float speckle = (Mathf.PerlinNoise(x * 0.35f + 64f, y * 0.35f + 64f) - 0.5f) * 0.09f;
+                    var c = Color.Lerp(dark, light, n);
+                    tex.SetPixel(x, y, new Color(c.r + speckle, c.g + speckle, c.b + speckle * 0.5f));
+                }
+            }
+            tex.Apply();
+            tex.wrapMode = TextureWrapMode.Repeat;
+            return tex;
+        }
+
+        /// <summary>Prozedurale Pflaster-Textur: periodisches Stein-Raster (kachelt sauber), Fugen + Helligkeit je Stein.</summary>
+        private static Texture2D MakeCobbleTexture()
+        {
+            const int size = 256;
+            const int tiles = 5;           // Steine pro Kachel-Kante
+            const int tile = size / tiles; // Pixel pro Stein
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, true);
+            var grout = new Color(0.40f, 0.37f, 0.33f);
+            var stone = new Color(0.62f, 0.58f, 0.52f);
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    int row = y / tile;
+                    // Halber Versatz jeder zweiten Reihe (läufer-verband, bleibt periodisch)
+                    int xs = (x + (row % 2) * (tile / 2)) % size;
+                    int col = xs / tile;
+                    int lx = xs % tile, ly = y % tile;
+                    bool isGrout = lx < 2 || ly < 2 || lx > tile - 3 || ly > tile - 3;
+                    if (isGrout) { tex.SetPixel(x, y, grout); continue; }
+                    // Pseudo-zufällige Stein-Helligkeit (deterministisch aus Zelle)
+                    float h = (((col * 73856093) ^ (row * 19349663)) & 0xFFFF) / 65535f;
+                    float shade = 0.92f + h * 0.16f;
+                    float wear = (Mathf.PerlinNoise(x * 0.18f, y * 0.18f) - 0.5f) * 0.06f;
+                    tex.SetPixel(x, y, new Color(stone.r * shade + wear, stone.g * shade + wear, stone.b * shade + wear));
+                }
+            }
+            tex.Apply();
+            tex.wrapMode = TextureWrapMode.Repeat;
+            return tex;
+        }
+
+        /// <summary>Material der aktiven Pipeline mit generierter Textur; Textur + Material werden als Assets persistiert.</summary>
+        private static Material MakeTexturedMaterial(Texture2D tex, Color tint, Vector2 tiling, string assetName)
+        {
+            SaveEnvAsset(tex, assetName + "_Tex.asset");
+            var mat = MakePipelineMaterial(tint);
+            mat.mainTexture = tex;
+            mat.mainTextureScale = tiling;
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.12f); // matt — Boden soll nicht glänzen
+            SaveEnvAsset(mat, assetName + ".mat");
+            return mat;
+        }
+
+        private static void SaveEnvAsset(Object obj, string fileName)
+        {
+            string path = $"{PrefabDir}/{fileName}";
+            AssetDatabase.DeleteAsset(path); // Rebuild erzeugt frisch (Szene wird ohnehin neu gebaut)
+            AssetDatabase.CreateAsset(obj, path);
         }
 
         // ── Modell-Helfer ───────────────────────────────────────────────────
@@ -526,15 +787,40 @@ namespace HandwerkerImperium.Editor
 
         // ── Szene-Bausteine (wie GreyboxSceneBuilder) ───────────────────────
 
+        /// <summary>
+        /// Pad-Visual auf AAA-Niveau statt flacher Farbscheibe: heller Stein-Sockel + farbiger
+        /// Akzent-Ring + leuchtendes Zentrum (Emission über Base-Color-Aufhellung).
+        /// </summary>
+        private static void MakePadVisual(Transform parent, Color accent)
+        {
+            var socket = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            socket.name = "Socket";
+            Object.DestroyImmediate(socket.GetComponent<Collider>());
+            socket.transform.SetParent(parent, false);
+            socket.transform.localScale = new Vector3(2.3f, 0.05f, 2.3f);
+            Paint(socket, new Color(0.74f, 0.71f, 0.66f));
+
+            var ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            ring.name = "Ring";
+            Object.DestroyImmediate(ring.GetComponent<Collider>());
+            ring.transform.SetParent(parent, false);
+            ring.transform.localScale = new Vector3(1.9f, 0.055f, 1.9f);
+            ring.transform.localPosition = new Vector3(0f, 0.02f, 0f);
+            Paint(ring, accent);
+
+            var core = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            core.name = "Core";
+            Object.DestroyImmediate(core.GetComponent<Collider>());
+            core.transform.SetParent(parent, false);
+            core.transform.localScale = new Vector3(1.3f, 0.06f, 1.3f);
+            core.transform.localPosition = new Vector3(0f, 0.035f, 0f);
+            Paint(core, Color.Lerp(accent, Color.white, 0.45f));
+        }
+
         private static void MakeUpgradePad(string name, Vector3 pos, UpgradeTrack track, GreyboxGameController controller, Color color)
         {
             var pad = MakeTriggerZone(name, pos, new Vector3(2.5f, 1.5f, 2.5f));
-            var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            marker.name = "Marker";
-            marker.transform.SetParent(pad.transform, false);
-            marker.transform.localScale = new Vector3(2f, 0.1f, 2f);
-            Object.DestroyImmediate(marker.GetComponent<Collider>());
-            Paint(marker, color);
+            MakePadVisual(pad.transform, color);
             var view = pad.AddComponent<UpgradePadView>();
             SetEnum(view, "track", (int)track);
             SetRef(view, "controller", controller);
@@ -543,12 +829,7 @@ namespace HandwerkerImperium.Editor
         private static void MakeHirePad(string name, Vector3 pos, int stationIndex, GreyboxGameController controller, GameObject workerPrefab, Transform stationPoint, Transform counterPoint)
         {
             var pad = MakeTriggerZone(name, pos, new Vector3(2.5f, 1.5f, 2.5f));
-            var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            marker.name = "Marker";
-            marker.transform.SetParent(pad.transform, false);
-            marker.transform.localScale = new Vector3(2f, 0.1f, 2f);
-            Object.DestroyImmediate(marker.GetComponent<Collider>());
-            Paint(marker, new Color(0.2f, 0.8f, 0.9f));
+            MakePadVisual(pad.transform, new Color(0.2f, 0.8f, 0.9f));
             var view = pad.AddComponent<WorkerHirePadView>();
             SetInt(view, "stationIndex", stationIndex);
             SetRef(view, "controller", controller);

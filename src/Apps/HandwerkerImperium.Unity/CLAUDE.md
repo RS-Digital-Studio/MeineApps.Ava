@@ -57,7 +57,9 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > Endgame-Renommee-Akkumulation, Rush-Event (2×), Saison-Erkennung, Free-Cash-Pad (Monetarisierung), Tagesaufgaben
 > (3/Tag → Gems, UTC-Reset, persistiert + HMAC-signiert). Der headless-baubare Logik-Layer ist damit komplett.
 >
-> **Welt-Bestand (Assets + Verdrahtung):** 38 Pipeline-GLBs in `Art/Models/` — 10 Gewerke-Gebäude, 10 Trag-Waren
+> **Welt-Bestand (Assets + Verdrahtung):** 44 Pipeline-GLBs in `Art/Models/` — 6 Welt-Props
+> (Marktstand-Tresen, Bauzaun, Laternen mit Punktlicht, Fässer, Blumenbeete, Handkarren —
+> Anti-Generisch-Schicht, Builder platziert nur bei vorhandenem GLB mit Primitive-Fallback), 10 Gewerke-Gebäude, 10 Trag-Waren
 > (1,2k Tris, stationsspezifischer Stapel + Carry via `AvatarController.stationWarePrefabs`), 3 Wahrzeichen-Paare
 > (Ruine/saniert, `LandmarkCatalog` + `LandmarkView`-Hold-to-Pay-Sanierung mit sichtbarem Modell-Swap), Avatar +
 > 3 Kunden + Worker **jeweils zusätzlich als UniRig-geriggte `{name}_rigged.glb`** (Auto-Rigging-Stufe, Memory
@@ -68,7 +70,13 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > **Landschaft & Look (Builder-generiert):** prozedurale Skybox + Distanz-Nebel, Gras-Welt mit Pflaster-Hof
 > + Plaza-Rondell (prozedurale, kachelnde Texturen als Assets), Baum-Ring/Hügel/Felsen deterministisch geseedet,
 > URP-Post-Processing-Volume (Bloom/Vignette/ACES/warme Farb-Justage, Kamera SMAA), Pads mit Stein-Sockel +
-> Akzent-Ring. Editor-asmdef referenziert dafür `Unity.RenderPipelines.{Core,Universal}.Runtime`.
+> Akzent-Ring, alle freistehenden Schilder auf Holzpfosten. Editor-asmdef referenziert dafür
+> `Unity.RenderPipelines.{Core,Universal}.Runtime`.
+>
+> **Leben + Steuerung:** `CustomerQueueView`/`CustomerAgent` spiegeln die Domain-Kunden-Queue physisch
+> (NPCs laufen vom Stadttor zur Theke, rücken nach, gehen nach Bedienung ab; Gang via Walker);
+> `TouchJoystick` (Floating, linke Hälfte, UI-Toolkit-Feedback mit PickingMode.Ignore) ist die
+> Android-Primärsteuerung (GDD §4), vom `AvatarController` zusätzlich zu WASD/Gamepad gelesen.
 >
 > **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **176 NUnit /
 > 0 Fehler** (162 Domain + 14 Game, via unity-mcp-Reflection-Runner). Zusätzlich **2 adversariale Mehr-Agenten-Reviews**

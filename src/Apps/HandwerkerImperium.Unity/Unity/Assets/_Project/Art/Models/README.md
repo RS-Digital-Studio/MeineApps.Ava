@@ -101,8 +101,25 @@ freistehende Silhouetten wählen (Brunnen-saniert über die Pavillon-Vorlage neu
 `customer_woman.glb` (Frau mit Brotkorb) + `customer_elder.glb` (Senior mit Stock) = Statisten an
 der Tresen-Queue. Ids/Phasen = `LandmarkCatalog` (Domain), Szene-Plots = `GameSceneBuilder.MakeLandmark`.
 
+## Welt-Props (Anti-Generisch-Batch, komplett)
+
+`world_props_concepts.py` → gleiche Kette. **Stolperstein der Kette:** `run-hunyuan.bat` schreibt
+trotz `.glb`-Endung **OBJ+MTL+PBR-Maps** — vor dem Decimate die Datei nach `.obj` kopieren und
+`decimate_glb.py --in asset.obj` aufrufen (Blender bettet die Maps beim GLB-Export ein).
+Hänger-Lehre: dauert die Paint-Phase >10 min (1-Kern-CPU-Last, VRAM ~voll), hängt sie im
+mmgp-CPU-Offload (Auslöser: ungewöhnlich großes Shape-Mesh) → Prozess killen, frischer
+Einzelprozess läuft normal durch (flower_planter: 40-MB-Shape hing, Re-Run 28 MB/125 s ok).
+
+| GLB | Tris | Rolle in der Szene |
+|-----|------|--------------------|
+| `market_counter` | 8k | Verkaufstresen = Marktstand mit Markise (ersetzt den braunen Block) |
+| `fence_construction` | 4k | Plot-Bauzaun, 2 Segmente je Front (ersetzt gelbe Boxen) |
+| `street_lantern` | 4k | 6× im Hof, je warmes Punktlicht (ohne Schatten — Mobile) |
+| `barrel_crates` | 4k | Fass-Gruppen als Hof-Deko |
+| `flower_planter` | 3k | Blumenbeete am Plaza-Rand |
+| `handcart` | 5k | Handkarren-Deko |
+
 ## Offener Generierungs-Backlog (gleiche Kette, GPU)
 
-**Münze/Geld** + **Upgrade-Pad** + **Plot-Bauzaun** sind besser als **Unity-Primitive**
-(Zylinder/Quader + Material) — flach/einfach, Image-to-3D ungeeignet (wie City-Tiles, siehe
-`pilot_log.md`). **Auto-Rig-Stufe** (AccuRIG/UniRig) für echte Walk-Cycles statt ToonBob.
+**Münze/Geld** + **Upgrade-Pad** sind besser als **Unity-Primitive** (Zylinder/Quader + Material)
+— flach/einfach, Image-to-3D ungeeignet (wie City-Tiles, siehe `pilot_log.md`).

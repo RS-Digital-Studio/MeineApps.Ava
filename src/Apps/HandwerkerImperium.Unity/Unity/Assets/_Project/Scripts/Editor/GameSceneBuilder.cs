@@ -231,8 +231,19 @@ namespace HandwerkerImperium.Editor
             var idleBalancing = idleConfig.ToDomain(); // für die Plot-Preise an den Bauzäunen
             int stationCount = stationModels.Length;
             var stationPos = new Vector3[stationCount];
-            for (int i = 0; i < 5; i++) stationPos[i] = new Vector3(-16f + i * 8f, 0f, 10f);    // Nord-Reihe
-            for (int i = 5; i < 10; i++) stationPos[i] = new Vector3(-16f + (i - 5) * 8f, 0f, -10f); // Süd-Reihe
+            // Marktplatz-Dorf statt Kasernen-Reihen: die 10 Werkstätten stehen im Hufeisen-Bogen
+            // (Radius 17 m) um den zentralen Platz, alle zur Mitte orientiert. Die Lücke zeigt nach
+            // Norden (90°) — dort laufen Stadttor, Kundenweg und der Blick in die Landschaft.
+            // Progression mit Spieler-Logik: Die Start-Schreinerei steht im Süden direkt vor dem
+            // Spieler (Avatar-Start/Kamera), jedes weitere Gewerk wandert abwechselnd links/rechts
+            // den Bogen hinauf — die teuersten Endgame-Gewerke rahmen oben sichtbar das Stadttor.
+            int[] arcSlot = { 4, 5, 3, 6, 2, 7, 1, 8, 0, 9 }; // Bogen-Plätze 0..9 = 125°..415°
+            for (int i = 0; i < stationCount; i++)
+            {
+                float angleDeg = 125f + arcSlot[i] * (290f / (stationCount - 1)); // Lücke um 90° (Norden)
+                float rad = angleDeg * Mathf.Deg2Rad;
+                stationPos[i] = new Vector3(Mathf.Cos(rad) * 17f, 0f, Mathf.Sin(rad) * 17f);
+            }
 
             var fencePalette = new Color(0.85f, 0.68f, 0.20f); // Bauzaun-Gelb
             var stationTransforms = new Transform[stationCount];
@@ -339,21 +350,22 @@ namespace HandwerkerImperium.Editor
 
             // Wahrzeichen des Stadt-Wiederaufbaus (GDD §6.4): Ruine -> Hold-to-Pay-Sanierung -> saniertes Modell.
             // Ids = LandmarkCatalog (Domain); Index-frei per Id verdrahtet (Alt-Save-robust).
-            MakeLandmark("brunnen", "Brunnen", new Vector3(12f, 0f, 0f), 2.4f,
+            // Wahrzeichen flankieren den Kundenweg zum Stadttor (Blickachse der Kamera nach Norden)
+            MakeLandmark("brunnen", "Brunnen", new Vector3(8f, 0f, 8.5f), 2.4f,
                 ModelDir + "/landmark_fountain_ruined.glb", ModelDir + "/landmark_fountain_restored.glb", controller);
-            MakeLandmark("glockenturm", "Glockenturm", new Vector3(-12f, 0f, 0f), 5.0f,
+            MakeLandmark("glockenturm", "Glockenturm", new Vector3(-8f, 0f, 8.5f), 5.0f,
                 ModelDir + "/landmark_clocktower_ruined.glb", ModelDir + "/landmark_clocktower_restored.glb", controller);
-            MakeLandmark("stadttor", "Stadttor", new Vector3(0f, 0f, 15f), 4.5f,
+            MakeLandmark("stadttor", "Stadttor", new Vector3(0f, 0f, 16f), 4.5f,
                 ModelDir + "/landmark_gate_ruined.glb", ModelDir + "/landmark_gate_restored.glb", controller);
 
             // Deko-Schicht gegen den "leeren Hof": Laternen (mit warmem Punktlicht), Fässer,
             // Blumenbeete am Plaza-Rand, Handkarren — nur platziert, wenn das Pipeline-GLB existiert.
-            TryPlaceProp("street_lantern", new Vector3(8.5f, 0f, 4.2f), 0f, 2.6f, lantern: true);
-            TryPlaceProp("street_lantern", new Vector3(-8.5f, 0f, 4.2f), 0f, 2.6f, lantern: true);
-            TryPlaceProp("street_lantern", new Vector3(8.5f, 0f, -4.2f), 0f, 2.6f, lantern: true);
-            TryPlaceProp("street_lantern", new Vector3(-8.5f, 0f, -4.2f), 0f, 2.6f, lantern: true);
-            TryPlaceProp("street_lantern", new Vector3(2.8f, 0f, 12.0f), 0f, 2.6f, lantern: true);
-            TryPlaceProp("street_lantern", new Vector3(-2.8f, 0f, 12.0f), 0f, 2.6f, lantern: true);
+            MakeStreetLamp(new Vector3(8.5f, 0f, 4.2f));
+            MakeStreetLamp(new Vector3(-8.5f, 0f, 4.2f));
+            MakeStreetLamp(new Vector3(8.5f, 0f, -4.2f));
+            MakeStreetLamp(new Vector3(-8.5f, 0f, -4.2f));
+            MakeStreetLamp(new Vector3(2.8f, 0f, 12.0f));
+            MakeStreetLamp(new Vector3(-2.8f, 0f, 12.0f));
             TryPlaceProp("flower_planter", new Vector3(5.6f, 0f, 3.6f), 32f, 0.55f);
             TryPlaceProp("flower_planter", new Vector3(-5.6f, 0f, 3.6f), -32f, 0.55f);
             TryPlaceProp("flower_planter", new Vector3(5.6f, 0f, -3.6f), 148f, 0.55f);
@@ -424,27 +436,28 @@ namespace HandwerkerImperium.Editor
             var grassMat = MakeTexturedMaterial(MakeGrassTexture(), Color.white, new Vector2(56f, 56f), "Mat_Grass");
             grass.GetComponent<MeshRenderer>().sharedMaterial = grassMat;
 
-            // Pflaster-Hof: deckt den ganzen Spielbereich (Stationen ±16/±10, Wahrzeichen ±12 und z=15)
+            // Pflaster als zentrale Marktgasse zwischen den Stationsreihen — die Gebäude-Modelle
+            // haben gras-/erdige Sockel und stehen deshalb AUF GRAS (kein Stilbruch), nur die
+            // Lauffläche Tresen/Pads/Queue ist gepflastert. Kein Plaza-Rondell: Zylinder-UVs
+            // verzerren das Kachel-Muster radial (sichtbarer Muster-Bruch zum Hof).
             var yard = GameObject.CreatePrimitive(PrimitiveType.Cube);
             yard.name = "Ground_Yard";
             Object.DestroyImmediate(yard.GetComponent<Collider>()); // rein visuell, 4 cm — Gras-Plane trägt
             yard.transform.SetParent(envRoot.transform, false);
-            yard.transform.localScale = new Vector3(48f, 0.04f, 36f);
-            yard.transform.position = new Vector3(0f, 0.02f, 0.5f);
+            yard.transform.localScale = new Vector3(22f, 0.04f, 14.5f);
+            yard.transform.position = new Vector3(0f, 0.02f, -0.25f);
             yard.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeTexturedMaterial(MakeCobbleTexture(), Color.white, new Vector2(16f, 12f), "Mat_Cobble_Yard");
+                MakeTexturedMaterial(MakeCobbleTexture(), Color.white, new Vector2(7.3f, 4.8f), "Mat_Cobble_Yard");
 
-            // Plaza-Rondell um den Tresen (hellerer Blickfang im Zentrum)
-            var plaza = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            plaza.name = "Ground_Plaza";
-            Object.DestroyImmediate(plaza.GetComponent<Collider>());
-            plaza.transform.SetParent(envRoot.transform, false);
-            plaza.transform.localScale = new Vector3(13f, 0.025f, 13f);
-            plaza.transform.position = new Vector3(0f, 0.045f, 0f);
-            // WICHTIG: eigene Textur-Instanz — ein Texture2D-Objekt kann nur EIN Asset sein
-            // (CreateAsset desselben Objekts unter zweitem Pfad wirft "already an asset").
-            plaza.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeTexturedMaterial(MakeCobbleTexture(), new Color(1.08f, 1.04f, 0.96f), new Vector2(5f, 5f), "Mat_Cobble_Plaza");
+            // Pflaster-Weg vom Stadttor zur Marktgasse (Kunden-Laufweg), gleiche Kachel-Dichte (~3 m)
+            var gatePath = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            gatePath.name = "Ground_GatePath";
+            Object.DestroyImmediate(gatePath.GetComponent<Collider>());
+            gatePath.transform.SetParent(envRoot.transform, false);
+            gatePath.transform.localScale = new Vector3(4.5f, 0.04f, 9f);
+            gatePath.transform.position = new Vector3(0f, 0.02f, 11.5f);
+            gatePath.GetComponent<MeshRenderer>().sharedMaterial =
+                MakeTexturedMaterial(MakeCobbleTexture(), Color.white, new Vector2(1.5f, 3f), "Mat_Cobble_Path");
 
             // Vegetation + Horizont (deterministisch — gleicher Build, gleiche Welt)
             Random.InitState(20260611);
@@ -856,8 +869,59 @@ namespace HandwerkerImperium.Editor
         }
 
         /// <summary>
+        /// Straßenlaterne mit glaubwürdiger Silhouette: Das Pipeline-Modell (gedrungene Standlaterne)
+        /// wird NUR als Laternenkopf (0,85 m) genutzt — voll skaliert wirkt der Korb wie eine
+        /// Litfaßsäule. Darunter: Stein-Fuß + schlanker Eisen-Pfosten (Primitive), warmes Punktlicht.
+        /// </summary>
+        private static void MakeStreetLamp(Vector3 pos)
+        {
+            const float postHeight = 2.0f;
+            var root = new GameObject("Prop_street_lamp");
+            root.transform.position = pos;
+
+            var foot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            foot.name = "Foot";
+            Object.DestroyImmediate(foot.GetComponent<Collider>());
+            foot.transform.SetParent(root.transform, false);
+            foot.transform.localScale = new Vector3(0.42f, 0.09f, 0.42f);
+            foot.transform.localPosition = new Vector3(0f, 0.09f, 0f);
+            Paint(foot, new Color(0.45f, 0.44f, 0.42f));
+
+            var post = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            post.name = "Post";
+            Object.DestroyImmediate(post.GetComponent<Collider>());
+            post.transform.SetParent(root.transform, false);
+            post.transform.localScale = new Vector3(0.11f, postHeight * 0.5f, 0.11f);
+            post.transform.localPosition = new Vector3(0f, postHeight * 0.5f, 0f);
+            Paint(post, new Color(0.16f, 0.15f, 0.14f)); // Schmiedeeisen
+
+            if (AssetDatabase.LoadMainAssetAtPath(ModelDir + "/street_lantern.glb") != null)
+            {
+                var head = new GameObject("Head");
+                head.transform.SetParent(root.transform, false);
+                head.transform.localPosition = new Vector3(0f, postHeight - 0.06f, 0f);
+                AttachModel(head.transform, ModelDir + "/street_lantern.glb", 0.85f);
+            }
+
+            var col = root.AddComponent<CapsuleCollider>();
+            col.center = new Vector3(0f, 1.4f, 0f);
+            col.radius = 0.18f;
+            col.height = 2.8f;
+
+            var lightGo = new GameObject("LanternLight");
+            lightGo.transform.SetParent(root.transform, false);
+            lightGo.transform.localPosition = new Vector3(0f, postHeight + 0.35f, 0f);
+            var pt = lightGo.AddComponent<Light>();
+            pt.type = LightType.Point;
+            pt.color = new Color(1.0f, 0.78f, 0.45f);
+            pt.intensity = 1.6f;
+            pt.range = 7f;
+            pt.shadows = LightShadows.None; // Punktlicht-Schatten sind auf Mobile zu teuer
+        }
+
+        /// <summary>
         /// Deko-Prop aus der Pipeline (nur wenn das GLB existiert): bounds-skaliert, grober
-        /// Box-Collider (Avatar läuft nicht hindurch), Laternen bekommen ein warmes Punktlicht.
+        /// Box-Collider (Avatar läuft nicht hindurch).
         /// </summary>
         private static GameObject TryPlaceProp(string glbName, Vector3 pos, float yRotation, float height, bool lantern = false)
         {

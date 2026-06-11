@@ -25,3 +25,6 @@ Assets/_Project/Art/Models/*.bin
 # Audio-Kopien (Quelle versioniert im Avalonia-HWI-Shared; Sync via Menü
 # "HandwerkerImperium/Runtime/Sync Audio von Avalonia" bzw. automatisch im Szene-Builder)
 Assets/_Project/Audio/
+
+# Lokale Player-Builds (Durchstich/Beta — Artefakte, nicht versionierbar)
+Builds/

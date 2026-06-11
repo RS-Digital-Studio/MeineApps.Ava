@@ -1,8 +1,8 @@
 # WorkTimePro — Arbeitszeiterfassung & Export
 
-Vollständige Arbeitszeiterfassung mit Check-in/out, Pausen, Urlaub, Schichtplanung,
-Feiertagen (DE/AT/CH), Statistiken (8 eigene + 3 geteilte SkiaSharp-Visualisierungen)
-und Export (PDF/Excel/CSV/ICS).
+Vollständige Arbeitszeiterfassung mit Check-in/out (auch per Stempel-QR-Code-Scan,
+Deep-Link `worktimepro://stamp`), Pausen, Urlaub, Schichtplanung, Feiertagen (DE/AT/CH),
+Statistiken (8 eigene + 3 geteilte SkiaSharp-Visualisierungen) und Export (PDF/Excel/CSV/ICS).
 
 > Build-Befehle, Conventions, Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 

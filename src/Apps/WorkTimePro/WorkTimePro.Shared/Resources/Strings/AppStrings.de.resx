@@ -463,4 +463,7 @@
   <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
   <data name="ReminderNotificationsOff" xml:space="preserve"><value>Benachrichtigungen sind für WorkTime Pro deaktiviert — Erinnerungen werden erst zugestellt, wenn du sie in den Systemeinstellungen aktivierst.</value></data>
   <data name="ExactAlarmPermissionHint" xml:space="preserve"><value>Für pünktliche Erinnerungen bitte „Wecker und Erinnerungen" für WorkTime Pro in den Systemeinstellungen erlauben — sonst können Erinnerungen verzögert eintreffen.</value></data>
+  <data name="QrStampTitle" xml:space="preserve"><value>Stempel-QR-Code</value></data>
+  <data name="QrStampDescription" xml:space="preserve"><value>Diesen Code mit der Handy-Kamera scannen, um automatisch ein- oder auszustempeln. Ausdrucken und am Arbeitsplatz aufhängen.</value></data>
+  <data name="QrStampShare" xml:space="preserve"><value>Als Bild teilen</value></data>
 </root>

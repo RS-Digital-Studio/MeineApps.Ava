@@ -463,4 +463,7 @@
   <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
   <data name="ReminderNotificationsOff" xml:space="preserve"><value>Las notificaciones están desactivadas para WorkTime Pro — los recordatorios no se entregarán hasta que las actives en los ajustes del sistema.</value></data>
   <data name="ExactAlarmPermissionHint" xml:space="preserve"><value>Para recordatorios puntuales, permite «Alarmas y recordatorios» para WorkTime Pro en los ajustes del sistema — de lo contrario, los recordatorios pueden retrasarse.</value></data>
+  <data name="QrStampTitle" xml:space="preserve"><value>Código QR de fichaje</value></data>
+  <data name="QrStampDescription" xml:space="preserve"><value>Escanea este código con la cámara del móvil para fichar la entrada o salida automáticamente. Imprímelo y cuélgalo en tu lugar de trabajo.</value></data>
+  <data name="QrStampShare" xml:space="preserve"><value>Compartir como imagen</value></data>
 </root>

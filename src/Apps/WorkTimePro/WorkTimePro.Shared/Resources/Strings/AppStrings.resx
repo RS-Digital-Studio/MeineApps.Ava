@@ -963,4 +963,7 @@
   <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
   <data name="ReminderNotificationsOff" xml:space="preserve"><value>Notifications are disabled for WorkTime Pro — reminders won't be delivered until you enable them in your system settings.</value></data>
   <data name="ExactAlarmPermissionHint" xml:space="preserve"><value>For punctual reminders, please allow "Alarms &amp; reminders" for WorkTime Pro in the system settings — otherwise reminders may be delayed.</value></data>
+  <data name="QrStampTitle" xml:space="preserve"><value>Clock-in QR code</value></data>
+  <data name="QrStampDescription" xml:space="preserve"><value>Scan this code with your phone camera to clock in or out automatically. Print it and put it up at your workplace.</value></data>
+  <data name="QrStampShare" xml:space="preserve"><value>Share as image</value></data>
 </root>

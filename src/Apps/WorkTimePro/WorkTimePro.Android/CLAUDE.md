@@ -50,6 +50,13 @@ und `AndroidFileShareService.cs` werden per `<Compile Include="..." Link="..." /
 **Back-Button:** `OnBackPressed()` → `mainVm.HandleBackPressed()`; bei `false` →
 `MoveTaskToBack(true)` (App in Hintergrund, nicht beenden).
 
+**Stempel-QR-Deep-Link:** Intent-Filter `worktimepro://stamp` (muss zu
+`QrStampRenderer.StampUri` passen) + `LaunchMode.SingleTask` (laufende Instanz wird
+nach vorne geholt → `OnNewIntent`). `HandleStampIntent` (Kaltstart in `OnCreate`,
+Warm über `OnNewIntent`) ruft `MainViewModel.HandleStampScanAsync()` (= CheckIn/Out-
+Toggle inkl. Init-Wait + Undo) und nullt danach `Intent.Data` (kein Doppel-Stempeln
+bei Recreate).
+
 ## AndroidHapticService
 
 Liegt in `Services/AndroidHapticService.cs`. `IHapticService`-Impl über `Vibrator`:

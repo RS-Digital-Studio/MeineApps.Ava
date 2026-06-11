@@ -463,4 +463,7 @@
   <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
   <data name="ReminderNotificationsOff" xml:space="preserve"><value>Le notifiche sono disattivate per WorkTime Pro — i promemoria non verranno recapitati finché non le attivi nelle impostazioni di sistema.</value></data>
   <data name="ExactAlarmPermissionHint" xml:space="preserve"><value>Per promemoria puntuali, consenti «Sveglie e promemoria» per WorkTime Pro nelle impostazioni di sistema — altrimenti i promemoria potrebbero arrivare in ritardo.</value></data>
+  <data name="QrStampTitle" xml:space="preserve"><value>Codice QR di timbratura</value></data>
+  <data name="QrStampDescription" xml:space="preserve"><value>Scansiona questo codice con la fotocamera del telefono per timbrare automaticamente l'entrata o l'uscita. Stampalo e appendilo sul posto di lavoro.</value></data>
+  <data name="QrStampShare" xml:space="preserve"><value>Condividi come immagine</value></data>
 </root>

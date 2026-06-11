@@ -5,6 +5,7 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
+using WorkTimePro.Graphics;
 using WorkTimePro.Helpers;
 using WorkTimePro.Models;
 using WorkTimePro.Resources.Strings;
@@ -34,6 +35,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     private readonly IBackupService _backupService;
     private readonly IHolidayService _holidayService;
     private readonly INotificationService _notificationService;
+    private readonly IFileShareService _fileShareService;
 
     private WorkSettings? _settings;
     private bool _disposed;
@@ -53,7 +55,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         IReminderService reminderService,
         IBackupService backupService,
         IHolidayService holidayService,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        IFileShareService fileShareService)
     {
         _database = database;
         _localization = localization;
@@ -63,6 +66,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         _backupService = backupService;
         _holidayService = holidayService;
         _notificationService = notificationService;
+        _fileShareService = fileShareService;
 
         // Regionen aus HolidayService laden (DE + AT + CH)
         var regions = _holidayService.GetAvailableRegions();
@@ -748,6 +752,35 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
     [RelayCommand]
     private void CancelPurchaseOptions() => IsPurchaseOptionsVisible = false;
+
+    /// <summary>
+    /// Exportiert den Stempel-QR-Code als PNG und öffnet den Share-Dialog
+    /// (Android: Share-Sheet → z.B. drucken/senden; Desktop: Standard-Bildanzeige).
+    /// </summary>
+    [RelayCommand]
+    private async Task ShareStampQrAsync()
+    {
+        try
+        {
+            IsLoading = true;
+
+            var png = QrStampRenderer.CreatePngBytes();
+            var dir = _fileShareService.GetExportDirectory("WorkTimePro");
+            Directory.CreateDirectory(dir);
+            var path = Path.Combine(dir, "WorkTimePro_Stempel_QR.png");
+            await File.WriteAllBytesAsync(path, png);
+
+            await _fileShareService.ShareFileAsync(path, AppStrings.QrStampTitle, "image/png");
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
 
     private async Task PurchaseAsync(Func<Task<bool>> purchase)
     {

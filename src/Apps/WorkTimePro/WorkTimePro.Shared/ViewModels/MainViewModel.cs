@@ -645,6 +645,19 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         await LoadDataAsync();
     }
 
+    /// <summary>
+    /// Vom Stempel-QR-Deep-Link (worktimepro://stamp) ausgelöst: stempelt ein bzw. aus —
+    /// identisches Verhalten zum CheckIn/Out-Button (inkl. Initialisierungs-Wait,
+    /// Undo-Fenster und Status-Feedback). Aufrufer: MainActivity (Intent-Filter).
+    /// </summary>
+    public async Task HandleStampScanAsync()
+    {
+        // Zum Today-Tab wechseln, damit der Nutzer das Stempel-Ergebnis sieht
+        CloseAllSubPages();
+        CurrentTab = 0;
+        await ToggleTrackingAsync();
+    }
+
     // === Undo Mechanismus ===
 
     /// <summary>

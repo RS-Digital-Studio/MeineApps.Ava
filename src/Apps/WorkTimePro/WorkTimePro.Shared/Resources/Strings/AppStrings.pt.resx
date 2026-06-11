@@ -463,4 +463,7 @@
   <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
   <data name="ReminderNotificationsOff" xml:space="preserve"><value>As notificações estão desativadas para o WorkTime Pro — os lembretes não serão entregues até que você as ative nas configurações do sistema.</value></data>
   <data name="ExactAlarmPermissionHint" xml:space="preserve"><value>Para lembretes pontuais, permita «Alarmes e lembretes» para o WorkTime Pro nas configurações do sistema — caso contrário, os lembretes podem atrasar.</value></data>
+  <data name="QrStampTitle" xml:space="preserve"><value>Código QR de ponto</value></data>
+  <data name="QrStampDescription" xml:space="preserve"><value>Escaneie este código com a câmera do celular para registrar a entrada ou saída automaticamente. Imprima e pendure no seu local de trabalho.</value></data>
+  <data name="QrStampShare" xml:space="preserve"><value>Compartilhar como imagem</value></data>
 </root>

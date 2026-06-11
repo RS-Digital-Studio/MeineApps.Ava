@@ -1064,6 +1064,15 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die dem Stempel-QR-Code-Titel ähnelt.
+        /// </summary>
+        internal static string QrStampTitle {
+            get {
+                return ResourceManager.GetString("QrStampTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Work time table ähnelt.
         /// </summary>
         internal static string WorkTimeTable {

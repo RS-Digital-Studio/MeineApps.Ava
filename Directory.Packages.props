@@ -43,6 +43,8 @@
     <PackageVersion Include="Avalonia.Labs.Controls" Version="12.0.2" />
     <PackageVersion Include="Avalonia.Labs.Lottie" Version="12.0.2" />
     <PackageVersion Include="SkiaSharp.Skottie" Version="3.119.4" />
+    <!-- QR-Code-Generierung (pure C#, MIT, keine Abhängigkeiten, Full-AOT-tauglich) -->
+    <PackageVersion Include="Net.Codecrete.QrCodeGenerator" Version="2.0.6" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- DATABASE                                                         -->

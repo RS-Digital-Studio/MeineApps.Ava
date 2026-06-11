@@ -358,9 +358,8 @@ namespace HandwerkerImperium.Editor
             yard.transform.SetParent(envRoot.transform, false);
             yard.transform.localScale = new Vector3(48f, 0.04f, 36f);
             yard.transform.position = new Vector3(0f, 0.02f, 0.5f);
-            var cobbleTex = MakeCobbleTexture();
             yard.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeTexturedMaterial(cobbleTex, Color.white, new Vector2(16f, 12f), "Mat_Cobble_Yard");
+                MakeTexturedMaterial(MakeCobbleTexture(), Color.white, new Vector2(16f, 12f), "Mat_Cobble_Yard");
 
             // Plaza-Rondell um den Tresen (hellerer Blickfang im Zentrum)
             var plaza = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -369,8 +368,10 @@ namespace HandwerkerImperium.Editor
             plaza.transform.SetParent(envRoot.transform, false);
             plaza.transform.localScale = new Vector3(13f, 0.025f, 13f);
             plaza.transform.position = new Vector3(0f, 0.045f, 0f);
+            // WICHTIG: eigene Textur-Instanz — ein Texture2D-Objekt kann nur EIN Asset sein
+            // (CreateAsset desselben Objekts unter zweitem Pfad wirft "already an asset").
             plaza.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeTexturedMaterial(cobbleTex, new Color(1.08f, 1.04f, 0.96f), new Vector2(5f, 5f), "Mat_Cobble_Plaza");
+                MakeTexturedMaterial(MakeCobbleTexture(), new Color(1.08f, 1.04f, 0.96f), new Vector2(5f, 5f), "Mat_Cobble_Plaza");
 
             // Vegetation + Horizont (deterministisch — gleicher Build, gleiche Welt)
             Random.InitState(20260611);

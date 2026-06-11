@@ -26,7 +26,7 @@
             AutomationProperties.AutomationId="RoofSolar_HeaderBorder">
       <Grid ColumnDefinitions="Auto,*">
         <Button Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0"
@@ -35,13 +35,13 @@
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
                     Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
             <mi:MaterialIcon Kind="SolarPanel" Width="22" Height="22"
                              Foreground="White"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="{loc:Translate RoofSolarCalculator}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                      VerticalAlignment="Center"
                      AutomationProperties.AutomationId="RoofSolar_TxtTitle" />
         </StackPanel>
@@ -79,12 +79,12 @@
                     AutomationProperties.AutomationId="RoofSolar_CardPitchInput">
               <StackPanel Spacing="12">
                 <TextBlock Text="{loc:Translate RoofPitch}"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate Run}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding Run}" PlaceholderText="m"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxRun" />
@@ -92,7 +92,7 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate Rise}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding Rise}" PlaceholderText="m"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxRise" />
@@ -106,7 +106,7 @@
                     AutomationProperties.AutomationId="RoofSolar_CardPitchResult">
               <StackPanel Spacing="10">
                 <TextBlock Text="{loc:Translate Result}"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="RoofSolar_TxtPitchResultHeader" />
 
@@ -114,10 +114,10 @@
                 <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
                         Margin="0,4,0,8">
                   <StackPanel>
-                    <TextBlock Text="{loc:Translate UnitDegrees}" FontSize="12"
-                               Foreground="#CCFFFFFF" />
+                    <TextBlock Text="{loc:Translate UnitDegrees}" FontSize="{StaticResource FontSizeLabelMd}"
+                               Foreground="{DynamicResource OnGradientSubtextBrush}" />
                     <TextBlock AutomationProperties.AutomationId="RoofSolar_TxtPitchDegrees"
-                               Text="{Binding PitchResult.PitchDegrees}" FontSize="28" FontWeight="Bold"
+                               Text="{Binding PitchResult.PitchDegrees}" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                                Foreground="White">
                       <i:Interaction.Behaviors>
                         <behaviors:CountUpBehavior TargetValue="{Binding PitchResult.PitchDegrees}" Format="F1" Suffix="&#x00B0;" Duration="500" />
@@ -128,10 +128,10 @@
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate UnitPercent}"
-                             FontSize="14"
+                             FontSize="{StaticResource FontSizeLabelLg}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding PitchResult.PitchPercent}"
-                             FontSize="14" FontWeight="SemiBold"
+                             FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtPitchPercent" />
                 </Grid>
@@ -148,7 +148,7 @@
                       <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                        Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate ShareResult}"
-                                 FontSize="12" TextTrimming="CharacterEllipsis"
+                                 FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
@@ -163,7 +163,7 @@
                       <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                        Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate ExportMaterialList}"
-                                 FontSize="12" TextTrimming="CharacterEllipsis"
+                                 FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
@@ -188,12 +188,12 @@
                     AutomationProperties.AutomationId="RoofSolar_CardTilesInput">
               <StackPanel Spacing="12">
                 <TextBlock Text="{loc:Translate RoofTiles}"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate UnitSquareMeters}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding RoofArea}" PlaceholderText="m²"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxRoofArea" />
@@ -201,7 +201,7 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate TilesPerSqm}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding TilesPerSqm}" PlaceholderText="/ m²"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxTilesPerSqm" />
@@ -209,10 +209,10 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate CostCalculation}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding PricePerTile}"
-                           PlaceholderText="EUR"
+                           PlaceholderText="{loc:Translate CurrencySymbol}"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxPricePerTile" />
                 </StackPanel>
               </StackPanel>
@@ -224,7 +224,7 @@
                     AutomationProperties.AutomationId="RoofSolar_CardTilesResult">
               <StackPanel Spacing="10">
                 <TextBlock Text="{loc:Translate Result}"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="RoofSolar_TxtTilesResultHeader" />
 
@@ -232,10 +232,10 @@
                 <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
                         Margin="0,4,0,8">
                   <StackPanel>
-                    <TextBlock Text="{loc:Translate TilesWithReserve}" FontSize="12"
-                               Foreground="#CCFFFFFF" />
+                    <TextBlock Text="{loc:Translate TilesWithReserve}" FontSize="{StaticResource FontSizeLabelMd}"
+                               Foreground="{DynamicResource OnGradientSubtextBrush}" />
                     <TextBlock AutomationProperties.AutomationId="RoofSolar_TxtTilesWithReserve"
-                               Text="{Binding TilesResult.TilesWithReserve}" FontSize="28" FontWeight="Bold"
+                               Text="{Binding TilesResult.TilesWithReserve}" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                                Foreground="White">
                       <i:Interaction.Behaviors>
                         <behaviors:CountUpBehavior TargetValue="{Binding TilesResult.TilesWithReserve}" Format="F0" Duration="500" />
@@ -246,10 +246,10 @@
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate UnitPieces}"
-                             FontSize="14"
+                             FontSize="{StaticResource FontSizeLabelLg}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding TilesResult.TilesNeeded}"
-                             FontSize="14" FontWeight="SemiBold"
+                             FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtTilesNeeded" />
                 </Grid>
@@ -257,10 +257,10 @@
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowTileCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                             FontSize="14"
+                             FontSize="{StaticResource FontSizeLabelLg}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding RoofTileCostDisplay}"
-                             FontSize="14" FontWeight="SemiBold"
+                             FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                              Foreground="{DynamicResource PrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtTileCost" />
                 </Grid>
@@ -277,7 +277,7 @@
                       <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                        Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate ShareResult}"
-                                 FontSize="12" TextTrimming="CharacterEllipsis"
+                                 FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
@@ -292,7 +292,7 @@
                       <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                        Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate ExportMaterialList}"
-                                 FontSize="12" TextTrimming="CharacterEllipsis"
+                                 FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
@@ -317,12 +317,12 @@
                     AutomationProperties.AutomationId="RoofSolar_CardSolarInput">
               <StackPanel Spacing="12">
                 <TextBlock Text="{loc:Translate SolarYield}"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate UnitSquareMeters}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding SolarRoofArea}" PlaceholderText="m²"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxSolarRoofArea" />
@@ -330,7 +330,7 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate PanelEfficiency}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding PanelEfficiency}" PlaceholderText="%"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxPanelEfficiency" />
@@ -338,7 +338,7 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate Orientation}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <ComboBox ItemsSource="{Binding Orientations}"
                             SelectedIndex="{Binding SelectedOrientation}"
@@ -348,7 +348,7 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate TiltDegrees}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding TiltDegrees}" PlaceholderText="°"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxTiltDegrees" />
@@ -356,10 +356,10 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate CostCalculation}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding SolarSystemCost}"
-                           PlaceholderText="EUR"
+                           PlaceholderText="{loc:Translate CurrencySymbol}"
                            AutomationProperties.AutomationId="RoofSolar_TxtBoxSolarSystemCost" />
                 </StackPanel>
               </StackPanel>
@@ -371,7 +371,7 @@
                     AutomationProperties.AutomationId="RoofSolar_CardSolarResult">
               <StackPanel Spacing="10">
                 <TextBlock Text="{loc:Translate Result}"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="RoofSolar_TxtSolarResultHeader" />
 
@@ -379,10 +379,10 @@
                 <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
                         Margin="0,4,0,8">
                   <StackPanel>
-                    <TextBlock Text="{loc:Translate AnnualYield}" FontSize="12"
-                               Foreground="#CCFFFFFF" />
+                    <TextBlock Text="{loc:Translate AnnualYield}" FontSize="{StaticResource FontSizeLabelMd}"
+                               Foreground="{DynamicResource OnGradientSubtextBrush}" />
                     <TextBlock AutomationProperties.AutomationId="RoofSolar_TxtAnnualYield"
-                               Text="{Binding SolarResult.AnnualYieldKwh}" FontSize="28" FontWeight="Bold"
+                               Text="{Binding SolarResult.AnnualYieldKwh}" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                                Foreground="White">
                       <i:Interaction.Behaviors>
                         <behaviors:CountUpBehavior TargetValue="{Binding SolarResult.AnnualYieldKwh}" Format="F0" Suffix=" kWh" Duration="500" />
@@ -393,20 +393,20 @@
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate UsableArea}"
-                             FontSize="14"
+                             FontSize="{StaticResource FontSizeLabelLg}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding SolarResult.UsableArea}"
-                             FontSize="14" FontWeight="SemiBold"
+                             FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtUsableArea" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate KwPeak}"
-                             FontSize="14"
+                             FontSize="{StaticResource FontSizeLabelLg}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding SolarResult.KwPeak}"
-                             FontSize="14" FontWeight="SemiBold"
+                             FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtKwPeak" />
                 </Grid>
@@ -414,10 +414,10 @@
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowSolarCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                             FontSize="14"
+                             FontSize="{StaticResource FontSizeLabelLg}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding SolarCostDisplay}"
-                             FontSize="14" FontWeight="SemiBold"
+                             FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                              Foreground="{DynamicResource PrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtSolarCost" />
                 </Grid>
@@ -425,10 +425,10 @@
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowSolarCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate PaybackTime}"
-                             FontSize="14"
+                             FontSize="{StaticResource FontSizeLabelLg}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding PaybackTimeDisplay}"
-                             FontSize="14" FontWeight="SemiBold"
+                             FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtPaybackTime" />
                 </Grid>
@@ -445,7 +445,7 @@
                       <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                        Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate ShareResult}"
-                                 FontSize="12" TextTrimming="CharacterEllipsis"
+                                 FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
@@ -460,7 +460,7 @@
                       <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                        Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate ExportMaterialList}"
-                                 FontSize="12" TextTrimming="CharacterEllipsis"
+                                 FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
@@ -493,7 +493,7 @@
             <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{loc:Translate Reset}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -506,7 +506,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Calculate}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -521,7 +521,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Save}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -531,7 +531,7 @@
     <!-- Save Project Dialog Overlay -->
     <Border Grid.Row="0" Grid.RowSpan="3"
             ZIndex="100"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowSaveDialog}"
             AutomationProperties.AutomationId="RoofSolar_SaveDialogOverlay">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -543,7 +543,7 @@
               AutomationProperties.AutomationId="RoofSolar_SaveDialogCard">
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Translate SaveProject}"
-                     FontSize="18" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="RoofSolar_TxtSaveDialogTitle" />

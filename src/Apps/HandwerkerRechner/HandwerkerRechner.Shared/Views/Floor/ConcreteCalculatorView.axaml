@@ -19,7 +19,7 @@
             CornerRadius="0,0,24,24">
       <Grid ColumnDefinitions="Auto,*">
         <Button AutomationProperties.AutomationId="Concrete_BtnBack" Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0">
@@ -27,13 +27,13 @@
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
                     Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
             <mi:MaterialIcon Kind="Cube" Width="22" Height="22"
                              Foreground="White"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock AutomationProperties.AutomationId="Concrete_TxtTitle" Text="{loc:Translate CalcConcrete}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                      VerticalAlignment="Center" />
         </StackPanel>
       </Grid>
@@ -47,7 +47,7 @@
         <Border AutomationProperties.AutomationId="Concrete_CardShape" Classes="Card StatsCard">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate ConcreteShape}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
             <ComboBox AutomationProperties.AutomationId="Concrete_CboShape"
                       ItemsSource="{Binding Calculators}"
@@ -61,21 +61,21 @@
                 IsVisible="{Binding IsSlabSelected}">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate ConcreteSlab}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate SlabLength}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxSlabLength" Text="{Binding SlabLength}" PlaceholderText="m" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate SlabWidth}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxSlabWidth" Text="{Binding SlabWidth}" PlaceholderText="m" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate SlabHeight}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxSlabHeight" Text="{Binding SlabHeight}" PlaceholderText="cm" Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -86,21 +86,21 @@
                 IsVisible="{Binding IsStripSelected}">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate StripFoundation}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate StripLength}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxStripLength" Text="{Binding StripLength}" PlaceholderText="m" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate StripWidth}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxStripWidth" Text="{Binding StripWidth}" PlaceholderText="cm" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate StripDepth}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxStripDepth" Text="{Binding StripDepth}" PlaceholderText="cm" Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -111,16 +111,16 @@
                 IsVisible="{Binding IsColumnSelected}">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate ConcreteColumn}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate ColumnDiameter}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxColumnDiameter" Text="{Binding ColumnDiameter}" PlaceholderText="cm" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate ColumnHeight}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxColumnHeight" Text="{Binding ColumnHeight}" PlaceholderText="cm" Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -130,11 +130,11 @@
         <Border AutomationProperties.AutomationId="Concrete_CardCost" Classes="Card StatsCard">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate CostCalculation}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate BagWeight}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <ComboBox AutomationProperties.AutomationId="Concrete_CboBagWeight"
                         ItemsSource="{Binding BagWeights}"
                         SelectedItem="{Binding BagWeight}"
@@ -142,13 +142,13 @@
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate PricePerBag}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxPricePerBag" Text="{Binding PricePerBag}" PlaceholderText="EUR" Classes="Outlined" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxPricePerBag" Text="{Binding PricePerBag}" PlaceholderText="{loc:Translate CurrencySymbol}" Classes="Outlined" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate PricePerCubicMeter}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxPricePerM3" Text="{Binding PricePerCubicMeter}" PlaceholderText="EUR" Classes="Outlined" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxPricePerM3" Text="{Binding PricePerCubicMeter}" PlaceholderText="{loc:Translate CurrencySymbol}" Classes="Outlined" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -164,17 +164,17 @@
                 IsVisible="{Binding HasResult}">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate Result}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryBrush}" />
 
             <!-- Hero-Value: Betonvolumen -->
             <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
                     Margin="0,4,0,8">
               <StackPanel>
-                <TextBlock Text="{loc:Translate ResultVolume}" FontSize="12"
-                           Foreground="#CCFFFFFF" />
+                <TextBlock Text="{loc:Translate ResultVolume}" FontSize="{StaticResource FontSizeLabelMd}"
+                           Foreground="{DynamicResource OnGradientSubtextBrush}" />
                 <TextBlock AutomationProperties.AutomationId="Concrete_TxtVolume"
-                           Text="{Binding VolumeDisplay}" FontSize="28" FontWeight="Bold"
+                           Text="{Binding VolumeDisplay}" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                            Foreground="White">
                   <i:Interaction.Behaviors>
                     <behaviors:CountUpBehavior TargetValue="{Binding Result.VolumeM3}" Format="F2" Suffix=" m&#x00B3;" Duration="500" />
@@ -186,51 +186,51 @@
             <!-- Fertigbeton-Säcke -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ResultBags}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Concrete_TxtBags" Grid.Column="1" Text="{Binding BagsDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
             <!-- Separator: Selbstmischung -->
             <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="0,4" />
             <TextBlock Text="{loc:Translate SelfMixing}"
-                       FontSize="13" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeBodySm}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
 
             <!-- Zement -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ResultCite}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Concrete_TxtCite" Grid.Column="1" Text="{Binding CementDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
             <!-- Sand -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ResultSand}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Concrete_TxtSand" Grid.Column="1" Text="{Binding SandDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
             <!-- Kies -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ResultGravel}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Concrete_TxtGravel" Grid.Column="1" Text="{Binding GravelDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
             <!-- Wasser -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ResultWater}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Concrete_TxtWater" Grid.Column="1" Text="{Binding WaterDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
@@ -238,9 +238,9 @@
             <Grid ColumnDefinitions="*,Auto"
                   IsVisible="{Binding ShowBagCost}">
               <TextBlock Grid.Column="0" Text="{loc:Translate CostBags}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Concrete_TxtBagCost" Grid.Column="1" Text="{Binding BagCostDisplay}"
-                         FontSize="16" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                          Foreground="{DynamicResource PrimaryBrush}" />
             </Grid>
 
@@ -248,9 +248,9 @@
             <Grid ColumnDefinitions="*,Auto"
                   IsVisible="{Binding ShowCubicMeterCost}">
               <TextBlock Grid.Column="0" Text="{loc:Translate CostCubicMeter}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Concrete_TxtCubicMeterCost" Grid.Column="1" Text="{Binding CubicMeterCostDisplay}"
-                         FontSize="16" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                          Foreground="{DynamicResource PrimaryBrush}" />
             </Grid>
 
@@ -264,7 +264,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="{loc:Translate ShareResult}" FontSize="12"
+                  <TextBlock Text="{loc:Translate ShareResult}" FontSize="{StaticResource FontSizeLabelMd}"
                              VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
               </Button>
@@ -277,7 +277,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="{loc:Translate ExportMaterialList}" FontSize="12"
+                  <TextBlock Text="{loc:Translate ExportMaterialList}" FontSize="{StaticResource FontSizeLabelMd}"
                              VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
               </Button>
@@ -304,7 +304,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-            <TextBlock Text="{loc:Translate Reset}" FontSize="12"
+            <TextBlock Text="{loc:Translate Reset}" FontSize="{StaticResource FontSizeLabelMd}"
                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Button>
@@ -315,7 +315,7 @@
                 HorizontalContentAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
-            <TextBlock Text="{loc:Translate Calculate}" FontSize="12"
+            <TextBlock Text="{loc:Translate Calculate}" FontSize="{StaticResource FontSizeLabelMd}"
                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Button>
@@ -327,7 +327,7 @@
                 HorizontalContentAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
-            <TextBlock Text="{loc:Translate Save}" FontSize="12"
+            <TextBlock Text="{loc:Translate Save}" FontSize="{StaticResource FontSizeLabelMd}"
                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Button>
@@ -337,7 +337,7 @@
     <!-- Save Dialog Overlay -->
     <Border AutomationProperties.AutomationId="Concrete_SaveOverlay" Grid.Row="0" Grid.RowSpan="3"
             ZIndex="100"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowSaveDialog}">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16"
@@ -347,7 +347,7 @@
               VerticalAlignment="Center">
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Translate SaveProject}"
-                     FontSize="18" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
           <TextBox AutomationProperties.AutomationId="Concrete_TxtBoxProjectName" Text="{Binding SaveProjectName}"

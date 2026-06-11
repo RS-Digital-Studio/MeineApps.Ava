@@ -1102,6 +1102,21 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="PlaceholderThickness" xml:space="preserve">
     <value>z.B. 3</value>
   </data>
+  <data name="PlaceholderAutoZero" xml:space="preserve">
+    <value>0 = automatisch</value>
+  </data>
+  <data name="PlaceholderPricePerHour" xml:space="preserve">
+    <value>€/h</value>
+  </data>
+  <data name="PlaceholderPricePerKg" xml:space="preserve">
+    <value>€/kg</value>
+  </data>
+  <data name="PlaceholderPricePerKwh" xml:space="preserve">
+    <value>€/kWh</value>
+  </data>
+  <data name="PlaceholderPricePerSqm" xml:space="preserve">
+    <value>€/m²</value>
+  </data>
 
   <!-- Remove Ads (NEW Monetization Model) -->
   <data name="RemoveAds" xml:space="preserve">
@@ -1874,6 +1889,9 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="StepsUnit" xml:space="preserve">
     <value>Stufen</value>
   </data>
+  <data name="DinNormLabel" xml:space="preserve">
+    <value>DIN 18065</value>
+  </data>
   <data name="DinCompliant" xml:space="preserve">
     <value>DIN 18065 ✓</value>
   </data>
@@ -2559,5 +2577,34 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   </data>
   <data name="SaveFailedMessage" xml:space="preserve">
     <value>Speichern fehlgeschlagen. Bitte Speicherplatz prüfen und erneut versuchen.</value>
+  </data>
+
+  <!-- Accessibility (AutomationProperties.Name) -->
+  <data name="A11yCopyResult" xml:space="preserve">
+    <value>Ergebnis kopieren</value>
+  </data>
+  <data name="A11yDeleteAllAreas" xml:space="preserve">
+    <value>Alle Teilflächen löschen</value>
+  </data>
+  <data name="A11yDeleteQuote" xml:space="preserve">
+    <value>Angebot löschen</value>
+  </data>
+  <data name="A11yDeleteTemplate" xml:space="preserve">
+    <value>Vorlage löschen</value>
+  </data>
+  <data name="A11yExportPdf" xml:space="preserve">
+    <value>PDF exportieren</value>
+  </data>
+  <data name="A11yExportQuotePdf" xml:space="preserve">
+    <value>Angebot als PDF exportieren</value>
+  </data>
+  <data name="A11yRemoveArea" xml:space="preserve">
+    <value>Teilfläche entfernen</value>
+  </data>
+  <data name="A11yRemoveItem" xml:space="preserve">
+    <value>Position entfernen</value>
+  </data>
+  <data name="A11ySaveQuote" xml:space="preserve">
+    <value>Angebot speichern</value>
   </data>
 </root>

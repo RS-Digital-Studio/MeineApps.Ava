@@ -636,6 +636,21 @@ Save 0.96 € compared to individual purchase!</value>
   <data name="PlaceholderThickness" xml:space="preserve">
     <value>e.g. 3</value>
   </data>
+  <data name="PlaceholderAutoZero" xml:space="preserve">
+    <value>0 = auto</value>
+  </data>
+  <data name="PlaceholderPricePerHour" xml:space="preserve">
+    <value>€/h</value>
+  </data>
+  <data name="PlaceholderPricePerKg" xml:space="preserve">
+    <value>€/kg</value>
+  </data>
+  <data name="PlaceholderPricePerKwh" xml:space="preserve">
+    <value>€/kWh</value>
+  </data>
+  <data name="PlaceholderPricePerSqm" xml:space="preserve">
+    <value>€/m²</value>
+  </data>
 
   <!-- Remove Ads (NEW Monetization Model) -->
   <data name="RemoveAds" xml:space="preserve">
@@ -1857,6 +1872,9 @@ Coverage decreases on rough surfaces!</value>
   <data name="StepsUnit" xml:space="preserve">
     <value>Steps</value>
   </data>
+  <data name="DinNormLabel" xml:space="preserve">
+    <value>DIN 18065</value>
+  </data>
   <data name="DinCompliant" xml:space="preserve">
     <value>DIN 18065 ✓</value>
   </data>
@@ -2544,5 +2562,34 @@ Coverage decreases on rough surfaces!</value>
   </data>
   <data name="SaveFailedMessage" xml:space="preserve">
     <value>Saving failed. Please check available storage and try again.</value>
+  </data>
+
+  <!-- Accessibility (AutomationProperties.Name) -->
+  <data name="A11yCopyResult" xml:space="preserve">
+    <value>Copy result</value>
+  </data>
+  <data name="A11yDeleteAllAreas" xml:space="preserve">
+    <value>Delete all area parts</value>
+  </data>
+  <data name="A11yDeleteQuote" xml:space="preserve">
+    <value>Delete quote</value>
+  </data>
+  <data name="A11yDeleteTemplate" xml:space="preserve">
+    <value>Delete template</value>
+  </data>
+  <data name="A11yExportPdf" xml:space="preserve">
+    <value>Export PDF</value>
+  </data>
+  <data name="A11yExportQuotePdf" xml:space="preserve">
+    <value>Export quote as PDF</value>
+  </data>
+  <data name="A11yRemoveArea" xml:space="preserve">
+    <value>Remove area part</value>
+  </data>
+  <data name="A11yRemoveItem" xml:space="preserve">
+    <value>Remove item</value>
+  </data>
+  <data name="A11ySaveQuote" xml:space="preserve">
+    <value>Save quote</value>
   </data>
 </root>

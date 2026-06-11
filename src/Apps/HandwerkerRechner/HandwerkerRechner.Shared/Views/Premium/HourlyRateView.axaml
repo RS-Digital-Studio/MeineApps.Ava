@@ -22,23 +22,23 @@
             AutomationProperties.AutomationId="HourlyRate_HeaderBorder">
       <Grid ColumnDefinitions="Auto,*">
         <Button Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0"
-                AutomationProperties.Name="Zurück"
+                AutomationProperties.Name="{loc:Translate Back}"
                 AutomationProperties.AutomationId="HourlyRate_BtnBack">
           <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" Foreground="White" />
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
                     Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
             <mi:MaterialIcon Kind="CurrencyEur" Width="22" Height="22"
                              Foreground="White"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="{Binding PageTitle}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                      VerticalAlignment="Center"
                      TextWrapping="Wrap"
                      AutomationProperties.AutomationId="HourlyRate_TxtTitle" />
@@ -59,21 +59,21 @@
           </i:Interaction.Behaviors>
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate WorkTime}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <!-- Stundensatz -->
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding HourlyRateLabel}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding HourlyRate}" PlaceholderText="€/h" Classes="Outlined"
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding HourlyRate}" PlaceholderText="{loc:Translate PlaceholderPricePerHour}" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxHourlyRate" />
             </StackPanel>
 
             <!-- Arbeitszeit -->
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding WorkHoursLabel}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding WorkHours}" PlaceholderText="h" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxWorkHours" />
             </StackPanel>
@@ -81,7 +81,7 @@
             <!-- Pause -->
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding BreakMinutesLabel}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding BreakMinutes}" PlaceholderText="min" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxBreakMinutes" />
             </StackPanel>
@@ -89,7 +89,7 @@
             <!-- Mitarbeiter -->
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding WorkerCountLabel}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding Workers}" PlaceholderText="1" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxWorkers" />
             </StackPanel>
@@ -104,13 +104,13 @@
           </i:Interaction.Behaviors>
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate Markups}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <!-- Overhead -->
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding OverheadPercentLabel}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding OverheadPercent}" PlaceholderText="%" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxOverhead" />
             </StackPanel>
@@ -118,7 +118,7 @@
             <!-- MwSt -->
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding VatPercentLabel}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding VatPercent}" PlaceholderText="%" Classes="Outlined"
                        AutomationProperties.AutomationId="HourlyRate_TxtBoxVat" />
             </StackPanel>
@@ -139,7 +139,7 @@
                 AutomationProperties.AutomationId="HourlyRate_CardResult">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate Result}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryBrush}"
                        AutomationProperties.AutomationId="HourlyRate_TxtResultHeader" />
 
@@ -147,9 +147,9 @@
             <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
                     Margin="0,4,0,8">
               <StackPanel>
-                <TextBlock Text="{Binding TotalGrossLabel}" FontSize="12" Foreground="#CCFFFFFF" />
+                <TextBlock Text="{Binding TotalGrossLabel}" FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource OnGradientSubtextBrush}" />
                 <TextBlock Text="{Binding TotalGross, StringFormat='{}{0:F2} €'}"
-                           FontSize="28" FontWeight="Bold" Foreground="White"
+                           FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold" Foreground="White"
                            AutomationProperties.AutomationId="HourlyRate_TxtTotalGross" />
               </StackPanel>
             </Border>
@@ -157,10 +157,10 @@
             <!-- Effektive Arbeitszeit -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{Binding NetWorkHoursLabel}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}"
                          TextWrapping="Wrap" />
               <TextBlock Grid.Column="1" Text="{Binding NetWorkHours, StringFormat='{}{0:F2} h'}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="HourlyRate_TxtNetWorkHours" />
             </Grid>
@@ -168,10 +168,10 @@
             <!-- Lohnkosten netto -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{Binding NetLaborCostLabel}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}"
                          TextWrapping="Wrap" />
               <TextBlock Grid.Column="1" Text="{Binding NetLaborCost, StringFormat='{}{0:F2} €'}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="HourlyRate_TxtNetLaborCost" />
             </Grid>
@@ -179,10 +179,10 @@
             <!-- Aufschlag -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{Binding OverheadAmountLabel}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}"
                          TextWrapping="Wrap" />
               <TextBlock Grid.Column="1" Text="{Binding OverheadAmount, StringFormat='{}{0:F2} €'}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="HourlyRate_TxtOverheadAmount" />
             </Grid>
@@ -190,10 +190,10 @@
             <!-- Gesamt netto -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{Binding TotalNetLabel}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}"
                          TextWrapping="Wrap" />
               <TextBlock Grid.Column="1" Text="{Binding TotalNet, StringFormat='{}{0:F2} €'}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="HourlyRate_TxtTotalNet" />
             </Grid>
@@ -201,10 +201,10 @@
             <!-- MwSt-Betrag -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{Binding VatAmountLabel}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}"
                          TextWrapping="Wrap" />
               <TextBlock Grid.Column="1" Text="{Binding VatAmount, StringFormat='{}{0:F2} €'}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="HourlyRate_TxtVatAmount" />
             </Grid>
@@ -218,7 +218,7 @@
                       Classes="Outlined"
                       HorizontalAlignment="Stretch"
                       HorizontalContentAlignment="Center"
-                      AutomationProperties.Name="Ergebnis kopieren"
+                      AutomationProperties.Name="{loc:Translate A11yCopyResult}"
                       AutomationProperties.AutomationId="HourlyRate_BtnCopy">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="ContentCopy" Width="18" Height="18"
@@ -231,7 +231,7 @@
                       Classes="Outlined"
                       HorizontalAlignment="Stretch"
                       HorizontalContentAlignment="Center"
-                      AutomationProperties.Name="PDF exportieren"
+                      AutomationProperties.Name="{loc:Translate A11yExportPdf}"
                       AutomationProperties.AutomationId="HourlyRate_BtnExport">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18"
@@ -266,7 +266,7 @@
             <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{loc:Translate Reset}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -280,7 +280,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Calculate}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -295,7 +295,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Save}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -304,7 +304,7 @@
 
     <!-- Speichern-Dialog Overlay -->
     <Border Grid.Row="0" Grid.RowSpan="3"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowSaveDialog}"
             AutomationProperties.AutomationId="HourlyRate_SaveDialogOverlay">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -316,7 +316,7 @@
               AutomationProperties.AutomationId="HourlyRate_SaveDialogCard">
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Translate SaveProject}"
-                     FontSize="18" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="HourlyRate_TxtSaveDialogTitle" />

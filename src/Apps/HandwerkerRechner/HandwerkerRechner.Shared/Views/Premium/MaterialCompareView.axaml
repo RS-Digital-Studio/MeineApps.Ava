@@ -22,23 +22,23 @@
             AutomationProperties.AutomationId="MatCompare_HeaderBorder">
       <Grid ColumnDefinitions="Auto,*">
         <Button Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0"
-                AutomationProperties.Name="Zurück"
+                AutomationProperties.Name="{loc:Translate Back}"
                 AutomationProperties.AutomationId="MatCompare_BtnBack">
           <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" Foreground="White" />
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
                     Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
             <mi:MaterialIcon Kind="SwapHorizontal" Width="22" Height="22"
                              Foreground="White"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="{Binding PageTitle}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                      VerticalAlignment="Center"
                      TextWrapping="Wrap"
                      AutomationProperties.AutomationId="MatCompare_TxtTitle" />
@@ -59,11 +59,11 @@
           </i:Interaction.Behaviors>
           <StackPanel Spacing="8">
             <TextBlock Text="{loc:Translate CommonSettings}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding AreaLabel}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding Area}" PlaceholderText="m²" Classes="Outlined"
                        AutomationProperties.AutomationId="MatCompare_TxtBoxArea" />
             </StackPanel>
@@ -83,14 +83,14 @@
               <!-- A-Header mit blauem Akzent -->
               <Border Background="{DynamicResource AccentBrush}" CornerRadius="8" Padding="8,6">
                 <TextBlock Text="{Binding ProductALabel}"
-                           FontSize="14" FontWeight="Bold" Foreground="White"
+                           FontSize="{StaticResource FontSizeLabelLg}" FontWeight="Bold" Foreground="White"
                            HorizontalAlignment="Center" />
               </Border>
 
               <!-- Bezeichnung -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding ProductNameLabel}"
-                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding ProductAName}" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxProductAName" />
               </StackPanel>
@@ -98,7 +98,7 @@
               <!-- Preis -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding PricePerUnitLabel}"
-                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                           FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
                 <TextBox Text="{Binding PriceA}" PlaceholderText="€" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxPriceA" />
@@ -107,7 +107,7 @@
               <!-- Verbrauch -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding ConsumptionLabel}"
-                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                           FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
                 <TextBox Text="{Binding ConsumptionA}" PlaceholderText="/ m²" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxConsumptionA" />
@@ -116,7 +116,7 @@
               <!-- Verschnitt -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding WasteLabel}"
-                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding WasteA}" PlaceholderText="%" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxWasteA" />
               </StackPanel>
@@ -131,16 +131,16 @@
             </i:Interaction.Behaviors>
             <StackPanel Spacing="10">
               <!-- B-Header mit lila Akzent -->
-              <Border Background="#A855F7" CornerRadius="8" Padding="8,6">
+              <Border Background="{DynamicResource PurpleAccentBrush}" CornerRadius="8" Padding="8,6">
                 <TextBlock Text="{Binding ProductBLabel}"
-                           FontSize="14" FontWeight="Bold" Foreground="White"
+                           FontSize="{StaticResource FontSizeLabelLg}" FontWeight="Bold" Foreground="White"
                            HorizontalAlignment="Center" />
               </Border>
 
               <!-- Bezeichnung -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding ProductNameLabel}"
-                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding ProductBName}" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxProductBName" />
               </StackPanel>
@@ -148,7 +148,7 @@
               <!-- Preis -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding PricePerUnitLabel}"
-                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                           FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
                 <TextBox Text="{Binding PriceB}" PlaceholderText="€" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxPriceB" />
@@ -157,7 +157,7 @@
               <!-- Verbrauch -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding ConsumptionLabel}"
-                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                           FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
                 <TextBox Text="{Binding ConsumptionB}" PlaceholderText="/ m²" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxConsumptionB" />
@@ -166,7 +166,7 @@
               <!-- Verschnitt -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding WasteLabel}"
-                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding WasteB}" PlaceholderText="%" Classes="Outlined"
                          AutomationProperties.AutomationId="MatCompare_TxtBoxWasteB" />
               </StackPanel>
@@ -189,16 +189,16 @@
                 AutomationProperties.AutomationId="MatCompare_CardResult">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate Result}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryBrush}" />
 
             <!-- Hero: Günstigere Option -->
             <Border Background="#16A34A" CornerRadius="12" Padding="16,12"
                     Margin="0,4,0,8">
               <StackPanel>
-                <TextBlock Text="{Binding CheaperOptionLabel}" FontSize="12" Foreground="#CCFFFFFF" />
+                <TextBlock Text="{Binding CheaperOptionLabel}" FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource OnGradientSubtextBrush}" />
                 <TextBlock Text="{Binding CheaperProduct}"
-                           FontSize="22" FontWeight="Bold" Foreground="White"
+                           FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold" Foreground="White"
                            AutomationProperties.AutomationId="MatCompare_TxtCheaperProduct" />
               </StackPanel>
             </Border>
@@ -206,9 +206,9 @@
             <!-- Kosten A -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{Binding ProductAName}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalCostA, StringFormat='{}{0:F2} €'}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="MatCompare_TxtCostA" />
             </Grid>
@@ -216,9 +216,9 @@
             <!-- Kosten B -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{Binding ProductBName}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalCostB, StringFormat='{}{0:F2} €'}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="MatCompare_TxtCostB" />
             </Grid>
@@ -228,11 +228,11 @@
             <!-- Ersparnis -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{Binding SavingsLabel}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1"
                          Text="{Binding SavingsAmount, StringFormat='{}{0:F2} €'}"
-                         FontSize="16" FontWeight="Bold"
-                         Foreground="#22C55E"
+                         FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
+                         Foreground="{DynamicResource SuccessBrush}"
                          AutomationProperties.AutomationId="MatCompare_TxtSavings" />
             </Grid>
 
@@ -243,7 +243,7 @@
                       Classes="Outlined"
                       HorizontalAlignment="Stretch"
                       HorizontalContentAlignment="Center"
-                      AutomationProperties.Name="Ergebnis kopieren"
+                      AutomationProperties.Name="{loc:Translate A11yCopyResult}"
                       AutomationProperties.AutomationId="MatCompare_BtnCopy">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="ContentCopy" Width="18" Height="18"
@@ -256,7 +256,7 @@
                       Classes="Outlined"
                       HorizontalAlignment="Stretch"
                       HorizontalContentAlignment="Center"
-                      AutomationProperties.Name="PDF exportieren"
+                      AutomationProperties.Name="{loc:Translate A11yExportPdf}"
                       AutomationProperties.AutomationId="MatCompare_BtnExport">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18"
@@ -285,7 +285,7 @@
                 Command="{Binding CalculateCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                AutomationProperties.Name="Berechnen"
+                AutomationProperties.Name="{loc:Translate Calculate}"
                 AutomationProperties.AutomationId="MatCompare_BtnCalculate">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <mi:MaterialIcon Kind="Calculator" Width="18" Height="18"
@@ -299,7 +299,7 @@
                 IsVisible="{Binding HasResult}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                AutomationProperties.Name="Projekt speichern"
+                AutomationProperties.Name="{loc:Translate SaveProject}"
                 AutomationProperties.AutomationId="MatCompare_BtnSave">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <mi:MaterialIcon Kind="ContentSave" Width="18" Height="18" />
@@ -311,7 +311,7 @@
 
     <!-- Speichern-Dialog Overlay -->
     <Border Grid.Row="0" Grid.RowSpan="3"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowSaveDialog}"
             AutomationProperties.AutomationId="MatCompare_SaveDialogOverlay">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -323,7 +323,7 @@
               AutomationProperties.AutomationId="MatCompare_SaveDialogCard">
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Translate SaveProject}"
-                     FontSize="18" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
           <TextBox Text="{Binding SaveProjectName}"

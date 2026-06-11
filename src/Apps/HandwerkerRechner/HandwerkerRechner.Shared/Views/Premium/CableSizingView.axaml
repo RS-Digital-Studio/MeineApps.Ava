@@ -21,7 +21,7 @@
             AutomationProperties.AutomationId="CableSizing_HeaderBorder">
       <Grid ColumnDefinitions="Auto,*">
         <Button Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0"
@@ -30,13 +30,13 @@
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
                     Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
             <mi:MaterialIcon Kind="CableData" Width="22" Height="22"
                              Foreground="White"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="{loc:Translate CalcCableSizing}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                      VerticalAlignment="Center"
                      AutomationProperties.AutomationId="CableSizing_TxtTitle" />
         </StackPanel>
@@ -53,14 +53,14 @@
                 AutomationProperties.AutomationId="CableSizing_CardInput">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate CableCurrent}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        AutomationProperties.AutomationId="CableSizing_TxtInputHeader" />
 
             <!-- Strom (A) -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate CableCurrent}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding CurrentAmps}"
                        PlaceholderText="A"
@@ -70,7 +70,7 @@
             <!-- Kabellänge (m) -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate CableLength}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding CableLength}"
                        PlaceholderText="m"
@@ -80,7 +80,7 @@
             <!-- Spannung (ComboBox) -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate CableVoltage}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <ComboBox SelectedIndex="{Binding SelectedVoltage}"
                         HorizontalAlignment="Stretch"
@@ -93,7 +93,7 @@
             <!-- Leitermaterial (ComboBox) -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate CableMaterial}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <ComboBox SelectedIndex="{Binding SelectedMaterial}"
                         HorizontalAlignment="Stretch"
@@ -106,7 +106,7 @@
             <!-- Max. Spannungsabfall (%) -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate MaxVoltageDrop}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding MaxDropPercent}"
                        PlaceholderText="%"
@@ -129,24 +129,19 @@
                 AutomationProperties.AutomationId="CableSizing_CardResult">
           <StackPanel Spacing="10">
             <TextBlock Text="{loc:Translate Result}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource PrimaryBrush}"
                        AutomationProperties.AutomationId="CableSizing_TxtResultHeader" />
 
             <!-- Hero-Value: Empfohlener Querschnitt -->
             <Border CornerRadius="12" Padding="16,12"
-                    Margin="0,4,0,8">
-              <Border.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="#F59E0B" Offset="0" />
-                  <GradientStop Color="#D97706" Offset="1" />
-                </LinearGradientBrush>
-              </Border.Background>
+                    Margin="0,4,0,8"
+                    Background="{DynamicResource TileGradientCableSizingBrush}">
               <StackPanel>
-                <TextBlock Text="{loc:Translate RecommendedCrossSection}" FontSize="12"
-                           Foreground="#CCFFFFFF" />
+                <TextBlock Text="{loc:Translate RecommendedCrossSection}" FontSize="{StaticResource FontSizeLabelMd}"
+                           Foreground="{DynamicResource OnGradientSubtextBrush}" />
                 <TextBlock AutomationProperties.AutomationId="CableSizing_TxtRecommended"
-                           Text="{Binding RecommendedSizeDisplay}" FontSize="28" FontWeight="Bold"
+                           Text="{Binding RecommendedSizeDisplay}" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                            Foreground="White">
                   <i:Interaction.Behaviors>
                     <behaviors:CountUpBehavior TargetValue="{Binding Result.RecommendedCrossSection}" Format="F1" Suffix=" mm&#178;" Duration="500" />
@@ -158,10 +153,10 @@
             <!-- Mindest-Querschnitt -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate MinCrossSection}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding MinSizeDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="CableSizing_TxtMinSize" />
             </Grid>
@@ -169,10 +164,10 @@
             <!-- Spannungsabfall -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate VoltageDrop}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding DropDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="CableSizing_TxtDrop" />
             </Grid>
@@ -180,10 +175,10 @@
             <!-- VDE-Status (farblich) -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="VDE"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding VdeStatusDisplay}"
-                         FontSize="14" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="Bold"
                          Foreground="{DynamicResource PrimaryBrush}"
                          AutomationProperties.AutomationId="CableSizing_TxtVde" />
             </Grid>
@@ -191,10 +186,10 @@
             <!-- Leitermaterial -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate CableMaterial}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding MaterialDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="CableSizing_TxtMaterial" />
             </Grid>
@@ -202,10 +197,10 @@
             <!-- Spannung -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate CableVoltage}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding VoltageDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="CableSizing_TxtVoltage" />
             </Grid>
@@ -222,7 +217,7 @@
                   <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
                   <TextBlock Text="{loc:Translate ShareResult}"
-                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
@@ -237,7 +232,7 @@
                   <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
                   <TextBlock Text="{loc:Translate ExportMaterialList}"
-                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
@@ -267,7 +262,7 @@
             <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{loc:Translate Reset}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -280,7 +275,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Calculate}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -294,7 +289,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Save}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -304,7 +299,7 @@
     <!-- Save Project Dialog Overlay -->
     <Border Grid.Row="0" Grid.RowSpan="3"
             ZIndex="100"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowSaveDialog}"
             AutomationProperties.AutomationId="CableSizing_SaveDialogOverlay">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -316,7 +311,7 @@
               AutomationProperties.AutomationId="CableSizing_SaveDialogCard">
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Translate SaveProject}"
-                     FontSize="18" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="CableSizing_TxtSaveDialogTitle" />

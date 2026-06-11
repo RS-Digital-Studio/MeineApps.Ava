@@ -613,6 +613,21 @@ La publicidad ha sido desactivada.</value>
   <data name="PlaceholderThickness" xml:space="preserve">
     <value>p.ej. 3</value>
   </data>
+  <data name="PlaceholderAutoZero" xml:space="preserve">
+    <value>0 = automático</value>
+  </data>
+  <data name="PlaceholderPricePerHour" xml:space="preserve">
+    <value>€/h</value>
+  </data>
+  <data name="PlaceholderPricePerKg" xml:space="preserve">
+    <value>€/kg</value>
+  </data>
+  <data name="PlaceholderPricePerKwh" xml:space="preserve">
+    <value>€/kWh</value>
+  </data>
+  <data name="PlaceholderPricePerSqm" xml:space="preserve">
+    <value>€/m²</value>
+  </data>
 
   <!-- Remove Ads (NEW Monetization Model) -->
   <data name="RemoveAds" xml:space="preserve">
@@ -1741,6 +1756,9 @@ Valores típicos:
   <data name="ResultStepMeasure" xml:space="preserve"><value>Medida de paso (2h+g)</value></data>
   <data name="ResultStairLength" xml:space="preserve"><value>Longitud escalera</value></data>
   <data name="StepsUnit" xml:space="preserve"><value>escalones</value></data>
+  <data name="DinNormLabel" xml:space="preserve">
+    <value>DIN 18065</value>
+  </data>
   <data name="DinCompliant" xml:space="preserve"><value>DIN 18065 ✓</value></data>
   <data name="NotDinCompliant" xml:space="preserve"><value>No conforme DIN</value></data>
   <data name="ComfortableStairs" xml:space="preserve"><value>Cómoda</value></data>
@@ -2268,5 +2286,34 @@ Valores típicos:
   </data>
   <data name="SaveFailedMessage" xml:space="preserve">
     <value>Error al guardar. Comprueba el espacio disponible e inténtalo de nuevo.</value>
+  </data>
+
+  <!-- Accessibility (AutomationProperties.Name) -->
+  <data name="A11yCopyResult" xml:space="preserve">
+    <value>Copiar resultado</value>
+  </data>
+  <data name="A11yDeleteAllAreas" xml:space="preserve">
+    <value>Eliminar todas las áreas parciales</value>
+  </data>
+  <data name="A11yDeleteQuote" xml:space="preserve">
+    <value>Eliminar presupuesto</value>
+  </data>
+  <data name="A11yDeleteTemplate" xml:space="preserve">
+    <value>Eliminar plantilla</value>
+  </data>
+  <data name="A11yExportPdf" xml:space="preserve">
+    <value>Exportar PDF</value>
+  </data>
+  <data name="A11yExportQuotePdf" xml:space="preserve">
+    <value>Exportar presupuesto como PDF</value>
+  </data>
+  <data name="A11yRemoveArea" xml:space="preserve">
+    <value>Eliminar área parcial</value>
+  </data>
+  <data name="A11yRemoveItem" xml:space="preserve">
+    <value>Eliminar partida</value>
+  </data>
+  <data name="A11ySaveQuote" xml:space="preserve">
+    <value>Guardar presupuesto</value>
   </data>
 </root>

@@ -61,6 +61,87 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Copy result ähnelt.
+        /// </summary>
+        internal static string A11yCopyResult {
+            get {
+                return ResourceManager.GetString("A11yCopyResult", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Delete all area parts ähnelt.
+        /// </summary>
+        internal static string A11yDeleteAllAreas {
+            get {
+                return ResourceManager.GetString("A11yDeleteAllAreas", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Delete quote ähnelt.
+        /// </summary>
+        internal static string A11yDeleteQuote {
+            get {
+                return ResourceManager.GetString("A11yDeleteQuote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Delete template ähnelt.
+        /// </summary>
+        internal static string A11yDeleteTemplate {
+            get {
+                return ResourceManager.GetString("A11yDeleteTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Export PDF ähnelt.
+        /// </summary>
+        internal static string A11yExportPdf {
+            get {
+                return ResourceManager.GetString("A11yExportPdf", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Export quote as PDF ähnelt.
+        /// </summary>
+        internal static string A11yExportQuotePdf {
+            get {
+                return ResourceManager.GetString("A11yExportQuotePdf", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Remove area part ähnelt.
+        /// </summary>
+        internal static string A11yRemoveArea {
+            get {
+                return ResourceManager.GetString("A11yRemoveArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Remove item ähnelt.
+        /// </summary>
+        internal static string A11yRemoveItem {
+            get {
+                return ResourceManager.GetString("A11yRemoveItem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Save quote ähnelt.
+        /// </summary>
+        internal static string A11ySaveQuote {
+            get {
+                return ResourceManager.GetString("A11ySaveQuote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Access expires in {0} min ähnelt.
         /// </summary>
         internal static string AccessExpiresIn {
@@ -1958,6 +2039,15 @@ namespace HandwerkerRechner.Resources.Strings {
                 return ResourceManager.GetString("DinCompliant", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die DIN 18065 ähnelt.
+        /// </summary>
+        internal static string DinNormLabel {
+            get {
+                return ResourceManager.GetString("DinNormLabel", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Count ähnelt.
@@ -3742,6 +3832,15 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die 0 = auto ähnelt.
+        /// </summary>
+        internal static string PlaceholderAutoZero {
+            get {
+                return ResourceManager.GetString("PlaceholderAutoZero", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 32 ähnelt.
         /// </summary>
         internal static string PlaceholderCentimeters {
@@ -3972,6 +4071,42 @@ namespace HandwerkerRechner.Resources.Strings {
         internal static string PlaceholderPriceMedium {
             get {
                 return ResourceManager.GetString("PlaceholderPriceMedium", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die €/h ähnelt.
+        /// </summary>
+        internal static string PlaceholderPricePerHour {
+            get {
+                return ResourceManager.GetString("PlaceholderPricePerHour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die €/kg ähnelt.
+        /// </summary>
+        internal static string PlaceholderPricePerKg {
+            get {
+                return ResourceManager.GetString("PlaceholderPricePerKg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die €/kWh ähnelt.
+        /// </summary>
+        internal static string PlaceholderPricePerKwh {
+            get {
+                return ResourceManager.GetString("PlaceholderPricePerKwh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die €/m² ähnelt.
+        /// </summary>
+        internal static string PlaceholderPricePerSqm {
+            get {
+                return ResourceManager.GetString("PlaceholderPricePerSqm", resourceCulture);
             }
         }
         

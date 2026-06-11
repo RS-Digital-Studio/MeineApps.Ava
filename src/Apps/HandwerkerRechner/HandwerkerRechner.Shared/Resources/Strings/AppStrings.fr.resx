@@ -613,6 +613,21 @@ Vous économisez 0,96 € par rapport à l'achat individuel !</value>
   <data name="PlaceholderThickness" xml:space="preserve">
     <value>p.ex. 3</value>
   </data>
+  <data name="PlaceholderAutoZero" xml:space="preserve">
+    <value>0 = automatique</value>
+  </data>
+  <data name="PlaceholderPricePerHour" xml:space="preserve">
+    <value>€/h</value>
+  </data>
+  <data name="PlaceholderPricePerKg" xml:space="preserve">
+    <value>€/kg</value>
+  </data>
+  <data name="PlaceholderPricePerKwh" xml:space="preserve">
+    <value>€/kWh</value>
+  </data>
+  <data name="PlaceholderPricePerSqm" xml:space="preserve">
+    <value>€/m²</value>
+  </data>
 
   <!-- Remove Ads (NEW Monetization Model) -->
   <data name="RemoveAds" xml:space="preserve">
@@ -1740,6 +1755,9 @@ Le rendement diminue sur les surfaces rugueuses !</value>
   <data name="ResultStepMeasure" xml:space="preserve"><value>Mesure de pas (2h+g)</value></data>
   <data name="ResultStairLength" xml:space="preserve"><value>Longueur escalier</value></data>
   <data name="StepsUnit" xml:space="preserve"><value>marches</value></data>
+  <data name="DinNormLabel" xml:space="preserve">
+    <value>DIN 18065</value>
+  </data>
   <data name="DinCompliant" xml:space="preserve"><value>DIN 18065 ✓</value></data>
   <data name="NotDinCompliant" xml:space="preserve"><value>Non conforme DIN</value></data>
   <data name="ComfortableStairs" xml:space="preserve"><value>Confortable</value></data>
@@ -2267,5 +2285,34 @@ Le rendement diminue sur les surfaces rugueuses !</value>
   </data>
   <data name="SaveFailedMessage" xml:space="preserve">
     <value>Échec de l'enregistrement. Vérifiez l'espace disponible et réessayez.</value>
+  </data>
+
+  <!-- Accessibility (AutomationProperties.Name) -->
+  <data name="A11yCopyResult" xml:space="preserve">
+    <value>Copier le résultat</value>
+  </data>
+  <data name="A11yDeleteAllAreas" xml:space="preserve">
+    <value>Supprimer toutes les surfaces</value>
+  </data>
+  <data name="A11yDeleteQuote" xml:space="preserve">
+    <value>Supprimer le devis</value>
+  </data>
+  <data name="A11yDeleteTemplate" xml:space="preserve">
+    <value>Supprimer le modèle</value>
+  </data>
+  <data name="A11yExportPdf" xml:space="preserve">
+    <value>Exporter le PDF</value>
+  </data>
+  <data name="A11yExportQuotePdf" xml:space="preserve">
+    <value>Exporter le devis en PDF</value>
+  </data>
+  <data name="A11yRemoveArea" xml:space="preserve">
+    <value>Supprimer la surface</value>
+  </data>
+  <data name="A11yRemoveItem" xml:space="preserve">
+    <value>Supprimer le poste</value>
+  </data>
+  <data name="A11ySaveQuote" xml:space="preserve">
+    <value>Enregistrer le devis</value>
   </data>
 </root>

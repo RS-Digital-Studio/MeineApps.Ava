@@ -6,6 +6,24 @@
              x:DataType="vm:SettingsViewModel"
              x:CompileBindings="True">
 
+  <UserControl.Styles>
+    <!-- Sprach-Buttons: EIN Button pro Sprache, Selected-Optik wie Classes="Primary"
+         (ersetzt das frühere Doppel-Button-Pattern mit IsVisible/!IsVisible) -->
+    <Style Selector="Button.LangButton.Selected">
+      <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.LangButton.Selected:pointerover">
+      <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.LangButton.Selected:pressed">
+      <Setter Property="Background" Value="{DynamicResource PrimaryPressedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryPressedBrush}" />
+    </Style>
+  </UserControl.Styles>
+
   <ScrollViewer AutomationProperties.AutomationId="Settings_ScrollRoot" VerticalScrollBarVisibility="Auto">
     <!-- Bottom-Margin 120dp: Content darf nicht hinter dem Ad-Banner verschwinden (Pattern wie QuoteView/ProjectTemplatesView) -->
     <StackPanel Margin="16,16,16,120" Spacing="12">
@@ -13,7 +31,7 @@
       <!-- Header -->
       <TextBlock AutomationProperties.AutomationId="Settings_TxtTitle"
                  Text="{Binding SettingsTitleText}"
-                 FontSize="22" FontWeight="Bold"
+                 FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold"
                  Foreground="{DynamicResource TextPrimaryBrush}"
                  Margin="0,4,0,4" />
 
@@ -25,83 +43,59 @@
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock AutomationProperties.AutomationId="Settings_TxtLanguageTitle"
                        Text="{Binding LanguageTitleText}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
 
           <WrapPanel Orientation="Horizontal">
             <!-- Deutsch -->
-            <Panel>
-              <Button Classes="Primary Small" Content="Deutsch"
-                      IsVisible="{Binding IsGermanSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="de"
-                      Margin="0,0,8,8" />
-              <Button Classes="Outlined Small" Content="Deutsch"
-                      IsVisible="{Binding !IsGermanSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="de"
-                      Margin="0,0,8,8" />
-            </Panel>
+            <Button AutomationProperties.AutomationId="Settings_BtnLangGerman"
+                    Classes.Selected="{Binding IsGermanSelected}"
+                    Classes="Outlined Small LangButton" Content="Deutsch"
+                    MinHeight="{StaticResource MinTouchTarget}"
+                    Command="{Binding SelectLanguageCommand}" CommandParameter="de"
+                    Margin="0,0,8,8" />
 
             <!-- English -->
-            <Panel>
-              <Button Classes="Primary Small" Content="English"
-                      IsVisible="{Binding IsEnglishSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="en"
-                      Margin="0,0,8,8" />
-              <Button Classes="Outlined Small" Content="English"
-                      IsVisible="{Binding !IsEnglishSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="en"
-                      Margin="0,0,8,8" />
-            </Panel>
+            <Button AutomationProperties.AutomationId="Settings_BtnLangEnglish"
+                    Classes.Selected="{Binding IsEnglishSelected}"
+                    Classes="Outlined Small LangButton" Content="English"
+                    MinHeight="{StaticResource MinTouchTarget}"
+                    Command="{Binding SelectLanguageCommand}" CommandParameter="en"
+                    Margin="0,0,8,8" />
 
             <!-- Espanol -->
-            <Panel>
-              <Button Classes="Primary Small" Content="Espa&#241;ol"
-                      IsVisible="{Binding IsSpanishSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="es"
-                      Margin="0,0,8,8" />
-              <Button Classes="Outlined Small" Content="Espa&#241;ol"
-                      IsVisible="{Binding !IsSpanishSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="es"
-                      Margin="0,0,8,8" />
-            </Panel>
+            <Button AutomationProperties.AutomationId="Settings_BtnLangSpanish"
+                    Classes.Selected="{Binding IsSpanishSelected}"
+                    Classes="Outlined Small LangButton" Content="Espa&#241;ol"
+                    MinHeight="{StaticResource MinTouchTarget}"
+                    Command="{Binding SelectLanguageCommand}" CommandParameter="es"
+                    Margin="0,0,8,8" />
 
             <!-- Francais -->
-            <Panel>
-              <Button Classes="Primary Small" Content="Fran&#231;ais"
-                      IsVisible="{Binding IsFrenchSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="fr"
-                      Margin="0,0,8,8" />
-              <Button Classes="Outlined Small" Content="Fran&#231;ais"
-                      IsVisible="{Binding !IsFrenchSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="fr"
-                      Margin="0,0,8,8" />
-            </Panel>
+            <Button AutomationProperties.AutomationId="Settings_BtnLangFrench"
+                    Classes.Selected="{Binding IsFrenchSelected}"
+                    Classes="Outlined Small LangButton" Content="Fran&#231;ais"
+                    MinHeight="{StaticResource MinTouchTarget}"
+                    Command="{Binding SelectLanguageCommand}" CommandParameter="fr"
+                    Margin="0,0,8,8" />
 
             <!-- Italiano -->
-            <Panel>
-              <Button Classes="Primary Small" Content="Italiano"
-                      IsVisible="{Binding IsItalianSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="it"
-                      Margin="0,0,8,8" />
-              <Button Classes="Outlined Small" Content="Italiano"
-                      IsVisible="{Binding !IsItalianSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="it"
-                      Margin="0,0,8,8" />
-            </Panel>
+            <Button AutomationProperties.AutomationId="Settings_BtnLangItalian"
+                    Classes.Selected="{Binding IsItalianSelected}"
+                    Classes="Outlined Small LangButton" Content="Italiano"
+                    MinHeight="{StaticResource MinTouchTarget}"
+                    Command="{Binding SelectLanguageCommand}" CommandParameter="it"
+                    Margin="0,0,8,8" />
 
             <!-- Portugues -->
-            <Panel>
-              <Button Classes="Primary Small" Content="Portugu&#234;s"
-                      IsVisible="{Binding IsPortugueseSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="pt"
-                      Margin="0,0,8,8" />
-              <Button Classes="Outlined Small" Content="Portugu&#234;s"
-                      IsVisible="{Binding !IsPortugueseSelected}"
-                      Command="{Binding SelectLanguageCommand}" CommandParameter="pt"
-                      Margin="0,0,8,8" />
-            </Panel>
+            <Button AutomationProperties.AutomationId="Settings_BtnLangPortuguese"
+                    Classes.Selected="{Binding IsPortugueseSelected}"
+                    Classes="Outlined Small LangButton" Content="Portugu&#234;s"
+                    MinHeight="{StaticResource MinTouchTarget}"
+                    Command="{Binding SelectLanguageCommand}" CommandParameter="pt"
+                    Margin="0,0,8,8" />
           </WrapPanel>
         </StackPanel>
       </Border>
@@ -114,7 +108,7 @@
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock AutomationProperties.AutomationId="Settings_TxtUnitSystemTitle"
                        Text="{Binding UnitSystemTitleText}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
@@ -179,14 +173,14 @@
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock AutomationProperties.AutomationId="Settings_TxtPremiumTitle"
                        Text="{Binding PremiumTitleText}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
 
           <TextBlock AutomationProperties.AutomationId="Settings_TxtRemoveAdsDesc"
                      Text="{Binding RemoveAdsDescText}"
-                     FontSize="14"
+                     FontSize="{StaticResource FontSizeBodyMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
 
           <Button AutomationProperties.AutomationId="Settings_BtnRemoveAds"
@@ -217,13 +211,13 @@
                              Foreground="{DynamicResource AccentBrush}" />
             <TextBlock AutomationProperties.AutomationId="Settings_TxtAdFreeTitle"
                        Text="{Binding AdFreeTitleText}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
           <TextBlock AutomationProperties.AutomationId="Settings_TxtAdFreeConfirmation"
                      Text="{Binding AdFreeConfirmationText}"
-                     FontSize="14"
+                     FontSize="{StaticResource FontSizeBodyMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
         </StackPanel>
       </Border>
@@ -236,16 +230,16 @@
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock AutomationProperties.AutomationId="Settings_TxtAboutTitle"
                        Text="{Binding AboutTitleText}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
 
-          <TextBlock Text="HandwerkerRechner" FontSize="16" FontWeight="Bold"
+          <TextBlock Text="HandwerkerRechner" FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock AutomationProperties.AutomationId="Settings_TxtAppVersion"
                      Text="{Binding AppVersion}"
-                     FontSize="14"
+                     FontSize="{StaticResource FontSizeBodyMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
 
           <Button AutomationProperties.AutomationId="Settings_BtnFeedback"

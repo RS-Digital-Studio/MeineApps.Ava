@@ -3,6 +3,8 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
+using MeineApps.Core.Ava.Async;
+using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
@@ -19,7 +21,7 @@ namespace WorkTimePro.ViewModels;
 /// ViewModel für die Statistik-Seite. Stellt Daten-Arrays für SkiaSharp-Renderer bereit.
 /// Phase 7: LiveCharts durch SkiaSharp-Visualisierungen ersetzt.
 /// </summary>
-public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
+public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource, IDisposable
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;
@@ -30,6 +32,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
     private readonly ITrialService _trialService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPreferencesService _preferences;
+    private readonly ILocalizationService _localization;
 
     private const string ExtendedStatsExpiryKey = "ExtendedStatsExpiry";
 
@@ -58,7 +61,8 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
         IPurchaseService purchaseService,
         ITrialService trialService,
         IRewardedAdService rewardedAdService,
-        IPreferencesService preferences)
+        IPreferencesService preferences,
+        ILocalizationService localization)
     {
         _database = database;
         _calculation = calculation;
@@ -69,6 +73,23 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
         _trialService = trialService;
         _rewardedAdService = rewardedAdService;
         _preferences = preferences;
+        _localization = localization;
+
+        // VM-komponierte Chart-/Perioden-Labels (PeriodDisplay, WeekdayLabels, …) werden
+        // nur in LoadDataAsync gesetzt — bei Sprachwechsel neu laden, sonst frieren sie ein.
+        _localization.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            LoadDataAsync().Forget(ex =>
+                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message))));
+    }
+
+    public void Dispose()
+    {
+        _localization.LanguageChanged -= OnLanguageChanged;
     }
 
     // === Properties ===

@@ -106,7 +106,6 @@ public sealed partial class MainViewModel
                 }
                 CloseAllSubPages();
                 IsDayDetailActive = true;
-                OnPropertyChanged(nameof(IsSubPageActive));
                 await DayDetailVm.LoadDataAsync();
                 return;
             }
@@ -122,7 +121,6 @@ public sealed partial class MainViewModel
                 }
                 CloseAllSubPages();
                 IsMonthActive = true;
-                OnPropertyChanged(nameof(IsSubPageActive));
                 await MonthVm.LoadDataAsync();
                 return;
             }
@@ -146,18 +144,23 @@ public sealed partial class MainViewModel
     // === Sub-Page Active-Flags + Navigation-Commands ===
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSubPageActive))]
     private bool _isDayDetailActive;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSubPageActive))]
     private bool _isMonthActive;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSubPageActive))]
     private bool _isYearActive;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSubPageActive))]
     private bool _isVacationActive;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSubPageActive))]
     private bool _isShiftPlanActive;
 
     public bool IsSubPageActive => IsDayDetailActive || IsMonthActive || IsYearActive || IsVacationActive || IsShiftPlanActive;
@@ -169,7 +172,6 @@ public sealed partial class MainViewModel
         DayDetailVm.SelectedDate = DateTime.Today;
         CloseAllSubPages();
         IsDayDetailActive = true;
-        OnPropertyChanged(nameof(IsSubPageActive));
         await DayDetailVm.LoadDataAsync();
     }
 
@@ -178,7 +180,6 @@ public sealed partial class MainViewModel
     {
         CloseAllSubPages();
         IsMonthActive = true;
-        OnPropertyChanged(nameof(IsSubPageActive));
         await MonthVm.LoadDataAsync();
     }
 
@@ -187,7 +188,6 @@ public sealed partial class MainViewModel
     {
         CloseAllSubPages();
         IsYearActive = true;
-        OnPropertyChanged(nameof(IsSubPageActive));
         await YearVm.LoadDataAsync();
     }
 
@@ -196,7 +196,6 @@ public sealed partial class MainViewModel
     {
         CloseAllSubPages();
         IsVacationActive = true;
-        OnPropertyChanged(nameof(IsSubPageActive));
         await VacationVm.LoadDataAsync();
     }
 
@@ -205,7 +204,6 @@ public sealed partial class MainViewModel
     {
         CloseAllSubPages();
         IsShiftPlanActive = true;
-        OnPropertyChanged(nameof(IsSubPageActive));
         await ShiftPlanVm.LoadDataAsync();
     }
 
@@ -217,11 +215,11 @@ public sealed partial class MainViewModel
 
     private void CloseAllSubPages()
     {
+        // IsSubPageActive-Notify übernimmt [NotifyPropertyChangedFor] an den Flags
         IsDayDetailActive = false;
         IsMonthActive = false;
         IsYearActive = false;
         IsVacationActive = false;
         IsShiftPlanActive = false;
-        OnPropertyChanged(nameof(IsSubPageActive));
     }
 }

@@ -664,15 +664,19 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
             await _database.SaveSettingsAsync(_settings);
 
+            // Flag VOR den folgenden awaits lesen UND zurücksetzen — setzt der Nutzer
+            // währenddessen erneut ein arbeitszeit-relevantes Feld, geht dessen
+            // Flag-Setzung sonst durch das späte Zurücksetzen verloren.
+            var requiresReload = _workTimeSettingsChanged;
+            _workTimeSettingsChanged = false;
+
             // Andere Tabs über Änderungen informieren — Bool signalisiert ob ein
             // Daten-Reload nötig ist (nur bei arbeitszeit-relevanten Settings).
-            var requiresReload = _workTimeSettingsChanged;
             SettingsChanged?.Invoke(this, requiresReload);
 
             // Warnung bei Arbeitszeit-relevanten Änderungen wenn bestehende Daten vorhanden
-            if (_workTimeSettingsChanged)
+            if (requiresReload)
             {
-                _workTimeSettingsChanged = false;
                 await ShowWorkTimeSettingsWarningAsync();
             }
         }

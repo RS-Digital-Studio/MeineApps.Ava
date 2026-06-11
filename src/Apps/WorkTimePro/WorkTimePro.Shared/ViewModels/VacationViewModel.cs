@@ -24,7 +24,7 @@ public class VacationTypeItem
 /// <summary>
 /// ViewModel for vacation management (Premium feature)
 /// </summary>
-public sealed partial class VacationViewModel : ViewModelBase, INavigationSource, IMessageSource
+public sealed partial class VacationViewModel : ViewModelBase, INavigationSource, IMessageSource, IDisposable
 {
     private readonly IVacationService _vacationService;
     private readonly IHolidayService _holidayService;
@@ -119,7 +119,21 @@ public sealed partial class VacationViewModel : ViewModelBase, INavigationSource
         _localization = localization;
         _rewardedAdService = rewardedAdService;
 
+        // VM-komponierte Texte (VacationTypes-ComboBox) bei Sprachwechsel auffrischen —
+        // die View ist gecacht, ohne Notify bliebe die alte Sprache stehen.
+        _localization.LanguageChanged += OnLanguageChanged;
+
         SelectedYear = DateTime.Today.Year;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(VacationTypes)));
+    }
+
+    public void Dispose()
+    {
+        _localization.LanguageChanged -= OnLanguageChanged;
     }
 
     partial void OnSelectedYearChanged(int value)

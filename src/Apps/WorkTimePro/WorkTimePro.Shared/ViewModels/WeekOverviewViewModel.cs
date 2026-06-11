@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.Async;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
@@ -14,7 +15,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for week overview
 /// </summary>
-public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSource, IMessageSource
+public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSource, IMessageSource, IDisposable
 {
     private readonly ICalculationService _calculation;
     private readonly IDatabaseService _database;
@@ -37,6 +38,22 @@ public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSo
         _purchaseService = purchaseService;
         _trialService = trialService;
         _localization = localization;
+
+        // VM-komponierte Texte (WeekDisplay, PredictiveInsightText, …) werden nur in
+        // LoadDataAsync gesetzt — bei Sprachwechsel neu laden, sonst frieren sie ein.
+        _localization.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            LoadDataAsync().Forget(ex =>
+                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message))));
+    }
+
+    public void Dispose()
+    {
+        _localization.LanguageChanged -= OnLanguageChanged;
     }
 
     // === Properties ===

@@ -593,22 +593,54 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// </summary>
     public bool HandleBackPressed()
     {
-        // 1. Sub-Page offen → schließen
+        // 1. Offenes Overlay → über den jeweiligen Cancel-Pfad schließen
+        //    (räumt auch _pendingAction der Rewarded-Overlays auf)
+        if (TryCloseOpenOverlays())
+            return true;
+
+        // 2. Sub-Page offen → schließen
         if (IsSubPageActive)
         {
             GoBack();
             return true;
         }
 
-        // 2. Nicht auf Today-Tab → zurück zu Today
+        // 3. Nicht auf Today-Tab → zurück zu Today
         if (CurrentTab != 0)
         {
             CurrentTab = 0;
             return true;
         }
 
-        // 3. Auf Today-Tab → Double-Back prüfen (2 Sekunden Fenster)
+        // 4. Auf Today-Tab → Double-Back prüfen (2 Sekunden Fenster)
         return _backPressHelper.HandleDoubleBack(AppStrings.PressBackAgainToExit);
+    }
+
+    /// <summary>
+    /// Schließt das aktuell offene Overlay eines Child-VMs über dessen Cancel-Command
+    /// (Schritt 1 des Back-Patterns). Gibt true zurück, wenn ein Overlay offen war.
+    /// </summary>
+    private bool TryCloseOpenOverlays()
+    {
+        if (StatisticsVm.ShowExportFormatOverlay) { StatisticsVm.CancelExportFormatCommand.Execute(null); return true; }
+        if (StatisticsVm.ShowRewardedAdOverlay) { StatisticsVm.CancelAdOverlayCommand.Execute(null); return true; }
+
+        if (VacationVm.IsEditingQuota) { VacationVm.CancelEditQuotaCommand.Execute(null); return true; }
+        if (VacationVm.ShowRewardedAdOverlay) { VacationVm.CancelAdOverlayCommand.Execute(null); return true; }
+
+        if (YearVm.ShowRewardedAdOverlay) { YearVm.CancelAdOverlayCommand.Execute(null); return true; }
+
+        if (CalendarVm.IsOverlayVisible) { CalendarVm.CancelOverlayCommand.Execute(null); return true; }
+
+        if (DayDetailVm.IsTimeEntryOverlayVisible) { DayDetailVm.CancelTimeEntryOverlayCommand.Execute(null); return true; }
+        if (DayDetailVm.IsPauseOverlayVisible) { DayDetailVm.CancelPauseOverlayCommand.Execute(null); return true; }
+        if (DayDetailVm.IsConfirmDeleteVisible) { DayDetailVm.CancelDeleteCommand.Execute(null); return true; }
+        if (DayDetailVm.IsStatusSelectionVisible) { DayDetailVm.CancelStatusSelectionCommand.Execute(null); return true; }
+
+        if (SettingsVm.IsImportConfirmVisible) { SettingsVm.CancelImportCommand.Execute(null); return true; }
+        if (SettingsVm.IsPurchaseOptionsVisible) { SettingsVm.CancelPurchaseOptionsCommand.Execute(null); return true; }
+
+        return false;
     }
 
     [RelayCommand]
@@ -931,6 +963,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // AutoSave-CancellationTokenSource in SettingsVm bis zum Prozessende).
         (SettingsVm as IDisposable)?.Dispose();
         (DayDetailVm as IDisposable)?.Dispose();
+        (StatisticsVm as IDisposable)?.Dispose();
+        (VacationVm as IDisposable)?.Dispose();
+        (WeekVm as IDisposable)?.Dispose();
 
         GC.SuppressFinalize(this);
     }

@@ -193,6 +193,33 @@ public sealed class CraftEngine
         };
     }
 
+    /// <summary>
+    /// Berechnet die Abzugsfläche für Wandöffnungen (Türen + Fenster) in m².
+    /// Gemeinsam genutzt von Farb- und Tapetenrechner.
+    /// </summary>
+    /// <param name="doorCount">Anzahl Türen</param>
+    /// <param name="doorWidth">Türbreite in m</param>
+    /// <param name="doorHeight">Türhöhe in m</param>
+    /// <param name="windowCount">Anzahl Fenster</param>
+    /// <param name="windowWidth">Fensterbreite in m</param>
+    /// <param name="windowHeight">Fensterhöhe in m</param>
+    public double CalculateOpeningsDeduction(int doorCount, double doorWidth, double doorHeight,
+        int windowCount, double windowWidth, double windowHeight)
+    {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern.
+        // Negative Anzahl → 0 (würde sonst die Abzugsfläche verringern statt erhöhen).
+        if (doorCount < 0) doorCount = 0;
+        if (windowCount < 0) windowCount = 0;
+        doorWidth = Clamp(doorWidth, Limits.MaxLengthM, 0);
+        doorHeight = Clamp(doorHeight, Limits.MaxLengthM, 0);
+        windowWidth = Clamp(windowWidth, Limits.MaxLengthM, 0);
+        windowHeight = Clamp(windowHeight, Limits.MaxLengthM, 0);
+
+        var doorArea = doorCount * doorWidth * doorHeight;
+        var windowArea = windowCount * windowWidth * windowHeight;
+        return doorArea + windowArea;
+    }
+
     #endregion
 
     #region Raum/Trockenbau (PREMIUM)
@@ -1058,6 +1085,173 @@ public sealed class CraftEngine
     }
 
     #endregion
+
+    #region Profi-Werkzeuge (PREMIUM)
+
+    /// <summary>
+    /// Berechnet Lohnkosten inkl. Aufschlag und MwSt (Stundenrechner).
+    /// Reihenfolge: Netto-Arbeitszeit → Lohnkosten → Aufschlag → Gesamt netto → MwSt → Brutto.
+    /// </summary>
+    /// <param name="hourlyRate">Stundensatz in €/h</param>
+    /// <param name="workHours">Arbeitszeit in h (pro Mitarbeiter)</param>
+    /// <param name="breakMinutes">Pause in Minuten (wird abgezogen)</param>
+    /// <param name="overheadPercent">Aufschlag in % auf Lohnkosten</param>
+    /// <param name="vatPercent">MwSt in % auf Gesamt netto</param>
+    /// <param name="workers">Anzahl Mitarbeiter</param>
+    public HourlyRateResult CalculateHourlyRate(double hourlyRate, double workHours, double breakMinutes,
+        double overheadPercent, double vatPercent, int workers)
+    {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        hourlyRate = Clamp(hourlyRate, 1_000_000, 0);
+        workHours = Clamp(workHours, 1_000_000, 0);          // h — auch Projektstunden, nicht nur Tagessätze
+        breakMinutes = Clamp(breakMinutes, 60_000_000, 0);
+        overheadPercent = Clamp(overheadPercent, 100_000, 0);
+        vatPercent = Clamp(vatPercent, 100_000, 0);
+        if (workers < 0) workers = 0;
+
+        // Effektive Arbeitszeit = (Stunden - Pause) × Mitarbeiter
+        var breakHours = breakMinutes / 60.0;
+        var netWorkHours = Math.Max(0, (workHours - breakHours) * workers);
+
+        // Lohnkosten netto → Aufschlag → Gesamt netto → MwSt → Brutto (Kundenpreis)
+        var netLaborCost = netWorkHours * hourlyRate;
+        var overheadAmount = netLaborCost * overheadPercent / 100.0;
+        var totalNet = netLaborCost + overheadAmount;
+        var vatAmount = totalNet * vatPercent / 100.0;
+        var totalGross = totalNet + vatAmount;
+
+        return new HourlyRateResult
+        {
+            NetWorkHours = netWorkHours,
+            NetLaborCost = netLaborCost,
+            OverheadAmount = overheadAmount,
+            TotalNet = totalNet,
+            VatAmount = vatAmount,
+            TotalGross = totalGross
+        };
+    }
+
+    /// <summary>
+    /// Berechnet die Fläche einer Aufmaß-Form (alle Maße in m, Ergebnis in m²).
+    /// Ungültige Eingaben (≤ 0 bzw. negative Ausschnittsmaße) → 0.
+    /// </summary>
+    /// <param name="shape">Form (Rechteck, L-Form, T-Form, Trapez, Dreieck, Kreis)</param>
+    /// <param name="dimension1">Länge / Basis / Seite a / Durchmesser</param>
+    /// <param name="dimension2">Breite / Höhe</param>
+    /// <param name="dimension3">Ausschnitt-/Querbalken-Länge (L-/T-Form)</param>
+    /// <param name="dimension4">Ausschnitt-/Querbalken-Breite (L-/T-Form)</param>
+    /// <param name="dimension5">Parallelseite b (Trapez)</param>
+    public double CalculateShapeArea(AreaShape shape, double dimension1, double dimension2 = 0,
+        double dimension3 = 0, double dimension4 = 0, double dimension5 = 0)
+    {
+        // Negativ-Guards: zwei negative Eingaben würden sonst eine positive Fläche ergeben
+        // (z.B. Rechteck -5 × -4 = 20). Ungültige Eingaben → 0.
+        // Die Guards für d3/d4/d5 (>= 0 erlaubt) MÜSSEN vor dem Clamp laufen —
+        // Clamp würde negative Werte still auf 0 heben und eine Fläche liefern.
+        switch (shape)
+        {
+            case AreaShape.Rectangle:
+            {
+                dimension1 = Clamp(dimension1, Limits.MaxLengthM, 0);
+                dimension2 = Clamp(dimension2, Limits.MaxLengthM, 0);
+                if (dimension1 <= 0 || dimension2 <= 0) return 0;
+                return dimension1 * dimension2;
+            }
+            case AreaShape.LShape:
+            {
+                if (dimension3 < 0 || dimension4 < 0) return 0;
+                dimension1 = Clamp(dimension1, Limits.MaxLengthM, 0);
+                dimension2 = Clamp(dimension2, Limits.MaxLengthM, 0);
+                dimension3 = Clamp(dimension3, Limits.MaxLengthM, 0);
+                dimension4 = Clamp(dimension4, Limits.MaxLengthM, 0);
+                if (dimension1 <= 0 || dimension2 <= 0) return 0;
+
+                // Gesamtrechteck minus Eckausschnitt
+                return Math.Max(0, dimension1 * dimension2 - dimension3 * dimension4);
+            }
+            case AreaShape.TShape:
+            {
+                if (dimension3 < 0 || dimension4 < 0) return 0;
+                dimension1 = Clamp(dimension1, Limits.MaxLengthM, 0);
+                dimension2 = Clamp(dimension2, Limits.MaxLengthM, 0);
+                dimension3 = Clamp(dimension3, Limits.MaxLengthM, 0);
+                dimension4 = Clamp(dimension4, Limits.MaxLengthM, 0);
+                if (dimension1 <= 0 || dimension2 <= 0) return 0;
+
+                // Mittelteil + Querbalken (vereinfacht: T aus 2 Rechtecken)
+                return dimension1 * dimension2 + dimension3 * dimension4;
+            }
+            case AreaShape.Trapezoid:
+            {
+                if (dimension5 < 0) return 0;
+                dimension1 = Clamp(dimension1, Limits.MaxLengthM, 0);
+                dimension2 = Clamp(dimension2, Limits.MaxLengthM, 0);
+                dimension5 = Clamp(dimension5, Limits.MaxLengthM, 0);
+                if (dimension1 <= 0 || dimension2 <= 0) return 0;
+
+                // (a + b) / 2 × h
+                return (dimension1 + dimension5) / 2.0 * dimension2;
+            }
+            case AreaShape.Triangle:
+            {
+                dimension1 = Clamp(dimension1, Limits.MaxLengthM, 0);
+                dimension2 = Clamp(dimension2, Limits.MaxLengthM, 0);
+                if (dimension1 <= 0 || dimension2 <= 0) return 0;
+
+                // Basis × Höhe / 2
+                return dimension1 * dimension2 / 2.0;
+            }
+            case AreaShape.Circle:
+            {
+                dimension1 = Clamp(dimension1, Limits.MaxLengthM, 0);
+                if (dimension1 <= 0) return 0;
+
+                // π × r²
+                var radius = dimension1 / 2.0;
+                return Math.PI * radius * radius;
+            }
+            default:
+                return 0;
+        }
+    }
+
+    /// <summary>
+    /// Vergleicht die Gesamtkosten zweier Materialien bei gleicher Fläche.
+    /// Formel je Produkt: Fläche × Verbrauch/m² × (1 + Verschnitt%) × Preis.
+    /// </summary>
+    public MaterialCompareResult CompareMaterialCosts(double area,
+        double priceA, double consumptionA, double wastePercentA,
+        double priceB, double consumptionB, double wastePercentB)
+    {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern.
+        // Verschnitt-Limit großzügig (1000%) — beim Vergleich sind auch Werte > 100% zulässig.
+        area = Clamp(area, Limits.MaxAreaSqm, 0);
+        priceA = Clamp(priceA, 1_000_000, 0);
+        priceB = Clamp(priceB, 1_000_000, 0);
+        consumptionA = Clamp(consumptionA, 100_000, 0);
+        consumptionB = Clamp(consumptionB, 100_000, 0);
+        wastePercentA = Clamp(wastePercentA, 1_000, 0);
+        wastePercentB = Clamp(wastePercentB, 1_000, 0);
+
+        // Gesamtkosten = Fläche x Verbrauch/m² x (1 + Verschnitt%) x Preis
+        var totalCostA = area * consumptionA * (1 + wastePercentA / 100) * priceA;
+        var totalCostB = area * consumptionB * (1 + wastePercentB / 100) * priceB;
+
+        var savingsAmount = Math.Abs(totalCostA - totalCostB);
+        var expensive = Math.Max(totalCostA, totalCostB);
+        var savingsPercent = expensive > 0 ? (savingsAmount / expensive) * 100 : 0;
+
+        return new MaterialCompareResult
+        {
+            TotalCostA = totalCostA,
+            TotalCostB = totalCostB,
+            SavingsAmount = savingsAmount,
+            SavingsPercent = savingsPercent,
+            IsACheaper = totalCostA <= totalCostB
+        };
+    }
+
+    #endregion
 }
 
 #region Result Types
@@ -1300,6 +1494,25 @@ public record CableSizingResult
     public bool IsVdeCompliant { get; init; }
 }
 
+public record HourlyRateResult
+{
+    public double NetWorkHours { get; init; }   // Effektive Arbeitszeit (h, alle Mitarbeiter)
+    public double NetLaborCost { get; init; }   // Lohnkosten netto (€)
+    public double OverheadAmount { get; init; } // Aufschlag (€)
+    public double TotalNet { get; init; }       // Gesamt netto (€)
+    public double VatAmount { get; init; }      // MwSt-Betrag (€)
+    public double TotalGross { get; init; }     // Gesamt brutto / Kundenpreis (€)
+}
+
+public record MaterialCompareResult
+{
+    public double TotalCostA { get; init; }     // Gesamtkosten Produkt A (€)
+    public double TotalCostB { get; init; }     // Gesamtkosten Produkt B (€)
+    public double SavingsAmount { get; init; }  // Ersparnis absolut (€)
+    public double SavingsPercent { get; init; } // Ersparnis relativ zum teureren Produkt (%)
+    public bool IsACheaper { get; init; }       // true = Produkt A günstiger oder gleich teuer
+}
+
 public record GroutResult
 {
     public double AreaSqm { get; init; }
@@ -1337,6 +1550,17 @@ public enum ProfileType
     RoundTube,
     SquareTube,
     Angle
+}
+
+/// <summary>Aufmaß-Formen für <see cref="CraftEngine.CalculateShapeArea"/></summary>
+public enum AreaShape
+{
+    Rectangle,
+    LShape,
+    TShape,
+    Trapezoid,
+    Triangle,
+    Circle
 }
 
 public enum Orientation

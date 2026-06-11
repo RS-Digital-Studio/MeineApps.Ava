@@ -1,6 +1,7 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
@@ -17,6 +18,7 @@ namespace HandwerkerRechner.ViewModels.Premium;
 /// </summary>
 public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
+    private readonly CraftEngine _craftEngine;
     private readonly ILocalizationService _localization;
     private readonly IProjectService _projectService;
     private readonly ICalculationHistoryService _historyService;
@@ -115,12 +117,14 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
     #endregion
 
     public AreaMeasureViewModel(
+        CraftEngine craftEngine,
         ILocalizationService localization,
         IProjectService projectService,
         ICalculationHistoryService historyService,
         IMaterialExportService exportService,
         IFileShareService fileShareService)
     {
+        _craftEngine = craftEngine;
         _localization = localization;
         _projectService = projectService;
         _historyService = historyService;
@@ -155,14 +159,15 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
         {
             IsCalculating = true;
 
+            // UI-Index → Engine-Enum; Formeln (inkl. Negativ-Guards) liegen in der CraftEngine
             CurrentShapeArea = SelectedShapeIndex switch
             {
-                0 => CalculateRectangle(),
-                1 => CalculateLShape(),
-                2 => CalculateTShape(),
-                3 => CalculateTrapezoid(),
-                4 => CalculateTriangle(),
-                5 => CalculateCircle(),
+                0 => _craftEngine.CalculateShapeArea(AreaShape.Rectangle, Dimension1, Dimension2),
+                1 => _craftEngine.CalculateShapeArea(AreaShape.LShape, Dimension1, Dimension2, Dimension3, Dimension4),
+                2 => _craftEngine.CalculateShapeArea(AreaShape.TShape, Dimension1, Dimension2, Dimension3, Dimension4),
+                3 => _craftEngine.CalculateShapeArea(AreaShape.Trapezoid, Dimension1, Dimension2, dimension5: Dimension5),
+                4 => _craftEngine.CalculateShapeArea(AreaShape.Triangle, Dimension1, Dimension2),
+                5 => _craftEngine.CalculateShapeArea(AreaShape.Circle, Dimension1),
                 _ => 0
             };
 
@@ -212,57 +217,6 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
             System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] History: {ex.Message}");
 #endif
         }
-    }
-
-    // Negativ-Guards: zwei negative Eingaben würden sonst eine positive Fläche ergeben
-    // (z.B. Rechteck -5 × -4 = 20). Ungültige Eingaben → 0 → HasResult bleibt false.
-
-    private double CalculateRectangle() =>
-        Dimension1 <= 0 || Dimension2 <= 0 ? 0 : Dimension1 * Dimension2;
-
-    private double CalculateLShape()
-    {
-        if (Dimension1 <= 0 || Dimension2 <= 0 || Dimension3 < 0 || Dimension4 < 0) return 0;
-
-        // Gesamtrechteck minus Eckausschnitt
-        var total = Dimension1 * Dimension2;
-        var cutout = Dimension3 * Dimension4;
-        return Math.Max(0, total - cutout);
-    }
-
-    private double CalculateTShape()
-    {
-        if (Dimension1 <= 0 || Dimension2 <= 0 || Dimension3 < 0 || Dimension4 < 0) return 0;
-
-        // Mittelteil + Querbalken (vereinfacht: T aus 2 Rechtecken)
-        var stem = Dimension1 * Dimension2;
-        var crossbar = Dimension3 * Dimension4;
-        return stem + crossbar;
-    }
-
-    private double CalculateTrapezoid()
-    {
-        if (Dimension1 <= 0 || Dimension2 <= 0 || Dimension5 < 0) return 0;
-
-        // (a + b) / 2 × h
-        return (Dimension1 + Dimension5) / 2.0 * Dimension2;
-    }
-
-    private double CalculateTriangle()
-    {
-        if (Dimension1 <= 0 || Dimension2 <= 0) return 0;
-
-        // Basis × Höhe / 2
-        return Dimension1 * Dimension2 / 2.0;
-    }
-
-    private double CalculateCircle()
-    {
-        if (Dimension1 <= 0) return 0;
-
-        // π × r²
-        var radius = Dimension1 / 2.0;
-        return Math.PI * radius * radius;
     }
 
     [RelayCommand]

@@ -8,7 +8,9 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 | Datei | Zweck |
 |-------|-------|
-| `MainViewModel.cs` | Tab-Navigation (4 Tabs), Calculator-Overlay via `CurrentPage`/`CurrentCalculatorVm`, Favoriten, Back-Press, Rewarded-Counter, Premium-Status, Localization-Relay. |
+| `MainViewModel.cs` | Kern-Partial: Tab-Navigation (4 Tabs), Calculator-Overlay via `CurrentPage`/`CurrentCalculatorVm`, Back-Press, Rewarded-Counter, Premium-Status, Event-Wiring/Dispose. |
+| `MainViewModel.Favorites.cs` | Favoriten-Partial: `FavoriteCalculators`-Collection, Toggle-/Open-Commands, 19 `IsFavXxx`-Properties, `GetCalculatorInfo`, `FavoriteItem`-Record. |
+| `MainViewModel.Localization.cs` | Localization-Partial: `TabXxxText`-Properties, `UpdateNavTexts`/`UpdateHomeTexts`, `LocalizedPropertyNames`-Array, `OnLanguageChanged`, alle Label-Properties. |
 | `ICalculatorViewModel.cs` | Interface für alle 19 Calculator-VMs: `NavigationRequested`, `MessageRequested`, `FloatingTextRequested`, `ClipboardRequested`, `CalculationPerformed`, `ShowSaveDialog`, `Cleanup()`, `LoadFromProjectIdAsync()`. |
 | `SettingsViewModel.cs` | Sprache, Region, Einheiten, Feedback-Request. |
 | `ProjectsViewModel.cs` | CRUD Projektliste, Foto-Verwaltung, Navigation zu Rechner mit Projekt-Daten. |
@@ -16,10 +18,16 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `ProjectTemplatesViewModel.cs` | Built-in/Eigene Vorlagen, Anwenden-Dialog. |
 | `QuoteViewModel.cs` | Angebots-CRUD, Positionen, MwSt/Marge, PDF-Export. |
 | `Floor/TileCalculatorViewModel.cs` | Fliesenbedarf (Fläche, Verschnitt). |
-| `Floor/WallpaperCalculatorViewModel.cs` | Tapetenbedarf (Rapport-Berechnung). |
+| `Floor/WallpaperCalculatorViewModel.cs` | Tapetenbedarf (Rapport-Berechnung) — Kern: Ctor, Debounce, `Calculate`, Reset, Cleanup/Dispose. |
+| `Floor/WallpaperCalculatorViewModel.Properties.cs` | Input-/Cost-/Result-Properties, Unit-Labels. |
+| `Floor/WallpaperCalculatorViewModel.Persistence.cs` | Save-Dialog, Projekt speichern/laden, History-Save. |
+| `Floor/WallpaperCalculatorViewModel.Export.cs` | Clipboard-Share, PDF-/CSV-Export. |
 | `Floor/PaintCalculatorViewModel.cs` | Farbbedarf (Fläche, Ergiebigkeit, Anstriche). |
 | `Floor/FlooringCalculatorViewModel.cs` | Dielenbedarf (Länge, Breite, Versatz). |
-| `Floor/ConcreteCalculatorViewModel.cs` | Betonbedarf (Platte, Fundament, Rundsäule). |
+| `Floor/ConcreteCalculatorViewModel.cs` | Betonbedarf (Platte, Fundament, Rundsäule) — Kern: Ctor, Debounce, `Calculate`, Reset, Cleanup/Dispose. |
+| `Floor/ConcreteCalculatorViewModel.Properties.cs` | Sub-Rechner-Auswahl, Input-/Cost-/Result-Properties, Unit-Labels. |
+| `Floor/ConcreteCalculatorViewModel.Persistence.cs` | Save-Dialog, Projekt speichern/laden, History-Save. |
+| `Floor/ConcreteCalculatorViewModel.Export.cs` | Clipboard-Share, PDF-/CSV-Export. |
 | `Premium/DrywallViewModel.cs` | Trockenbau (CW/UW-Profile, Platten, Schrauben). |
 | `Premium/ElectricalViewModel.cs` | Spannungsabfall, Stromkosten, Ohmsches Gesetz. |
 | `Premium/MetalViewModel.cs` | Metallgewicht (6 Profile, 6 Materialien) + Gewindebohrung. |
@@ -102,6 +110,11 @@ Alle VMs: `IDisposable` (Timer + Event-Subscriptions). `Cleanup()` ist API-Konsi
   beide müssen konsistent sein.
 - **PlasterType/ScreedType Enum-Routing:** Tipp-sichere Enums statt String-Vergleich.
   `CalculateXxx(area, thickness, PlasterType.Gypsum)` — nie String-"Gipsputz" übergeben.
+- **AreaMeasure Index→Enum-Mapping:** Die UI bindet `SelectedShapeIndex` (0–5), die Engine
+  nimmt das `AreaShape`-Enum. Das Mapping lebt im `Calculate()`-switch des VM — Formeln
+  (inkl. Negativ-Guards) liegen in `CraftEngine.CalculateShapeArea`.
+- **Tür-/Fenster-Abzüge (Paint/Wallpaper):** gemeinsame Engine-Methode
+  `CalculateOpeningsDeduction` — der `ShowDeductions`-Toggle bleibt UI-Logik im VM.
 - **`GetString(key)` gibt NIEMALS null zurück:** `LocalizationService` gibt den Key-Namen zurück
   wenn der Key fehlt. `?? "fallback"` ist toter Code — fehlende RESX-Keys werden mit dem Key-Namen sichtbar.
 - **ProjectsViewModel Lade-Guard:** `LoadProjectsAsync` prüft `IsLoading` gegen Doppel-Aufruf.

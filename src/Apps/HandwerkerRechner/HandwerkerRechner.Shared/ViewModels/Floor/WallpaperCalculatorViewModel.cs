@@ -237,14 +237,13 @@ public sealed partial class WallpaperCalculatorViewModel : ViewModelBase, IDispo
     }
 
     /// <summary>
-    /// Berechnet die Gesamtfläche der Abzüge (Türen + Fenster)
+    /// Berechnet die Gesamtfläche der Abzüge (Türen + Fenster) — Formel in der CraftEngine
     /// </summary>
     private double CalculateDeductionArea()
     {
         if (!ShowDeductions) return 0;
-        var doorArea = DoorCount * Math.Max(0, DoorWidth) * Math.Max(0, DoorHeight);
-        var windowArea = WindowCount * Math.Max(0, WindowWidth) * Math.Max(0, WindowHeight);
-        return doorArea + windowArea;
+        return _craftEngine.CalculateOpeningsDeduction(
+            DoorCount, DoorWidth, DoorHeight, WindowCount, WindowWidth, WindowHeight);
     }
 
     [RelayCommand]

@@ -8,7 +8,7 @@ Conventions, Architektur und Patterns → [Haupt-CLAUDE.md](../../../../../CLAUD
 
 | Datei | Zweck |
 |-------|-------|
-| `CraftEngine.cs` | 28 Berechnungsalgorithmen + Result-Records + Enums. Schutz gegen Infinity/NaN. |
+| `CraftEngine.cs` | 32 Berechnungsalgorithmen (inkl. Profi-Werkzeuge: `CalculateHourlyRate`, `CalculateShapeArea` mit `AreaShape`-Enum, `CompareMaterialCosts`, `CalculateOpeningsDeduction` für Tür-/Fenster-Abzüge) + Result-Records + Enums. Schutz gegen Infinity/NaN. |
 | `Project.cs` | Gespeichertes Handwerker-Projekt: GUID-ID, Name, CalculatorType, DataJson, Fotos, Notizen. |
 | `ProjectTemplate.cs` | Vorlage mit `TemplateCalculatorEntry`-Liste (Route, CalculatorType, DefaultValues-Dictionary). |
 | `MaterialPrice.cs` | Material-Preis (`decimal`) mit `DefaultPrice` (Deutschland-Durchschnitt) und `CustomPrice` (`decimal?`, null = kein Benutzer-Override). `EffectivePrice` wählt automatisch. |
@@ -33,6 +33,9 @@ crossSection = Clamp(crossSection, 1000, 0.001);        // mm²
 
 Kein explizites Werfen — Werte werden still auf Plausibilitätsgrenze gesetzt.
 Division-durch-Null-Schutz als Inline-Guard: `if (area <= 0) area = 0.001`.
+**Negativ-Guards vor dem Clamp:** Wo negative Eingaben das Gesamtergebnis ungültig machen
+(z.B. negativer Ausschnitt in `CalculateShapeArea` → 0), muss der `< 0`-Guard VOR dem
+Clamp laufen — Clamp würde den Wert sonst still auf 0 heben und eine Fläche liefern.
 
 ### DIN-konforme Algorithmen
 

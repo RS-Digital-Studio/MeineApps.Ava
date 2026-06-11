@@ -833,4 +833,253 @@ public class CraftEngineTests
     }
 
     #endregion
+
+    #region Stundenrechner (CalculateHourlyRate)
+
+    [Fact]
+    public void CalculateHourlyRate_StandardTag_HandgerechneteWerte()
+    {
+        // Vorbereitung: 45 €/h, 8 h, 30 min Pause, 20% Aufschlag, 19% MwSt, 1 Mitarbeiter
+        // Netto-Zeit: 8 - 0.5 = 7.5 h → Lohn: 337.50 € → Aufschlag: 67.50 €
+        // Netto: 405.00 € → MwSt: 76.95 € → Brutto: 481.95 €
+        var ergebnis = _sut.CalculateHourlyRate(45, 8, 30, 20, 19, 1);
+
+        ergebnis.NetWorkHours.Should().BeApproximately(7.5, 0.001);
+        ergebnis.NetLaborCost.Should().BeApproximately(337.50, 0.001);
+        ergebnis.OverheadAmount.Should().BeApproximately(67.50, 0.001);
+        ergebnis.TotalNet.Should().BeApproximately(405.00, 0.001);
+        ergebnis.VatAmount.Should().BeApproximately(76.95, 0.001);
+        ergebnis.TotalGross.Should().BeApproximately(481.95, 0.001);
+    }
+
+    [Fact]
+    public void CalculateHourlyRate_ReihenfolgeAufschlagVorMwSt()
+    {
+        // Der Aufschlag wird auf die Lohnkosten gerechnet, die MwSt erst auf Netto+Aufschlag —
+        // NICHT MwSt auf Lohnkosten und dann Aufschlag (ergäbe denselben Brutto-Betrag,
+        // aber falsche Zwischensummen für Netto/MwSt-Ausweis).
+        var ergebnis = _sut.CalculateHourlyRate(100, 10, 0, 10, 19, 1);
+
+        ergebnis.NetLaborCost.Should().BeApproximately(1000, 0.001);
+        ergebnis.TotalNet.Should().BeApproximately(ergebnis.NetLaborCost + ergebnis.OverheadAmount, 0.001);
+        ergebnis.VatAmount.Should().BeApproximately(ergebnis.TotalNet * 0.19, 0.001);
+        ergebnis.TotalGross.Should().BeApproximately(ergebnis.TotalNet + ergebnis.VatAmount, 0.001);
+        // 1000 → +10% = 1100 → +19% = 1309
+        ergebnis.TotalGross.Should().BeApproximately(1309.00, 0.001);
+    }
+
+    [Fact]
+    public void CalculateHourlyRate_MehrereMitarbeiter_MultipliziertNettoZeit()
+    {
+        // 3 Mitarbeiter à (8 - 0.5) h = 22.5 h
+        var ergebnis = _sut.CalculateHourlyRate(45, 8, 30, 0, 0, 3);
+
+        ergebnis.NetWorkHours.Should().BeApproximately(22.5, 0.001);
+        ergebnis.NetLaborCost.Should().BeApproximately(1012.50, 0.001);
+    }
+
+    [Fact]
+    public void CalculateHourlyRate_PauseLaengerAlsArbeitszeit_AllesNull()
+    {
+        // Grenzfall: 2 h Arbeit, 180 min Pause → Netto-Zeit auf 0 begrenzt
+        var ergebnis = _sut.CalculateHourlyRate(45, 2, 180, 20, 19, 1);
+
+        ergebnis.NetWorkHours.Should().Be(0);
+        ergebnis.TotalGross.Should().Be(0);
+    }
+
+    [Fact]
+    public void CalculateHourlyRate_NaNUndInfinity_EndlicheErgebnisse()
+    {
+        // Projektregel: Infinity/NaN-Clamp vor Berechnungen
+        var ergebnis = _sut.CalculateHourlyRate(double.NaN, double.PositiveInfinity, double.NaN, double.PositiveInfinity, double.NaN, 1);
+
+        double.IsFinite(ergebnis.TotalGross).Should().BeTrue();
+        double.IsFinite(ergebnis.NetWorkHours).Should().BeTrue();
+    }
+
+    #endregion
+
+    #region Aufmaß-Flächen (CalculateShapeArea)
+
+    [Fact]
+    public void CalculateShapeArea_Rechteck_LaengeMalBreite()
+    {
+        // 5 × 4 = 20 m²
+        _sut.CalculateShapeArea(AreaShape.Rectangle, 5, 4).Should().BeApproximately(20, 0.001);
+    }
+
+    [Fact]
+    public void CalculateShapeArea_LForm_GesamtMinusAusschnitt()
+    {
+        // 5 × 4 = 20 minus Ausschnitt 2 × 1.5 = 3 → 17 m²
+        _sut.CalculateShapeArea(AreaShape.LShape, 5, 4, 2, 1.5).Should().BeApproximately(17, 0.001);
+    }
+
+    [Fact]
+    public void CalculateShapeArea_LForm_AusschnittGroesserAlsRechteck_GibtNull()
+    {
+        // Ausschnitt 10 × 10 = 100 > Rechteck 20 → Max(0, …) = 0
+        _sut.CalculateShapeArea(AreaShape.LShape, 5, 4, 10, 10).Should().Be(0);
+    }
+
+    [Fact]
+    public void CalculateShapeArea_TForm_MittelteilPlusQuerbalken()
+    {
+        // 5 × 4 = 20 plus Querbalken 2 × 1.5 = 3 → 23 m²
+        _sut.CalculateShapeArea(AreaShape.TShape, 5, 4, 2, 1.5).Should().BeApproximately(23, 0.001);
+    }
+
+    [Fact]
+    public void CalculateShapeArea_Trapez_MittelwertDerParallelseiten()
+    {
+        // (5 + 3) / 2 × 4 = 16 m²
+        _sut.CalculateShapeArea(AreaShape.Trapezoid, 5, 4, dimension5: 3).Should().BeApproximately(16, 0.001);
+    }
+
+    [Fact]
+    public void CalculateShapeArea_Dreieck_BasisMalHoeheHalbe()
+    {
+        // 5 × 4 / 2 = 10 m²
+        _sut.CalculateShapeArea(AreaShape.Triangle, 5, 4).Should().BeApproximately(10, 0.001);
+    }
+
+    [Fact]
+    public void CalculateShapeArea_Kreis_PiRQuadrat()
+    {
+        // Durchmesser 5 → r = 2.5 → π × 6.25 ≈ 19.635 m²
+        _sut.CalculateShapeArea(AreaShape.Circle, 5).Should().BeApproximately(Math.PI * 2.5 * 2.5, 0.001);
+    }
+
+    [Theory]
+    [InlineData(AreaShape.Rectangle, -5, 4, 0, 0, 0)]
+    [InlineData(AreaShape.Rectangle, -5, -4, 0, 0, 0)] // zwei Negative dürfen keine positive Fläche ergeben
+    [InlineData(AreaShape.LShape, 5, -4, 2, 1.5, 0)]
+    [InlineData(AreaShape.LShape, 5, 4, -2, 1.5, 0)]   // negativer Ausschnitt → ungültig
+    [InlineData(AreaShape.TShape, -5, 4, 2, 1.5, 0)]
+    [InlineData(AreaShape.TShape, 5, 4, 2, -1.5, 0)]   // negativer Querbalken → ungültig
+    [InlineData(AreaShape.Trapezoid, 5, 4, 0, 0, -3)]  // negative Parallelseite → ungültig
+    [InlineData(AreaShape.Trapezoid, 0, 4, 0, 0, 3)]
+    [InlineData(AreaShape.Triangle, 5, -4, 0, 0, 0)]
+    [InlineData(AreaShape.Circle, -5, 0, 0, 0, 0)]
+    [InlineData(AreaShape.Circle, 0, 0, 0, 0, 0)]
+    public void CalculateShapeArea_NegativeOderNullEingaben_GibtNull(
+        AreaShape form, double d1, double d2, double d3, double d4, double d5)
+    {
+        _sut.CalculateShapeArea(form, d1, d2, d3, d4, d5).Should().Be(0);
+    }
+
+    [Fact]
+    public void CalculateShapeArea_NullAusschnitt_WieRechteck()
+    {
+        // Ausschnitt 0 × 0 ist gültig (L-Form ohne Ausschnitt = Rechteck)
+        _sut.CalculateShapeArea(AreaShape.LShape, 5, 4, 0, 0).Should().BeApproximately(20, 0.001);
+    }
+
+    [Fact]
+    public void CalculateShapeArea_NaNEingabe_GibtNull()
+    {
+        // NaN → Clamp auf 0 → Ungültig-Guard
+        _sut.CalculateShapeArea(AreaShape.Rectangle, double.NaN, 4).Should().Be(0);
+        _sut.CalculateShapeArea(AreaShape.Circle, double.NaN).Should().Be(0);
+    }
+
+    #endregion
+
+    #region Material-Vergleich (CompareMaterialCosts)
+
+    [Fact]
+    public void CompareMaterialCosts_StandardVergleich_HandgerechneteWerte()
+    {
+        // A: 20 m² × 1.0/m² × 1.10 × 25 € = 550 €
+        // B: 20 m² × 0.8/m² × 1.10 × 35 € = 616 €
+        // Ersparnis: 66 € → 66/616 = 10.714 % — A günstiger
+        var ergebnis = _sut.CompareMaterialCosts(20, 25, 1.0, 10, 35, 0.8, 10);
+
+        ergebnis.TotalCostA.Should().BeApproximately(550, 0.001);
+        ergebnis.TotalCostB.Should().BeApproximately(616, 0.001);
+        ergebnis.SavingsAmount.Should().BeApproximately(66, 0.001);
+        ergebnis.SavingsPercent.Should().BeApproximately(66.0 / 616.0 * 100, 0.001);
+        ergebnis.IsACheaper.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CompareMaterialCosts_BGuenstiger_IsACheaperFalse()
+    {
+        var ergebnis = _sut.CompareMaterialCosts(20, 35, 1.0, 10, 25, 1.0, 10);
+
+        ergebnis.IsACheaper.Should().BeFalse();
+        ergebnis.TotalCostB.Should().BeLessThan(ergebnis.TotalCostA);
+    }
+
+    [Fact]
+    public void CompareMaterialCosts_GleicheKosten_AGewinntErsparnisNull()
+    {
+        // Gleiche Kosten → A gilt als günstiger (<=), Ersparnis 0
+        var ergebnis = _sut.CompareMaterialCosts(20, 25, 1.0, 10, 25, 1.0, 10);
+
+        ergebnis.IsACheaper.Should().BeTrue();
+        ergebnis.SavingsAmount.Should().Be(0);
+        ergebnis.SavingsPercent.Should().Be(0);
+    }
+
+    [Fact]
+    public void CompareMaterialCosts_VerschnittErhoehtKosten()
+    {
+        var ohne = _sut.CompareMaterialCosts(20, 25, 1.0, 0, 35, 0.8, 0);
+        var mit = _sut.CompareMaterialCosts(20, 25, 1.0, 50, 35, 0.8, 50);
+
+        mit.TotalCostA.Should().BeApproximately(ohne.TotalCostA * 1.5, 0.001);
+        mit.TotalCostB.Should().BeApproximately(ohne.TotalCostB * 1.5, 0.001);
+    }
+
+    [Fact]
+    public void CompareMaterialCosts_NaNUndInfinity_EndlicheErgebnisse()
+    {
+        var ergebnis = _sut.CompareMaterialCosts(double.NaN, double.PositiveInfinity, double.NaN,
+            double.PositiveInfinity, double.NaN, double.PositiveInfinity, double.NaN);
+
+        double.IsFinite(ergebnis.TotalCostA).Should().BeTrue();
+        double.IsFinite(ergebnis.TotalCostB).Should().BeTrue();
+        double.IsFinite(ergebnis.SavingsPercent).Should().BeTrue();
+    }
+
+    #endregion
+
+    #region Abzugsflächen (CalculateOpeningsDeduction)
+
+    [Fact]
+    public void CalculateOpeningsDeduction_TuerenUndFenster_HandgerechneterWert()
+    {
+        // 1 Tür 0.8 × 2.0 = 1.6 m² + 2 Fenster 1.2 × 1.0 = 2.4 m² → 4.0 m²
+        var ergebnis = _sut.CalculateOpeningsDeduction(1, 0.8, 2.0, 2, 1.2, 1.0);
+
+        ergebnis.Should().BeApproximately(4.0, 0.001);
+    }
+
+    [Fact]
+    public void CalculateOpeningsDeduction_KeineOeffnungen_GibtNull()
+    {
+        _sut.CalculateOpeningsDeduction(0, 0.8, 2.0, 0, 1.2, 1.0).Should().Be(0);
+    }
+
+    [Fact]
+    public void CalculateOpeningsDeduction_NegativeMasse_ZaehlenAlsNull()
+    {
+        // Negative Breite/Höhe → 0 (kein negativer Abzug, der die Fläche vergrößern würde)
+        _sut.CalculateOpeningsDeduction(1, -0.8, 2.0, 2, 1.2, 1.0).Should().BeApproximately(2.4, 0.001);
+        // Negative Anzahl → 0
+        _sut.CalculateOpeningsDeduction(-1, 0.8, 2.0, 0, 1.2, 1.0).Should().Be(0);
+    }
+
+    [Fact]
+    public void CalculateOpeningsDeduction_NaNUndInfinity_EndlichesErgebnis()
+    {
+        var ergebnis = _sut.CalculateOpeningsDeduction(1, double.NaN, double.PositiveInfinity, 1, double.NaN, double.NaN);
+
+        double.IsFinite(ergebnis).Should().BeTrue();
+        ergebnis.Should().BeGreaterThanOrEqualTo(0);
+    }
+
+    #endregion
 }

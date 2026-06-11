@@ -66,6 +66,7 @@ namespace HandwerkerImperium.Game
             }
             var gp = Gamepad.current;
             if (gp != null) v += gp.leftStick.ReadValue();
+            if (TouchJoystick.Current != null) v += TouchJoystick.Current.Value; // Android-Primärsteuerung (GDD §4)
             return Vector2.ClampMagnitude(v, 1f);
         }
 

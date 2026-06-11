@@ -103,6 +103,11 @@ namespace HandwerkerImperium.Game
             }
         }
 
+        /// <summary>Wartende Kunden der Runtime-Queue (fuer die physische Kunden-Schlange). Standalone: 0.</summary>
+        public int WaitingCustomers =>
+            runtime != null && runtime.Model != null && runtime.Model.Orders != null
+                ? runtime.Model.Orders.PendingCustomers : 0;
+
         /// <summary>
         /// Physischer Verkauf am Tresen bedient wartende Kunden der Runtime-Queue (ohne Doppel-Bezahlung —
         /// das Geld kam bereits aus dem Waren-Verkauf). Standalone-Greybox: no-op.

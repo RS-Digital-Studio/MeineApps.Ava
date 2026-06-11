@@ -2504,10 +2504,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                         ? Google.AR.Core.Config.LightEstimationMode.EnvironmentalHdr
                         : Google.AR.Core.Config.LightEstimationMode.AmbientIntensity;
                     config.SetLightEstimationMode(preferredLight);
+                    _configuredLightMode = preferredLight;
                 }
                 catch
                 {
                     config.SetLightEstimationMode(Google.AR.Core.Config.LightEstimationMode.AmbientIntensity);
+                    _configuredLightMode = Google.AR.Core.Config.LightEstimationMode.AmbientIntensity;
                 }
 
                 // Focus-Mode auf Auto — Kamera soll sich auf Messziel scharfstellen
@@ -2549,6 +2551,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 try
                 {
                     _arSession.Configure(config);
+                    _sessionConfig = config;
                     global::Android.Util.Log.Info("ArCapture",
                         $"ARCore-Session OK mit allen Features. Geospatial={_geospatialEnabled}, " +
                         $"HighEnd={IsHighEndDevice()}");
@@ -2569,6 +2572,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                     {
                         config.SetGeospatialMode(Google.AR.Core.Config.GeospatialMode.Disabled);
                         _arSession.Configure(config);
+                        _sessionConfig = config;
                         _geospatialEnabled = false;
 
                         Toast.MakeText(this,
@@ -2592,6 +2596,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                         try
                         {
                             _arSession.Configure(config);
+                            _sessionConfig = config;
+                            _configuredLightMode = Google.AR.Core.Config.LightEstimationMode.Disabled;
                             Toast.MakeText(this,
                                 $"Minimal-Config: {geoEx.GetType().Name}: {geoEx.Message}",
                                 ToastLength.Long)?.Show();
@@ -2793,6 +2799,17 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // Kamera-Hintergrund rendern
             _backgroundRenderer?.Draw(_cameraTextureId);
 
+            // FRAME-GATE: Bei LatestCameraImage + RENDERMODE_CONTINUOUSLY laeuft OnDrawFrame
+            // mit Display-Rate (S25 Ultra LTPO: bis 120 Hz), die Kamera liefert aber ~30 fps —
+            // Session.Update() gibt denselben Frame mehrfach zurueck. Ohne Gate: Duplikat-
+            // Samples im Multi-Frame-Averaging (StdDev gegen 0 → Confidence ueberschaetzt,
+            // Outlier-Filter wirkungslos), framezaehlerbasierte Timer laufen 4x zu schnell,
+            // und CPU-/UI-Thread-Last vervierfacht sich (Thermal-Throttling). Hintergrund-
+            // Rendering + Pending-Frame-Ops liefen oben bereits — ab hier nur ECHTE Frames.
+            var frameTimestamp = frame.Timestamp;
+            if (frameTimestamp == _lastProcessedFrameTimestamp) return;
+            _lastProcessedFrameTimestamp = frameTimestamp;
+
             var camera = frame.Camera;
             if (camera == null) return;
 
@@ -2813,8 +2830,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // und das Gerät heizt auf; der Akku-Auto-Finish (Datensicherung vor OS-Kill) muss
             // ebenfalls feuern, und PruneStopped räumt die bei flackerndem Tracking auflaufenden
             // gestoppten Anchors. Vorher lag der Block im if(isTracking) und schwieg genau dann.
+            // 30 ECHTE Kamera-Frames ~ 1 s (das Frame-Gate oben zaehlt nur neue Frames).
             _thermalCheckFrameCounter++;
-            if (_thermalCheckFrameCounter >= 60)
+            if (_thermalCheckFrameCounter >= 30)
             {
                 _thermalCheckFrameCounter = 0;
                 CheckThermalStatus();
@@ -2909,6 +2927,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// viewMatrix × projectionMatrix × worldPos → NDC → Screen-Pixel.
     /// Wird auf dem GL-Thread aufgerufen (pro Frame).
     /// </summary>
+    /// <summary>Timestamp (ns) des zuletzt VERARBEITETEN Kamera-Frames — das Frame-Gate in
+    /// OnDrawFrame ueberspringt Display-Refreshes ohne neues Kamerabild. GL-Thread-only.</summary>
+    private long _lastProcessedFrameTimestamp;
+
     /// <summary>Reusable MVP-Matrix-Buffer (16 float) — vermeidet float[]-Allocation pro Frame.
     /// GL-Thread-only, kein Lock.</summary>
     private readonly float[] _mvpMatrixScratch = new float[16];
@@ -4076,6 +4098,60 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // Persistenter Banner statt einmaligem Transient-Hint —
             // bleibt sichtbar solange das Gerät throttled.
             _thermalWarningText = warning;
+
+            // Light-Estimation-Downgrade: EnvironmentalHdr ist der teuerste Posten der
+            // ARCore-Pipeline — bei Severe+ auf AmbientIntensity schalten, bei Abkuehlung
+            // zurueck. Laeuft auf dem GL-Thread (OnDrawFrame) → Configure ist hier sicher.
+            // Das S25 Ultra drosselt unter Dauerlast schon nach 3-4 Minuten.
+            if (status >= 3) DowngradeLightEstimationForThermal();
+            else if (status <= 1) RestoreLightEstimationAfterThermal();
+        }
+        catch { /* harmlos */ }
+    }
+
+    /// <summary>Aktive Session-Config (nach erfolgreichem Configure) — fuer den
+    /// Thermal-Light-Downgrade zur Laufzeit. GL-Thread-only nach OnResume.</summary>
+    private Google.AR.Core.Config? _sessionConfig;
+
+    /// <summary>Der beim Session-Aufbau konfigurierte Light-Estimation-Mode — Ziel des
+    /// Restores nach Abkuehlung (Minimal-Config darf nicht auf EnvironmentalHdr "zurueck").</summary>
+    private Google.AR.Core.Config.LightEstimationMode? _configuredLightMode;
+
+    private bool _lightEstimationDowngraded;
+
+    private void DowngradeLightEstimationForThermal()
+    {
+        if (_lightEstimationDowngraded || _sessionConfig == null || _arSession == null) return;
+        // Nur ein echtes Downgrade von EnvironmentalHdr lohnt — AmbientIntensity/Disabled bleiben.
+        if (_configuredLightMode != Google.AR.Core.Config.LightEstimationMode.EnvironmentalHdr)
+        {
+            _lightEstimationDowngraded = true; // nichts zu tun, aber Zustand konsistent halten
+            return;
+        }
+        try
+        {
+            _sessionConfig.SetLightEstimationMode(Google.AR.Core.Config.LightEstimationMode.AmbientIntensity);
+            _arSession.Configure(_sessionConfig);
+            _lightEstimationDowngraded = true;
+            global::Android.Util.Log.Info("ArCapture", "Thermal: Light-Estimation → AmbientIntensity");
+        }
+        catch { /* Downgrade optional */ }
+    }
+
+    private void RestoreLightEstimationAfterThermal()
+    {
+        if (!_lightEstimationDowngraded || _sessionConfig == null || _arSession == null) return;
+        if (_configuredLightMode != Google.AR.Core.Config.LightEstimationMode.EnvironmentalHdr)
+        {
+            _lightEstimationDowngraded = false;
+            return;
+        }
+        try
+        {
+            _sessionConfig.SetLightEstimationMode(Google.AR.Core.Config.LightEstimationMode.EnvironmentalHdr);
+            _arSession.Configure(_sessionConfig);
+            _lightEstimationDowngraded = false;
+            global::Android.Util.Log.Info("ArCapture", "Thermal: Light-Estimation → EnvironmentalHdr (abgekuehlt)");
         }
         catch { /* harmlos */ }
     }
@@ -4499,11 +4575,34 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         return deg;
     }
 
+    /// <summary>Gecachtes Java-Class-Objekt fuer Plane-Trackable-Abfragen — spart den
+    /// Class.FromType-JNI-Lookup pro Aufruf im Render-Hot-Path.</summary>
+    private static readonly Java.Lang.Class PlaneClass = Java.Lang.Class.FromType(typeof(Plane));
+
+    /// <summary>Zaehlt die aktiv getrackten, nicht subsumierten Planes (eine
+    /// GetAllTrackables-Iteration = Java-Collection + Iterator + JNI pro Trackable).</summary>
+    private int CountTrackedPlanes()
+    {
+        var planeCount = 0;
+        try
+        {
+            var trackables = _arSession?.GetAllTrackables(PlaneClass);
+            if (trackables != null)
+                foreach (var t in trackables)
+                    if (t is Plane p && p.TrackingState == TrackingState.Tracking && p.SubsumedBy == null)
+                        planeCount++;
+        }
+        catch { /* harmlos */ }
+        return planeCount;
+    }
+
     /// <summary>
     /// Prüft ob die aktuelle Session-Qualität gut genug für Punkt-Set ist.
     /// Liefert (Ready, Checklist) wobei Checklist Probleme aufzählt.
     /// </summary>
-    private (bool ready, string checkList) ValidatePreMeasureConditions()
+    /// <param name="knownPlaneCount">Bereits ermittelter Plane-Count (BuildOverlayState zaehlt
+    /// pro Frame selbst) — vermeidet die ZWEITE GetAllTrackables-Iteration im Hot-Path.</param>
+    private (bool ready, string checkList) ValidatePreMeasureConditions(int? knownPlaneCount = null)
     {
         var failed = new List<string>();
 
@@ -4514,32 +4613,34 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         if (_magneticAccuracy < 2) failed.Add("Kompass unkalibriert");
 
-        // Plane-Count
-        var planeCount = 0;
-        try
-        {
-            var trackables = _arSession?.GetAllTrackables(Java.Lang.Class.FromType(typeof(Plane)));
-            if (trackables != null)
-                foreach (var t in trackables)
-                    if (t is Plane p && p.TrackingState == TrackingState.Tracking && p.SubsumedBy == null)
-                        planeCount++;
-        }
-        catch { /* harmlos */ }
+        var planeCount = knownPlaneCount ?? CountTrackedPlanes();
 
         if (planeCount == 0) failed.Add("Keine Fläche erkannt");
 
         return (failed.Count == 0, string.Join(" · ", failed));
     }
 
-    /// <summary>Durchschnittliche Messgenauigkeit aller bisherigen Punkte (für Quality-Score).</summary>
+    /// <summary>Durchschnittliche Messgenauigkeit aller bisherigen Punkte (für Quality-Score).
+    /// Alloc-frei (laeuft pro Frame in BuildOverlayState unter _dataLock — Listen-Kopie +
+    /// LINQ-Kette waeren vermeidbarer GC-Druck im Render-Hot-Path).</summary>
     private float GetAverageStdDev()
     {
         lock (_dataLock)
         {
-            var all = new List<ArPoint>(_points);
-            foreach (var c in _contours) all.AddRange(c.Points);
-            if (all.Count == 0) return 0f;
-            return all.Where(p => p.PositionStdDev > 0).DefaultIfEmpty().Average(p => p?.PositionStdDev ?? 0f);
+            var sum = 0f;
+            var count = 0;
+            foreach (var p in _points)
+            {
+                if (p.PositionStdDev > 0) { sum += p.PositionStdDev; count++; }
+            }
+            foreach (var c in _contours)
+            {
+                foreach (var p in c.Points)
+                {
+                    if (p.PositionStdDev > 0) { sum += p.PositionStdDev; count++; }
+                }
+            }
+            return count == 0 ? 0f : sum / count;
         }
     }
 
@@ -4922,18 +5023,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             }
         }
 
-        var planeCount = 0;
-        try
-        {
-            var trackables = _arSession?.GetAllTrackables(Java.Lang.Class.FromType(typeof(Plane)));
-            if (trackables != null)
-            {
-                foreach (var t in trackables)
-                    if (t is Plane p && p.TrackingState == TrackingState.Tracking && p.SubsumedBy == null)
-                        planeCount++;
-            }
-        }
-        catch { /* harmlos */ }
+        var planeCount = CountTrackedPlanes();
 
         // Sampler-State unter Lock lesen (K3-Fix)
         bool isSampling;
@@ -4946,8 +5036,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 : 0f;
         }
 
-        // Validation nur EINMAL aufrufen — war vorher 2× pro Frame (teuer wegen Plane-Iteration)
-        var (ready, checkList) = ValidatePreMeasureConditions();
+        // Validation nur EINMAL aufrufen + Plane-Count durchreichen — sonst laeuft die
+        // GetAllTrackables-Iteration (JNI/GC-Druck) doppelt pro Frame.
+        var (ready, checkList) = ValidatePreMeasureConditions(planeCount);
         var stability = _stabilityMonitor?.StabilityScore ?? 1f;
         var anchorCount = _anchorManager.CountTracking();
 

@@ -13,6 +13,34 @@ namespace SmartMeasure.Android.Ar;
 public static class ArPrecisionHelpers
 {
     /// <summary>
+    /// View-Pixel → CPU-Image-Pixel via <c>Frame.TransformCoordinates2d</c> (VIEW →
+    /// IMAGE_NORMALIZED). Depth-/Semantic-Images liegen in Kamera-SENSOR-Orientierung
+    /// (Landscape) — die Activity ist Portrait-locked, das Bild ist also relativ zur View
+    /// um 90° gedreht und anders gecroppt. Eine lineare Skalierung stimmt nur exakt in der
+    /// Bildmitte (deshalb funktionierten die Crosshair-Pfade zufaellig, waehrend der
+    /// Drag-Pfad Depth/Semantic an einem voellig falschen Pixel las).
+    /// </summary>
+    private static (int x, int y)? ViewToImagePixel(Frame frame, float screenX, float screenY,
+        int imageWidth, int imageHeight)
+    {
+        try
+        {
+            var viewCoords = new[] { screenX, screenY };
+            var imageCoords = new float[2];
+            frame.TransformCoordinates2d(
+                Coordinates2d.View, viewCoords,
+                Coordinates2d.ImageNormalized, imageCoords);
+            var x = Math.Clamp((int)(imageCoords[0] * imageWidth), 0, imageWidth - 1);
+            var y = Math.Clamp((int)(imageCoords[1] * imageHeight), 0, imageHeight - 1);
+            return (x, y);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Depth-Sanity-Check: liest Depth-Map am Touch-Pixel und vergleicht mit HitResult-Distanz.
     /// Liefert Confidence-Multiplikator (1.0 = neutral, >1.0 = Bonus, &lt;1.0 = Penalty).
     ///
@@ -52,10 +80,9 @@ public static class ArPrecisionHelpers
             var dh = depthImage.Height;
             if (dw <= 0 || dh <= 0) return null;
 
-            var dx = (int)(screenX / viewportWidth * dw);
-            var dy = (int)(screenY / viewportHeight * dh);
-            dx = Math.Clamp(dx, 0, dw - 1);
-            dy = Math.Clamp(dy, 0, dh - 1);
+            var px = ViewToImagePixel(frame, screenX, screenY, dw, dh);
+            if (px == null) return null;
+            var (dx, dy) = px.Value;
 
             var planes = depthImage.GetPlanes();
             var cPlanes = confImage.GetPlanes();
@@ -121,10 +148,9 @@ public static class ArPrecisionHelpers
             var depthHeight = depthImage.Height;
             if (depthWidth <= 0 || depthHeight <= 0) return 1.0f;
 
-            var dx = (int)(screenX / viewportWidth * depthWidth);
-            var dy = (int)(screenY / viewportHeight * depthHeight);
-            dx = Math.Clamp(dx, 0, depthWidth - 1);
-            dy = Math.Clamp(dy, 0, depthHeight - 1);
+            var px = ViewToImagePixel(frame, screenX, screenY, depthWidth, depthHeight);
+            if (px == null) return 1.0f;
+            var (dx, dy) = px.Value;
 
             var planes = depthImage.GetPlanes();
             if (planes == null || planes.Length == 0) return 1.0f;
@@ -205,10 +231,9 @@ public static class ArPrecisionHelpers
             var dh = depthImage.Height;
             if (dw <= 0 || dh <= 0) return null;
 
-            var dx = (int)(screenX / viewportWidth * dw);
-            var dy = (int)(screenY / viewportHeight * dh);
-            dx = Math.Clamp(dx, 0, dw - 1);
-            dy = Math.Clamp(dy, 0, dh - 1);
+            var px = ViewToImagePixel(frame, screenX, screenY, dw, dh);
+            if (px == null) return null;
+            var (dx, dy) = px.Value;
 
             var planes = depthImage.GetPlanes();
             var cPlanes = confImage.GetPlanes();
@@ -259,8 +284,9 @@ public static class ArPrecisionHelpers
             var dh = depthImage.Height;
             if (dw <= 0 || dh <= 0) return null;
 
-            var dx = Math.Clamp((int)(screenX / viewportWidth * dw), 0, dw - 1);
-            var dy = Math.Clamp((int)(screenY / viewportHeight * dh), 0, dh - 1);
+            var px = ViewToImagePixel(frame, screenX, screenY, dw, dh);
+            if (px == null) return null;
+            var (dx, dy) = px.Value;
 
             var planes = depthImage.GetPlanes();
             var plane = planes?.Length > 0 ? planes[0] : null;
@@ -308,8 +334,9 @@ public static class ArPrecisionHelpers
             var sh = semImage.Height;
             if (sw <= 0 || sh <= 0) return ArSemanticLabel.None;
 
-            var sx = Math.Clamp((int)(screenX / viewportWidth * sw), 0, sw - 1);
-            var sy = Math.Clamp((int)(screenY / viewportHeight * sh), 0, sh - 1);
+            var px = ViewToImagePixel(frame, screenX, screenY, sw, sh);
+            if (px == null) return ArSemanticLabel.None;
+            var (sx, sy) = px.Value;
 
             var planes = semImage.GetPlanes();
             var plane = planes?.Length > 0 ? planes[0] : null;

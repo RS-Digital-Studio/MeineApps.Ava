@@ -136,12 +136,22 @@ if (GetArg(argMap, "xsec", null) != null)
     var symbolInfo = await BingXSymbolInfoProvider.LoadAsync(Path.Combine(toolDir, ".symbolinfo-cache"));
     // --xsec-levs "1,2,3,5": Leverage-Sweep auf dem Live-Profil (L120/R126/3L-3S/radj) statt
     // des Default-Config-Sets — isoliert den Hebel-Effekt auf der produktiven Config.
+    // --xsec-stops "0,2,3,4": ATR-Stop-Sweep auf dem Live-Profil (lev2) — prueft, ob ein
+    // Per-Position-Stop zwischen den Rebalances das Tail-Risiko senkt ohne den Edge zu fressen.
     var configs = GetArg(argMap, "xsec-levs", null) is { Length: > 0 } levList
         ? levList.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(l => new BingXBot.Backtest.Portfolio.XsecParams(
                 LookbackCandles: 120, RebalanceEveryCandles: 126, LongK: 3, ShortK: 3,
                 RiskAdjusted: true, AtrStopMultiplier: 0m,
                 LeverageCap: int.Parse(l, CultureInfo.InvariantCulture)))
+            .ToArray()
+        : GetArg(argMap, "xsec-stops", null) is { Length: > 0 } stopList
+        ? stopList.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => new BingXBot.Backtest.Portfolio.XsecParams(
+                LookbackCandles: 120, RebalanceEveryCandles: 126, LongK: 3, ShortK: 3,
+                RiskAdjusted: true,
+                AtrStopMultiplier: decimal.Parse(s, CultureInfo.InvariantCulture),
+                LeverageCap: 2))
             .ToArray()
         : XsecScreen.DefaultConfigs();
     return await XsecScreen.RunAsync(configs, PhaseScreen.DefaultPhases(), symbols, navTf,

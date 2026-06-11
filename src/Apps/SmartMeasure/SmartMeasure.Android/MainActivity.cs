@@ -24,13 +24,22 @@ namespace SmartMeasure.Android;
     MainLauncher = true,
     Exported = true,
     LaunchMode = LaunchMode.SingleTop,
-    ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
+    // Breite configChanges: Avalonia rendert selbst (keine Ressourcen-Neuaufloesung noetig),
+    // und jede Recreate-Quelle (Split-Screen, Display-Zoom, Schriftgroesse) wuerde die
+    // AR-Bridge-Zustellung (OnActivityResult) an eine tote Activity-Generation binden.
+    ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode
+        | ConfigChanges.SmallestScreenSize | ConfigChanges.ScreenLayout
+        | ConfigChanges.Density | ConfigChanges.FontScale)]
 public class MainActivity : AvaloniaMainActivity
 {
     private const int LocationPermissionRequestCode = 9001;
 
     private MainViewModel? _mainVm;
-    private AndroidArCaptureService? _arCaptureService;
+
+    /// <summary>Statisch: Der AR-Capture-Service ist ein DI-Singleton und muss
+    /// MainActivity-Recreates ueberleben (laufende TCS!). Pro Recreate wird nur die
+    /// Activity-Referenz via <see cref="AndroidArCaptureService.AttachActivity"/> erneuert.</summary>
+    private static AndroidArCaptureService? _arCaptureService;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -51,8 +60,12 @@ public class MainActivity : AvaloniaMainActivity
         UriLauncher.PlatformShareFile = ShareFileViaIntent;
         UriLauncher.PlatformOpenFile = OpenFileViaIntent;
 
-        // AR-Capture-Service (ARCore)
-        _arCaptureService = new AndroidArCaptureService(this);
+        // AR-Capture-Service (ARCore) — Instanz ueberlebt Activity-Recreates,
+        // nur die Activity-Referenz wird aktualisiert.
+        if (_arCaptureService == null)
+            _arCaptureService = new AndroidArCaptureService(this);
+        else
+            _arCaptureService.AttachActivity(this);
         App.ArCaptureServiceFactory = _ => _arCaptureService;
 
         // Plan-Kap. 5.12: Voice-Annotation via Android SpeechRecognizer
@@ -100,8 +113,8 @@ public class MainActivity : AvaloniaMainActivity
     {
         base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        // AR-Capture hat eigenes Permission-Handling (Camera)
-        _arCaptureService?.HandlePermissionResult(requestCode, grantResults);
+        // AR-Capture hat eigenes Permission-Handling (Camera hart, Location weich)
+        _arCaptureService?.HandlePermissionResult(requestCode, permissions, grantResults);
 
         if (requestCode == LocationPermissionRequestCode)
         {

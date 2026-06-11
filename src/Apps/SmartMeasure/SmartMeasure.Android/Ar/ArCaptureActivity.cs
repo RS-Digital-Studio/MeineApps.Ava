@@ -26,7 +26,15 @@ namespace SmartMeasure.Android.Ar;
 /// </summary>
 [Activity(
     Theme = "@style/MyTheme.Fullscreen",
-    ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize,
+    // Breite configChanges: Die Activity rendert komplett selbst (GL + Canvas, keine
+    // Ressourcen-Neuaufloesung). Ein Recreate mid-Session (One UI schaltet Dark Mode
+    // zeitgesteuert bei Sonnenuntergang = UiMode; Split-Screen = SmallestScreenSize/
+    // ScreenLayout; Display-Zoom = Density) wuerde AR-Session, Anchors, Massband und
+    // Undo-Stacks zerstoeren. ResizeableActivity=false haelt Multi-Window ganz raus.
+    ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize
+        | ConfigChanges.UiMode | ConfigChanges.SmallestScreenSize | ConfigChanges.ScreenLayout
+        | ConfigChanges.Density | ConfigChanges.FontScale | ConfigChanges.KeyboardHidden,
+    ResizeableActivity = false,
     ScreenOrientation = ScreenOrientation.Portrait)]
 public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivity, GLSurfaceView.IRenderer
 {
@@ -2609,12 +2617,30 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             _arSession?.Resume();
             _glSurfaceView?.OnResume();
             _stabilityMonitor?.Start();
+
+            // Kamera-Textur nachsetzen, falls OnSurfaceCreated VOR der Session lief (Install-
+            // Roundtrip: GL-Surface war schon scharf, Session entstand erst jetzt). Wegen
+            // PreserveEGLContextOnPause laeuft OnSurfaceCreated nach der Play-Store-Rueckkehr
+            // NICHT erneut — ohne das Nachsetzen bliebe das AR-Bild dauerhaft schwarz
+            // (TextureNotSetException pro Frame, vom OnDrawFrame-catch geschluckt).
+            if (_cameraTextureId != 0)
+            {
+                var session = _arSession;
+                _glSurfaceView?.QueueEvent(() =>
+                {
+                    try { session?.SetCameraTextureName(_cameraTextureId); }
+                    catch { /* Session ggf. schon wieder pausiert */ }
+                });
+            }
         }
         catch (CameraNotAvailableException ex)
         {
             global::Android.Util.Log.Error("ArCapture", $"Camera not available: {ex}");
             Toast.MakeText(this, "Kamera nicht verfügbar — andere App nutzt sie?",
                 ToastLength.Long)?.Show();
+            // Session explizit schliessen — OnDestroy laeuft sonst gegen null und die native
+            // ARCore-Session lebt bis zum Finalizer weiter (ARCore verlangt Close()).
+            try { _arSession?.Close(); } catch { /* OK */ }
             _arSession = null;
             SetResult(Result.Canceled);
             Finish();
@@ -2624,6 +2650,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             global::Android.Util.Log.Error("ArCapture", $"Resume-Fehler: {ex}");
             Toast.MakeText(this, $"AR-Resume fehlgeschlagen: {ex.Message}",
                 ToastLength.Long)?.Show();
+            try { _arSession?.Close(); } catch { /* OK */ }
+            _arSession = null;
             SetResult(Result.Canceled);
             Finish();
         }

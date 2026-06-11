@@ -103,98 +103,7 @@ public sealed partial class GardenViewModel : ViewModelBase, IDisposable, ICalcu
         _localization.GetString("PondLiner")
     ];
 
-    // Live-Berechnung: Debounce bei Eingabe-Änderungen
-    partial void OnPavingAreaChanged(double value) => ScheduleAutoCalculate();
-    partial void OnStoneLengthChanged(double value) => ScheduleAutoCalculate();
-    partial void OnStoneWidthChanged(double value) => ScheduleAutoCalculate();
-    partial void OnJointWidthChanged(double value) => ScheduleAutoCalculate();
-    partial void OnSoilAreaChanged(double value) => ScheduleAutoCalculate();
-    partial void OnSoilDepthChanged(double value) => ScheduleAutoCalculate();
-    partial void OnBagLitersChanged(double value) => ScheduleAutoCalculate();
-    partial void OnPondLengthChanged(double value) => ScheduleAutoCalculate();
-    partial void OnPondWidthChanged(double value) => ScheduleAutoCalculate();
-    partial void OnPondDepthChanged(double value) => ScheduleAutoCalculate();
-    partial void OnOverlapChanged(double value) => ScheduleAutoCalculate();
-
-    // Paving Inputs
-    [ObservableProperty] private double _pavingArea = 20;
-    [ObservableProperty] private double _stoneLength = 20;
-    [ObservableProperty] private double _stoneWidth = 10;
-    [ObservableProperty] private double _jointWidth = 3;
-
-    // Soil Inputs
-    [ObservableProperty] private double _soilArea = 10;
-    [ObservableProperty] private double _soilDepth = 5;
-    [ObservableProperty] private double _bagLiters = 40;
-
-    // Pond Liner Inputs
-    [ObservableProperty] private double _pondLength = 3;
-    [ObservableProperty] private double _pondWidth = 2;
-    [ObservableProperty] private double _pondDepth = 1;
-    [ObservableProperty] private double _overlap = 0.5;
-
-    #region Cost Calculation
-
-    // Pflastersteine: Preis pro Stein
-    [ObservableProperty]
-    private double _pricePerStone = 0;
-
-    [ObservableProperty]
-    private bool _showPavingCost = false;
-
-    public string PavingCostDisplay => (ShowPavingCost && PricePerStone > 0 && PavingResult != null && PavingResult.StonesWithReserve > 0)
-        ? $"{_localization.GetString("TotalCost")}: {(PavingResult.StonesWithReserve * PricePerStone):F2} {_localization.GetString("CurrencySymbol")}"
-        : "";
-
-    partial void OnPricePerStoneChanged(double value)
-    {
-        ShowPavingCost = value > 0;
-        OnPropertyChanged(nameof(PavingCostDisplay));
-        ScheduleAutoCalculate();
-    }
-
-    // Erde/Mulch: Preis pro Sack
-    [ObservableProperty]
-    private double _pricePerBag = 0;
-
-    [ObservableProperty]
-    private bool _showSoilCost = false;
-
-    public string SoilCostDisplay => (ShowSoilCost && PricePerBag > 0 && SoilResult != null && SoilResult.BagsNeeded > 0)
-        ? $"{_localization.GetString("TotalCost")}: {(SoilResult.BagsNeeded * PricePerBag):F2} {_localization.GetString("CurrencySymbol")}"
-        : "";
-
-    partial void OnPricePerBagChanged(double value)
-    {
-        ShowSoilCost = value > 0;
-        OnPropertyChanged(nameof(SoilCostDisplay));
-        ScheduleAutoCalculate();
-    }
-
-    // Teichfolie: Preis pro m²
-    [ObservableProperty]
-    private double _pricePerSqmLiner = 0;
-
-    [ObservableProperty]
-    private bool _showLinerCost = false;
-
-    public string LinerCostDisplay => (ShowLinerCost && PricePerSqmLiner > 0 && PondResult != null && PondResult.LinerArea > 0)
-        ? $"{_localization.GetString("TotalCost")}: {(PondResult.LinerArea * PricePerSqmLiner):F2} {_localization.GetString("CurrencySymbol")}"
-        : "";
-
-    partial void OnPricePerSqmLinerChanged(double value)
-    {
-        ShowLinerCost = value > 0;
-        OnPropertyChanged(nameof(LinerCostDisplay));
-        ScheduleAutoCalculate();
-    }
-
-    #endregion
-
-    // Results
-    [ObservableProperty] private PavingResult? _pavingResult;
-    [ObservableProperty] private SoilResult? _soilResult;
-    [ObservableProperty] private PondLinerResult? _pondResult;
+    // Results (geteilt)
     [ObservableProperty] private bool _hasResult;
 
     [ObservableProperty]
@@ -202,21 +111,6 @@ public sealed partial class GardenViewModel : ViewModelBase, IDisposable, ICalcu
 
     [ObservableProperty]
     private bool _isExporting;
-
-    partial void OnPavingResultChanged(PavingResult? value)
-    {
-        OnPropertyChanged(nameof(PavingCostDisplay));
-    }
-
-    partial void OnSoilResultChanged(SoilResult? value)
-    {
-        OnPropertyChanged(nameof(SoilCostDisplay));
-    }
-
-    partial void OnPondResultChanged(PondLinerResult? value)
-    {
-        OnPropertyChanged(nameof(LinerCostDisplay));
-    }
 
     /// <summary>
     /// Debounce: Berechnung 300ms nach letzter Eingabe-Änderung auslösen

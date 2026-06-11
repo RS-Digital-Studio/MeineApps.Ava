@@ -99,45 +99,7 @@ public sealed partial class RoofSolarViewModel : ViewModelBase, IDisposable, ICa
         _localization.GetString("SolarYield")
     ];
 
-    // Live-Berechnung: Debounce bei Eingabe-Änderungen
-    partial void OnRunChanged(double value) => ScheduleAutoCalculate();
-    partial void OnRiseChanged(double value) => ScheduleAutoCalculate();
-    partial void OnRoofAreaChanged(double value) => ScheduleAutoCalculate();
-    partial void OnTilesPerSqmChanged(double value) => ScheduleAutoCalculate();
-    partial void OnSolarRoofAreaChanged(double value) => ScheduleAutoCalculate();
-    partial void OnPanelEfficiencyChanged(double value) => ScheduleAutoCalculate();
-    partial void OnSelectedOrientationChanged(int value) => ScheduleAutoCalculate();
-    partial void OnTiltDegreesChanged(double value) => ScheduleAutoCalculate();
-
-    // Roof Pitch Inputs
-    [ObservableProperty] private double _run = 5;
-    [ObservableProperty] private double _rise = 2;
-
-    // Roof Tiles Inputs
-    [ObservableProperty] private double _roofArea = 100;
-    [ObservableProperty] private double _tilesPerSqm = 10;
-
-    // Solar Yield Inputs
-    [ObservableProperty] private double _solarRoofArea = 50;
-    [ObservableProperty] private double _panelEfficiency = 20;
-    [ObservableProperty] private int _selectedOrientation = 4; // South
-    [ObservableProperty] private double _tiltDegrees = 30;
-
-    public List<string> Orientations => [
-        _localization.GetString("OrientationNorth"),
-        _localization.GetString("OrientationNorthEast"),
-        _localization.GetString("OrientationEast"),
-        _localization.GetString("OrientationSouthEast"),
-        _localization.GetString("OrientationSouth"),
-        _localization.GetString("OrientationSouthWest"),
-        _localization.GetString("OrientationWest"),
-        _localization.GetString("OrientationNorthWest")
-    ];
-
-    // Results
-    [ObservableProperty] private RoofPitchResult? _pitchResult;
-    [ObservableProperty] private RoofTilesResult? _tilesResult;
-    [ObservableProperty] private SolarYieldResult? _solarResult;
+    // Results (geteilt)
     [ObservableProperty] private bool _hasResult;
 
     [ObservableProperty]
@@ -145,72 +107,6 @@ public sealed partial class RoofSolarViewModel : ViewModelBase, IDisposable, ICa
 
     [ObservableProperty]
     private bool _isExporting;
-
-    #region Cost Calculation
-
-    // Dachneigung: Keine Kostenberechnung (nur Winkelberechnung)
-
-    // Dachziegel: Preis pro Ziegel
-    [ObservableProperty]
-    private double _pricePerTile = 0;
-
-    [ObservableProperty]
-    private bool _showTileCost = false;
-
-    public string RoofTileCostDisplay => (ShowTileCost && PricePerTile > 0 && TilesResult != null && TilesResult.TilesWithReserve > 0)
-        ? $"{_localization.GetString("TotalCost")}: {(TilesResult.TilesWithReserve * PricePerTile):F2} {_localization.GetString("CurrencySymbol")}"
-        : "";
-
-    partial void OnPricePerTileChanged(double value)
-    {
-        ShowTileCost = value > 0;
-        OnPropertyChanged(nameof(RoofTileCostDisplay));
-        ScheduleAutoCalculate();
-    }
-
-    partial void OnTilesResultChanged(RoofTilesResult? value)
-    {
-        OnPropertyChanged(nameof(RoofTileCostDisplay));
-    }
-
-    // Solar-Ertrag: Strompreis + Anlagenkosten
-    [ObservableProperty]
-    private double _pricePerKwh = 0.30;
-
-    [ObservableProperty]
-    private double _solarSystemCost = 0;
-
-    [ObservableProperty]
-    private bool _showSolarCost = false;
-
-    public string SolarCostDisplay => ShowSolarCost && SolarSystemCost > 0
-        ? $"{_localization.GetString("ResultSystemCost")}: {SolarSystemCost:F2} {_localization.GetString("CurrencySymbol")}"
-        : "";
-
-    public string PaybackTimeDisplay => (ShowSolarCost && SolarSystemCost > 0 && SolarResult != null && SolarResult.AnnualYieldKwh > 0 && PricePerKwh > 0)
-        ? $"{_localization.GetString("ResultPaybackTime")}: {(SolarSystemCost / (SolarResult.AnnualYieldKwh * PricePerKwh)):F1} {_localization.GetString("HistoryYears")}"
-        : "";
-
-    partial void OnPricePerKwhChanged(double value)
-    {
-        OnPropertyChanged(nameof(PaybackTimeDisplay));
-        ScheduleAutoCalculate();
-    }
-
-    partial void OnSolarSystemCostChanged(double value)
-    {
-        ShowSolarCost = value > 0;
-        OnPropertyChanged(nameof(SolarCostDisplay));
-        OnPropertyChanged(nameof(PaybackTimeDisplay));
-        ScheduleAutoCalculate();
-    }
-
-    partial void OnSolarResultChanged(SolarYieldResult? value)
-    {
-        OnPropertyChanged(nameof(PaybackTimeDisplay));
-    }
-
-    #endregion
 
     /// <summary>
     /// Debounce: Berechnung 300ms nach letzter Eingabe-Änderung auslösen

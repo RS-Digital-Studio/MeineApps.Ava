@@ -9,7 +9,7 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | Datei | Zweck |
 |-------|-------|
 | `MainViewModel.cs` | Kern-Partial: Tab-Navigation (4 Tabs), Calculator-Overlay via `CurrentPage`/`CurrentCalculatorVm`, Back-Press, Rewarded-Counter, Premium-Status, Event-Wiring/Dispose. |
-| `MainViewModel.Favorites.cs` | Favoriten-Partial: `FavoriteCalculators`-Collection, Toggle-/Open-Commands, 19 `IsFavXxx`-Properties, `GetCalculatorInfo`, `FavoriteItem`-Record. |
+| `MainViewModel.Favorites.cs` | Favoriten-Partial: `FavoriteCalculators`-Collection, Toggle-/Open-Commands, 19 `IsFavXxx`-Properties, `GetCalculatorInfo` (`FavoriteItem`-Record bleibt in `MainViewModel.cs`). |
 | `MainViewModel.Localization.cs` | Localization-Partial: `TabXxxText`-Properties, `UpdateNavTexts`/`UpdateHomeTexts`, `LocalizedPropertyNames`-Array, `OnLanguageChanged`, alle Label-Properties. |
 | `ICalculatorViewModel.cs` | Interface für alle 19 Calculator-VMs: `NavigationRequested`, `MessageRequested`, `FloatingTextRequested`, `ClipboardRequested`, `CalculationPerformed`, `ShowSaveDialog`, `Cleanup()`, `LoadFromProjectIdAsync()`. |
 | `SettingsViewModel.cs` | Sprache, Region, Einheiten, Feedback-Request. |
@@ -29,10 +29,21 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `Floor/ConcreteCalculatorViewModel.Persistence.cs` | Save-Dialog, Projekt speichern/laden, History-Save. |
 | `Floor/ConcreteCalculatorViewModel.Export.cs` | Clipboard-Share, PDF-/CSV-Export. |
 | `Premium/DrywallViewModel.cs` | Trockenbau (CW/UW-Profile, Platten, Schrauben). |
-| `Premium/ElectricalViewModel.cs` | Spannungsabfall, Stromkosten, Ohmsches Gesetz. |
-| `Premium/MetalViewModel.cs` | Metallgewicht (6 Profile, 6 Materialien) + Gewindebohrung. |
-| `Premium/GardenViewModel.cs` | Pflastersteine, Erde/Mulch, Teichfolie. |
-| `Premium/RoofSolarViewModel.cs` | Dachneigung, Dachziegel, Solar-Ertrag. |
+| `Premium/ElectricalViewModel.cs` | Spannungsabfall, Stromkosten, Ohmsches Gesetz — Kern: Ctor, `Defaults`, Debounce, `Calculate`, Persistenz, Export. |
+| `Premium/ElectricalViewModel.VoltageDrop.cs` | Sub-Rechner Spannungsabfall: Inputs, Kabelkosten, `VoltageDropResult`. |
+| `Premium/ElectricalViewModel.PowerCost.cs` | Sub-Rechner Stromkosten: Inputs, `PowerCostResult`. |
+| `Premium/ElectricalViewModel.OhmsLaw.cs` | Sub-Rechner Ohmsches Gesetz: String-Inputs, `OhmsLawResult`, `ParseDecimal`. |
+| `Premium/MetalViewModel.cs` | Metallgewicht + Gewindebohrung — Kern: Ctor, Debounce, `Calculate`, Persistenz, Export. |
+| `Premium/MetalViewModel.Weight.cs` | Sub-Rechner Metallgewicht: Inputs (6 Profile, 6 Materialien), kg-Preis, `MetalWeightResult`. |
+| `Premium/MetalViewModel.Thread.cs` | Sub-Rechner Gewindebohrung: `ThreadSizes`, `ThreadDrillResult`. |
+| `Premium/GardenViewModel.cs` | Pflastersteine, Erde/Mulch, Teichfolie — Kern: Ctor, Debounce, `Calculate`, Persistenz, Export. |
+| `Premium/GardenViewModel.Paving.cs` | Sub-Rechner Pflastersteine: Inputs, Stein-Preis, `PavingResult`. |
+| `Premium/GardenViewModel.Soil.cs` | Sub-Rechner Erde/Mulch: Inputs, Sack-Preis, `SoilResult`. |
+| `Premium/GardenViewModel.Pond.cs` | Sub-Rechner Teichfolie: Inputs, m²-Preis, `PondLinerResult`. |
+| `Premium/RoofSolarViewModel.cs` | Dachneigung, Dachziegel, Solar-Ertrag — Kern: Ctor, Debounce, `Calculate`, Persistenz, Export. |
+| `Premium/RoofSolarViewModel.Pitch.cs` | Sub-Rechner Dachneigung: Inputs, `RoofPitchResult`. |
+| `Premium/RoofSolarViewModel.Tiles.cs` | Sub-Rechner Dachziegel: Inputs, Ziegel-Preis, `RoofTilesResult`. |
+| `Premium/RoofSolarViewModel.Solar.cs` | Sub-Rechner Solar-Ertrag: Inputs, `Orientations`, Anlagenkosten/Amortisation, `SolarYieldResult`. |
 | `Premium/StairsViewModel.cs` | Treppenmaße nach DIN 18065. |
 | `Premium/PlasterViewModel.cs` | Putzbedarf nach Putztyp (PlasterType-Enum). |
 | `Premium/ScreedViewModel.cs` | Estrichbedarf nach Estrichtyp (ScreedType-Enum). |

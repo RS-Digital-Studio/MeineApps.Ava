@@ -1631,7 +1631,7 @@ O rendimento diminui em superfícies rugosas!</value>
     <value>Ferramentas profissionais</value>
   </data>
   <data name="CalculatorCount" xml:space="preserve">
-    <value>11 calculadoras</value>
+    <value>19 calculadoras</value>
   </data>
   <data name="GetPremium" xml:space="preserve">
     <value>Sem publicidade</value>
@@ -2149,6 +2149,21 @@ O rendimento diminui em superfícies rugosas!</value>
   </data>
   <data name="CalcTypeAreaMeasure" xml:space="preserve">
     <value>Medição de área</value>
+  </data>
+  <data name="CalcTypeConcreteSlab" xml:space="preserve">
+    <value>Laje de concreto</value>
+  </data>
+  <data name="CalcTypeConcreteStrip" xml:space="preserve">
+    <value>Sapata corrida</value>
+  </data>
+  <data name="CalcTypeConcreteColumn" xml:space="preserve">
+    <value>Coluna de concreto</value>
+  </data>
+  <data name="CalcTypeStairs" xml:space="preserve">
+    <value>Escada</value>
+  </data>
+  <data name="CalculateFirst" xml:space="preserve">
+    <value>Calcule primeiro</value>
   </data>
   <data name="CsvExportFailed" xml:space="preserve">
     <value>Falha ao exportar CSV</value>

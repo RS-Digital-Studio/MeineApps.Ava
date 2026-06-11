@@ -91,7 +91,7 @@
                 </StackPanel>
 
                 <StackPanel Spacing="4">
-                  <TextBlock Text="{loc:Translate StoneLength}"
+                  <TextBlock Text="{loc:Translate LabelStoneLengthCm}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding StoneLength}" PlaceholderText="cm"
@@ -99,7 +99,7 @@
                 </StackPanel>
 
                 <StackPanel Spacing="4">
-                  <TextBlock Text="{loc:Translate StoneWidth}"
+                  <TextBlock Text="{loc:Translate LabelStoneWidthCm}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding StoneWidth}" PlaceholderText="cm"
@@ -107,7 +107,7 @@
                 </StackPanel>
 
                 <StackPanel Spacing="4">
-                  <TextBlock Text="{loc:Translate JointWidth}"
+                  <TextBlock Text="{loc:Translate LabelJointWidthMm}"
                              FontSize="13"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding JointWidth}" PlaceholderText="mm"
@@ -173,7 +173,7 @@
                 </Grid>
 
                 <!-- Aktions-Buttons: Share + PDF Export -->
-                <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+                <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
                   <Button Grid.Column="0"
                           Command="{Binding ShareResultCommand}"
                           Classes="Outlined"
@@ -203,10 +203,11 @@
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
-                          <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                            <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                             Foreground="{DynamicResource AccentBrush}" />
-                          </Button>
+                  <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                          AutomationProperties.AutomationId="Garden_BtnExportCsvPaving">
+                    <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                     Foreground="{DynamicResource AccentBrush}" />
+                  </Button>
                 </Grid>
               </StackPanel>
             </Border>
@@ -309,7 +310,7 @@
                 </Grid>
 
                 <!-- Aktions-Buttons: Share + PDF Export -->
-                <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+                <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
                   <Button Grid.Column="0"
                           Command="{Binding ShareResultCommand}"
                           Classes="Outlined"
@@ -339,10 +340,11 @@
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
-                          <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                            <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                             Foreground="{DynamicResource AccentBrush}" />
-                          </Button>
+                  <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                          AutomationProperties.AutomationId="Garden_BtnExportCsvSoil">
+                    <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                     Foreground="{DynamicResource AccentBrush}" />
+                  </Button>
                 </Grid>
               </StackPanel>
             </Border>
@@ -463,7 +465,7 @@
                 </Grid>
 
                 <!-- Aktions-Buttons: Share + PDF Export -->
-                <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+                <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
                   <Button Grid.Column="0"
                           Command="{Binding ShareResultCommand}"
                           Classes="Outlined"
@@ -493,10 +495,11 @@
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
-                          <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                            <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                             Foreground="{DynamicResource AccentBrush}" />
-                          </Button>
+                  <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                          AutomationProperties.AutomationId="Garden_BtnExportCsvPond">
+                    <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                     Foreground="{DynamicResource AccentBrush}" />
+                  </Button>
                 </Grid>
               </StackPanel>
             </Border>

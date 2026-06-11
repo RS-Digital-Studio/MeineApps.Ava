@@ -193,7 +193,7 @@
                 </Grid>
 
                 <!-- Aktions-Buttons: Share + PDF Export -->
-                <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+                <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
                   <Button Grid.Column="0"
                           Command="{Binding ShareResultCommand}"
                           Classes="Outlined"
@@ -223,10 +223,11 @@
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
-                          <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                            <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                             Foreground="{DynamicResource AccentBrush}" />
-                          </Button>
+                  <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                          AutomationProperties.AutomationId="Metal_BtnExportCsvWeight">
+                    <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                     Foreground="{DynamicResource AccentBrush}" />
+                  </Button>
                 </Grid>
               </StackPanel>
             </Border>
@@ -295,7 +296,7 @@
                 </Grid>
 
                 <!-- Aktions-Buttons: Share + PDF Export -->
-                <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+                <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
                   <Button Grid.Column="0"
                           Command="{Binding ShareResultCommand}"
                           Classes="Outlined"
@@ -325,10 +326,11 @@
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
-                          <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                            <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                             Foreground="{DynamicResource AccentBrush}" />
-                          </Button>
+                  <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                          AutomationProperties.AutomationId="Metal_BtnExportCsvThread">
+                    <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                     Foreground="{DynamicResource AccentBrush}" />
+                  </Button>
                 </Grid>
               </StackPanel>
             </Border>

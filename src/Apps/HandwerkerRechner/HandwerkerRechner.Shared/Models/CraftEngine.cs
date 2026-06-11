@@ -84,22 +84,45 @@ public sealed class CraftEngine
     public WallpaperResult CalculateWallpaper(double roomLength, double roomWidth, double roomHeight,
         double rollLength = 10.05, double rollWidth = 53, double patternRepeat = 0)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        roomLength = Clamp(roomLength, Limits.MaxLengthM);
+        roomWidth = Clamp(roomWidth, Limits.MaxLengthM);
+        roomHeight = Clamp(roomHeight, Limits.MaxLengthM);
+        rollLength = Clamp(rollLength, Limits.MaxLengthM);
+        rollWidth = Clamp(rollWidth, 1000, 0.1); // cm — min 0.1 schützt gegen Division durch 0
+        patternRepeat = Clamp(patternRepeat, 1000, 0); // 0 = kein Rapport
+
         var perimeter = 2 * (roomLength + roomWidth);
-        if (rollWidth <= 0) rollWidth = 0.1; // Schutz gegen Division durch 0
         var rollWidthM = rollWidth / 100;
 
         // Bahnen pro Rolle (unter Berücksichtigung von Rapport)
         var effectiveHeight = roomHeight;
         if (patternRepeat > 0)
         {
+            // Aufrunden auf das Rapportmaß — die Zuschnitt-Zugabe entsteht hier implizit
             var repeatM = patternRepeat / 100;
             effectiveHeight = Math.Ceiling(roomHeight / repeatM) * repeatM;
         }
+        else
+        {
+            // Handwerksübliche Beschnitt-Zugabe ~10 cm pro Bahn (nur ohne Rapport, sonst doppelt)
+            effectiveHeight += 0.10;
+        }
 
         var stripsPerRoll = Math.Floor(rollLength / effectiveHeight);
-        if (stripsPerRoll < 1) stripsPerRoll = 1; // Schutz gegen Division durch 0 (Raumhöhe > Rollenlänge)
         var totalStrips = Math.Ceiling(perimeter / rollWidthM);
-        var rollsNeeded = Math.Ceiling(totalStrips / stripsPerRoll);
+        double rollsNeeded;
+        if (stripsPerRoll < 1)
+        {
+            // Raumhöhe (inkl. Zugabe) > Rollenlänge: keine ganze Bahn aus einer Rolle.
+            // Konservativ eine Rolle pro Bahn ansetzen (Bahn wird gestückelt) — kein Material erfinden.
+            stripsPerRoll = 1;
+            rollsNeeded = totalStrips;
+        }
+        else
+        {
+            rollsNeeded = Math.Ceiling(totalStrips / stripsPerRoll);
+        }
 
         return new WallpaperResult
         {
@@ -120,7 +143,9 @@ public sealed class CraftEngine
     /// <returns>Benötigte Liter</returns>
     public PaintResult CalculatePaint(double area, double coveragePerLiter = 10, int coats = 2)
     {
-        if (coveragePerLiter <= 0) coveragePerLiter = 0.001; // Schutz gegen Division durch 0
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        area = Clamp(area, Limits.MaxAreaSqm, 0);
+        coveragePerLiter = Clamp(coveragePerLiter, 10_000, 0.001); // min 0.001 schützt gegen Division durch 0
         var totalArea = area * coats;
         var litersNeeded = totalArea / coveragePerLiter;
 
@@ -145,10 +170,16 @@ public sealed class CraftEngine
     /// <returns>Anzahl benötigter Dielen</returns>
     public FlooringResult CalculateFlooring(double roomLength, double roomWidth, double boardLength, double boardWidth, double wastePercent = 10)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        roomLength = Clamp(roomLength, Limits.MaxLengthM);
+        roomWidth = Clamp(roomWidth, Limits.MaxLengthM);
+        boardLength = Clamp(boardLength, Limits.MaxLengthM);
+        boardWidth = Clamp(boardWidth, 1000); // cm
+        wastePercent = Clamp(wastePercent, 100, 0); // Verschnitt 0-100%
+
         var roomArea = roomLength * roomWidth;
         var boardArea = boardLength * (boardWidth / 100);
         if (boardArea <= 0) boardArea = 0.001; // Schutz gegen Division durch 0
-        wastePercent = Math.Max(0, wastePercent); // Negativer Verschnitt nicht erlaubt
         var boardsNeeded = roomArea / boardArea;
         var boardsWithWaste = boardsNeeded * (1 + wastePercent / 100);
 
@@ -171,6 +202,10 @@ public sealed class CraftEngine
     /// </summary>
     public DrywallResult CalculateDrywall(double wallLength, double wallHeight, bool doublePlated = false)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        wallLength = Clamp(wallLength, Limits.MaxLengthM);
+        wallHeight = Clamp(wallHeight, Limits.MaxLengthM);
+
         var wallArea = wallLength * wallHeight;
         var plateArea = 2.5 * 1.25; // Standard Gipskartonplatte 250x125cm
 
@@ -201,6 +236,10 @@ public sealed class CraftEngine
     /// </summary>
     public double CalculateBaseboard(double perimeter, double doorWidth, int doorCount)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        perimeter = Clamp(perimeter, Limits.MaxLengthM, 0);
+        doorWidth = Clamp(doorWidth, Limits.MaxLengthM, 0);
+
         return Math.Max(0, perimeter - (doorWidth * doorCount));
     }
 
@@ -220,12 +259,17 @@ public sealed class CraftEngine
     public VoltageDropResult CalculateVoltageDrop(double voltage, double current, double length,
         double crossSection, bool isCopper = true, bool isThreePhase = false)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        voltage = Clamp(voltage, Limits.MaxVolts, 0);
+        current = Clamp(current, Limits.MaxAmps, 0);
+        length = Clamp(length, Limits.MaxLengthM, 0);
+        crossSection = Clamp(crossSection, 1000, 0.001); // mm² — min 0.001 schützt gegen Division durch 0
+
         // Spezifischer Widerstand: Kupfer = 0.0178, Aluminium = 0.0287 Ohm*mm²/m
         var resistivity = isCopper ? 0.0178 : 0.0287;
 
         // 1-Phasen: U = 2 * I * L * rho / A (Hin- + Rückleiter)
         // 3-Phasen: U = sqrt(3) * I * L * rho / A (Drehstrom-Sternpunkt)
-        if (crossSection <= 0) crossSection = 0.001;
         var phaseFactor = isThreePhase ? Math.Sqrt(3.0) : 2.0;
         var voltageDrop = phaseFactor * current * length * resistivity / crossSection;
         var percentDrop = voltage > 0 ? (voltageDrop / voltage) * 100 : 0;
@@ -247,6 +291,11 @@ public sealed class CraftEngine
     /// </summary>
     public PowerCostResult CalculatePowerCost(double watts, double hoursPerDay, double pricePerKwh)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        watts = Clamp(watts, Limits.MaxWatts, 0);
+        hoursPerDay = Clamp(hoursPerDay, 24, 0); // max 24 h/Tag
+        pricePerKwh = Clamp(pricePerKwh, 1000, 0);
+
         var kw = watts / 1000;
         var kwhPerDay = kw * hoursPerDay;
         var costPerDay = kwhPerDay * pricePerKwh;
@@ -266,6 +315,12 @@ public sealed class CraftEngine
     /// </summary>
     public OhmsLawResult CalculateOhmsLaw(double? voltage, double? current, double? resistance, double? power)
     {
+        // Plausibilitäts-Bounds: nur gesetzte Werte clampen (Infinity/NaN → 0)
+        if (voltage.HasValue) voltage = Clamp(voltage.Value, Limits.MaxVolts, 0);
+        if (current.HasValue) current = Clamp(current.Value, Limits.MaxAmps, 0);
+        if (resistance.HasValue) resistance = Clamp(resistance.Value, 1_000_000_000, 0); // bis 1 GΩ
+        if (power.HasValue) power = Clamp(power.Value, Limits.MaxWatts, 0);
+
         double v = voltage ?? 0, i = current ?? 0, r = resistance ?? 0, p = power ?? 0;
 
         if (voltage.HasValue && current.HasValue)
@@ -319,6 +374,12 @@ public sealed class CraftEngine
     public MetalWeightResult CalculateMetalWeight(MetalType metal, ProfileType profile, double length,
         double dimension1, double dimension2 = 0, double wallThickness = 0)
     {
+        // Plausibilitäts-Bounds: Infinity/NaN → 0 → fällt in den Negativ-/Null-Guard darunter
+        length = Clamp(length, Limits.MaxLengthM, 0);
+        dimension1 = Clamp(dimension1, Limits.MaxThicknessMm, 0);
+        dimension2 = Clamp(dimension2, Limits.MaxThicknessMm, 0);
+        wallThickness = Clamp(wallThickness, Limits.MaxThicknessMm, 0);
+
         // Negativ-/Null-Eingaben absichern (sonst negatives bzw. falsch-positives Gewicht)
         if (length <= 0 || dimension1 <= 0)
             return new MetalWeightResult { Metal = metal, Profile = profile };
@@ -418,11 +479,17 @@ public sealed class CraftEngine
     /// </summary>
     public PavingResult CalculatePaving(double area, double stoneLength, double stoneWidth, double jointWidth = 3)
     {
-        // Negative Fugenbreite nicht erlaubt
-        if (jointWidth < 0) jointWidth = 0;
-        // Steinmaße inkl. Fuge
-        var stoneLengthWithJoint = (stoneLength + jointWidth) / 100;
-        var stoneWidthWithJoint = (stoneWidth + jointWidth) / 100;
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        area = Clamp(area, Limits.MaxAreaSqm);
+        stoneLength = Clamp(stoneLength, 1000); // cm
+        stoneWidth = Clamp(stoneWidth, 1000);   // cm
+        jointWidth = Clamp(jointWidth, 100, 0); // mm — negative Fugenbreite nicht erlaubt
+
+        // Einheiten: Fugenbreite kommt in mm, Steinmaße in cm → mm/10 = cm
+        var jointWidthCm = jointWidth / 10;
+        // Steinmaße inkl. Fuge (cm → m)
+        var stoneLengthWithJoint = (stoneLength + jointWidthCm) / 100;
+        var stoneWidthWithJoint = (stoneWidth + jointWidthCm) / 100;
         var stoneArea = stoneLengthWithJoint * stoneWidthWithJoint;
         if (stoneArea <= 0) stoneArea = 0.001; // Schutz gegen Division durch 0
 
@@ -442,7 +509,10 @@ public sealed class CraftEngine
     /// </summary>
     public SoilResult CalculateSoil(double area, double depthCm, double bagLiters = 40)
     {
-        if (bagLiters <= 0) bagLiters = 0.001; // Schutz gegen Division durch 0
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        area = Clamp(area, Limits.MaxAreaSqm, 0);
+        depthCm = Clamp(depthCm, Limits.MaxThicknessCm, 0);
+        bagLiters = Clamp(bagLiters, 10_000, 0.001); // min 0.001 schützt gegen Division durch 0
         var volumeLiters = area * (depthCm / 100) * 1000;
         var bags = Math.Ceiling(volumeLiters / bagLiters);
 
@@ -461,6 +531,12 @@ public sealed class CraftEngine
     /// </summary>
     public PondLinerResult CalculatePondLiner(double length, double width, double depth, double overlap = 0.5)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        length = Clamp(length, Limits.MaxLengthM, 0);
+        width = Clamp(width, Limits.MaxLengthM, 0);
+        depth = Clamp(depth, Limits.MaxLengthM, 0);
+        overlap = Clamp(overlap, Limits.MaxLengthM, 0);
+
         // Formel: Länge + 2*Tiefe + 2*Überstand
         var linerLength = length + 2 * depth + 2 * overlap;
         var linerWidth = width + 2 * depth + 2 * overlap;
@@ -486,7 +562,9 @@ public sealed class CraftEngine
     /// </summary>
     public RoofPitchResult CalculateRoofPitch(double run, double rise)
     {
-        if (run <= 0) run = 0.001; // Schutz gegen Division durch 0
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        run = Clamp(run, Limits.MaxLengthM); // min 0.001 schützt gegen Division durch 0
+        rise = Clamp(rise, Limits.MaxLengthM, 0);
         var pitchRadians = Math.Atan(rise / run);
         var pitchDegrees = pitchRadians * 180 / Math.PI;
         var pitchPercent = (rise / run) * 100;
@@ -505,6 +583,10 @@ public sealed class CraftEngine
     /// </summary>
     public RoofTilesResult CalculateRoofTiles(double roofArea, double tilesPerSqm = 10)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        roofArea = Clamp(roofArea, Limits.MaxAreaSqm, 0);
+        tilesPerSqm = Clamp(tilesPerSqm, 1000, 0);
+
         var tiles = roofArea * tilesPerSqm;
         var tilesWithReserve = tiles * 1.05;
 
@@ -522,6 +604,11 @@ public sealed class CraftEngine
     /// </summary>
     public SolarYieldResult EstimateSolarYield(double roofArea, double panelEfficiency = 0.2, Orientation orientation = Orientation.South, double tiltDegrees = 30)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        roofArea = Clamp(roofArea, Limits.MaxAreaSqm, 0);
+        panelEfficiency = Clamp(panelEfficiency, 1, 0); // Wirkungsgrad 0-100%
+        tiltDegrees = Clamp(tiltDegrees, 90, 0);
+
         // Vereinfachte Berechnung für Deutschland
         var baseYield = 1000; // kWh/m²/Jahr (optimal)
 
@@ -569,6 +656,12 @@ public sealed class CraftEngine
     /// <param name="bagWeight">Fertigbeton-Sackgewicht in kg (25 oder 40)</param>
     public ConcreteResult CalculateConcrete(int shape, double dim1, double dim2, double height, double bagWeight = 25)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        dim1 = Clamp(dim1, Limits.MaxLengthM, 0);
+        dim2 = Clamp(dim2, Limits.MaxLengthM, 0);
+        height = Clamp(height, Limits.MaxLengthM, 0); // cm (bis 100 m Höhe/Tiefe)
+        bagWeight = Clamp(bagWeight, Limits.MaxKg, 0);
+
         double volumeM3;
 
         switch (shape)
@@ -595,8 +688,9 @@ public sealed class CraftEngine
         var gravelKg = volumeM3 * 1100;   // 1100 kg Kies (4-16mm) pro m³
         var waterL = volumeM3 * 150;      // 150 L Wasser pro m³
 
-        // Fertigbeton-Säcke (1 m³ ≈ 2300 kg Fertigbeton)
-        var totalWeight = volumeM3 * 2300;
+        // Fertigbeton-Säcke: Trockenmischung ≈ 2100 kg/m³ (ein 25-kg-Sack ergibt ~12 L Frischbeton).
+        // 2300 kg/m³ wäre die Frischbeton-Dichte — für den Sackbedarf zählt die Trockenmischung.
+        var totalWeight = volumeM3 * 2100;
         if (bagWeight <= 0) bagWeight = 25;
         var bags = (int)Math.Ceiling(totalWeight / bagWeight);
 
@@ -629,6 +723,10 @@ public sealed class CraftEngine
 
     public StairsResult CalculateStairs(double floorHeight, double stairWidth, int customStepCount = 0)
     {
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        floorHeight = Clamp(floorHeight, Limits.MaxLengthM); // cm (bis 100 m Geschosshöhe)
+        stairWidth = Clamp(stairWidth, Limits.MaxLengthM, 0);
+
         // Stufenanzahl: automatisch basierend auf optimaler Stufenhöhe
         int stepCount;
         if (customStepCount > 0)
@@ -690,16 +788,17 @@ public sealed class CraftEngine
     /// <param name="plasterType">Putzart als Enum (typsicher statt string-Routing)</param>
     public PlasterResult CalculatePlaster(double areaSqm, double thicknessMm, PlasterType plasterType)
     {
-        if (areaSqm <= 0) areaSqm = 0.1;
-        if (thicknessMm <= 0) thicknessMm = 1;
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        areaSqm = Clamp(areaSqm, Limits.MaxAreaSqm, 0.1);
+        thicknessMm = Clamp(thicknessMm, Limits.MaxThicknessMm, 1);
 
-        // Verbrauch pro m² und mm Dicke (kg/m²/mm)
+        // Trockenmörtel-Verbrauch pro m² und mm Dicke (kg/m²/mm) — Hersteller-typische Werte
         var densityPerMmPerSqm = plasterType switch
         {
-            PlasterType.Exterior => 1.2,  // Zementputz Außen
-            PlasterType.Lime => 0.9,      // Kalkputz
-            PlasterType.Gypsum => 0.8,    // Gipsputz
-            _ => 1.0                       // Innenputz (Kalk-Zement)
+            PlasterType.Exterior => 1.7,  // Zementputz außen (z.B. weber.dur 110, ~1,6–1,8)
+            PlasterType.Lime => 1.4,      // Kalkputz (z.B. Knauf Rotkalk Grund, ~1,3–1,5)
+            PlasterType.Gypsum => 0.85,   // Gipsputz (z.B. Knauf MP 75, ~0,85)
+            _ => 1.5                       // Kalk-Zement-Innenputz (z.B. weber.dur 132, ~1,5)
         };
 
         var totalKg = areaSqm * thicknessMm * densityPerMmPerSqm;
@@ -727,8 +826,9 @@ public sealed class CraftEngine
     /// <param name="screedType">Estrich-Typ als Enum (typsicher statt string-Routing)</param>
     public ScreedResult CalculateScreed(double areaSqm, double thicknessCm, ScreedType screedType)
     {
-        if (areaSqm <= 0) areaSqm = 0.1;
-        if (thicknessCm <= 0) thicknessCm = 0.1;
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        areaSqm = Clamp(areaSqm, Limits.MaxAreaSqm, 0.1);
+        thicknessCm = Clamp(thicknessCm, Limits.MaxThicknessCm, 0.1);
 
         var volumeM3 = areaSqm * thicknessCm / 100.0;
 
@@ -776,9 +876,10 @@ public sealed class CraftEngine
     /// <param name="insulationType">0=EPS, 1=XPS, 2=Mineralwolle, 3=Holzfaser</param>
     public InsulationResult CalculateInsulation(double areaSqm, double currentUValue, double targetUValue, int insulationType)
     {
-        if (areaSqm <= 0) areaSqm = 0.1;
-        if (currentUValue <= 0) currentUValue = 0.01;
-        if (targetUValue <= 0) targetUValue = 0.01;
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        areaSqm = Clamp(areaSqm, Limits.MaxAreaSqm, 0.1);
+        currentUValue = Clamp(currentUValue, 10, 0.01); // U-Werte realistisch < 10 W/(m²·K)
+        targetUValue = Clamp(targetUValue, 10, 0.01);
         if (targetUValue >= currentUValue) targetUValue = currentUValue * 0.5; // Soll < Ist
 
         // Wärmeleitfähigkeit Lambda (W/(m·K))
@@ -837,9 +938,12 @@ public sealed class CraftEngine
     public CableSizingResult CalculateCableSize(double currentAmps, double lengthM, double voltageV,
         int materialType, double maxDropPercent = 3.0, bool isThreePhase = false)
     {
-        if (currentAmps <= 0) currentAmps = 0.1;
-        if (lengthM <= 0) lengthM = 0.1;
-        if (voltageV <= 0) voltageV = 230;
+        // Plausibilitäts-Bounds: User-Input gegen Crash-Werte (Infinity/NaN) absichern
+        currentAmps = Clamp(currentAmps, Limits.MaxAmps, 0.1);
+        lengthM = Clamp(lengthM, Limits.MaxLengthM, 0.1);
+        voltageV = Clamp(voltageV, Limits.MaxVolts, 0);
+        if (voltageV <= 0) voltageV = 230; // Default-Netzspannung
+        maxDropPercent = Clamp(maxDropPercent, 100, 0);
         if (maxDropPercent <= 0) maxDropPercent = 3.0;
 
         // Spezifischer Widerstand (Ohm·mm²/m)
@@ -901,6 +1005,14 @@ public sealed class CraftEngine
     /// </summary>
     public static GroutResult CalculateGrout(double areaSqm, double tileLengthCm, double tileWidthCm, double groutWidthMm, double groutDepthMm, double pricePerKg = 2.5)
     {
+        // Plausibilitäts-Bounds: Infinity/NaN → 0 → fällt in den Ungültig-Guard darunter
+        areaSqm = Clamp(areaSqm, Limits.MaxAreaSqm, 0);
+        tileLengthCm = Clamp(tileLengthCm, 1000, 0);
+        tileWidthCm = Clamp(tileWidthCm, 1000, 0);
+        groutWidthMm = Clamp(groutWidthMm, 100, 0);
+        groutDepthMm = Clamp(groutDepthMm, 100, 0);
+        pricePerKg = Clamp(pricePerKg, 100_000, 0);
+
         if (areaSqm <= 0 || tileLengthCm <= 0 || tileWidthCm <= 0 || groutWidthMm <= 0 || groutDepthMm <= 0)
             return new GroutResult();
 

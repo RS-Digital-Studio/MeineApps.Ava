@@ -73,13 +73,13 @@ public sealed partial class AreaMeasureViewModel : ViewModelBase, IDisposable, I
     {
         5 => _localization.GetString("Diameter") ?? "Durchmesser (m)",
         3 => _localization.GetString("BaseA") ?? "Seite a (m)",
-        _ => _localization.GetString("Length") ?? "Länge (m)"
+        _ => _localization.GetString("LabelLengthM") ?? "Länge (m)"
     };
 
     public string Dim2Label => SelectedShapeIndex switch
     {
         4 => _localization.GetString("HeightTriangle") ?? "Höhe (m)",
-        _ => _localization.GetString("Width") ?? "Breite (m)"
+        _ => _localization.GetString("LabelWidthM") ?? "Breite (m)"
     };
 
     #endregion

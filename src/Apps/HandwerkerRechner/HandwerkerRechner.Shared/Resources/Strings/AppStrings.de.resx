@@ -2452,6 +2452,21 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="CalcTypeAreaMeasure" xml:space="preserve">
     <value>Aufmaß-Rechner</value>
   </data>
+  <data name="CalcTypeConcreteSlab" xml:space="preserve">
+    <value>Bodenplatte</value>
+  </data>
+  <data name="CalcTypeConcreteStrip" xml:space="preserve">
+    <value>Streifenfundament</value>
+  </data>
+  <data name="CalcTypeConcreteColumn" xml:space="preserve">
+    <value>Betonsäule</value>
+  </data>
+  <data name="CalcTypeStairs" xml:space="preserve">
+    <value>Treppe</value>
+  </data>
+  <data name="CalculateFirst" xml:space="preserve">
+    <value>Bitte zuerst berechnen</value>
+  </data>
   <data name="CsvExportFailed" xml:space="preserve">
     <value>CSV-Export fehlgeschlagen</value>
   </data>

@@ -2437,6 +2437,21 @@ Coverage decreases on rough surfaces!</value>
   <data name="CalcTypeAreaMeasure" xml:space="preserve">
     <value>Area Measure</value>
   </data>
+  <data name="CalcTypeConcreteSlab" xml:space="preserve">
+    <value>Concrete Slab</value>
+  </data>
+  <data name="CalcTypeConcreteStrip" xml:space="preserve">
+    <value>Strip Foundation</value>
+  </data>
+  <data name="CalcTypeConcreteColumn" xml:space="preserve">
+    <value>Concrete Column</value>
+  </data>
+  <data name="CalcTypeStairs" xml:space="preserve">
+    <value>Stairs</value>
+  </data>
+  <data name="CalculateFirst" xml:space="preserve">
+    <value>Please calculate first</value>
+  </data>
   <data name="CsvExportFailed" xml:space="preserve">
     <value>CSV export failed</value>
   </data>

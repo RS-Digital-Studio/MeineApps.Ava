@@ -85,6 +85,30 @@ public class CraftEngineTests
     }
 
     [Fact]
+    public void CalculateWallpaper_OhneRapport_BeschnittZugabeReduziertBahnenProRolle()
+    {
+        // Handrechnung: Raumhöhe 2.50m + 0.10m Beschnitt-Zugabe = 2.60m effektive Bahnlänge
+        // Bahnen/Rolle = Floor(10.05 / 2.60) = 3 (ohne Zugabe wären es fälschlich 4)
+        // Raum 4x5m: Umfang 18m → Bahnen = Ceiling(18 / 0.53) = 34 → Rollen = Ceiling(34/3) = 12
+        var ergebnis = _sut.CalculateWallpaper(4, 5, 2.5, 10.05, 53, 0);
+
+        ergebnis.StripsPerRoll.Should().Be(3);
+        ergebnis.StripsNeeded.Should().Be(34);
+        ergebnis.RollsNeeded.Should().Be(12);
+    }
+
+    [Fact]
+    public void CalculateWallpaper_RaumhoeheUeberRollenlaenge_EineRolleProBahn()
+    {
+        // Grenzfall: Raumhöhe 12m > Rollenlänge 10.05m → keine ganze Bahn pro Rolle.
+        // Konservativ: eine Rolle pro Bahn. Raum 2x2m: Umfang 8m → Ceiling(8/0.53) = 16 Bahnen → 16 Rollen
+        var ergebnis = _sut.CalculateWallpaper(2, 2, 12, 10.05, 53, 0);
+
+        ergebnis.StripsNeeded.Should().Be(16);
+        ergebnis.RollsNeeded.Should().Be(ergebnis.StripsNeeded);
+    }
+
+    [Fact]
     public void CalculateWallpaper_WandflaeacheIstPerimeterTimesHoehe()
     {
         // Invariante: WallArea = Perimeter * RoomHeight
@@ -379,13 +403,26 @@ public class CraftEngineTests
     [Fact]
     public void CalculatePaving_StandardPflaster_GibtKorrekteSteineAnzahl()
     {
-        // Vorbereitung: 10m² Fläche, 20x10cm Steine, 3mm Fuge
-        // SteinMitFuge: (20+3)/100 * (10+3)/100 = 0.23 * 0.13 = 0.0299m²
+        // Vorbereitung: 10m² Fläche, 20x10cm Steine, 3mm Fuge (= 0.3cm!)
+        // SteinMitFuge: (20+0.3)/100 * (10+0.3)/100 = 0.203 * 0.103 = 0.020909m²
         var ergebnis = _sut.CalculatePaving(10, 20, 10, 3);
 
         ergebnis.Area.Should().Be(10);
-        ergebnis.StonesNeeded.Should().Be((int)Math.Ceiling(10.0 / (0.23 * 0.13)));
+        ergebnis.StonesNeeded.Should().Be((int)Math.Ceiling(10.0 / (0.203 * 0.103)));
         ergebnis.StonesWithReserve.Should().BeGreaterThan(ergebnis.StonesNeeded);
+    }
+
+    [Fact]
+    public void CalculatePaving_FugeInMillimetern_HandgerechneterWert()
+    {
+        // Handrechnung: 20m², Stein 20x10cm, Fuge 3mm
+        // Modul: 20.3 x 10.3 cm = 209.09 cm² = 0.020909 m²
+        // 20 / 0.020909 = 956.52 → 957 Steine vor Reserve
+        // Mit 5% Reserve: 956.52 * 1.05 = 1004.35 → 1005 Steine
+        var ergebnis = _sut.CalculatePaving(20, 20, 10, 3);
+
+        ergebnis.StonesNeeded.Should().Be(957);
+        ergebnis.StonesWithReserve.Should().Be(1005);
     }
 
     [Fact]
@@ -500,6 +537,8 @@ public class CraftEngineTests
         ergebnis.SandKg.Should().BeApproximately(1400, 0.001);     // 700kg/m³ * 2m³
         ergebnis.GravelKg.Should().BeApproximately(2200, 0.001);   // 1100kg/m³ * 2m³
         ergebnis.WaterLiters.Should().BeApproximately(300, 0.001); // 150L/m³ * 2m³
+        // Trockenmischung 2100kg/m³: 2m³ * 2100 = 4200kg → 4200/25 = 168 Säcke à 25kg
+        ergebnis.BagsNeeded.Should().Be(168);
     }
 
     [Fact]
@@ -565,18 +604,29 @@ public class CraftEngineTests
     [Fact]
     public void CalculatePlaster_Innenputz_BerechnetKorrektesMenge()
     {
-        // Vorbereitung: 20m² Fläche, 15mm dick, Innenputz (1.0 kg/m²/mm)
-        // Gesamt = 20 * 15 * 1.0 = 300kg → 10 Säcke (à 30kg)
+        // Vorbereitung: 20m² Fläche, 15mm dick, Kalk-Zement-Innenputz (1.5 kg/m²/mm)
+        // Gesamt = 20 * 15 * 1.5 = 450kg → 15 Säcke (à 30kg)
         var ergebnis = _sut.CalculatePlaster(20, 15, PlasterType.Interior);
 
-        ergebnis.PlasterKg.Should().BeApproximately(300, 0.001);
-        ergebnis.BagsNeeded.Should().Be(10);
+        ergebnis.PlasterKg.Should().BeApproximately(450, 0.001);
+        ergebnis.BagsNeeded.Should().Be(15);
+    }
+
+    [Fact]
+    public void CalculatePlaster_Gipsputz_HandgerechneterWert()
+    {
+        // Handrechnung: 10m², 10mm dick, Gipsputz (0.85 kg/m²/mm, Knauf MP 75)
+        // Gesamt = 10 * 10 * 0.85 = 85kg → Ceiling(85/30) = 3 Säcke
+        var ergebnis = _sut.CalculatePlaster(10, 10, PlasterType.Gypsum);
+
+        ergebnis.PlasterKg.Should().BeApproximately(85, 0.001);
+        ergebnis.BagsNeeded.Should().Be(3);
     }
 
     [Fact]
     public void CalculatePlaster_Aussenputz_SchwerAlsInnenputz()
     {
-        // Vorbereitung: Außenputz (1.2 kg/m²/mm) vs Innenputz (1.0 kg/m²/mm)
+        // Vorbereitung: Zementputz außen (1.7 kg/m²/mm) vs Innenputz (1.5 kg/m²/mm)
         var innen = _sut.CalculatePlaster(10, 10, PlasterType.Interior);
         var aussen = _sut.CalculatePlaster(10, 10, PlasterType.Exterior);
 
@@ -586,7 +636,7 @@ public class CraftEngineTests
     [Fact]
     public void CalculatePlaster_GipsputzLeichtesterTyp()
     {
-        // Gipsputz (0.8) ist leichter als Kalkputz (0.9) und Innenputz (1.0)
+        // Gipsputz (0.85) ist leichter als Kalkputz (1.4) und Innenputz (1.5)
         var kalk = _sut.CalculatePlaster(10, 10, PlasterType.Lime);
         var gips = _sut.CalculatePlaster(10, 10, PlasterType.Gypsum);
 
@@ -697,6 +747,38 @@ public class CraftEngineTests
         var alu = _sut.CalculateCableSize(10, 20, 230, 1, 3.0);
 
         alu.Resistivity.Should().BeGreaterThan(kupfer.Resistivity);
+    }
+
+    #endregion
+
+    #region Plausibilitäts-Clamp (Infinity/NaN)
+
+    [Fact]
+    public void CalculateMethods_NaNUndInfinity_KeinCrashUndEndlicheErgebnisse()
+    {
+        // Projektregel (Models-CLAUDE.md): Infinity/NaN-Clamp IMMER vor Berechnungen.
+        // Repräsentative Methoden mit Extrem-Inputs — kein Throw, keine Infinity/NaN-Ergebnisse.
+        var nan = double.NaN;
+        var inf = double.PositiveInfinity;
+
+        var tapete = _sut.CalculateWallpaper(nan, inf, nan, inf, nan, inf);
+        double.IsFinite(tapete.WallArea).Should().BeTrue();
+        tapete.RollsNeeded.Should().BeGreaterThanOrEqualTo(0);
+
+        var pflaster = _sut.CalculatePaving(inf, nan, inf, nan);
+        pflaster.StonesNeeded.Should().BeGreaterThanOrEqualTo(0);
+
+        var putz = _sut.CalculatePlaster(inf, nan, PlasterType.Interior);
+        double.IsFinite(putz.PlasterKg).Should().BeTrue();
+
+        var beton = _sut.CalculateConcrete(0, inf, nan, inf);
+        double.IsFinite(beton.VolumeM3).Should().BeTrue();
+
+        var strom = _sut.CalculatePowerCost(inf, nan, inf);
+        double.IsFinite(strom.CostPerYear).Should().BeTrue();
+
+        var fuge = CraftEngine.CalculateGrout(nan, inf, nan, inf, nan);
+        fuge.TotalKg.Should().Be(0); // NaN → 0 → Ungültig-Guard → leeres Ergebnis
     }
 
     #endregion

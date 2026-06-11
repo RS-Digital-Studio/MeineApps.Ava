@@ -1630,7 +1630,7 @@ Valores típicos:
     <value>Herram. profesionales</value>
   </data>
   <data name="CalculatorCount" xml:space="preserve">
-    <value>11 calculadoras</value>
+    <value>19 calculadoras</value>
   </data>
   <data name="GetPremium" xml:space="preserve">
     <value>Sin publicidad</value>
@@ -2148,6 +2148,21 @@ Valores típicos:
   </data>
   <data name="CalcTypeAreaMeasure" xml:space="preserve">
     <value>Medición de área</value>
+  </data>
+  <data name="CalcTypeConcreteSlab" xml:space="preserve">
+    <value>Losa de hormigón</value>
+  </data>
+  <data name="CalcTypeConcreteStrip" xml:space="preserve">
+    <value>Zapata corrida</value>
+  </data>
+  <data name="CalcTypeConcreteColumn" xml:space="preserve">
+    <value>Columna de hormigón</value>
+  </data>
+  <data name="CalcTypeStairs" xml:space="preserve">
+    <value>Escalera</value>
+  </data>
+  <data name="CalculateFirst" xml:space="preserve">
+    <value>Por favor, calcule primero</value>
   </data>
   <data name="CsvExportFailed" xml:space="preserve">
     <value>Error al exportar CSV</value>

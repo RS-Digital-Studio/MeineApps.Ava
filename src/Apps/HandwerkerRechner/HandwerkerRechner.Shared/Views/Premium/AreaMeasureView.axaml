@@ -338,7 +338,7 @@
         <Border Classes="Card StatsCard"
                 IsVisible="{Binding HasResult}"
                 AutomationProperties.AutomationId="AreaMeasure_CardActions">
-          <Grid ColumnDefinitions="*,8,*,8,*">
+          <Grid ColumnDefinitions="*,8,*,8,*,8,Auto">
             <Button Grid.Column="0"
                     Command="{Binding CopyTotalAreaCommand}"
                     Classes="Outlined"
@@ -367,10 +367,11 @@
                 <TextBlock Text="{loc:Translate ExportMaterialList}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
-                    <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                      <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                       Foreground="{DynamicResource AccentBrush}" />
-                    </Button>
+            <Button Grid.Column="6" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                    AutomationProperties.AutomationId="AreaMeasure_BtnExportCsv">
+              <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                               Foreground="{DynamicResource AccentBrush}" />
+            </Button>
             <Button Grid.Column="4"
                     Command="{Binding OpenSaveDialogCommand}"
                     Classes="Primary"

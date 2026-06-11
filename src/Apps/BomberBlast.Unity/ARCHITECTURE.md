@@ -2,7 +2,13 @@
 
 > Vollständige technische Spezifikation. Komplementär zu [PLAN.md](PLAN.md) (Übersicht),
 > [DESIGN.md](DESIGN.md) (Game-Design) und [ROADMAP.md](ROADMAP.md) (Produktion).
-> Stand 2026-05-26.
+> Stand 2026-05-26 (Tech-Stack), Richtung v0.5.
+>
+> **Richtung v0.5 (2026-06-08):** Das Spiel ist ein **modernes, aktiv gespieltes 3D-Bomberman** mit neuer
+> Story — **kein Idle/AFK, kein Offline-Income**. Der hier beschriebene Tech-Stack (Unity 6, URP, VContainer,
+> UniTask, R3, Firebase, Determinismus-First, Addressables) bleibt davon **unberührt und gültig**. Multiplayer/Netcode/Photon gibt es **nicht**
+> (§8 = expliziter Ausschluss). Determinismus-First gilt weiter für
+> Replay / Daily-Race / Anti-Cheat (es gibt keinen Idle-Loop, der zu modellieren wäre).
 
 ---
 
@@ -14,9 +20,9 @@
 4. [Dependency Injection mit VContainer](#4-dependency-injection-mit-vcontainer)
 5. [Scene-Architektur](#5-scene-architektur)
 6. [Daten-Architektur (ScriptableObjects + Save)](#6-daten-architektur-scriptableobjects--save)
-7. [Cloud-Save & Cross-Save](#7-cloud-save--cross-save)
-8. [Photon Fusion Netcode (PvP)](#8-photon-fusion-netcode-pvp)
-9. [Photon Realtime Netcode (Co-op)](#9-photon-realtime-netcode-co-op)
+7. [Cloud-Save](#7-cloud-save)
+8. [Multiplayer/Netcode — nicht Teil von v0.5](#8-multiplayer--netcode--nicht-teil-von-v05)
+9. [(entfällt — siehe §8)](#9-entfällt--multiplayer-siehe-8)
 10. [Anti-Cheat-Pipeline](#10-anti-cheat-pipeline)
 11. [Cloud Functions (TypeScript)](#11-cloud-functions-typescript)
 12. [Firebase-Security-Rules](#12-firebase-security-rules)
@@ -45,7 +51,6 @@
 | Render-Pipeline | **URP** | 17.0.4+ | 2D/3D-Mix, Shader Graph, gute Mobile-Performance |
 | Build-Backend | **IL2CPP** | inkl. Unity | ARM64-Pflicht für Play-Store seit 2019 |
 | Min-Android | API 24 (Android 7) | – | 98 % Marktabdeckung, NEON-SIMD verfügbar |
-| Min-iOS | iOS 13 | – | Metal-Renderer, 95 %+ Markt |
 
 ### 1.2 DI + Async + Reactive
 
@@ -65,35 +70,33 @@
 | **TMP** | **TextMeshPro** | (in com.unity.ugui 2.0.0 integriert) | Standard, SDF-Font-Rendering — in Unity 6 Teil von UGUI, kein separates Paket |
 | **Animation** | **DOTween** | Pro v1.2.7+ | Tweens für UI + Camera + Custom-Animations |
 | **Cinemachine** | **Cinemachine** | 3.x | Procedural Camera, Damping, CinemachineConfiner2D/3D, CinemachineImpulseSource/-Listener |
-| **Timeline** | **Unity Timeline** | 1.8+ | Welt-Cutscenes, Cinematic-Sequenzen |
+| **Timeline** | **Unity Timeline** | 1.8+ | Sektor-Cutscenes, Cinematic-Sequenzen |
 | **VFX** | **VFX Graph** | 17.0+ | GPU-Compute-Shader-Particles |
 | **Particle System** | **Built-in** | Unity 6 | Backup für simple Effekte (Trail, Pickup) |
 | **Shader Graph** | **URP-Built-in** | – | Custom Shaders (Glow, Dissolve, Hologramm, Outline, Liquid) |
 
-### 1.4 Networking
+### 1.4 Backend (asynchron, kein Echtzeit-MP)
 
-| Bereich | Wahl | Version | Begründung |
-|---------|------|---------|------------|
-| **Real-time PvP** | **Photon Fusion 2** | 2.x | Tick-based Server-Authoritative + Rollback (alt: Lockstep). Mobile-erprobt |
-| **Real-time Co-op** | **Photon Realtime** | 5.x | Host-Authoritative, einfacher als Fusion für PvE |
-| **Chat** | **Photon Chat** | 4.x | Channels, Friends, DMs |
-| **Voice-Chat** (Phase 2) | **Photon Voice 2** | – | Push-to-Talk + Spatial-Audio |
-| **Async-Backend** | **Firebase Realtime DB** | Unity SDK 12.x | Liga + Cloud-Save + Daily-Race |
-| **Auth** | **Firebase Auth** | Unity SDK 12.x | Anonymous + Email + Google + Apple SignIn |
-| **Notifications** | **Firebase Cloud Messaging** | Unity SDK 12.x | Push + Local |
-| **Remote Config** | **Firebase Remote Config** | Unity SDK 12.x | Live-Tuning, Event-Toggles, A/B-Tests |
-| **Analytics** | **Firebase Analytics** + **Unity Analytics** | – | Funnel + Behavior |
-| **Crashlytics** | **Firebase Crashlytics** | Unity SDK 12.x | Crash-Reporting (wieder rein nach alt-Wartungsproblem) |
-| **Cloud Storage** | **Firebase Storage** | – | Addressables-CDN, Replay-Files |
-| **Cloud Functions** | **Firebase Functions** | Node.js 20, TypeScript 5.x | Anti-Cheat-Worker, Saison-Reset, IAP-Validation |
+**Kein Echtzeit-Netcode — reiner Single-Player.** Nur asynchrone Firebase-Dienste:
+
+| Bereich | Wahl | Begründung |
+|---------|------|------------|
+| **Async-Backend** | Firebase Realtime DB | Cloud-Save + Grid-Rankings + Daily-Race (Score-Submit) |
+| **Auth** | Firebase Auth | Anonymous (+ optional Google-Link für Geräte-Wechsel) |
+| **Notifications** | Firebase Cloud Messaging | Push + Local (Daily-/Event-Reminder) |
+| **Remote Config** | Firebase Remote Config | Live-Tuning, Event-Toggles |
+| **Cloud Storage** | Firebase Storage | optional: Addressables-CDN |
+
+> **Entfernt (alte Logik):** Photon Fusion/Realtime/Chat/Voice, Real-time PvP/Co-op, Match-Cloud-Functions.
+> Analytics/Crashlytics optional/später — kein Launch-Blocker.
 
 ### 1.5 Persistenz
 
 | Bereich | Wahl | Begründung |
 |---------|------|------------|
 | **Settings** | PlayerPrefs (Unity-built-in) | Plattform-native, klein, schnell |
-| **Game-Save** | Firebase RTDB (Source-of-Truth) + JSON-File (Last-Known-Good) | Cross-Save Mobile↔PC |
-| **Replay-Files** | Lokal JSON + Firebase Storage (für PvP-Validation) | 5-30 KB pro Match |
+| **Game-Save** | Firebase RTDB (Source-of-Truth) + JSON-File (Last-Known-Good) | Cloud-Save (Android-fokussiert) |
+| **Replay-Files** | Lokal JSON (Daily-Race-Replay) | 5-30 KB pro Run |
 | **Lokal-Cache** | Application.persistentDataPath/cache/ | Custom JSON-Files |
 
 ### 1.6 Monetization
@@ -102,7 +105,6 @@
 |---------|------|---------|
 | **IAP** | **Unity IAP** | 4.13+ |
 | **Google Play Billing** | (via Unity IAP) | v6 |
-| **Apple StoreKit** | (via Unity IAP) | StoreKit 2 |
 | **Ads** | **Google AdMob** | v9+ |
 | **Ads-Mediation** | **Unity LevelPlay** | (Backup) |
 | **Subscription** | Unity IAP + Server-Worker | Anti-Refund-Validation |
@@ -163,8 +165,7 @@
 
 **Manuelle Installation (Asset Store / DLL):**
 - DOTween Pro
-- Photon Fusion 2 + Photon Realtime + Photon Chat
-- Firebase Unity SDK (Auth, RTDB, Functions, Messaging, Analytics, Crashlytics, Storage, Remote Config)
+- Firebase Unity SDK (Auth, RTDB, Messaging, Storage, Remote Config)
 - FMOD Studio Unity Integration (optional)
 
 ---
@@ -193,8 +194,6 @@ src/Apps/BomberBlast.Unity/
 │   │   │   ├── accountDelete.ts
 │   │   │   ├── dataExport.ts
 │   │   │   ├── purchaseValidate.ts
-│   │   │   ├── clanInvite.ts
-│   │   │   ├── friendRequest.ts
 │   │   │   ├── notificationSend.ts
 │   │   │   └── migrateOldBomberBlast.ts
 │   │   └── tests/
@@ -298,9 +297,7 @@ Assets/_Project/Scripts/
 │   │   ├── QuickPlayMode.cs
 │   │   ├── SurvivalMode.cs
 │   │   ├── BossRushMode.cs
-│   │   ├── DailyRaceMode.cs
-│   │   ├── PvpMode.cs
-│   │   └── CoopMode.cs
+│   │   └── DailyRaceMode.cs
 │   ├── Combat/
 │   │   ├── ComboSystem.cs (port aus alt)
 │   │   ├── SpecialExplosionEffects.cs (port aus alt)
@@ -393,35 +390,6 @@ Assets/_Project/Scripts/
 │       ├── ComboFloatingText.cs
 │       └── DamageNumber.cs
 │
-├── Multiplayer/             (BomberBlast.Multiplayer)
-│   ├── PhotonFusion/
-│   │   ├── PvpNetworkRunner.cs (NetworkRunner-Wrapper)
-│   │   ├── PvpNetworkPlayer.cs (NetworkBehaviour)
-│   │   ├── PvpNetworkBomb.cs
-│   │   ├── PvpMatchmaker.cs
-│   │   └── PvpAuthority.cs
-│   ├── PhotonRealtime/
-│   │   ├── CoopRoomManager.cs
-│   │   ├── CoopHost.cs
-│   │   ├── CoopGuest.cs
-│   │   └── CoopSync.cs
-│   ├── PhotonChat/
-│   │   ├── ChatService.cs
-│   │   └── ChatChannel.cs
-│   ├── PhotonVoice/ (Phase 2)
-│   │   └── VoiceController.cs
-│   ├── Lobby/
-│   │   ├── LobbyManager.cs
-│   │   ├── HeroPickPhase.cs
-│   │   └── MatchReadyCheck.cs
-│   ├── Anti-Cheat/
-│   │   ├── ClientReplayUploader.cs
-│   │   └── SuspiciousPatternDetector.cs
-│   └── Replay/
-│       ├── ReplayService.cs
-│       ├── ReplayBlobSerializer.cs
-│       └── ReplayPlayback.cs
-│
 ├── UI/                      (BomberBlast.UI)
 │   ├── Bootstrap/
 │   │   └── UIInstaller.cs
@@ -434,7 +402,6 @@ Assets/_Project/Scripts/
 │   │   ├── MainHubView.cs
 │   │   ├── PlayTabView.cs
 │   │   ├── ShopTabView.cs
-│   │   ├── ClanTabView.cs
 │   │   └── ProfileTabView.cs
 │   ├── HUD/
 │   │   ├── BattleHUDView.cs
@@ -443,11 +410,6 @@ Assets/_Project/Scripts/
 │   │   ├── HeroSkillBar.cs
 │   │   ├── ComboDisplay.cs
 │   │   └── MiniMap.cs
-│   ├── Lobbies/
-│   │   ├── PvpLobbyView.cs
-│   │   ├── CoopLobbyView.cs
-│   │   ├── HeroPickModal.cs
-│   │   └── MatchReadyModal.cs
 │   ├── Settlement/
 │   │   ├── PostMatchView.cs
 │   │   ├── RewardReveal.cs
@@ -515,11 +477,6 @@ BomberBlast.Game (depends on Domain, Core)
    ├── Unity-API allowed
    └── MonoBehaviours, Coroutines
 
-BomberBlast.Multiplayer (depends on Game, Domain, Core)
-   ├── References: BomberBlast.Core, BomberBlast.Domain, BomberBlast.Game
-   ├── Photon Fusion + Realtime + Chat
-   └── Define Constraints: UNITY_INCLUDE_NETWORK
-
 BomberBlast.UI (depends on Game, Domain, Core)
    ├── References: BomberBlast.Core, BomberBlast.Domain, BomberBlast.Game
    └── UI Toolkit + UGUI + DOTween
@@ -536,14 +493,12 @@ Test-Assemblies:
 - BomberBlast.Core.Tests             (NUnit, EditMode)
 - BomberBlast.Domain.Tests           (NUnit, EditMode, KEINE Unity-API)
 - BomberBlast.Game.PlayModeTests     (Unity Test Framework, PlayMode)
-- BomberBlast.Multiplayer.Tests      (NUnit, EditMode, Photon-Mock)
 - BomberBlast.LiveOps.Tests          (NUnit, EditMode)
 ```
 
 ### 3.1 Asmdef-Constraints
 
 - **Domain darf NICHT Unity-API** verwenden (Compile-Constraint via Reflection-Check + CI-Gate)
-- **Multiplayer ist Define-konditional** (UNITY_INCLUDE_NETWORK) → ermöglicht PvP-freie Demo-Builds
 - **Test-Assemblies haben** `defineConstraints: ["UNITY_INCLUDE_TESTS"]`
 
 ---
@@ -571,7 +526,6 @@ RootLifetimeScope (Boot-Scene, DontDestroyOnLoad)
 │  ├─ IAudioService → UnityAudioService (oder FMODAudioService)
 │  ├─ INotificationService → MobileNotificationService
 │  ├─ IIapService → UnityIapService
-│  ├─ INetworkService → PhotonNetworkService
 │  ├─ ISceneLoaderService → AdditiveSceneLoaderService
 │  └─ ILocalizationService → UnityLocalizationService
 │
@@ -594,15 +548,9 @@ RootLifetimeScope (Boot-Scene, DontDestroyOnLoad)
 │  ├─ IRetentionService → RetentionService
 │  └─ IEventCalendarService → EventCalendarService
 │
-├─ Online-Services (Singleton)
-│  ├─ ILeagueService → LeagueService
-│  ├─ IClanService → ClanService
-│  ├─ IPvpMatchmakingService → PvpMatchmakingService
-│  ├─ ICoopLobbyService → CoopLobbyService
-│  ├─ IChatService → ChatService
-│  ├─ IFriendsService → FriendsService
-│  ├─ IReplayService → ReplayService
-│  └─ IAntiCheatClientService → AntiCheatClientService
+├─ Async-Services (Singleton, kein Multiplayer)
+│  ├─ ILeagueService → LeagueService (Grid-Rankings)
+│  └─ IReplayService → ReplayService (Daily-Race)
 │
 └─ Konfiguration (ScriptableObject-Instances)
    ├─ HeroDatabase
@@ -616,8 +564,7 @@ RootLifetimeScope (Boot-Scene, DontDestroyOnLoad)
    ├─ AchievementDatabase    (72 Achievements)
    ├─ ShopUpgradeConfig      (12 Upgrades: 9 Stat + 3 Bomb-Unlocks)
    ├─ BalancingConfig
-   ├─ EconomyConfig
-   └─ NetworkConfig          (nur für optionalen Multiplayer)
+   └─ EconomyConfig
 ```
 
 ### 4.2 Sub-Scopes pro Scene
@@ -631,16 +578,6 @@ GameLifetimeScope (Game-Scene)
 ├─ GameHUD (Scoped)
 └─ Mode-spezifisches Service (Scoped: StoryMode oder DungeonMode oder...)
 
-PvpLifetimeScope (Pvp-Scene)
-├─ PvpController (Scoped)
-├─ PvpNetworkRunner (Scoped)
-├─ PvpMatchmaker (Scoped)
-└─ HeroPickPhase (Scoped)
-
-CoopLifetimeScope (Coop-Scene)
-├─ CoopController (Scoped)
-├─ CoopRoomManager (Scoped)
-└─ CoopSync (Scoped)
 ```
 
 ### 4.3 RootLifetimeScope.cs (vollständig)
@@ -674,7 +611,6 @@ public class RootLifetimeScope : LifetimeScope
         builder.Register<IAuthService, FirebaseAuthService>(Lifetime.Singleton);
         builder.Register<ISaveService, FirebaseSaveService>(Lifetime.Singleton);
         builder.Register<IAudioService, UnityAudioService>(Lifetime.Singleton);
-        builder.Register<INetworkService, PhotonNetworkService>(Lifetime.Singleton);
         builder.Register<ISceneLoaderService, AdditiveSceneLoaderService>(Lifetime.Singleton);
         builder.Register<ILocalizationService, UnityLocalizationService>(Lifetime.Singleton);
         builder.Register<IAnalyticsService, FirebaseAnalyticsService>(Lifetime.Singleton);
@@ -697,13 +633,9 @@ public class RootLifetimeScope : LifetimeScope
         builder.Register<ICosmeticService, CosmeticService>(Lifetime.Singleton);
         builder.Register<IRetentionService, RetentionService>(Lifetime.Singleton);
 
-        // ── Online-Services ──
-        builder.Register<ILeagueService, LeagueService>(Lifetime.Singleton);
-        builder.Register<IClanService, ClanService>(Lifetime.Singleton);
-        builder.Register<IPvpMatchmakingService, PvpMatchmakingService>(Lifetime.Singleton);
-        builder.Register<ICoopLobbyService, CoopLobbyService>(Lifetime.Singleton);
-        builder.Register<IChatService, ChatService>(Lifetime.Singleton);
-        builder.Register<IReplayService, ReplayService>(Lifetime.Singleton);
+        // ── Async-Services (kein Multiplayer) ──
+        builder.Register<ILeagueService, LeagueService>(Lifetime.Singleton);   // Grid-Rankings (async)
+        builder.Register<IReplayService, ReplayService>(Lifetime.Singleton);   // Daily-Race-Replay
 
         // ── ScriptableObject-Instances ──
         builder.RegisterInstance(_heroDatabase);
@@ -731,19 +663,17 @@ Boot.unity (Dauer-Scene, DontDestroyOnLoad)
    └── SceneLoaderService → MainMenu.unity additive
         │
         ▼
-MainMenu.unity (additive, immer aktiv neben Battle/Pvp/Coop)
+MainMenu.unity (additive, immer aktiv neben Game)
    ├── MainMenuLifetimeScope
    ├── 3D-Skybox + Animated-Hub-Background
-   ├── 5-Tab-Navigation (Home/Play/Shop/Clan/Profile)
+   ├── Tab-Navigation (Home/Play/Shop/Rankings/Profile)
    ├── Daily-Reward-Modal
    ├── Battle-Pass-Modal
    ├── WhatsNew-Modal
    └── Push-Modal-Queue (Feature-Unlocks)
         │ Tap "Play → Story" → Game.unity
-        │ Tap "Play → PvP"   → Pvp.unity (Lobby first, dann Match)
-        │ Tap "Play → Co-op" → Coop.unity (Lobby first, dann Match)
         ▼
-Game.unity / Pvp.unity / Coop.unity (additive)
+Game.unity (additive)
    ├── XxxLifetimeScope
    ├── BattleController (Match-Logic)
    ├── HUD
@@ -763,9 +693,7 @@ Settlement-Modal (in MainMenu, kein Scene-Wechsel)
 | Boot | Bootstrap, DI, Splash, Auth | Dauer (DontDestroyOnLoad) | Auto-Start |
 | MainMenu | Hub mit Tabs | Dauer nach Boot | Auto nach Auth |
 | Game | Single-Player-Match | Pro Match | Additive von MainMenu |
-| Pvp | PvP-Lobby + Match | Pro Session | Additive |
-| Coop | Co-op-Lobby + Match | Pro Session | Additive |
-| Cinematic | Welt-Cutscenes | Pro Cutscene | Additive |
+| Cinematic | Sektor-Cutscenes | Pro Cutscene | Additive |
 | Tutorial | Initial-Tutorial Onboarding | Einmal | Additive nach erstem Boot |
 
 ### 5.3 Scene-Transitions
@@ -826,7 +754,7 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
 - `power_ups.json` (**12 PowerUps + Cure**)
 - `enemies.json` (**12 Enemies** + Elite-Flag)
 - `bosses.json` (**5 Bosse** + 8 Modifier)
-- `worlds.json` (10 Welten + 100 Level, 12 Layouts, 4 Mutatoren) — *(folgt im Content-Sprint)*
+- `worlds.json` (10 Sektoren + 100 Level, 12 Layouts, 4 Mutatoren; Dateiname bleibt `worlds.json`) — *(folgt im Content-Sprint)*
 - `achievements.json` (**72 Achievements** in 5 Kategorien)
 - `dungeon.json` (16 Buffs, 5 Synergien, 5 Raum-Typen, 8 Floor-Modifier, 8 Dungeon-Upgrades)
 - `daily_missions.json` (17er-Pool), `weekly_missions.json` (17er-Pool)
@@ -838,7 +766,7 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
 - `localization_de.json`, `localization_en.json`, ... (6 Sprachen initial)
 - `tutorial.json` (3 Tutorial-Phasen: Movement/Bombs/PowerUps)
 - `loading_tips.json` (33 globale + 10 welt-spezifische)
-- `world_story.json` (10 Welt-Intros + 9 Welt-Outros)
+- `world_story.json` (10 Sektor-Intros + 9 Outros, neue Neo-Grid-Story; Dateiname bleibt `world_story.json`)
 
 > Keine `talents.json` / `affixes.json` — Talent-Baeume und Affix-System gehoeren zur verworfenen
 > Sci-Fi-Reinvention. Progression laeuft ueber die 12 permanenten Shop-Upgrades (9 Stat + 3 Bomb-Unlocks, siehe DESIGN §16.2).
@@ -929,30 +857,11 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
    └── schemaVersion: number       // Current = 1 (neues arena-Schema; die Legacy-Import-Bruecke
                                     // liest weiterhin das Original-V3-Schema ein — kein Konflikt, getrennte Projekte, siehe §6.5)
 
-/clans/{clanId}/
-   ├── info { name, tag, country, language, level, motto, leaderId, createdAt }
-   ├── members {
-   │     [uid]: { role: "Leader"|"Officer"|"Member", joinedAt, contribution, lastSeen }
-   │   }
-   ├── chat {
-   │     [msgId]: { uid, displayName, text, time: ServerValue.TIMESTAMP }
-   │   }
-   ├── war_history { [seasonId]: { score, won, opponent } }
-   └── treasury { coins, gems }
-
 /leagues/s{season}/{tier}/{uid}
    ├── displayName, country, points, last_updated: ServerValue.TIMESTAMP
 
 /daily_race/{date_YYYYMMDD}/{tier}/{uid}
    ├── score, replay_hash, completed_at: ServerValue.TIMESTAMP
-
-/matches/{matchId}/
-   ├── players: [{uid, hero, slot}], mode, seed, region, timestamp
-   ├── replay_blob: base64-encoded ReplayCapture
-   ├── result: { winner, scores, stats }
-   ├── validated_at: ServerValue.TIMESTAMP
-   ├── validation_status: "pending"|"valid"|"invalid"
-   └── ttl_at: ServerValue.TIMESTAMP    // 30 Tage Aufbewahrung
 
 /reports/{reportedUid}/{reporterUid}
    ├── reason, comment, time: ServerValue.TIMESTAMP
@@ -998,435 +907,55 @@ Erfolgsrate-Ziel ≥ 99 % (PLAN §4.4).
 
 ---
 
-## 7. Cloud-Save & Cross-Save
+## 7. Cloud-Save
 
-### 7.1 Cross-Platform-Login
+### 7.1 Login
+- **Anonymous-Auth** beim ersten Start; optional **Google-Link** für Geräte-Wechsel (gleiche UID → gleicher Save).
 
-Spieler-Account ist plattform-übergreifend:
-- **Anonymous-Auth** beim ersten Start
-- **Mit-Account-verknüpfen** Option: Email/Google/Apple SignIn
-- Beim Login auf neuem Gerät: Auth-Provider-Wahl → identischer UID → identischer Save
+### 7.2 Save-Sync
+- Firebase RTDB als Source-of-Truth, lokaler JSON-Cache als Last-Known-Good.
+- Pull bei App-Start, Push-Debounce 5 s. Konflikt-Resolution: TotalStars → Wealth → Cards → Timestamp → Cloud-Default.
+- `PersistenceHealth`-Corruption-Schutz: bei erkannter Korruption Pull statt Push (kein Data-Loss).
 
-### 7.2 Cross-Save Mobile↔PC
+> **Entfernt (alte Logik):** Cross-Save Mobile↔PC, separate PvP-Pools — reiner Single-Player, Android-fokussiert.
 
-- Firebase RTDB ist Single-Source-of-Truth
-- Lokal-Cache (JSON-Datei) als Last-Known-Good
-- Pull bei App-Start
-- Push-Debounce 5 s (aus alt portiert)
-- Konflikt-Resolution: TotalStars → Wealth → Cards → Timestamp → Cloud-Default
+## 8. Multiplayer / Netcode — nicht Teil von v0.5
 
-### 7.3 Separate PvP-Pools (trotz Cross-Save)
+**Reiner Single-Player. Kein Photon (Fusion/Realtime/Chat/Voice), kein Echtzeit-PvP/Co-op, keine
+`[Networked]`-Properties, kein Rollback-/Host-Authoritative-Modell.** Die früheren Netcode-Kapitel
+(Fusion-PvP, Realtime-Co-op, Snapshot-/Rollback-/Loot-Sharing-Mechanik) sind **entfernt** — sie gehörten
+zur abgelösten Online-MP-Richtung.
 
-```
-/players/{uid}/league/{platform}/
-   ├── mobile: { rank, tier, season }
-   ├── pc: { rank, tier, season }
-```
-
-Mobile-User spielt nur gegen Mobile-User in Match-Pool. PC-User analog. Aber:
-- BP-Progress geteilt
-- Cosmetics geteilt
-- Coins/Gems geteilt
-- Saison-Daily-Race-Leaderboards getrennt
+**Grid-Rankings** und **Daily-Race** sind **asynchron**: der Client submittet einen Score an Firebase RTDB
+(rule-validiert, Server-Timestamp, Rate-Limit), kein Live-Match. Ein etwaiger künftiger Multiplayer wäre
+ein **separates Projekt** und ist hier nicht vorausgesetzt.
 
 ---
 
-## 8. Photon Fusion Netcode (PvP)
-
-### 8.1 Konfiguration
-
-| Parameter | Wert | Begründung |
-|-----------|------|------------|
-| **Tick-Rate (Server)** | 30 Hz | Mobile-tauglich, niedrige Bandwidth |
-| **Tick-Rate (Client Prediction)** | 60 Hz | Smooth-Feel, Re-Sim on Server-Update |
-| **Snapshot-Frequenz** | 30 Hz | Equal Tick-Rate |
-| **Input-Frequenz** | 60 Hz | Doppelt Server-Rate, Server interpoliert |
-| **Max Rollback** | 250 ms | Mobile-Latency-Toleranz |
-| **Region-Routing** | EU/NA/SEA-Region | Auto-Detect via GeoIP |
-| **Authoritative Model** | Server-Authoritative | Anti-Cheat-Pflicht |
-| **Lag-Compensation** | Snapshot-Interpolation für Remote-Players | Smooth-Movement bei 80-150ms-Latency |
-
-### 8.2 NetworkBehaviour-Beispiel
-
-```csharp
-public class PvpNetworkPlayer : NetworkBehaviour
-{
-    [Networked] public int HeroId { get; set; }
-    [Networked] public Vector2Int GridPosition { get; set; }
-    [Networked] public int HP { get; set; }
-    [Networked] public int Lives { get; set; }
-    [Networked] public int Coins { get; set; }
-    [Networked] public NetworkBool IsAlive { get; set; }
-    [Networked] public TickTimer InvulnerableUntil { get; set; }
-    
-    [Networked, Capacity(8)] public NetworkArray<BombNetState> ActiveBombs => default;
-    
-    public override void Spawned()
-    {
-        // Initialize visual representation
-        var hero = HeroDatabase.Instance.GetById(HeroId);
-        InstantiateHeroModel(hero.HeroModelPrefab);
-    }
-    
-    public override void FixedUpdateNetwork()
-    {
-        if (GetInput(out PlayerInput input))
-        {
-            ProcessInput(input);
-        }
-    }
-    
-    private void ProcessInput(PlayerInput input)
-    {
-        if (input.MoveDirection != Vector2Int.zero)
-        {
-            TryMove(input.MoveDirection);
-        }
-        if (input.PlaceBomb && CanPlaceBomb())
-        {
-            SpawnBomb();
-        }
-        // ...
-    }
-}
-
-// Netz-Repräsentation der Bombe: blittable INetworkStruct (kein managed Reference-Typ).
-public struct BombNetState : INetworkStruct
-{
-    public Vector2Int Cell;   // Grid-Position
-    public int Timer;         // Rest-Ticks bis Zündung
-    public byte Type;         // BombType-Index
-    // ... weitere unmanaged Felder (Range, OwnerSlot)
-}
-```
-
-> Fusion synchronisiert nur unmanaged- bzw. `INetworkStruct`-Typen — **keine** managed
-> Reference-Klassen. `BombInstance` ist managed und bleibt der Render-/Domain-Typ; `BombNetState`
-> ist die schlanke, blittable Netz-Repräsentation, die in der `NetworkArray<>` liegt. Pro Tick
-> wird zwischen beiden gemappt.
-
-### 8.3 Snapshot-Größen (Schätzung)
-
-Pro Player-Snapshot:
-- HeroId (1 Byte), GridPos (2 Bytes), HP+Lives (1 Byte), Coins (4 Bytes), Bomb-Array-Index (8×4 = 32 Bytes) → ~40 Bytes
-- Bei 4 Players: 160 Bytes pro Tick
-
-Pro Tick zusätzlich:
-- Grid-State (Blöcke zerstört) → 150 Bits = 19 Bytes
-- Particle-Spawn-Events → < 50 Bytes
-
-**Total pro Snapshot: ~250 Bytes (Brutto-Obergrenze, voller State)**
-**Pro Sekunde bei 30 Hz: ~7.5 KB (Brutto-Obergrenze)**
-**Match (10 Min) ≈ 4.5 MB Bandwidth pro Spieler — Brutto-Obergrenze, akzeptabel für 4G**
-
-> Diese Zahlen sind eine **Brutto-Obergrenze** (voller State pro Tick). Fusion überträgt
-> tatsächlich **delta-komprimiert** (nur geänderte `[Networked]`-Properties, plus Range-/
-> Bit-Packing) — der reale Traffic liegt im Match deutlich darunter, weil sich pro Tick nur
-> wenige Felder ändern.
-
-### 8.4 Rollback-Mechanik
-
-1. Client predicted Input → Spieler bewegt sich sofort
-2. Server bestätigt Input via Snapshot (~150ms später)
-3. Bei Diskrepanz (z.B. Server hatte anderes Input gesehen) → Client Re-simuliert
-4. Bei kleinen Differenzen: Smooth-Correction via Interpolation
-5. Bei großen Differenzen (>250ms Rollback): Hard-Snap + visueller Glitch-Effekt (Stilmittel)
-
-### 8.5 Anti-Cheat-Hooks in PvP
-
-- **Reaction-Time-Detection**: Wenn Spieler reagiert in <50 ms auf Boss-Telegraph → Verdacht
-- **Bomb-Spawn-Frequency**: Maximal 4 Bomben/sec, Server kapt zusätzliche
-- **Damage-Output**: Max Damage-Rate plausibel? Server berechnet alle Damage-Events
-- **Replay-Hash**: Client sendet Hash am Match-Ende, Server vergleicht mit eigenem
+## 9. (entfällt — Multiplayer, siehe §8)
 
 ---
 
-## 9. Photon Realtime Netcode (Co-op)
+## 10. Anti-Cheat (Single-Player)
 
-### 9.1 Host-Authoritative-Modell
+Kein Online-Match → **kein server-autoritatives Anti-Cheat, keine Replay-Re-Simulation auf Server-Workern.**
+Fokus auf lokale Integrität + Plausibilität der asynchron eingereichten Scores:
 
-- Spieler 1 ist Host (autoritativ über Game-State)
-- Spieler 2-4 schicken Inputs → Host simuliert → broadcast State-Updates
-- Tick-Rate: 20 Hz (Co-op braucht weniger Präzision als PvP)
-- Reconnect: Bei Host-Disconnect → Auto-Promotion auf Spieler 2
+- **Zeit-Manipulation:** Hybrid-Timer (`Environment.TickCount64` **+** persistierte `DateTime.UtcNow`, OR-verknüpft)
+  für Daily-Bonus/Cooldowns/Comeback.
+- **Save-Integrität:** Overflow-Guards (`(long)+amount`-Clamp), `PersistenceHealth`-Corruption-Flag, Pull-statt-Push bei Korruption.
+- **Grid-Rankings/Daily-Race (async):** Plausibilität über Firebase-RTDB-Rules (Wertebereiche, Server-Timestamp,
+  Write-Rate-Limit) + Report-Button + Profanity-Filter. Bewusst leichtgewichtig — kein Live-Validierungs-Backend.
 
-### 9.2 Co-op-Sync-Strategie
+## 11. Cloud Functions (minimal, TypeScript)
 
-```csharp
-public class CoopSync : MonoBehaviourPunCallbacks
-{
-    public override void OnPlayerEnteredRoom(Player newPlayer)
-    {
-        if (PhotonNetwork.IsMasterClient)
-        {
-            // Senden aktuellen Game-State an neuen Spieler
-            SyncGameStateToPlayer(newPlayer);
-        }
-    }
-    
-    public override void OnMasterClientSwitched(Player newMaster)
-    {
-        if (newMaster.IsLocal)
-        {
-            // Übernahme der Host-Rolle
-            BecomeHost();
-        }
-    }
-}
-```
+**Kein Match-Validation/Submit** (kein Multiplayer). Nur das Nötigste — vieles läuft über RTDB-Rules ohne Functions:
 
-### 9.3 Loot-Sharing
+- **`accountDelete`** (DSGVO Art. 17): kaskadiertes Löschen Local→RTDB.
+- **`seasonReset`** (Scheduled): Liga-/BP-Saison-Reset (sofern nicht rule-seitig gelöst).
+- **`validateIap`** (optional): serverseitige Kaufbeleg-Prüfung (Play Billing).
 
-Loot-Drops (Coins, Karten) werden via RPC an alle Players geschickt:
-
-```csharp
-photonView.RPC(nameof(OnLootDropped), RpcTarget.All, lootType, lootId);
-```
-
-Karten-Drops werden Round-Robin verteilt (deterministisch via Seed).
-
----
-
-## 10. Anti-Cheat-Pipeline
-
-### 10.1 Mehrstufige Anti-Cheat-Strategie
-
-```
-Client → Cloud Function `submitMatchResult(matchId, result, replay)`
-   ↓
-[Stufe 1: Schnell-Validation, <100ms]
-   ├── Format-Check (Replay-Schema valide?)
-   ├── Hash-Validation (result_hash, final_state_hash)
-   ├── Rate-Limit (Spieler darf nicht alle 30s submitten)
-   └── Anti-Replay (matchId schon vorhanden?)
-   ↓
-[Stufe 2: Async-Worker, <30s]
-   ├── Replay-Re-Simulation auf Server-Worker
-   ├── Hash-Vergleich (Server-Output vs Client-Hash)
-   ├── Suspicious-Pattern-Detection (Reaction-Times, Bomb-Spam)
-   ├── ML-Modell (Phase 3+, anomaly detection)
-   └── Decision: VALID | SUSPICIOUS | INVALID
-   ↓
-[Stufe 3: Action]
-   ├── VALID: Score schreiben, Belohnungen
-   ├── SUSPICIOUS: Score unter Quarantäne, Manual-Review-Queue
-   ├── INVALID: Score verwerfen, Cheat-Flag erhöhen
-   └── 3+ INVALID in 24h: 7-Tage-Ban (Appeal-Queue)
-```
-
-### 10.2 Replay-Re-Simulation auf Server-Worker
-
-> **Voraussetzung (siehe §13.0):** Die Re-Simulation setzt eine **bit-stabile** Sim zwischen IL2CPP-Client
-> und .NET-10-Worker voraus. Mit float-basierter Physik ist das **nicht** garantiert. Daher ist dieser
-> Anti-Cheat-Pfad an das Float-Determinismus-Mandat (Fixed-Point/Quantisierung) gebunden **und** nur für
-> den optionalen **Online-Versus** relevant — kein Launch-Blocker. Solange dieser nicht aktiv ist, greifen
-> die übrigen Stufen (Format/Hash/Rate-Limit/Heuristiken) plus die bestehenden Firebase-Server-Rules.
-
-**Tech**: Eigener C#-Worker (.NET 10) der **denselben (quantisierten) Domain-Code** wie der Client ausführt.
-
-```
-Server/DomainReplay/Program.cs
-├── Liest Replay-Blob aus Firebase Storage
-├── Lädt initial game state (Seed, Heroes, Loadout)
-├── Simuliert Tick-für-Tick durch Replay-Inputs
-├── Berechnet final state + hash
-└── Vergleicht mit Client-gemeldetem Hash
-```
-
-**Cloud Function-Trigger**: Bei `matchId.validation_status === "pending"` → Pub/Sub-Trigger → Spawn Worker → Update `validation_status`.
-
-### 10.3 Suspicious-Pattern-Detection (Phase 2+)
-
-Heuristiken:
-
-| Pattern | Schwellwert | Aktion |
-|---------|-------------|--------|
-| Reaction-Time auf Boss-Telegraph | <50 ms im Schnitt über 10 Matches | Flag |
-| Move-Direction-Wechsel | >12 pro Sekunde im Schnitt | Flag |
-| Bomb-Place-Frequency | >5 pro Sekunde | Auto-Lock |
-| Win-Rate gegen Top-Spieler | >85 % bei <30 Matches | Flag |
-| Score höher als physikalisch möglich | (Berechnet via Domain-Modell) | Auto-Lock |
-| Replay-Hash-Mismatch >3× in 24h | – | Auto-Lock 7 Tage |
-
-### 10.4 Account-Lock-Pipeline
-
-- **Soft-Lock**: Match-Belohnungen suspendiert (Score wird nicht in Liga-Tabelle eingetragen)
-- **Hard-Lock**: 7-Tage-Ban, App zeigt "Account suspendiert"-Screen
-- **Appeal-Queue**: Spieler kann via UI Appeal einreichen → Manual-Review (Customer-Support-Tool)
-- **Perma-Ban**: Bei 3+ Hard-Locks → permanent (mit Appeal-Möglichkeit nach 30 Tagen)
-
-### 10.5 Tools für Cheat-Resistance
-
-- **Determinismus-Replay-Suite** (Test-Sprint): 1000+ Replays als CI-Check, MUST be identisch zwischen Client + Server-Worker
-- **Code-Obfuscation** (Phase 3): Beggar-Logic für IL2CPP-Build mit BeBy- oder Custom-Obfuscation
-- **Native-Layer-Anti-Tampering** (Phase 3): Anti-Memory-Edit-Schutz via Native-Plugin
-
----
-
-## 11. Cloud Functions (TypeScript)
-
-### 11.1 Function-Übersicht
-
-| Function | Trigger | Zweck |
-|----------|---------|-------|
-| `submitMatchResult` | HTTP-Callable (Auth-pflichtig) | Empfängt Match-Ergebnis, triggert Validation |
-| `validateMatch` | Pub/Sub | Spawn Server-Worker für Replay-Re-Sim |
-| `validateDailyRace` | HTTP-Callable | Daily-Race-Replay-Validation |
-| `leagueReset` | Scheduled (alle **14 Tage**) | Liga-Saison-Reset (Perzentil-Promotion Top 30 % / Bottom 20 %), Liga-Belohnungen |
-| `battlePassReset` | Scheduled (alle **30 Tage**) | Battle-Pass-Saison-Reset + Theme-Rotation (getrennt von der Liga-Saison!) |
-| `dailyMissionReset` | Scheduled (00:00 UTC) | Daily-Quests neu würfeln |
-| `weeklyMissionReset` | Scheduled (Mo 00:00 UTC) | Weekly-Missions neu würfeln |
-| `clanWarResult` | Scheduled (Sa 20:00 UTC) | Clan-War-Auswertung |
-| `accountDelete` | HTTP-Callable (Auth) | DSGVO Art-17 Cascade-Delete |
-| `dataExport` | HTTP-Callable (Auth) | DSGVO Art-20 JSON-Export |
-| `purchaseValidate` | HTTP-Callable (Auth) | Google/Apple-Receipt-Validation |
-| `iapEntitlementsCheck` | Scheduled (täglich) | Subscription-Status-Refresh |
-| `friendRequest` | HTTP-Callable (Auth) | Friend-Code-Lookup, Anti-Spam |
-| `reportPlayer` | HTTP-Callable (Auth) | Report-Queue, Auto-Action bei 5+ Reports/24h |
-| `notificationSend` | Pub/Sub | Server-getriggerte Pushes |
-| `importLegacySave` | HTTP-Callable (Auth) | **Legacy-Save-Import alt → neu** (Cross-Projekt `bomberblast-league` → `bomberblast-arena`, 35-Key-Mapping, UID-Bridging — siehe §6.5) |
-| `migrateSchema` | HTTP-Callable (Auth) | Intra-Schema-Version-Upgrade (nur arena, siehe §6.4) |
-| `clanInvite` | HTTP-Callable (Auth) | Clan-Invite-Code generieren + Annahme |
-| `leaderboardSnapshot` | Scheduled (stündlich) | Liga-Tabellen-Snapshot für Display |
-
-### 11.2 Beispiel: submitMatchResult.ts
-
-```typescript
-import { onCall, HttpsError } from 'firebase-functions/https';
-import * as admin from 'firebase-admin';
-
-admin.initializeApp();
-const db = admin.database();
-
-export const submitMatchResult = onCall(async (request) => {
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'Login required');
-  }
-  const uid = request.auth.uid;
-  const { matchId, mode, players, seed, result, replayBase64 } = request.data;
-
-  // Rate-Limit: Max 1 Submit pro 30s pro UID
-  const lastSubmit = await db.ref(`/players/${uid}/lastMatchSubmit`).once('value');
-  const lastSubmitMs = lastSubmit.val() || 0;
-  if (Date.now() - lastSubmitMs < 30_000) {
-    throw new HttpsError('resource-exhausted', 'Rate limit');
-  }
-
-  // Schema-Validation (Zod oder Joi)
-  if (!validateMatchSubmission(request.data)) {
-    throw new HttpsError('invalid-argument', 'Invalid schema');
-  }
-
-  // Anti-Replay: matchId noch nicht vorhanden?
-  const existing = await db.ref(`/matches/${matchId}`).once('value');
-  if (existing.exists()) {
-    throw new HttpsError('already-exists', 'Match already submitted');
-  }
-
-  // Speichern Match + Replay-Blob
-  await db.ref(`/matches/${matchId}`).set({
-    players, mode, seed,
-    result,
-    submitted_by: uid,
-    submitted_at: admin.database.ServerValue.TIMESTAMP,
-    validation_status: 'pending',
-    ttl_at: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 Tage
-  });
-  
-  // Replay-Blob in Cloud Storage (cheaper als RTDB)
-  await admin.storage().bucket().file(`replays/${matchId}.bin`).save(Buffer.from(replayBase64, 'base64'));
-
-  // Update last-submit
-  await db.ref(`/players/${uid}/lastMatchSubmit`).set(Date.now());
-
-  // Async Worker triggern via Pub/Sub
-  await admin.pubsub().topic('validate-match').publishMessage({
-    json: { matchId, uid },
-  });
-
-  return { status: 'pending', estimatedValidationTime: 30 };
-});
-```
-
-### 11.3 Beispiel: validateMatch.ts (Pub/Sub-Trigger)
-
-```typescript
-import { onMessagePublished } from 'firebase-functions/pubsub';
-
-export const validateMatch = onMessagePublished('validate-match', async (event) => {
-  const { matchId, uid } = event.data.message.json;
-
-  // Lade Match aus DB
-  const matchSnap = await db.ref(`/matches/${matchId}`).once('value');
-  if (!matchSnap.exists()) return;
-
-  // Lade Replay-Blob aus Storage
-  const replayBuffer = await admin.storage().bucket().file(`replays/${matchId}.bin`).download();
-
-  // Spawn Worker (Cloud Run Container) für Replay-Re-Sim
-  const result = await callReplayWorker({
-    matchId, replayBlob: replayBuffer[0].toString('base64'),
-    seed: matchSnap.val().seed,
-    initialState: matchSnap.val().initialState,
-  });
-
-  if (result.serverHash === matchSnap.val().result.clientHash) {
-    // VALID
-    await db.ref(`/matches/${matchId}/validation_status`).set('valid');
-    await applyRewards(uid, matchSnap.val());
-  } else {
-    // INVALID
-    await db.ref(`/matches/${matchId}/validation_status`).set('invalid');
-    await incrementCheatFlag(uid);
-  }
-});
-```
-
-### 11.4 Beispiel: accountDelete.ts (DSGVO Art-17)
-
-```typescript
-import { onCall, HttpsError } from 'firebase-functions/https';
-
-export const accountDelete = onCall(async (request) => {
-  if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
-  const uid = request.auth.uid;
-
-  // 1. Liga-Einträge löschen (alle Saisons)
-  await db.ref(`/leagues`).once('value').then(async (snap) => {
-    const seasons = snap.val() || {};
-    for (const season in seasons) {
-      for (const tier in seasons[season]) {
-        await db.ref(`/leagues/${season}/${tier}/${uid}`).remove();
-      }
-    }
-  });
-
-  // 2. Daily-Race-Einträge löschen
-  // ... ähnlich
-
-  // 3. Clan-Mitgliedschaften löschen
-  const clansSnap = await db.ref('/clans').once('value');
-  // ... iterate, remove from members
-
-  // 4. Friends/Blocked löschen
-  await db.ref(`/players/${uid}/friends`).remove();
-  // ... mirror auf andere uids
-
-  // 5. Match-Replays löschen
-  const matchesSnap = await db.ref(`/matches`).orderByChild('submitted_by').equalTo(uid).once('value');
-  // ... delete
-
-  // 6. Auth-User löschen
-  await admin.auth().deleteUser(uid);
-
-  // 7. Player-Daten löschen
-  await db.ref(`/players/${uid}`).remove();
-
-  return { status: 'deleted', timestamp: Date.now() };
-});
-```
-
----
+> **Entfernt (alte Logik):** `submitMatchResult`, `validateMatch` (Pub/Sub), Match-Anti-Cheat-Worker.
 
 ## 12. Firebase-Security-Rules
 
@@ -1458,14 +987,6 @@ export const accountDelete = onCall(async (request) => {
       }
     },
 
-    "matches": {
-      "$matchId": {
-        ".read": "auth != null && (data.child('players').hasChild(auth.uid) || data.child('submitted_by').val() === auth.uid)",
-        ".write": "auth != null && !data.exists()",  // Nur einmal schreibbar (anti-replay)
-        ".validate": "newData.hasChildren(['players', 'mode', 'seed', 'result'])"
-      }
-    },
-
     "leagues": {
       "s$season": {
         "$tier": {
@@ -1484,21 +1005,6 @@ export const accountDelete = onCall(async (request) => {
           ".read": "auth != null",
           "$uid": {
             ".write": "false"  // Nur Cloud Functions
-          }
-        }
-      }
-    },
-
-    "clans": {
-      "$clanId": {
-        ".read": "auth != null",
-        "info": { ".write": "auth != null && data.child('leaderId').val() === auth.uid" },
-        "chat": {
-          "$msgId": {
-            ".write": "auth != null && data.parent().parent().child('members').hasChild(auth.uid)",
-            ".validate": "newData.child('text').isString() && newData.child('text').val().length <= 200",
-            "time": { ".validate": "newData.val() === now" },
-            "uid": { ".validate": "newData.val() === auth.uid" }
           }
         }
       }
@@ -1524,11 +1030,6 @@ export const accountDelete = onCall(async (request) => {
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /replays/{matchId}.bin {
-      allow read: if false;  // Nur Server-Worker via Admin-SDK
-      allow write: if false;  // Nur Cloud Functions via Admin-SDK
-    }
-    
     match /avatars/{uid}/{file} {
       allow read: if true;  // Public
       allow write: if request.auth != null && request.auth.uid == uid && request.resource.size < 1 * 1024 * 1024;  // Max 1 MB
@@ -1537,61 +1038,21 @@ service firebase.storage {
 }
 ```
 
-### 12.3 Photon-Webhooks für Anti-Cheat
+### 12.3 (entfällt — kein Multiplayer)
 
-`Photon-Dashboard → Webhooks`:
-
-- `PathBeforeRoomClose`: Validiert Match-End vor Room-Close
-- `PathCreate`: Validiert Auth-Token vor Room-Create
-- `PathLeave`: Cleanup bei Spieler-Leave
-
-```typescript
-// CloudFunctions/src/photonWebhook.ts
-import { onRequest } from 'firebase-functions/https';
-
-export const photonWebhook = onRequest(async (req, res) => {
-  const { Type, GameId, ActorNr, UserId, AuthCookie } = req.body;
-  
-  switch (Type) {
-    case 'Create':
-      // Validate User-Auth, Room-Configuration
-      if (!await isValidAuth(UserId, AuthCookie)) {
-        return res.status(403).send({ ResultCode: 1, Message: 'Invalid Auth' });
-      }
-      break;
-    case 'Close':
-      // Match beendet, trigger Server-Worker
-      await triggerMatchValidation(GameId);
-      break;
-  }
-  
-  return res.status(200).send({ ResultCode: 0 });
-});
-```
-
----
+*Photon-Webhooks für Match-Anti-Cheat entfernt — reiner Single-Player.*
 
 ## 13. Determinismus-First-Design
 
 ### 13.0 Status & Mandat (WICHTIG)
 
-> **Im Original ist Determinismus nur Foundation, NICHT integriert.** Der Live-Game-Loop nutzt
-> `System.Random` (`GameEngine.cs`); `DeterministicRandom`/`ReplayCapture`/`FixedTimestepRunner`/
-> `IRngProvider` existieren als isolierte Bausteine, sind aber **nicht** in `GameEngine.Update`
-> verdrahtet (EnemyAI ~16 + LevelGenerator ~13 Random-Stellen laufen noch über `System.Random`).
-> **Die Determinismus-Integration ist daher Neu-Arbeit (mehrwöchiger Sprint), kein reiner Port.**
+Determinismus dient **Single-Player-Zwecken**: **Daily-Race** (weltweit identisches Tages-Level) und
+**Replay-Verifikation**. Mandat: alle gameplay-relevanten Random-Calls über `IRngProvider`, Sim-Updates über
+`FixedTimestepRunner` (60 Hz Fixed-Step, nie `Time.deltaTime`). Ein Replay muss denselben State-Hash
+reproduzieren (CI-Gate).
 
-> **Float-Determinismus-Mandat:** `DeterministicRandom` (xoshiro256+) ist nur **integer**-bit-stabil.
-> Die gesamte Gameplay-Physik nutzt `float` (Positionen, Timer, `1/60f`). IEEE-754-Operationen
-> (FMA/SIMD/transzendente Funktionen) divergieren zwischen **IL2CPP/ARM64-Client** und **x64-.NET-10-
-> Server-Worker** — eine "isomorphe" bit-identische Re-Simulation ist damit **nicht garantiert**.
-> Konsequenz für hash-relevante Zustände (State-Hash / Anti-Cheat / Online-Versus):
-> - **Entweder** Fixed-Point/Integer-Sim für alle hash-relevanten Felder (Grid, HP, quantisierte Positionen),
-> - **oder** dokumentierte Quantisierung der Felder **vor** dem FNV-1a-State-Hash.
->
-> Online-Versus (das diese bit-stabile Sim braucht) ist ein **optionales Post-Launch-Feature** (siehe
-> DESIGN §24) — daher **kein Launch-Blocker**. Für Single-Player/Replay genügt Client-seitiger
-> Determinismus; Lockstep statt Rollback ist der wahrscheinliche Online-Default.
+> **Kein** Online-/Server-Re-Sim, **keine** Float-Determinismus-Anforderung für Online-Versus (kein Multiplayer).
+> `DeterministicRandom` (xoshiro256+) ist integer-bit-stabil — für die Daily-Race-Replay-Verifikation ausreichend.
 
 ### 13.1 Pflicht-Konstanten
 
@@ -1683,7 +1144,7 @@ public class FixedTimestepRunner
 
 > Original-Layout (`ReplayCapture.cs`, Schema-V1): 1 Byte/Tick = **Direction (Bits 0-2) + Bomb (Bit 3) +
 > Detonate (Bit 4)**, Bits 5-7 reserviert. **`ToggleSpecial` ist NICHT im ReplayCapture-Byte** — es lebt im
-> separaten `PlayerInputSnapshot` (Multiplayer-Wire-Format). Das `0x20`-Bit unten ist eine **Erweiterung**
+> separaten `PlayerInputSnapshot` (kompaktes Input-Wire-Format). Das `0x20`-Bit unten ist eine **Erweiterung**
 > für das Remake und erfordert einen Schema-Versions-Bump (V1 → V2), wenn Alt-Replays gelesen werden sollen.
 
 Input pro Tick (Remake-Erweiterung V2): 1 Byte (Direction 3 Bits + Bomb 1 Bit + Detonate 1 Bit + ToggleSpecial 1 Bit + Reserved 2 Bits).
@@ -1726,10 +1187,10 @@ Bei 60 Hz und 10 Min Match: 60 × 600 = 36.000 Bytes raw. RLE-komprimiert: ~5-10
 
 | Tier | Beispiel-Geräte | CPU | RAM | GPU | Target FPS |
 |------|----------------|-----|-----|-----|------------|
-| **Low** | iPhone 8, Galaxy S8, Pixel 3a | 4 Cores @ 1.8 GHz | 2-3 GB | Adreno 530, A11 | 30 FPS stabil |
-| **Mid** | iPhone 11, Pixel 5, Galaxy S20 | 6-8 Cores @ 2.4 GHz | 4-6 GB | Adreno 650, A13 | 60 FPS stabil bei Standard-Modi, 30 FPS bei PvP |
-| **High** | iPhone 13+, Pixel 7+, Galaxy S22+ | 8 Cores @ 3.0 GHz | 6-8 GB | Adreno 730, A15+ | 60 FPS PvP, optional 120 FPS |
-| **Ultra** | iPhone 15 Pro, ROG Phone 7, S24-Ultra | 8 Cores @ 3.3+ GHz | 8-12 GB | Adreno 750, A17+ | 120 FPS PvP, alle VFX |
+| **Low** | Galaxy A50, Galaxy S8, Pixel 3a | 4 Cores @ 1.8 GHz | 2-3 GB | Adreno 530 | 30 FPS stabil |
+| **Mid** | Pixel 5, Galaxy S20, Redmi Note 11 | 6-8 Cores @ 2.4 GHz | 4-6 GB | Adreno 650 | 60 FPS stabil |
+| **High** | Pixel 7+, Galaxy S22+ | 8 Cores @ 3.0 GHz | 6-8 GB | Adreno 730 | 60 FPS, optional 120 FPS |
+| **Ultra** | ROG Phone 7, Galaxy S24 Ultra, Pixel 8 Pro | 8 Cores @ 3.3+ GHz | 8-12 GB | Adreno 750 | 120 FPS, alle VFX |
 
 ### 14.2 Tier-Auto-Detection
 
@@ -1788,12 +1249,11 @@ User kann manuell überschreiben in Settings.
 | Plattform | App-Größe (Initial) | After Install + Addressables |
 |-----------|---------------------|------------------------------|
 | Android AAB | < 250 MB | < 800 MB |
-| iOS IPA | < 300 MB | < 900 MB |
 | Steam | < 1.5 GB | < 1.5 GB (PC kann mehr) |
 
 **Strategie:**
-- Initial nur Helden 1-3 + Welt 1-3 im AAB
-- Restliche Assets via Addressables nach Welt-Freischaltung lazy geladen
+- Initial nur Helden 1-3 + Sektor 1-3 im AAB
+- Restliche Assets via Addressables nach Sektor-Freischaltung lazy geladen
 
 ### 14.7 Battery-Saver-Mode
 
@@ -1834,15 +1294,15 @@ Auto-Aktivierung bei <20 % Akku:
 | **Outline.shadergraph** | Charakter-/Entity-Outline (Stylized-Toon) |
 | **Liquid.shadergraph** | Slime-/Poison-Felder |
 | **ForceField.shadergraph** | Shields, Invuln-Indication |
-| **Cyber-Floor.shadergraph** | Welt-1-Boden (Wet + Holo) |
-| **Glitch.shadergraph** | Glitch-Effekte als Stilmittel (Welt 10) |
+| **Cyber-Floor.shadergraph** | Sektor-1-Boden (Wet + Holo) |
+| **Glitch.shadergraph** | Glitch-Effekte als Stilmittel (Sektor 10) |
 
 ### 15.4 Lighting-Strategy
 
 - **Static-Lights**: Backed (Lightmap) für Map-Decoration
 - **Dynamic-Lights**: Each Bomb = Point-Light (Tier-skaliert)
 - **Hero-Aura-Lights**: 1 Spotlight pro Hero (Tier-aware)
-- **Welt-Atmosphäre**: Volumetric-Lighting via URP-Custom-Pass (Ultra only)
+- **Sektor-Atmosphäre**: Volumetric-Lighting via URP-Custom-Pass (Ultra only)
 
 ---
 
@@ -1856,11 +1316,11 @@ Auto-Aktivierung bei <20 % Akku:
 | `Heroes.Launch` | 3 MVP-Helden (Default/SpeedySam/BrickBoris) | Sync, im AAB | 30 MB |
 | `Heroes.Remaining` | Restliche 2 Helden (TwinTina/LuckyLola) | Lazy, nach Unlock | 20 MB |
 | `Heroes.Seasonal` | Saisonale Helden | Remote CDN, post-Saison-Start | 10 MB pro Saison |
-| `Worlds.1-3` | Welt 1-3 Assets | Sync, im AAB | 80 MB |
-| `Worlds.4-10` | Welt 4-10 Assets | Lazy, nach World-Unlock | 200 MB |
+| `Worlds.1-3` | Sektor 1-3 Assets | Sync, im AAB | 80 MB |
+| `Worlds.4-10` | Sektor 4-10 Assets | Lazy, nach Sektor-Unlock | 200 MB |
 | `VFX.Bombs` | VFX-Graph für 22 Bomben | Pre-Load mit Game-Scene | 50 MB |
 | `VFX.HeroTraits` | Hero-Trait-/Skin-VFX (passive Traits, keine Ultimates) | Pre-Load mit Hero-Pick | 30 MB |
-| `Audio.BGM` | Welt-Music-Loops | Streaming | 100 MB (alle Welten) |
+| `Audio.BGM` | Sektor-Music-Loops | Streaming | 100 MB (alle Sektoren) |
 | `Audio.SFX` | Sound-Effects | Pre-Load | 50 MB |
 | `Audio.Voice` | Hero-VoiceLines (alle Sprachen) | Lazy nach Sprach-Wahl | 150 MB pro Sprache |
 | `Cosmetics.Launch` | Cosmetic-Pool Launch | Lazy, Cache-LRU | 80 MB |
@@ -1899,14 +1359,13 @@ CI: Build Addressables → Upload zu Firebase Storage
 | Platform | Format | Quality |
 |----------|--------|---------|
 | Android | ASTC 6×6 | Medium |
-| iOS | ASTC 6×6 | Medium |
 | Steam (Windows) | DXT5 / BC7 | High |
 | Steam (Linux/macOS) | BC7 / ETC2 | High |
 
 Texture-Max-Size:
 - Hero-/Charakter-Modelle: 1024×1024 (Mid/High), 512×512 (Low)
 - UI: 2048×2048 Atlas, 512×512 individual
-- Welt-Hintergründe: 2048×1024 (High), 1024×512 (Low)
+- Sektor-Hintergründe: 2048×1024 (High), 1024×512 (Low)
 
 ---
 
@@ -1916,7 +1375,7 @@ Texture-Max-Size:
 
 ```
 Master (Mixer-Root)
-   ├── Music (Welt-Themes, Hub-Music)
+   ├── Music (Sektor-Themes, Hub-Music)
    ├── SFX
    │   ├── Bombs (Tick + Explosion)
    │   ├── PowerUps (Pickup-Sounds)
@@ -1926,7 +1385,7 @@ Master (Mixer-Root)
    │   ├── Heroes (VoiceLines)
    │   ├── Announcer (Match-Events: "Match Start!", "Combo!")
    │   └── Story (Cutscene-Voices)
-   ├── Ambient (Welt-Ambient-Sounds: Regen, Wind, Industrie)
+   ├── Ambient (Sektor-Ambient-Sounds: Regen, Wind, Industrie)
    └── Cinematic (Stinger, Boss-Reveal, Victory)
 ```
 
@@ -1949,7 +1408,7 @@ Master (Mixer-Root)
 ### 17.4 FMOD-Studio-Integration (Optional)
 
 Falls Budget: FMOD-Studio mit Layer-Music + Crossfade-Markers
-- 1 Hauptloop pro Welt mit 5 Layern (Base / Standard / Combat / Boss / Victory)
+- 1 Hauptloop pro Sektor mit 5 Layern (Base / Standard / Combat / Boss / Victory)
 - Trigger via Code: `FMODUnity.RuntimeManager.PlayOneShot()`
 - Saves manche Implementierungs-Aufwand für adaptive Music
 
@@ -2044,9 +1503,9 @@ public void ComboSystem_FiveKillsInTwoSeconds_TriggersUltraCombo()
 **Setup:**
 ```
 Tests/DeterminismSuite/
-├── ReplayCorpus/                     (1000+ Match-Replays als Test-Fixtures)
-│   ├── match_001_pvp_1v1.bin
-│   ├── match_002_coop_dungeon.bin
+├── ReplayCorpus/                     (Daily-Race + Story-Run-Replays als Test-Fixtures)
+│   ├── dailyrace_2026-06-08.bin
+│   ├── story_sektor3_l07.bin
 │   └── ...
 ├── DeterminismTest.cs
 └── DeterminismRunner.cs
@@ -2064,26 +1523,19 @@ public void Determinism_AllReplays_ProduceIdenticalHash()
         var finalState = simulator.RunReplay(replay.Inputs);
         var hash = ComputeStateHash(finalState);
         Assert.AreEqual(replay.ExpectedHash, hash, 
-            $"Replay {replay.MatchId} produced different hash!");
+            $"Replay {replay.RunId} produced different hash!");
     }
 }
 ```
 
 **CI-Gate:** Pflicht-Check in jedem PR. Failure blockt Merge.
 
-### 18.5 Load-Tests
+### 18.5 Last-/Stress-Tests (Single-Player)
 
-**Tool:** Custom Photon-Stress-Test mit Bot-Clients
-
-**Szenarien:**
-- 100 simultane PvP-Matches in EU-Region
-- 500 simultane Co-op-Lobbys
-- Liga-Submission-Burst: 1000 Spieler beenden Match in 60 s
-
-**Ziel-Metriken:**
-- Server-Latency P95 < 80 ms
-- Photon-Server-CPU < 60 %
-- Firebase-RTDB-Throughput-Limit nicht erreicht
+**Kein Server-/Photon-Load-Test** (kein Multiplayer). Relevante Stress-Tests:
+- **Gameplay-Stress:** viele Gegner + Ketten-Explosionen + VFX gleichzeitig auf Min-Spec (Frame-Budget halten).
+- **Save-/Offline-Robustheit:** große Save-States, lange Sessions, App-Kill/Restart, Cloud-Sync-Konflikte.
+- **Grid-Rankings-Submit:** Burst von Score-Submits gegen RTDB-Rules (Rate-Limit greift).
 
 ### 18.6 Beta-Test-Programme
 
@@ -2162,19 +1614,6 @@ jobs:
           name: BomberBlast-Arena-Android
           path: build/Android
 
-  build-ios:
-    needs: test
-    runs-on: macos-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
-    steps:
-      # ... ähnlich Android, mit Xcode-Build-Step
-      
-  build-steam:
-    needs: test
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      # ... Steam-Build mit SteamCMD-Upload
 ```
 
 ### 19.2 Build-Targets
@@ -2182,7 +1621,6 @@ jobs:
 | Target | Build-Zeit (Cold-Cache) | Build-Zeit (Warm-Cache) |
 |--------|-------------------------|--------------------------|
 | Android (AAB Release) | 25-35 min | 8-12 min |
-| iOS (Xcode-Project) | 20-30 min | 7-10 min |
 | Steam (Windows x64) | 15-25 min | 5-8 min |
 | Steam (Linux x64) | 15-25 min | 5-8 min |
 | Steam (macOS) | 20-30 min | 7-10 min |
@@ -2224,7 +1662,7 @@ jobs:
 ### 20.1 Versions-Schema
 
 `MAJOR.MINOR.PATCH` (z.B. 1.0.0):
-- **MAJOR**: Breaking-Change im Save-Schema oder Multiplayer-Protokoll
+- **MAJOR**: Breaking-Change im Save-Schema
 - **MINOR**: Saison-Release mit neuem Inhalt
 - **PATCH**: Bugfixes, Balancing-Tweaks, Hotfixes
 
@@ -2259,9 +1697,9 @@ public class BattleController
     
     public BattleController(ILogger<BattleController> logger) => _logger = logger;
     
-    public void StartMatch(int matchId)
+    public void StartLevel(int levelId)
     {
-        _logger.LogInformation("Starting match {MatchId}", matchId);
+        _logger.LogInformation("Starting level {LevelId}", levelId);
     }
 }
 ```
@@ -2285,10 +1723,6 @@ Funnel-Events:
 | `tutorial_complete` | phase (T1/T2/T3) | Tutorial-Phasen-End |
 | `level_start` | worldId, levelId, heroId | Story-Match-Start |
 | `level_complete` | worldId, levelId, stars, durationSec | Story-Match-End |
-| `pvp_match_start` | mode, region | PvP-Match-Start |
-| `pvp_match_end` | mode, result, durationSec, leaguePointsChange | PvP-Match-End |
-| `coop_match_start` | mode, partyCount | Co-op-Match-Start |
-| `coop_match_end` | mode, result, durationSec | Co-op-Match-End |
 | `purchase_start` | productId | IAP-Initiated |
 | `purchase_complete` | productId, priceEur | IAP-Success |
 | `bp_tier_up` | tier, premium | BP-Tier-Reached |
@@ -2314,9 +1748,7 @@ Funnel-Events:
 - [ ] `Core/Combat/SpecialExplosionEffects.cs` → `BomberBlast.Domain/Bombs/Effects/`
 - [ ] `Core/Combat/EnemyPositionIndex.cs` → `BomberBlast.Domain/Combat/`
 - [ ] `Core/Dungeon/DungeonSynergyResolver.cs` → `BomberBlast.Domain/Dungeon/`
-- [ ] `Core/Multiplayer/PlayerInputSnapshot.cs` → `BomberBlast.Domain/Multiplayer/`
-- [ ] `Core/Multiplayer/InputBuffer.cs` → `BomberBlast.Domain/Multiplayer/`
-- [ ] `Core/Multiplayer/GameStateSnapshot.cs` → `BomberBlast.Domain/Multiplayer/`
+- [ ] `GameStateSnapshot.cs` (FNV-1a State-Hash für Daily-Race-Replay-Verifikation) → `BomberBlast.Domain/Determinism/`; Input-Recording via `ReplayCapture`. *(MP-Wire-Bits PlayerInputSnapshot/InputBuffer entfallen — Single-Player.)*
 
 ### 22.2 Port-Checkliste (Priority-2, Sprint 3-4)
 
@@ -2343,7 +1775,6 @@ Funnel-Events:
 - [ ] **`Services/GameTrackingService.cs`** (zentraler Engine↔Meta-Event-Dispatcher, 30+ Hooks — kritisch für die Verkabelung aller Meta-Systeme) → `BomberBlast.LiveOps/`
 - [ ] `Services/HighScoreService.cs` (Top-10) + `SurvivalSpawner` (Survival-Modus) + `QuickPlay`-Logik → `BomberBlast.Domain/Modes/`
 - [ ] `Services/MasterModeService.cs`, `BossRushService.cs`, `WorldStoryService.cs`, `WhatsNewService.cs`, `FeatureUnlockChoreographer.cs`, `TutorialService.cs`, `HeroService.cs`, `CustomizationService.cs`, `CollectionService.cs`, `AccessibilityService.cs` → jeweiliges Modul
-- [ ] `Services/FirebaseClanService.cs` (Clan voll integriert: Create/Join/Chat/Leaderboard) → `BomberBlast.LiveOps/Clan/`
 - [ ] `Services/RemoteConfigService` (+ `RemoteConfigKeys`) + `PushNotificationService` (FCM + Local) → Plattform-Layer
 - [ ] Hybridtimer-Pattern (TickCount64 + persistierte UTC) → `BomberBlast.Core/HybridTimer.cs`
 - [ ] Profanity-Filter (NFKD, im Original **inline** in `LeagueService.cs`) → als `BomberBlast.Domain/Chat/ProfanityFilter.cs` **extrahieren**
@@ -2371,7 +1802,7 @@ Funnel-Events:
 |---------|-----------|----------|
 | Namespace | `BomberBlast.{Module}` | `BomberBlast.Domain.Bombs` |
 | Class | PascalCase | `BattleController`, `BombDefinition` |
-| Interface | `I`-Prefix + PascalCase | `IBombService`, `INetworkService` |
+| Interface | `I`-Prefix + PascalCase | `IBombService`, `IShopService` |
 | Method | PascalCase | `PlaceBomb()`, `ProcessInput()` |
 | Field (private) | `_camelCase` | `private int _fireRange` |
 | Property | PascalCase | `public int FireRange { get; }` |
@@ -2416,17 +1847,22 @@ public class BattleHUDViewModel
     public ReactiveProperty<int> Coins { get; } = new();
     public ReactiveProperty<int> Lives { get; } = new();
     public ReactiveProperty<int> ComboCount { get; } = new();
-    
-    public IObservable<Unit> OnBombButtonPressed { get; }
-    
+
+    public Observable<Unit> OnBombButtonPressed { get; }   // R3
+
     // ... Commands, Events
 }
 
 public class BattleHUDBinder : MonoBehaviour
 {
-    [Inject] private BattleHUDViewModel _vm;
     [SerializeField] private TextMeshProUGUI _coinsLabel;
-    
+
+    private BattleHUDViewModel _vm;
+
+    // Method-Injection via Construct (CLAUDE.md-DI-Regel — keine Field-Injection)
+    [Inject]
+    public void Construct(BattleHUDViewModel vm) => _vm = vm;
+
     private void Start()
     {
         _vm.Coins.Subscribe(c => _coinsLabel.text = c.ToString()).AddTo(this);
@@ -2441,8 +1877,9 @@ public class BattleHUDBinder : MonoBehaviour
 | Datum | Version | Änderung | Autor |
 |-------|---------|----------|-------|
 | 2026-05-26 | v0.1 | Initial-ARCHITECTURE.md mit Tech-Stack, DI, Netcode, Anti-Cheat, Performance-Targets | Robert Schneider + Claude |
+| 2026-06-08 | v0.5 | Neuausrichtung: Single-Player, kein Idle, Neo-Grid-Story; Netcode-Kapitel entfernt | Robert Schneider + Claude |
 
 ---
 
-> **Status:** Tech-Architektur finalisiert für Phase 0 Setup.
-> **Nächste Schritte:** Unity-Projekt anlegen, asmdefs erstellen, Firebase-Projekt einrichten, Domain-Code-Port starten.
+> **Status:** Tech-Architektur finalisiert für Phase 0 Setup. Unity-Projekt-Skelett unter `Unity/` angelegt (6000.4.8f1) — Editor-Open, Asmdef-Kompilierung und CI stehen aus.
+> **Nächste Schritte:** Projekt im Editor öffnen und verifizieren, Firebase-Projekt einrichten, Domain-Code-Port starten.

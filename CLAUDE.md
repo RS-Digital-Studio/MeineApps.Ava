@@ -7,7 +7,7 @@ Domänen-Details, Gotchas und Troubleshooting → jeweilige Library-/App-CLAUDE.
 
 > **Unity-Projekte** (eigener Stack, **nicht** von `dotnet build` erfasst, eigene CLAUDE.md):
 > - **ArcaneKingdom** — TCG + RPG, native Unity-Neuentwicklung (Designplan v4).
-> - **BomberBlast.Unity** — treuer 3D-Remake des produktiven BomberBlast (Unity 6 + URP; gleiches Spiel, nur 3D + besser; Online-Multiplayer optional).
+> - **BomberBlast.Unity** — modernes 3D-Bomberman auf Basis des produktiven BomberBlast (Unity 6 + URP), klassisch **aktiv gespielt**, mit **neuer Story** (Neo-Grid/Overseer/Reborn). **Kein Idle/AFK**, kein striktes 1:1-Remake; **reiner Single-Player** (kein Multiplayer).
 > - **HandwerkerImperium.Unity** — Neuentwicklung parallel zur produktiven Avalonia-Version.
 >
 > Die Avalonia-Versionen von BomberBlast und HandwerkerImperium bleiben produktiv und werden

@@ -1,14 +1,17 @@
 # BomberBlast 3D — KI-Asset-Pipeline (3D + Audio + Animation)
 
-> **Status:** Produktions-Plan (Stand 2026-05-30, recherchiert)
+> **Status:** Produktions-Plan (Stand 2026-05-30, recherchiert; Richtung v0.5 2026-06-08)
 > **Ziel:** Skalierbarer, EU-konformer und kommerziell sauberer Workflow für 3D-Assets, Animationen, Texturen und Audio mit KI-Tools — primär lokal (ComfyUI + EU-konforme OSS-Modelle), Cloud-Services als Production-Standard wo Qualität es rechtfertigt.
-> **Geltungsbereich:** die **5 Helden-Charaktere**, 12 Gegner, 5 Bosse, 14 Bomben-Typen, 12 PowerUps, 10 Welt-Tile-Sets, Environment, Props, Animationen, Texturen, Game-Audio — alles im **Neon-Arcade-Stil des Originals**, jetzt in 3D.
+> **Geltungsbereich:** die **5 Helden-Charaktere**, 12 Gegner, 5 Bosse, 14 Bomben-Typen, 12 PowerUps, 10 Sektor-Tile-Sets, Environment, Props, Animationen, Texturen, Game-Audio — alles im **Neon-Arcade-Stil des Originals**, jetzt in 3D.
 > **Nicht im Scope:** UI-Icons (bleiben 2D), redaktionelle Texte, Story-Schreiben, Voice (deferred — Original ist voice-los).
 
-> **WICHTIG — Subjekte sind KEINE Mechs:** Dies ist ein treuer 3D-Remake des produktiven BomberBlast.
-> Die Charaktere sind die 5 bestehenden Helden (Default/SpeedySam/BrickBoris/TwinTina/LuckyLola),
-> die Gegner sind die klassischen Bomberman-Typen, die Bosse StoneGolem/IceDragon/FireDemon/ShadowMaster/
-> FinalBoss. Wo unten "Mech" steht, ist der **Helden-/Charakter-Workflow** gemeint (humanoid, Neon-Arcade).
+> **WICHTIG — Richtung v0.5 + Subjekte sind KEINE Mechs:** Dies ist ein **modernes 3D-Bomberman** (aktiv
+> gespielt, **kein Idle/AFK**) mit **neuer Story** (Neo-Grid/Overseer/Reborn). Die Charaktere sind die 5
+> bestehenden Helden (Default/SpeedySam/BrickBoris/TwinTina/LuckyLola), die Gegner die klassischen
+> Bomberman-Typen. Die 5 Bosse werden als **Sektor-Wardens neu benannt/eingekleidet** (Granite Warden /
+> Frostwyrm / Magma Revenant / Null Phantom / The Overseer = Archetypen StoneGolem/IceDragon/FireDemon/
+> ShadowMaster/FinalBoss) — **gleicher Mesh-Workflow, neue Optik/Namen**. „Welten" heißen jetzt **Sektoren**.
+> Die spielbaren Charaktere sind die 5 Helden (humanoid, Neon-Arcade) — keine „Mechs".
 
 > ⚠️ **EU-Compliance-Warnung:** Hunyuan3D (Tencent) ist in der EU/UK/Südkorea per Lizenz **explizit ausgeschlossen** und erfordert schriftliche Tencent-Sonderfreigabe. Wir bauen bewusst eine **EU-konforme Pipeline** ohne Hunyuan als Default. Details: [§14](#14-eu-compliance--lizenz-recherche-stand-2026-05).
 
@@ -90,7 +93,7 @@
                               │
                               ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│ Stage 5: Rigging + Animation (humanoide Mechs + Bosse)             │
+│ Stage 5: Rigging + Animation (humanoide Helden + Wardens)             │
 │  Auto-Rig: Mixamo (Standard) ODER Tripo Auto-Rig (universal)       │
 │  Animation: Cascadeur (AI-Posing) ODER DeepMotion (Video-to-Motion)│
 │  → FBX mit Animation-Set (Idle, Walk, Attack, Death, Mood-States)  │
@@ -234,7 +237,7 @@ F:\AI\ComfyUI_workflows\bomberblast_unity\
 │   ├── world_neon_arcade\          (15-20 Style-Refs)
 │   ├── bomb_arcade_neon\
 │   ├── tile_world_themes\
-│   └── boss_world_themes\          (StoneGolem/IceDragon/FireDemon/ShadowMaster/FinalBoss)
+│   └── boss_world_themes\          (Wardens: Granite Warden/Frostwyrm/Magma Revenant/Null Phantom/The Overseer)
 ├── 01_concept_2d\                   (Stage 1)
 │   ├── sdxl_hero_lora.json
 │   ├── flux_hero_iter.json          (interne Iteration, nicht Production-Output)
@@ -307,7 +310,7 @@ Für Image-to-3D-Algorithmen sind **orthographische Single-Object-Views auf wei�
 | Asset-Typ | Primär-Algorithmus | Backup | Grund |
 |-----------|---------------------|--------|-------|
 | Standard-Prop (Bombe, Power-Up, Kiste) | **SPAR3D** | TRELLIS 2 | <1s pro Asset, Punktwolke editierbar |
-| Mech / humanoides Modell | **TRELLIS 2** | TripoSG | Beste Topologie für animierbare Char |
+| Held / humanoides Modell | **TRELLIS 2** | TripoSG | Beste Topologie für animierbare Char |
 | Boss / Hi-Detail-Hero | **TRELLIS 2** + Cloud-Polish | Rodin Gen-2.5 | OSS für Basis, Cloud für Cinematic-Polish |
 | Tile / modulares Element | **TripoSG** | TRELLIS 2 | TripoSG handelt gleichförmige Geometrie gut |
 | Tuch / dünne Geometrie (Flagge, Banner) | **TripoSF** | TRELLIS 2 | TripoSF speziell für Open-Surface |
@@ -359,7 +362,7 @@ Pflicht-Schritte pro Asset (Template: `F:\AI\Blender\bomberblast_unity_cleanup.b
 
 - TRELLIS-2-Texturen sind teilweise nur Albedo + Normal — kein gutes MetalRough → Refine nötig.
 - Style-Drift in PBR-Maps → vereinheitlichen.
-- Material-Variation (Worker-Skin-Stufen, Mech-Skins) → re-texturing eines Basis-Modells.
+- Material-Variation (Hero-Skin-Stufen, Charakter-Skins) → re-texturing eines Basis-Modells.
 
 ### 8.2 Option A — Adobe Substance 3D Sampler 4.4
 
@@ -390,8 +393,8 @@ Für ein App-spezifisches Material-Set (z.B. "Cyber-Stahl mit Neon-Ätzung") eig
 | Asset-Typ | Tool | Grund |
 |-----------|------|-------|
 | Standard-Humanoid (Helden in T-Pose, humanoide Gegner) | **Mixamo** | Beste Animation-Library — nur bei Standard-Humanoid-Proportionen verlässlich |
-| Humanoider Boss (FireDemon, ShadowMaster, FinalBoss) | **Mixamo** ODER **AccuRIG 2** | Auto-Rig greift bei aufrechter humanoider Silhouette |
-| **Non-humanoider Boss (IceDragon, StoneGolem, Multi-Cell)** | **Hand-Rigging in Blender** (+ AccuRIG-Versuch als Startpunkt) | Auto-Rig/Mixamo scheitern an Vierbeiner/Multi-Cell-Topologie → Skelett + Weights von Hand, Animation per **Hand-Keyframing** (kein Mocap-Retarget) |
+| Humanoider Warden (Magma Revenant, Null Phantom, The Overseer) | **Mixamo** ODER **AccuRIG 2** | Auto-Rig greift bei aufrechter humanoider Silhouette |
+| **Non-humanoider Warden (Frostwyrm, Granite Warden, Multi-Cell)** | **Hand-Rigging in Blender** (+ AccuRIG-Versuch als Startpunkt) | Auto-Rig/Mixamo scheitern an Vierbeiner/Multi-Cell-Topologie → Skelett + Weights von Hand, Animation per **Hand-Keyframing** (kein Mocap-Retarget) |
 
 ### 9.2 Animation-Quellen
 
@@ -421,9 +424,9 @@ Insgesamt: ~7 Animations, geteilt über 5 Helden = ~7 Basis-Clips + Skin-Variant
 ### 9.4 Boss-Animations
 
 Bosse brauchen größere Animation-Sets (Mehrkomponenten-Hitboxes, Phase-Wechsel). Empfehlung:
-- **Humanoide Bosse** (FireDemon, ShadowMaster, FinalBoss): Standard-Loops (Idle, Attack) aus
+- **Humanoide Wardens** (Magma Revenant, Null Phantom, The Overseer): Standard-Loops (Idle, Attack) aus
   Mixamo retargeted, Cinematics (Reveal, Phase-2-Transition) per Hand in **Cascadeur**.
-- **Non-humanoide Bosse** (IceDragon, StoneGolem): kein Mixamo-Retarget möglich — **alle** Clips
+- **Non-humanoide Wardens** (Frostwyrm, Granite Warden): kein Mixamo-Retarget möglich — **alle** Clips
   (Idle, Attack, Enrage, Death) per **Hand-Keyframing** in Cascadeur/Blender auf das Hand-Rig.
 - Das Zeitbudget der Pilot-Tabelle (Boss "2 Tage") deckt **nur Modeling + Texturing** —
   Hand-Rigging und Hand-Animation der non-humanoiden Bosse kommen separat obendrauf.
@@ -436,7 +439,7 @@ Bosse brauchen größere Animation-Sets (Mehrkomponenten-Hitboxes, Phase-Wechsel
 
 - [ ] FBX in `Assets/_Project/Art/Models/{Kategorie}/` ablegen.
 - [ ] **Model Tab:** `Scale Factor = 1`, `Read/Write = false`, `Mesh Compression = High`.
-- [ ] **Rig Tab** (humanoide Mechs/Bosse): `Animation Type = Humanoid`, Avatar `Create From This Model`.
+- [ ] **Rig Tab** (humanoide Helden/Wardens): `Animation Type = Humanoid`, Avatar `Create From This Model`.
 - [ ] **Animation Tab:** Mixamo-Clips als Sub-Assets, Loop für Idle prüfen, `Bake Into Pose: Root` bei Walk.
 - [ ] **Materials Tab:** `Extract Materials` → `Assets/_Project/Art/Materials/`. Shader `URP/Lit` (oder `URP/Toon` falls Toon-Stil).
 - [ ] **LOD-Group** als separates Prefab (3 LODs aus Budget-Tabelle).
@@ -454,11 +457,11 @@ BomberBlast.Unity Addressables:
 ├── Bombs_Common            # Standard-Bomben (immer geladen)
 ├── Bombs_Special           # Karten-Spezialbomben (lazy bei Deck-Equip)
 ├── PowerUps                # 12 PowerUp-Typen (immer geladen)
-├── Tiles_World{1..10}      # Pro Welt eine Gruppe (lazy bei Level-Start)
+├── Tiles_World{1..10}      # Pro Sektor eine Gruppe (lazy bei Level-Start)
 ├── Bosses_Standard         # 4 Standard-Bosse (lazy bei Boss-Level)
-├── Bosses_Final            # FinalBoss + Duo-Varianten (lazy)
-│                           # (Mini-Bosse brauchen keine eigene Group — Prefab-Variant des Welt-Boss-Assets)
-├── Environment_World{1..10} # Props pro Welt
+├── Bosses_Final            # The Overseer (Archetyp FinalBoss) + Duo-Varianten (lazy)
+│                           # (Mini-Bosse brauchen keine eigene Group — Prefab-Variant des Sektor-Warden-Assets)
+├── Environment_World{1..10} # Props pro Sektor
 ├── UI3D                    # Hologramme, 3D-Buttons, Karten-Backs
 └── Audio_Music + Audio_SFX # Stage 7 Output
 ```
@@ -483,14 +486,14 @@ Stability AI hat Stable Audio 3 am 20. Mai 2026 veröffentlicht:
 - **Stability Community License** ≤ $1M Umsatz frei kommerziell.
 
 **Asset-Plan (Musik):**
-- 10 Welt-Themes (jeweils Loop 1-2min)
+- 10 Sektor-Themes (jeweils Loop 1-2min)
 - 1 Menu-Track
 - 1 Boss-Track (Variante pro Boss-Typ, 5 Stück)
 - 1 Victory-Stinger + 1 Defeat-Stinger
 - 1 Mega-Combo-Stinger
 - **Gesamt:** ~20 Tracks
 
-**Workflow:** `04_audio/stable_audio_music.json` mit Prompt-Templates pro Welt-Stil.
+**Workflow:** `04_audio/stable_audio_music.json` mit Prompt-Templates pro Sektor-Stil.
 
 ### 11.2 SFX — Stable Audio Open Small (SFX-Variante)
 
@@ -530,18 +533,18 @@ Bis dahin: Announcer/Feedback rein über SFX-Stinger (Cinematic-Bus), keine gesp
 | **Hero-Skins** (Coin-/Gem-Skins, Material-Variation) | ~20 | (Re-Tex) | — | — | ✅ Re-Texturing |
 | **Bomben** (14 Typen) | 14 | 1 500 | 800 | 400 | ✅ Direkt |
 | **Power-Ups** (12 Typen) | 12 | 1 000 | 500 | 250 | ✅ Direkt |
-| **Tiles/Blocks** (10 Welten × 4 Typen) | 40 | 800 | 400 | 200 | ✅ Direkt, Tiling-Check |
-| **Floor-Tiles** (10 Welten) | 10 | 400 | 200 | 100 | ✅ Direkt |
+| **Tiles/Blocks** (10 Sektoren × 4 Typen) | 40 | 800 | 400 | 200 | ✅ Direkt, Tiling-Check |
+| **Floor-Tiles** (10 Sektoren) | 10 | 400 | 200 | 100 | ✅ Direkt |
 | **Karten-FX-Meshes** (10 Spezial-Karten) | 10 | 1 500 | — | — | ✅ Direkt |
-| **Standard-Bosse** (StoneGolem, IceDragon, FireDemon, ShadowMaster) | 4 | 18 000 | 9 000 | 4 500 | ⚠️ humanoide (FireDemon/ShadowMaster) + Mixamo; non-humanoide (StoneGolem/IceDragon) Hand-Rig |
-| **FinalBoss + Duo-Varianten** | 3 | 25 000 | 12 000 | 6 000 | ⚠️ TRELLIS-Basis + Cloud-Polish |
-| **Mini-Bosse** (L7/L17/.../L97) | 0 (Reskin) | — | — | — | ♻️ kein eigenes Modell — reskinter Welt-Boss (50 % HP/Punkte) |
+| **Standard-Wardens** (Granite Warden, Frostwyrm, Magma Revenant, Null Phantom) | 4 | 18 000 | 9 000 | 4 500 | ⚠️ humanoide (Magma Revenant/Null Phantom) + Mixamo; non-humanoide (Granite Warden/Frostwyrm) Hand-Rig |
+| **The Overseer (FinalBoss) + Duo-Varianten** | 3 | 25 000 | 12 000 | 6 000 | ⚠️ TRELLIS-Basis + Cloud-Polish |
+| **Mini-Bosse** (L7/L17/.../L97) | 0 (Reskin) | — | — | — | ♻️ kein eigenes Modell — reskinter Sektor-Warden (50 % HP/Punkte) |
 | **Environment-Props** (Crates, Pipes, Trash, Holo-Displays) | ~50 | 600 | 300 | 150 | ✅ Direkt |
 | **UI-3D-Hologramme** | ~20 | 500 | — | — | ✅ Direkt |
 
 **Total:** ~210 Modelle + ~30 Re-Texture-Varianten = **~240 Asset-Slots**. Die 9 Mini-Bosse
-(L7/L17/.../L97) sind **nicht** mitgezählt — sie sind reskinte Welt-Bosse (50 % HP/Punkte) und
-brauchen kein eigenes Modell, nur eine Material-/Skalierungs-Variante des jeweiligen Welt-Boss-Assets.
+(L7/L17/.../L97) sind **nicht** mitgezählt — sie sind reskinte Sektor-Wardens (50 % HP/Punkte) und
+brauchen kein eigenes Modell, nur eine Material-/Skalierungs-Variante des jeweiligen Sektor-Warden-Assets.
 
 ### 12.2 Texture-Auflösungen
 
@@ -550,23 +553,23 @@ brauchen kein eigenes Modell, nur eine Material-/Skalierungs-Variante des jeweil
 | Helden / Bosse | 2048² | 2048² | 2048² | Mip-Bias 0 |
 | Standard-Gegner / Mini-Bosse | 1024² | 1024² | 1024² | Mip-Bias +1 |
 | Bomben / Power-Ups | 512² | 512² | 512² | Mip-Bias +1 |
-| Blocks / Tiles | 1024² (atlassed pro Welt) | 1024² | 1024² | Texture-Atlas |
+| Blocks / Tiles | 1024² (atlassed pro Sektor) | 1024² | 1024² | Texture-Atlas |
 | Props | 512² | 512² | 512² | Mip-Bias +2 |
 
 ### 12.3 Audio-Budgets
 
 | Klasse | Sample-Rate | Bit-Tiefe | Komprimierung Unity | Gesamtgröße-Ziel |
 |--------|-------------|-----------|----------------------|-------------------|
-| Musik (Welt-Themes, 2min) | 44.1 kHz | 16-bit | Vorbis Quality 0.5 | ~1.5 MB/Track |
+| Musik (Sektor-Themes, 2min) | 44.1 kHz | 16-bit | Vorbis Quality 0.5 | ~1.5 MB/Track |
 | Musik (Stinger, 5s) | 44.1 kHz | 16-bit | Vorbis Quality 0.7 | ~100 KB |
 | SFX | 44.1 kHz | 16-bit | ADPCM (Loop-fähig) | <50 KB |
 | Voice-Lines | 44.1 kHz | 16-bit | Vorbis Quality 0.6 | ~80 KB/sec |
 
 **Total-Audio-Budget:** ~80-120 MB (alle Sprachen, kompressed). Zusammen mit ~210 3D-Modellen
 (+ LODs/Texturen) sprengt das den 200-MB-Base-APK-Rahmen — der Gesamt-Build passt nur mit
-**Play Asset Delivery** (On-Demand-/Fast-Follow-Asset-Packs für Welt-Tile-Sets, Bosse, Audio)
+**Play Asset Delivery** (On-Demand-/Fast-Follow-Asset-Packs für Sektor-Tile-Sets, Wardens, Audio)
 unter ~250 MB. Zur Einordnung: das 2D-Original ist bereits ~95 MB. Bootstrap-Assets (Logo,
-Default-Material, Welt-1) bleiben im Base-AAB, alles andere kommt per Asset-Pack/Addressables nach.
+Default-Material, Sektor-1) bleiben im Base-AAB, alles andere kommt per Asset-Pack/Addressables nach.
 
 ---
 
@@ -579,7 +582,7 @@ Default-Material, Welt-1) bleiben im Base-AAB, alles andere kommt per Asset-Pack
 | Markenfarben | Neon-Orange `#FF6B35` (Primär) + Cyan `#22D3EE` + Gold-Trail `#FFDD33` |
 | Tonalität | Energetisch, Arcade, "Game Juice" — Nostalgie an SNES-Bomberman |
 | Visual-Sprache | Oktagonale Formen, scharfe Kanten, Neon-Glow; zwei Styles (Classic HD + Neon) in 3D |
-| Setting | 10 thematische Welten (kein Sci-Fi-Konzern-Setting) + bestehende Welt-Story-Beats |
+| Setting | 10 thematische Sektoren (Neon-Arcade) + neue Sektor-/Neo-Grid-Story-Beats |
 
 ### 13.2 Style-Lock (zentrales Prompt-Template)
 
@@ -645,16 +648,16 @@ Pro Asset-Metadata-JSON ein Eintrag `"license_source": "Rodin Gen-2.5 Free Tier"
 |---|-------------|-----------|---------------|-------------------|
 | 1 | Held "Default" (Pilot Echo) | Held | SDXL+LoRA → TRELLIS 2 → Mixamo-Rig | Animiert in Unity, < 12k Tris LOD0, Neon-Style-LoRA hält |
 | 2 | Bombe "Standard" | Bomb | SPAR3D → Blender-Cleanup → Unity | < 1.5k Tris, Emissive-Glow funktioniert |
-| 3 | Block "Destructible (Welt 1)" | Tile | TripoSG → Tile-Check 4× nebeneinander | Naht-frei, < 800 Tris |
-| 4 | Boss "StoneGolem" (non-humanoid) | Boss | TRELLIS 2 → Hand-Retopo → Hand-Rig + Hand-Keyframing (Cascadeur) | Phase-1 + Enrage (Material-Swap), Multi-Cell-Hitbox |
+| 3 | Block "Destructible (Sektor 1)" | Tile | TripoSG → Tile-Check 4× nebeneinander | Naht-frei, < 800 Tris |
+| 4 | Warden "Granite Warden" (Archetyp StoneGolem, non-humanoid) | Boss | TRELLIS 2 → Hand-Retopo → Hand-Rig + Hand-Keyframing (Cascadeur) | Phase-1 + Enrage (Material-Swap), Multi-Cell-Hitbox |
 | 5 | PowerUp "BombUp" + "Fire" | PowerUp | SDXL → SPAR3D → URP + Glow | URP-Glow funktioniert, < 1k Tris |
-| **Audio-Pilot** | Welt-1-Theme (2min) | Music | Stable Audio 3 + Mastering | LUFS −16 ±1, Loop sauber |
+| **Audio-Pilot** | Sektor-1-Theme (2min) | Music | Stable Audio 3 + Mastering | LUFS −16 ±1, Loop sauber |
 
 > Kein Voice-Pilot — Voice ist deferred (Original ist voice-los). Stattdessen ein SFX-Pilot (Bomben-Explosion
 > + Combo-Stinger) zur Validierung der Audio-Bus-/Spatial-Pipeline.
 
 **Zeitplan:** ~5 Arbeitstage Pilot — Held 1 Tag, Bomb+Block 1 Tag, Boss 2 Tage (**nur Modeling +
-Texturing**; Hand-Retopo, Hand-Rigging und Hand-Keyframing des non-humanoiden StoneGolem kommen
+Texturing**; Hand-Retopo, Hand-Rigging und Hand-Keyframing des non-humanoiden Granite Warden (Archetyp StoneGolem) kommen
 mit ~2-3 Tagen separat obendrauf), PowerUps 0.5 Tage, Audio 0.5 Tage.
 
 **Output:** Lessons-Learned in `F:\AI\ComfyUI_workflows\bomberblast_unity\pilot_log.md` mit:
@@ -737,15 +740,15 @@ F:\AI\
 |--------|-------------------|------------|------------|
 | TRELLIS-2-Qualität reicht nicht für Helden-Detailgrad | Mittel | Hoch | Cloud-Fallback Rodin Gen-2.5 für die 5 Helden (Free Tier, ~10$ Credits gesamt) |
 | Stil-Drift über > 50 Assets | Mittel | Mittel | Style-LoRA Pflicht ab Pilot-Erfolg, festes Prompt-Template versioniert |
-| Mixamo versagt bei nicht-standard-humanoid Mech | Hoch | Mittel | Tripo Auto-Rig oder AccuRIG 2 als Fallback |
+| Mixamo versagt bei nicht-standard-humanoidem Charakter | Hoch | Mittel | Tripo Auto-Rig oder AccuRIG 2 als Fallback |
 | ASTC zu groß auf Mid-Tier-Android | Niedrig | Mittel | Texture-Atlas-Pflicht für Tiles/Props, Mip-Bias +1 pro Klasse |
 | EU AI Act Transparenz-Pflicht missachten | Niedrig | Hoch | Play-Store-Description + Credits enthalten KI-Hinweis; Marketing-Material gekennzeichnet |
 | Tencent klagt rückwirkend gegen ein verkauftes Hunyuan-Asset | Niedrig | Hoch | **Hunyuan komplett vermeiden**, Asset-Metadata dokumentiert Tool-Quelle pro Asset |
 | Suno/Udio-Lawsuits eskalieren | Hoch | — | **Suno/Udio vermieden**, Audio nur Stable Audio 3 + ElevenLabs |
 | Polygon-Inflation (>200k Tris von KI) | Hoch (Default) | Niedrig | Blender-Decimate Pflicht, kein Asset ohne Cleanup ins Unity |
-| Trainingsdaten-Bias (Mechs sehen alle gleich aus) | Niedrig | Mittel | Style-Reference-Set pro Held diversifizieren, Pro-Held einzelne Sub-LoRAs falls nötig |
+| Trainingsdaten-Bias (Charaktere sehen alle gleich aus) | Niedrig | Mittel | Style-Reference-Set pro Held diversifizieren, Pro-Held einzelne Sub-LoRAs falls nötig |
 | Tile-Naht-Probleme (Repeating Patterns) | Mittel | Mittel | Pre-Gen Symmetrie-Prompt, Post-Gen Naht-Heal in Blender |
-| Audio-LUFS-Inkonsistenz zwischen Welten | Mittel | Mittel | Master-Pass mit iZotope Ozone als Pflicht-Schritt |
+| Audio-LUFS-Inkonsistenz zwischen Sektoren | Mittel | Mittel | Master-Pass mit iZotope Ozone als Pflicht-Schritt |
 | GPU-Lieferengpass (RTX 50xx-Knappheit Mai 2026) | Mittel | Mittel | Cloud-Workstation (RunPod, vast.ai) als Backup-Plan |
 
 ---

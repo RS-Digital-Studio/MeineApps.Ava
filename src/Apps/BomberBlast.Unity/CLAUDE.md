@@ -1,9 +1,11 @@
 # BomberBlast.Unity — Unity-Conventions & Stolperfallen
 
-Treuer **3D-Top-Down-Remake** des produktiven Avalonia-BomberBlast (`../BomberBlast/`) —
-**dasselbe Spiel, nur in 3D und besser**. Game-Design, Inhalte und Balancing kommen **1:1
-aus dem Original-Code** (Quelle der Wahrheit). Eigener Stack (Unity 6, **nicht** von
-`dotnet build` erfasst).
+**Modernes 3D-Bomberman** auf Basis des produktiven Avalonia-BomberBlast (`../BomberBlast/`) —
+klassisches, **aktiv gespieltes** Bomberman in 3D, mit **neuer Story** (Neo-Grid/Overseer/Reborn)
+und der bewährten Bomberman-Meta-Progression. Gameplay-Mechanik & Domain-Code des Originals sind
+**wiederverwendetes Fundament** (modernisiert, **kein striktes 1:1-Remake**). **KEIN Idle-Game,
+KEIN AFK/Auto-Battle, kein Offline-Income** — Fortschritt nur durch aktives Spielen. Eigener Stack
+(Unity 6, **nicht** von `dotnet build` erfasst). Richtung/Story → [PLAN.md](PLAN.md) + [DESIGN.md](DESIGN.md).
 
 | Aspekt | Wert |
 |--------|------|
@@ -11,18 +13,17 @@ aus dem Original-Code** (Quelle der Wahrheit). Eigener Stack (Unity 6, **nicht**
 | Engine | Unity 6 (6000.x LTS) + URP 17.x |
 | Sprache | C# (.NET Standard 2.1), Nullable enable |
 | DI | VContainer 1.16+ · Async: UniTask 2.5+ · Reactive: R3 |
-| Netcode (optional, Post-Launch) | Photon Fusion 2 (Versus) / Realtime 5 (Co-op) / Chat 4 |
-| Backend | Firebase (Auth/RTDB/Functions/Storage/Crashlytics/Analytics/Remote Config) |
+| Backend | Firebase (Auth/RTDB/Storage/Remote Config) — Cloud-Save + **asynchrone** Grid-Rankings (kein Echtzeit-MP) |
 | 3D-Asset-Pipeline | ComfyUI + TRELLIS/SPAR3D + Cloud-Fallback ([ASSETS_AI.md](ASSETS_AI.md)) |
-| Plattformen | Android (primär, API 24+) · iOS 13+ · Steam (Win/macOS/Linux) |
+| Plattformen | Android (primär, API 24+) · Desktop (Test) · iOS/Steam optional/später |
 | Performance | 60 FPS High-End, 30 FPS Low-End (Hardware-Tier-System aus dem Original) |
 
 > Pflichtlektüre vor jeder Code-Änderung. Diese Datei enthält **nur Unity-Spezifisches**;
 > generische Repo-Conventions (deutsche Umlaute, MVVM-Grundprinzip, DI, DateTime-UTC,
 > Localization-Prinzip, Commit-/Auto-Commit-Verhalten) stehen in der
-> [Haupt-CLAUDE.md](../../../CLAUDE.md). Game-Design/Inhalte → [DESIGN.md](DESIGN.md),
-> Tech-Stack/Asmdefs/Netcode → [ARCHITECTURE.md](ARCHITECTURE.md), Port-Status →
-> [PARITY.md](PARITY.md).
+> [Haupt-CLAUDE.md](../../../CLAUDE.md). Game-Design/Inhalte/Story → [DESIGN.md](DESIGN.md),
+> Tech-Stack/Asmdefs → [ARCHITECTURE.md](ARCHITECTURE.md), Content-Reuse-Map (was wird aus
+> dem Original übernommen/modernisiert) → [PARITY.md](PARITY.md).
 
 > **Versions-Pinning (Pflicht beim Setup):** Beim Projekt-Anlegen die exakte Unity-6-LTS-
 > Patch-Version aus dem Unity Hub übernehmen und in `manifest.json` jede Paket-Version auf
@@ -39,15 +40,15 @@ aus dem Original-Code** (Quelle der Wahrheit). Eigener Stack (Unity 6, **nicht**
 ```
 Bootstrap → UI → Game → Domain → Core
                 ↓
-                LiveOps, Multiplayer
+                LiveOps
 ```
 
 - **Core** referenziert nichts · **Domain** nur Core · **Game** Core + Domain ·
-  **UI/LiveOps/Multiplayer** Core + Domain + Game · **Bootstrap** alles.
+  **UI/LiveOps** Core + Domain + Game · **Bootstrap** alles.
 - **`BomberBlast.Domain` darf KEINE Unity-API verwenden** (testbar, Compile-Constraint + CI-Gate).
-- **`BomberBlast.Multiplayer` ist Define-konditional** (`UNITY_INCLUDE_NETWORK`) → erlaubt
-  PvP-freie Demo-Builds. Tests: `defineConstraints: ["UNITY_INCLUDE_TESTS"]`.
+- Test-Asmdefs: `defineConstraints: ["UNITY_INCLUDE_TESTS"]`.
 - Zirkuläre Asmdef-Referenzen verboten (CI-Gate fängt das ab).
+- **Kein Multiplayer-Asmdef** — Single-Player-Fokus (siehe §3).
 
 ### Unity-spezifische Anti-Patterns (ergänzend zur Root)
 
@@ -116,8 +117,8 @@ public class BattleHUDBinder : MonoBehaviour  // Adapter zur Unity-UI
 ## 2. Determinismus-Pflicht (wichtigste Regel der Codebase)
 
 Alle gameplay-relevanten Random-Calls über `IRngProvider`. Alle Tick-Updates über
-`FixedTimestepRunner` bei 60 Hz mit `fixedDeltaTime` (nie `Time.deltaTime` in Sim-Logik). Alle
-Inputs in PvP/Co-op via `ReplayCapture.RecordTick(input)` aufzeichnen.
+`FixedTimestepRunner` bei 60 Hz mit `fixedDeltaTime` (nie `Time.deltaTime` in Sim-Logik). Inputs für
+**Daily-Race/Replay** via `ReplayCapture.RecordTick(input)` aufzeichnen (Single-Player-Verifikation).
 
 - **Status (aus dem Original):** Im produktiven BomberBlast ist Determinismus nur **Foundation,
   NICHT integriert** — der Live-Loop nutzt `System.Random`. Die Integration (alle ~50
@@ -126,31 +127,28 @@ Inputs in PvP/Co-op via `ReplayCapture.RecordTick(input)` aufzeichnen.
 - **Visual-Random** (Particle-Jitter, Screen-Shake, Camera-Tremor) ist **bewusst NICHT
   deterministisch** (sonst künstlich wirkend) → separater `[Inject] [Key("visual")] IRngProvider`.
 - **Float-Mandat:** `DeterministicRandom` (xoshiro256+) ist nur **integer**-bit-stabil. Für
-  hash-stabile Sim (Replay-Re-Sim / Online-Versus): **Fixed-Point/Integer** für hash-relevante
-  Zustände ODER dokumentierte Quantisierung **vor** dem State-Hash — float-Physik divergiert
-  IL2CPP/ARM64 ↔ Server (siehe [ARCHITECTURE.md](ARCHITECTURE.md) §13.0). Online-Versus ist
-  optional/Post-Launch, daher kein Launch-Blocker.
+  hash-stabile **Daily-Race-/Replay-Verifikation** denselben `IRngProvider` + Fixed-Step nutzen, damit
+  ein Replay denselben State-Hash reproduziert. (Kein Server-/Online-Re-Sim — Single-Player.)
 - **CI-Gate:** Determinismus-Suite (Replay-Corpus → identischer State-Hash) ist Pflicht-Check
   in jedem PR; Failure blockt Merge.
 
 ---
 
-## 3. Netcode-Patterns (Photon, optional/Post-Launch)
+## 3. Multiplayer / Netcode — nicht Teil von v0.5
 
-- **Fusion (PvP):** Synced State nur über `[Networked]`-Properties; Server-Authoritative-Logik
-  in `FixedUpdateNetwork()`. Init in `Spawned()`. Input dort recorden (Replay-Capture-Pflicht).
-- **Realtime (Co-op):** `MonoBehaviourPunCallbacks`; bei `OnMasterClientSwitched` Host-Logik nur
-  wenn `newMaster.IsLocal`.
-- **Server-Autorität:** Client setzt **nie** eigene Liga-Punkte/Scores (`SetCustomProperty(...)`
-  verboten). Match-Ergebnisse gehen via Cloud Function (`SubmitMatchResultAsync`), Server
-  validiert und schreibt.
+**Single-Player-Fokus. Kein Echtzeit-Multiplayer, kein Photon/Netcode, kein Online-PvP/Co-op.**
+„Grid-Rankings" und „Daily-Race" sind **asynchrone** Leaderboards (Firebase RTDB, Score-Submit), kein
+Live-Match. Falls später doch Multiplayer gewünscht wird, ist das ein **separates Projekt** — diese
+Codebase setzt es nicht voraus (kein Netcode-Asmdef, keine `[Networked]`-Properties, keine
+Match-Cloud-Functions).
 
 ---
 
 ## 4. UI/UX (UI Toolkit + UGUI Hybrid)
 
 - **UI Toolkit (UXML/USS):** statische UIs — Hub, Settings, Inventory, Shop, Clan-Liste, Chat.
-  Binder holt `_uiDoc.rootVisualElement.Q<T>("name")` und verdrahtet gegen das VM.
+  Binder holt `_uiDoc.rootVisualElement.Q<T>("name")` und verdrahtet gegen das VM. (Statische UIs u.a.:
+  Hub, Settings, Shop, Inventory, Grid-Rankings.)
 - **UGUI:** animations-lastige UIs — Battle-HUD, Combat-FX-Overlay, Tutorial, Cinematics
   (DOTween-Tweens).
 - **Modal-System:** zentraler `ModalService.ShowAsync<TViewModel>(args)` — Modal-Stack (max 3
@@ -189,8 +187,7 @@ Naming, modernes C#, Async-Konventionen, Records/Pattern-Matching → Root-CLAUD
 - **Mock-Framework: NSubstitute** (besser als Moq für Unity-AOT).
 - **Test-Layout:** `Assets/_Project/Scripts/Tests/{Domain,Game,...}/`, Klasse `{Subject}Tests`,
   Methode `{Method}_{Scenario}_{Expected}`.
-- **Coverage-Ziele:** Domain ≥ 90 %, Core ≥ 80 %, Game ≥ 60 %, Multiplayer ≥ 70 % (Photon-Mock),
-  UI Best-Effort.
+- **Coverage-Ziele:** Domain ≥ 90 %, Core ≥ 80 %, Game ≥ 60 %, UI Best-Effort.
 - **Pflicht-Tests** bei Domain-Logik, Service-Logik (Liga/BP-XP/Achievements), Algorithmen
   (LevelLayoutGenerator, DungeonSynergyResolver), Math (Combo-Score, Liga-Punkte, ISO-Wochen-Seed).
   Optional bei reiner UI-Verdrahtung / Unity-API-Wrappern.
@@ -242,8 +239,8 @@ LFS-pflichtig: `*.psd/.ai/.png/.jpg/.tga` (Art), `*.fbx/.obj/.gltf/.glb` (3D), `
 ## 8. Agent-Hinweise
 
 **Passend:** `architect` (Asmdef-Struktur), `planner`, `code-review`, `debugger`, `tester`
-(NUnit/Unity Test Framework), `refactor`, `migrator` (Unity-/Photon-Upgrades), `performance`,
-`security` (Anti-Cheat, Firebase-Rules), `documenter`.
+(NUnit/Unity Test Framework), `refactor`, `migrator` (Unity-Upgrades), `performance`,
+`security` (Single-Player-Anti-Cheat-Timer, Firebase-Rules), `documenter`.
 
 **Nicht passend** (Avalonia-spezifisch): `mvvm-auditor`, `skiasharp`, `ui`/`xaml-ui`, `localize`
 (RESX-basiert), `deploy` (AAB-Pipeline für .NET-Android), `bingxbot`.
@@ -257,8 +254,8 @@ Texte/Werte statt Localization-Keys/ScriptableObject.
 ## 9. Verweise
 
 **Repo-intern:** [PLAN.md](PLAN.md) (Vision/KPIs/Roadmap) · [DESIGN.md](DESIGN.md)
-(Game-Design) · [PARITY.md](PARITY.md) (Original-System → Unity-Äquivalent + Port-Status) ·
-[ARCHITECTURE.md](ARCHITECTURE.md) (Tech-Stack/Asmdefs/Netcode/Anti-Cheat) ·
+(Game-Design) · [PARITY.md](PARITY.md) (Original-System → Unity-Äquivalent, Reuse/Modernisierung) ·
+[ARCHITECTURE.md](ARCHITECTURE.md) (Tech-Stack/Asmdefs/Determinismus/Anti-Cheat) ·
 [ROADMAP.md](ROADMAP.md) · [ASSETS_AI.md](ASSETS_AI.md) (KI-Asset-Pipeline). `SETUP.md` und
 `Server/SERVEROPS.md` folgen nach Projekt-Anlage.
 
@@ -269,7 +266,7 @@ Unity-Lehrgeld) · [../BomberBlast/CLAUDE.md](../BomberBlast/CLAUDE.md) (Origina
 **Tool-Docs:** [Unity 6](https://docs.unity3d.com/6000.0/Documentation/Manual/) ·
 [URP 17](https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@17.0/manual/) ·
 [VContainer](https://vcontainer.hadashikick.jp/) · [UniTask](https://github.com/Cysharp/UniTask) ·
-[R3](https://github.com/Cysharp/R3) · [Photon Fusion](https://doc.photonengine.com/fusion/current/) ·
+[R3](https://github.com/Cysharp/R3) ·
 [Firebase Unity](https://firebase.google.com/docs/unity/setup) ·
 [DOTween](http://dotween.demigiant.com/documentation.php) ·
 [Cinemachine 3](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.0/).
@@ -299,21 +296,10 @@ Unity-Lehrgeld) · [../BomberBlast/CLAUDE.md](../BomberBlast/CLAUDE.md) (Origina
 | Generic-Methods fehlen | Nicht eager kompiliert | `[Preserve]` auf Generic-Method |
 | Native-Plugin-DLL nicht gefunden | Architektur-Mismatch | x86/x64/ARM64-Variante korrekt zuweisen |
 
-### Photon
-
-| Problem | Ursache | Lösung |
-|---------|---------|--------|
-| Fusion Lag-Spike auf 4G | Snapshot zu groß | Komprimierung an, irrelevante Props nicht `[Networked]` |
-| `OnConnectedToMaster` feuert nicht | AppId/Region falsch | `PhotonServerSettings` prüfen |
-| Room-Join "Room not found" | Race Master- vs Room-Server | Retry mit Exponential-Backoff |
-| Sync-Diskrepanzen in PvP | Determinismus-Verstoß (`UnityEngine.Random`?) | `IRngProvider`-Nutzung prüfen |
-| `[Networked]` Prop updated nicht visuell | RPC/Authority falsch | `[Networked, OnChangedRender]`-Callback prüfen |
-
 ### Firebase Unity SDK
 
 | Problem | Ursache | Lösung |
 |---------|---------|--------|
-| Auth crasht auf iOS | Missing PListEntry | `Info.plist` mit `CFBundleURLSchemes` für Google-SignIn |
 | RTDB-Listener feuert nicht nach Reconnect | Connection-State-Listener fehlt | `database.GoOnline()` + State checken |
 | `SignInAnonymouslyAsync()` hängt | Kein Timeout | `CancellationTokenSource` mit 5s-Timeout |
 | Remote Config liefert Default trotz Server-Wert | Minimum-Fetch-Interval | `MinimumFetchInterval = TimeSpan.Zero` (NUR Debug) |

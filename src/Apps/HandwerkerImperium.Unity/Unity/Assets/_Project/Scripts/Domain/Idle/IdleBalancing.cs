@@ -42,7 +42,9 @@ namespace HandwerkerImperium.Domain.Idle
     public sealed class IdleBalancing
     {
         // ── Avatar ─────────────────────────────────────────────────────────
-        public double WalkSpeed = 5.0;
+        /// <summary>Lauftempo in m/s. 3,2 = flottes Gehen einer 1,8-m-Figur (5 wäre Sprint —
+        /// die Schritt-Animation kann dann nicht mehr glaubwürdig folgen).</summary>
+        public double WalkSpeed = 3.2;
         public double CollectRadius = 2.5;
         public int CarryCapacity = 5;
 

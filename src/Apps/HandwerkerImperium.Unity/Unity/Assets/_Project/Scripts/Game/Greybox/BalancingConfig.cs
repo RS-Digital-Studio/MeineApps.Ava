@@ -26,7 +26,7 @@ namespace HandwerkerImperium.Game
     public sealed class BalancingConfig : ScriptableObject
     {
         [Header("Avatar")]
-        public float walkSpeed = 5f;
+        public float walkSpeed = 3.2f;
         public float collectRadius = 2.5f;
         public int carryCapacity = 5;
 

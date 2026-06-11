@@ -19,7 +19,7 @@ namespace HandwerkerImperium.Game
         [SerializeField] private float gravity = -20f;
         [SerializeField] private float rotateSpeedDeg = 720f;
         [SerializeField] private float carryWareHeight = 0.45f;
-        [SerializeField] private float fallbackWalkSpeed = 5f;
+        [SerializeField] private float fallbackWalkSpeed = 3.2f;
 
         private CharacterController _cc;
         private float _vy;

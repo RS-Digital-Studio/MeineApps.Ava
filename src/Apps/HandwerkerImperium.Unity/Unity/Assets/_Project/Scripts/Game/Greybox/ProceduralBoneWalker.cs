@@ -20,8 +20,9 @@ namespace HandwerkerImperium.Game
         [SerializeField] private float legSwingDegrees = 30f;
         [SerializeField] private float kneeBendDegrees = 24f;
         [SerializeField] private float armSwingDegrees = 16f;
-        [Tooltip("Schrittzyklen pro Sekunde bei normalem Gehtempo (~1,5-2 ist natürlich).")]
-        [SerializeField] private float stepFrequency = 1.7f;
+        [Tooltip("Strecke eines vollen Schrittzyklus (Doppelschritt) in Metern — die Schrittfrequenz folgt daraus der ECHTEN Laufgeschwindigkeit (kein Füße-Gleiten, kein Trippeln).")]
+        [SerializeField] private float strideLength = 1.4f;
+        [SerializeField] private float maxCyclesPerSecond = 3f;
         [SerializeField] private float speedThreshold = 0.15f;
         [SerializeField] private float bobAmplitude = 0.03f;
 
@@ -200,7 +201,9 @@ namespace HandwerkerImperium.Game
 
             if (walking)
             {
-                _phase += dt * stepFrequency * Mathf.Clamp(speed / 3f, 0.7f, 1.5f) * Mathf.PI * 2f;
+                // Frequenz folgt der echten Geschwindigkeit: Zyklen/s = Tempo / Schrittlänge.
+                float cycles = Mathf.Min(speed / Mathf.Max(0.3f, strideLength), maxCyclesPerSecond);
+                _phase += dt * cycles * Mathf.PI * 2f;
                 float swing = Mathf.Sin(_phase);
                 ApplySwing(_thighL, _thighLBase, swing * legSwingDegrees);
                 ApplySwing(_thighR, _thighRBase, -swing * legSwingDegrees);
@@ -242,7 +245,7 @@ namespace HandwerkerImperium.Game
         {
             if (walking)
             {
-                _phase += dt * stepFrequency * Mathf.PI * 2f;
+                _phase += dt * 1.7f * Mathf.PI * 2f;
                 _hips.localPosition = _hipsBasePos + new Vector3(0f, Mathf.Abs(Mathf.Sin(_phase)) * bobAmplitude * 2f, 0f);
             }
             else

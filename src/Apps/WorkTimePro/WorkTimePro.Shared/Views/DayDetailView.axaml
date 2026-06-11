@@ -581,8 +581,10 @@
             <Button AutomationProperties.AutomationId="DayDetail_BtnCancelDelete"
                     Classes="Text" Content="{loc:Translate No}"
                     Command="{Binding CancelDeleteCommand}" />
+            <!-- "Danger" existiert nicht als Style-Klasse — Primary + ErrorBrush für roten Lösch-Button -->
             <Button AutomationProperties.AutomationId="DayDetail_BtnConfirmDelete"
-                    Classes="Danger" Content="{loc:Translate Yes}"
+                    Classes="Primary" Background="{DynamicResource ErrorBrush}"
+                    Content="{loc:Translate Yes}"
                     Command="{Binding ConfirmDeleteCommand}" />
           </StackPanel>
 

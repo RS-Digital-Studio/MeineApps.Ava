@@ -103,6 +103,12 @@ public partial class WeekOverviewView : UserControl
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
+        // Gegenstück zum Abo in OnDataContextChanged (Projektkonvention: Detach-Cleanup)
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
         base.OnDetachedFromVisualTree(e);
     }
 }

@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using WorkTimePro.Graphics;
@@ -43,6 +44,17 @@ public partial class YearOverviewView : UserControl
                 BalanceChartCanvas?.InvalidateSurface();
                 break;
         }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        // Gegenstück zum Abo in OnDataContextChanged (Projektkonvention: Detach-Cleanup)
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+        base.OnDetachedFromVisualTree(e);
     }
 
     // === PaintSurface Handler ===

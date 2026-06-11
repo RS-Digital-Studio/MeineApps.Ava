@@ -279,7 +279,7 @@
                      HorizontalAlignment="Center"
                      TextWrapping="Wrap" TextAlignment="Center" />
           <StackPanel Spacing="8">
-            <Button Classes="Filled"
+            <Button Classes="Primary"
                     AutomationProperties.AutomationId="Year_BtnWatchAd"
                     Command="{Binding WatchAdCommand}"
                     HorizontalAlignment="Stretch"

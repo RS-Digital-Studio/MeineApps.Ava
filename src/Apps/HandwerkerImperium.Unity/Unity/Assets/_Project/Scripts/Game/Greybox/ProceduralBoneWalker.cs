@@ -68,29 +68,38 @@ namespace HandwerkerImperium.Game
             if (_hips == null) return;
             _hipsBasePos = _hips.localPosition;
 
+            // WICHTIG: UniRig-Skelette sind seitlich versetzt (nicht um x=0 zentriert) — alle
+            // Links/Rechts-Messungen laufen RELATIV zur Körper-Achse (x der Hüfte bzw. Brust),
+            // sonst wird der Hals als "seitlichstes Kind" fehlklassifiziert (Kopf schwingt mit).
+            float hipsX = _root.InverseTransformPoint(_hips.position).x;
+
             // Direkte Hüft-Kinder: Ketten, deren Ende nahe dem Boden liegt = Beine; die übrige Kette = Wirbelsäule.
             Transform spineStart = null;
+            var legs = new List<Transform>();
             foreach (Transform child in _hips)
             {
                 if (!boneSet.Contains(child)) continue;
                 var leaf = FollowToLeaf(child, boneSet);
                 float leafNy = (_root.InverseTransformPoint(leaf.position).y - minY) / h;
-                if (leafNy < 0.2f)
-                {
-                    float x = _root.InverseTransformPoint(child.position).x;
-                    if (x < 0f && _thighL == null) _thighL = child;
-                    else if (x >= 0f && _thighR == null) _thighR = child;
-                    else if (_thighL == null) _thighL = child;
-                }
-                else
-                {
-                    spineStart = child;
-                }
+                if (leafNy < 0.2f) legs.Add(child);
+                else spineStart = child;
+            }
+            if (legs.Count >= 2)
+            {
+                legs.Sort((a, b2) => (_root.InverseTransformPoint(a.position).x - hipsX)
+                    .CompareTo(_root.InverseTransformPoint(b2.position).x - hipsX));
+                _thighL = legs[0];                 // kleinste dx = links
+                _thighR = legs[legs.Count - 1];    // größte dx = rechts
+            }
+            else if (legs.Count == 1)
+            {
+                _thighL = legs[0];
             }
             if (_thighL != null) _kneeL = FirstChildIn(_thighL, boneSet);
             if (_thighR != null) _kneeR = FirstChildIn(_thighR, boneSet);
 
-            // Wirbelsäule hochlaufen bis zum Brust-Knoten (>= 3 Kinder: Hals + 2 Arme) — Arme = die 2 seitlichsten.
+            // Wirbelsäule hochlaufen bis zum Brust-Knoten (>= 3 Kinder: Hals + 2 Arme).
+            // Arme = die Kinder mit größtem Seitenversatz RELATIV zur Brust-Achse, je eines pro Seite.
             var spine = spineStart;
             while (spine != null)
             {
@@ -98,15 +107,18 @@ namespace HandwerkerImperium.Game
                 foreach (Transform c in spine) if (boneSet.Contains(c)) children.Add(c);
                 if (children.Count >= 3)
                 {
-                    children.Sort((a, b2) => Mathf.Abs(_root.InverseTransformPoint(b2.position).x)
-                        .CompareTo(Mathf.Abs(_root.InverseTransformPoint(a.position).x)));
-                    var s1 = children[0]; var s2 = children[1];
-                    bool s1Left = _root.InverseTransformPoint(s1.position).x < _root.InverseTransformPoint(s2.position).x;
-                    var shoulderL = s1Left ? s1 : s2;
-                    var shoulderR = s1Left ? s2 : s1;
+                    float chestX = _root.InverseTransformPoint(spine.position).x;
+                    Transform shoulderL = null, shoulderR = null;
+                    float bestL = 0f, bestR = 0f;
+                    foreach (var c in children)
+                    {
+                        float dx = _root.InverseTransformPoint(c.position).x - chestX;
+                        if (dx < 0f && -dx > bestL) { bestL = -dx; shoulderL = c; }
+                        if (dx > 0f && dx > bestR) { bestR = dx; shoulderR = c; }
+                    }
                     // Schwingen am Oberarm (Kind der Schulter) wirkt natürlicher als an der Schulter selbst
-                    _armL = FirstChildIn(shoulderL, boneSet) ?? shoulderL;
-                    _armR = FirstChildIn(shoulderR, boneSet) ?? shoulderR;
+                    if (shoulderL != null) _armL = FirstChildIn(shoulderL, boneSet) ?? shoulderL;
+                    if (shoulderR != null) _armR = FirstChildIn(shoulderR, boneSet) ?? shoulderR;
                     break;
                 }
                 spine = children.Count > 0 ? children[0] : null;

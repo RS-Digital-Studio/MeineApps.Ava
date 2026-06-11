@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "_note": "Vertical-Slice-Seed: Sektor 1 (Foundry) L1-L10 inkl. Granite Warden. Datei behaelt den Namen 'worlds.*.json' (Code-Identifier); inhaltlich = Sektoren. Werte = Vorschlag, tunebar.",
+  "sectorId": 1,
+  "name": "Foundry",
+  "theme": "Industrie/Stahl, Funken",
+  "warden": "GraniteWarden",
+  "gridWidth": 15,
+  "gridHeight": 10,
+  "mutatorsFromSector": 4,
+  "levels": [
+    { "level": 1,  "type": "normal",     "layoutPool": ["Classic"],          "enemies": [{ "type": "Ballom", "count": 3 }],                       "powerUps": ["BombUp", "Fire"],          "note": "Tutorial-Einstieg" },
+    { "level": 2,  "type": "normal",     "layoutPool": ["Classic", "Cross"], "enemies": [{ "type": "Ballom", "count": 2 }, { "type": "Onil", "count": 2 }], "powerUps": ["BombUp", "Fire", "Speed"], "note": "T2 Bomben" },
+    { "level": 3,  "type": "normal",     "layoutPool": ["Cross"],            "enemies": [{ "type": "Onil", "count": 5 }],                         "powerUps": ["Fire", "Speed"] },
+    { "level": 4,  "type": "normal",     "layoutPool": ["Arena"],            "enemies": [{ "type": "Onil", "count": 3 }, { "type": "Doll", "count": 2 }], "powerUps": ["BombUp", "Speed"] },
+    { "level": 5,  "type": "bonus",      "layoutPool": ["Arena"],            "enemies": [{ "type": "Ballom", "count": 6 }],                       "powerUps": ["BombUp", "Fire", "Speed"], "note": "Bonus-Level (jedes 5.)" },
+    { "level": 6,  "type": "normal",     "layoutPool": ["Maze"],             "enemies": [{ "type": "Onil", "count": 4 }, { "type": "Doll", "count": 2 }], "powerUps": ["Fire"] },
+    { "level": 7,  "type": "miniWarden", "layoutPool": ["BossArena"],        "boss": { "type": "GraniteWarden", "hpPct": 50, "scorePct": 50 },   "note": "Mini-Warden-Training (L7/17/.../97)" },
+    { "level": 8,  "type": "normal",     "layoutPool": ["TwoRooms"],         "enemies": [{ "type": "Doll", "count": 7 }],                         "powerUps": ["Speed"] },
+    { "level": 9,  "type": "normal",     "layoutPool": ["Symmetry"],         "enemies": [{ "type": "Onil", "count": 4 }, { "type": "Doll", "count": 3 }], "powerUps": ["BombUp", "Fire"], "note": "Vor-Boss" },
+    { "level": 10, "type": "boss",       "layoutPool": ["BossArena"],        "boss": { "type": "GraniteWarden", "hp": 5, "coreAttack": "BlockRegen", "enrageAtHpPct": 50 }, "note": "Sektor-Boss" }
+  ]
+}

@@ -394,3 +394,11 @@ exit_states.json
 risk_*.json
 full_patch.json
 server_current.json
+
+# Unity-Projekte (src/Apps/*/Unity/): Ausnahmen von den VS-Patterns oben.
+# *.meta (Z.77) und **/[Pp]ackages/* (Z.200) sind Visual-Studio-Patterns und duerfen
+# Unity-GUIDs und das Unity-Paket-Manifest NICHT verschlucken (sonst brechen
+# Asset-Referenzen auf jedem Clone und das Versions-Pinning ist nicht reproduzierbar).
+!src/Apps/*/Unity/Assets/**/*.meta
+!src/Apps/*/Unity/Packages/manifest.json
+!src/Apps/*/Unity/Packages/packages-lock.json

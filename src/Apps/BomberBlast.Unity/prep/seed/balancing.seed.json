@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "_note": "Single-Player. Erst-Werte aus DESIGN.md/PARITY.md (Original-Code). 'proposal' = gegen Code/Spielgefuehl tunen. Quelle: BalancingConfig.xlsx.",
+  "combo": [
+    { "tier": 2,  "bonus": 200 },
+    { "tier": 3,  "bonus": 500 },
+    { "tier": 4,  "bonus": 1000 },
+    { "tier": 5,  "bonus": 2000,  "fx": "MEGA",  "slowMo": 0.8 },
+    { "tier": 6,  "bonus": 4000,  "windowExtendSec": 0.5 },
+    { "tier": 7,  "bonus": 8000 },
+    { "tier": 8,  "bonus": 15000 },
+    { "tier": 9,  "bonus": 20000 },
+    { "tier": 10, "bonus": 30000, "fx": "ULTRA", "slowMo": 1.2, "vignette": true }
+  ],
+  "comboWindowSec": 2.0,
+  "drops": {
+    "weights": { "common": 57, "rare": 25, "epic": 12, "legendary": 6 },
+    "crafting": [
+      { "input": "5x common", "coins": 1000,  "output": "1x rare" },
+      { "input": "5x rare",   "coins": 4000,  "output": "1x epic" },
+      { "input": "5x epic",   "coins": 12500, "output": "1x legendary" }
+    ],
+    "slowStackingMultiplicative": { "frost": 0.5, "timeWarp": 0.5, "blackHole": 0.3 }
+  },
+  "starThresholds": {
+    "worldStarsRequired": [0, 10, 25, 45, 70, 100, 135, 155, 180, 200],
+    "_source": "ProgressService.WorldStarsRequired[]"
+  },
+  "powerUps": [
+    { "id": "BombUp",    "unlockLevel": 1,  "persistence": "permanent" },
+    { "id": "Fire",      "unlockLevel": 1,  "persistence": "permanent" },
+    { "id": "Speed",     "unlockLevel": 1,  "persistence": "untilDeath" },
+    { "id": "Kick",      "unlockLevel": 10, "persistence": "untilDeath" },
+    { "id": "Wallpass",  "unlockLevel": 15, "persistence": "untilDeath" },
+    { "id": "Mystery",   "unlockLevel": 15, "persistence": "temporary", "durationSec": 35 },
+    { "id": "Cure",      "unlockLevel": 15, "persistence": "instant" },
+    { "id": "Skull",     "unlockLevel": 20, "persistence": "penalty", "durationSec": 6 },
+    { "id": "Detonator", "unlockLevel": 25, "persistence": "untilDeath" },
+    { "id": "Bombpass",  "unlockLevel": 25, "persistence": "untilDeath" },
+    { "id": "Flamepass", "unlockLevel": 35, "persistence": "untilDeath" },
+    { "id": "LineBomb",  "unlockLevel": 30, "persistence": "untilDeath" },
+    { "id": "PowerBomb", "unlockLevel": 40, "persistence": "untilDeath" }
+  ],
+  "enemies": [
+    { "id": "Ballom",   "fromSector": 1, "pathfinding": "Random",        "speed": "slow" },
+    { "id": "Onil",     "fromSector": 1, "pathfinding": "Random",        "speed": "normal" },
+    { "id": "Doll",     "fromSector": 2, "pathfinding": "LowInt",        "speed": "normal" },
+    { "id": "Minvo",    "fromSector": 3, "pathfinding": "AStar",         "speed": "fast" },
+    { "id": "Kondoria", "fromSector": 4, "pathfinding": "Wallpass",      "speed": "verySlow" },
+    { "id": "Ovapi",    "fromSector": 5, "pathfinding": "Wallpass",      "speed": "slow" },
+    { "id": "Pass",     "fromSector": 6, "pathfinding": "AStarChase",    "speed": "fast" },
+    { "id": "Pontan",   "fromSector": 7, "pathfinding": "AStarWallpass", "speed": "veryFast" },
+    { "id": "Tanker",   "fromSector": 5, "pathfinding": "AStar",         "hits": 2 },
+    { "id": "Ghost",    "fromSector": 7, "pathfinding": "None",          "invisCycle": [3, 2] },
+    { "id": "Splitter", "fromSector": 7, "pathfinding": "Random",        "splitsOnDeath": 2 },
+    { "id": "Mimic",    "fromSector": 8, "pathfinding": "None",          "disguise": "block" }
+  ],
+  "elite": { "speedMult": 1.2, "hpMult": 2, "scoreMult": 3 },
+  "wardens": [
+    { "name": "GraniteWarden",  "archetype": "StoneGolem",   "sectorSlot": "1-2",  "hp": 5, "coreAttack": "BlockRegen" },
+    { "name": "Frostwyrm",      "archetype": "IceDragon",    "sectorSlot": "3-4",  "hp": 6, "coreAttack": "FrostBreathRow" },
+    { "name": "MagmaRevenant",  "archetype": "FireDemon",    "sectorSlot": "5-6",  "hp": 6, "coreAttack": "LavaWave" },
+    { "name": "NullPhantom",    "archetype": "ShadowMaster", "sectorSlot": "7-8",  "hp": 7, "coreAttack": "TeleportStealth" },
+    { "name": "TheOverseer",    "archetype": "FinalBoss",    "sectorSlot": "9-10", "hp": 8, "coreAttack": "RotatingOmni", "duo": true }
+  ],
+  "bossCycle": { "telegraphSec": 2.0, "attackSec": 1.5, "cooldownSec": [12, 18], "enrageAtHpPct": 50, "anticipationScale": 0.85, "modifierChance": { "fromSector5": 30, "fromSector10": 60 } },
+  "masterMode": {
+    "trigger": "afterLevel100",
+    "enemySpeedMult": 1.2,
+    "enemyUpgrades": { "Ballom": "Minvo", "Onil": "Pass", "Doll": "Pontan", "Minvo": "Pass", "Kondoria": "Pontan", "Ovapi": "Pontan" },
+    "starsSeparate": true
+  },
+  "economy": { "coinsDivisor": 3, "sector1Divisor": 2, "gemsFirstThreeStar": 3, "overflowGuard": true },
+  "featureUnlocks": {
+    "10": "DailyChallenge", "20": "AnomalyDives", "30": "LineBomb", "40": "PowerBomb",
+    "50": "BossRush", "60": "hero_trait_slot2", "70": "boss_modifier_preview",
+    "80": "cosmetic_legendary_tier", "90": "master_mode_preview", "100": "MasterMode"
+  }
+}

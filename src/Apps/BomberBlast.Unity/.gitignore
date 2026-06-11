@@ -1,0 +1,27 @@
+# Unity-Editor-Artefakte (Projektwurzel ist Unity/ — siehe SETUP.md §1.1).
+# Die Patterns ohne Unity/-Prefix sind Defensive gegen versehentliches Oeffnen
+# des Editors auf dieser Ordner-Ebene (Streuner-Projekt-Schutz).
+Unity/Library/
+Unity/Temp/
+Unity/Obj/
+Unity/Build/
+Unity/Builds/
+Unity/Logs/
+Unity/UserSettings/
+Unity/[Mm]emoryCaptures/
+Unity/*.csproj
+Unity/*.sln
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+[Mm]emoryCaptures/
+*.user
+.vs/
+.idea/
+.vscode/
+# LibreOffice-Lock-Dateien (prep/BalancingConfig.xlsx)
+.~lock.*#

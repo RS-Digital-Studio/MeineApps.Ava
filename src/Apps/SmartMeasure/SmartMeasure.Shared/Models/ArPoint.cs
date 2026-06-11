@@ -114,6 +114,13 @@ public class ArPoint
     /// Original-Geo-Koordinaten im Projekt bleiben unberuehrt.</summary>
     public bool IsPreloaded { get; set; }
 
+    /// <summary>True bei Punkten, die per Session-Recovery OHNE Geo-Bezug wiederhergestellt
+    /// wurden: ihre X/Y/Z stammen aus dem Koordinatensystem der ALTEN ARCore-Session (jede
+    /// Session hat einen eigenen Ursprung + Orientierung). Der Transfer rotiert sie mit dem
+    /// Anker/Heading der NEUEN Session — die reale Lage kann um Meter abweichen, deshalb
+    /// wertet <c>ArTransferService</c> Genauigkeit und Konfidenz drastisch ab.</summary>
+    public bool RestoredWithoutGeo { get; set; }
+
     /// <summary>Euklidischer Abstand zu einem anderen Punkt in Metern</summary>
     public float DistanceTo(ArPoint other)
     {

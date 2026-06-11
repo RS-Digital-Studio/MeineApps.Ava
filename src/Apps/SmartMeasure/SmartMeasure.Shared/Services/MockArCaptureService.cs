@@ -40,6 +40,9 @@ public class MockArCaptureService : IArCaptureService
     /// <summary>Mock hat keine AR-Session — Vorlade-Punkte werden ignoriert.</summary>
     public void SetPreloadPoints(IReadOnlyList<SurveyPoint>? points) { /* no-op */ }
 
+    /// <summary>Mock hat keinen Recovery-State.</summary>
+    public void ConfirmResultPersisted() { /* no-op */ }
+
     public Task<bool> IsAvailableAsync() => Task.FromResult(true);
 
     public async Task<ArCaptureResult?> CaptureAsync()

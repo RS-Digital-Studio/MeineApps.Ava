@@ -882,6 +882,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             return;
         }
 
+        // Kontur-Schliessen persistieren (IsClosed + Bowditch) — sonst restauriert ein
+        // Crash-Restore eine OFFENE Kontur ohne Flaeche.
+        SaveRecoveryState();
+
         if (closedContour != null)
         {
             var pts = closedContour.Points.Count;
@@ -1080,8 +1084,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         };
         lock (_lastResultLock) _lastResult = captureResult;
 
-        // Session war erfolgreich abgeschlossen — Recovery-State aufräumen
-        ClearRecoveryState();
+        // Recovery-State hier BEWUSST NICHT loeschen: Das Result liegt nur im statischen
+        // In-Memory-Feld — stirbt der Prozess im Uebergabefenster oder schlaegt der Transfer
+        // fehl, ist der Recovery-State die letzte Rettung. Geloescht wird erst nach
+        // bestaetigter Projekt-Uebernahme (IArCaptureService.ConfirmResultPersisted) bzw.
+        // beim bewussten Verwerfen (CancelAndFinish).
 
         SetResult(Result.Ok, new Intent());
         Finish();
@@ -1349,6 +1356,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 _undoStack.Push(new MovePointAction(p, oldX, oldY, oldZ, p.X, p.Y, p.Z,
                     _dragStartAnchorId, p.AnchorId));
                 _redoStack.Clear();
+                // Verschieben persistieren — Crash-Restore stuende sonst auf der alten Position.
+                SaveRecoveryState();
             }
         }
 
@@ -1436,6 +1445,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             if (tsPoint == null) return;
             RunOnUiThread(() =>
             {
+                if (_finished != 0) return; // Session schon beendet — keinen Spaet-Commit
                 lock (_dataLock)
                 {
                     // Undo-Eintrag wie im Point-Modus — sonst nimmt "Zurück" den falschen
@@ -1789,6 +1799,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         PlayShutterSound();
         RunOnUiThread(() =>
         {
+            // Session bereits beendet (Fertig/Verwerfen/Akku-Auto-Finish, waehrend das
+            // 800-ms-Sampling noch lief)? Den verspaeteten Punkt NICHT mehr committen:
+            // er fehlte im Result, und das SaveRecoveryState unten wuerde die schon
+            // uebertragene Session als "unterbrochen" reanimieren (Duplikat-Restore).
+            if (_finished != 0) return;
+
             lock (_dataLock)
             {
                 if (_captureMode == CaptureMode.TapeMeasure)
@@ -2155,6 +2171,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _overlayView?.SetSelectedIndex(-1);
         UpdateCounter();
         _overlayView?.Invalidate();
+        // Loeschen ist eine persistenzwuerdige Mutation — sonst stellt ein Crash-Restore
+        // die geloeschten Punkte wieder her.
+        SaveRecoveryState();
     }
 
     #endregion

@@ -274,6 +274,27 @@ public class ArTransferServiceTests
     }
 
     [Fact]
+    public void ConvertToSurveyPoints_RestoredWithoutGeo_DegradiertAccuracyUndConfidence()
+    {
+        // Recovery-Punkte ohne Geo-Bezug stammen aus dem Koordinatensystem einer ANDEREN
+        // Session — Lage kann um Meter abweichen. Accuracy >= 5 m, Konfidenz gedeckelt,
+        // sonst stuende ein versetzter Punkt mit cm-Angabe im Projekt.
+        var (svc, _, _) = MakeService();
+        var result = MakeResult();
+        result.GpsAccuracy = 0.5f; // normal: 50 cm Minimum
+        result.Points.Add(new ArPoint { RestoredWithoutGeo = true, Confidence = 0.9f });
+        result.Points.Add(new ArPoint { Confidence = 0.9f });
+
+        var points = svc.ConvertToSurveyPoints(result, 1);
+
+        points[0].HorizontalAccuracy.Should().BeGreaterThanOrEqualTo(500f);
+        points[0].Confidence.Should().BeLessThanOrEqualTo(0.3f);
+        // Normaler Punkt bleibt unangetastet
+        points[1].HorizontalAccuracy.Should().BeLessThan(500f);
+        points[1].Confidence.Should().BeApproximately(0.9f, 1e-4f);
+    }
+
+    [Fact]
     public void ConvertToSurveyPoints_AndroidLocationSource_BehaeltMin50cmAccuracy()
     {
         // Bei Android-LocationManager-Quelle bleibt das 50cm-Minimum als Ceiling für

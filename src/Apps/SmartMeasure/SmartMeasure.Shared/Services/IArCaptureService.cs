@@ -51,4 +51,11 @@ public interface IArCaptureService
     /// fuer den reinen AR-Modus. Sie gehen bewusst NICHT ins ArCaptureResult zurueck (kein
     /// Duplikat, keine Geo-Ueberschreibung). Volle Bearbeitung mit Verankerung folgt spaeter.</summary>
     void SetPreloadPoints(IReadOnlyList<SurveyPoint>? points);
+
+    /// <summary>Bestaetigt, dass das letzte <see cref="CaptureAsync"/>-Ergebnis erfolgreich
+    /// ins Projekt uebernommen (persistiert) wurde. Erst DANN darf die Plattform den
+    /// Session-Recovery-State verwerfen — bei Prozess-Tod oder Transfer-Fehler im
+    /// Uebergabefenster bleibt die Session sonst wiederherstellbar. Aufrufer:
+    /// MainViewModel nach erfolgreichem <c>IArTransferService.TransferToProjectAsync</c>.</summary>
+    void ConfirmResultPersisted();
 }

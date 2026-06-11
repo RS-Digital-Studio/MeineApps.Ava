@@ -54,7 +54,10 @@ public partial class ArCaptureActivity
         int totalPoints, contourCount;
         lock (_dataLock)
         {
-            totalPoints = _points.Count + _contours.Sum(c => c.Points.Count)
+            // Nur ECHTE Mess-Daten zaehlen — vorgeladene Punkte (IsPreloaded) gehen nie ins
+            // Result (FinishCapture filtert sie). Sonst verspricht der Dialog eine Uebertragung,
+            // die ein leeres Result liefert (analog zum Battery-Auto-Finish-Check).
+            totalPoints = _points.Count(p => !p.IsPreloaded) + _contours.Sum(c => c.Points.Count)
                 + (_activeContour?.Points.Count ?? 0);
             contourCount = _contours.Count + (_activeContour?.Points.Count >= 3 ? 1 : 0);
         }
@@ -66,18 +69,13 @@ public partial class ArCaptureActivity
                 var builder = new AndroidX.AppCompat.App.AlertDialog.Builder(this);
                 builder.SetTitle("Keine Daten");
                 builder.SetMessage("Du hast noch keinen Punkt gesetzt. Aufnahme trotzdem beenden?");
-                builder.SetPositiveButton("Beenden", (_, _) =>
-                {
-                    SetResult(Result.Canceled);
-                    Finish();
-                });
+                builder.SetPositiveButton("Beenden", (_, _) => CancelAndFinish());
                 builder.SetNegativeButton("Weiter messen", (_, _) => { });
                 builder.Show();
             }
             catch
             {
-                SetResult(Result.Canceled);
-                Finish();
+                CancelAndFinish();
             }
             return;
         }
@@ -114,7 +112,9 @@ public partial class ArCaptureActivity
         int totalPoints;
         lock (_dataLock)
         {
-            totalPoints = _points.Count + _contours.Sum(c => c.Points.Count)
+            // Preload-Punkte nicht mitzaehlen — sie koennen gar nicht "verloren gehen"
+            // (kommen beim naechsten Start frisch aus dem Projekt).
+            totalPoints = _points.Count(p => !p.IsPreloaded) + _contours.Sum(c => c.Points.Count)
                 + (_activeContour?.Points.Count ?? 0);
         }
 
@@ -149,6 +149,10 @@ public partial class ArCaptureActivity
         if (System.Threading.Interlocked.Exchange(ref _finished, 1) == 0)
         {
             lock (_lastResultLock) _lastResult = null;
+            // Verwerfen ist eine BEWUSSTE Entscheidung, kein Absturz: Recovery-State mit
+            // loeschen — sonst kehrt die explizit verworfene Session beim naechsten AR-Start
+            // als "unterbrochene Sitzung" zurueck (Dialog versprach "gehen verloren").
+            ClearRecoveryState();
             SetResult(Result.Canceled);
         }
         Finish();

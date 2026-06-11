@@ -116,7 +116,33 @@ public partial class ArCaptureActivity
                         lock (_dataLock)
                         {
                             if (recoveredPoints != null) _points.AddRange(recoveredPoints);
-                            if (recoveredContours != null) _contours.AddRange(recoveredContours);
+                            if (recoveredContours != null)
+                            {
+                                // Die vormals AKTIVE (offene) Kontur wieder aktivierbar machen:
+                                // SaveRecoveryState haengt sie an die Kontur-Liste an — pauschal
+                                // in _contours wuerde sie dauerhaft offen einfrieren (nie
+                                // schliessbar, keine Flaeche). Die letzte offene Kontur wird
+                                // deshalb als _activeContour fortgesetzt.
+                                ArContour? reactivate = null;
+                                foreach (var c in recoveredContours)
+                                {
+                                    if (!c.IsClosed && c.Points.Count > 0) reactivate = c;
+                                }
+                                foreach (var c in recoveredContours)
+                                {
+                                    if (ReferenceEquals(c, reactivate)) continue;
+                                    _contours.Add(c);
+                                }
+                                if (reactivate != null && _activeContour == null)
+                                {
+                                    _activeContour = reactivate;
+                                    _currentContourType = reactivate.ContourType;
+                                }
+                                else if (reactivate != null)
+                                {
+                                    _contours.Add(reactivate);
+                                }
+                            }
                         }
 
                         // Plan 3.3: Earth-Anchor-Re-Attach für jeden Punkt mit Geo-Koordinaten.
@@ -143,13 +169,33 @@ public partial class ArCaptureActivity
                                     foreach (var p in c.Points) EnqueueIfGeo(p);
                         }
 
+                        // Punkte OHNE Geo-Bezug ehrlich markieren: ihre X/Y/Z stammen aus dem
+                        // Koordinatensystem der ALTEN Session — der Transfer rotiert sie mit dem
+                        // Anker/Heading der NEUEN Session und muss die Genauigkeit drastisch
+                        // abwerten (sonst stuende ein um Meter versetzter Punkt mit cm-Angabe
+                        // im Projekt). Flag wandert durch ArTransferService.
+                        void MarkIfNoGeo(ArPoint? p)
+                        {
+                            if (p != null && (!p.GeoLatitude.HasValue || !p.GeoLongitude.HasValue))
+                                p.RestoredWithoutGeo = true;
+                        }
+                        if (recoveredPoints != null)
+                            foreach (var p in recoveredPoints) MarkIfNoGeo(p);
+                        if (recoveredContours != null)
+                            foreach (var c in recoveredContours)
+                                foreach (var p in c.Points) MarkIfNoGeo(p);
+
                         // Wiederhergestellte Aktion ist bewusst NICHT undobar — der Undo-Stack
                         // gehört zur alten (toten) Session. Punkte OHNE Geo-Bezug beziehen sich auf
                         // das alte ARCore-Koordinatensystem (pro Session neu) und können in der
                         // neuen Sitzung verschoben erscheinen — das wird dem Nutzer kommuniziert.
                         UpdateCounter();
                         _overlayView?.Invalidate();
-                        ClearRecoveryState();
+
+                        // Frisch zusammengefuehrten Zustand SOFORT neu sichern (nicht loeschen!):
+                        // ein zweiter Crash vor dem naechsten Punkt-Save wuerde die soeben
+                        // wiederhergestellten Punkte sonst endgueltig verlieren.
+                        SaveRecoveryState();
                         var localCount = totalPoints - anchorsToRestore;
                         string hint;
                         if (anchorsToRestore == 0 && totalPoints > 0)
@@ -178,11 +224,18 @@ public partial class ArCaptureActivity
         }
     }
 
-    private void ClearRecoveryState()
+    private void ClearRecoveryState() => ClearRecoveryState(this);
+
+    /// <summary>Statisch + Context-basiert: Wird auch NACH dem Ende der Activity aufgerufen —
+    /// <see cref="AndroidArCaptureService.ConfirmResultPersisted"/> loescht den Recovery-State
+    /// erst, wenn das Ergebnis tatsaechlich ins Projekt uebernommen wurde. Loeschen schon in
+    /// FinishCapture wuerde bei Prozess-Tod/Transfer-Fehler im Uebergabefenster die komplette
+    /// Session unwiederbringlich verlieren — genau das Szenario, fuer das Recovery existiert.</summary>
+    internal static void ClearRecoveryState(Context context)
     {
         try
         {
-            var prefs = GetSharedPreferences("smartmeasure_ar", FileCreationMode.Private);
+            var prefs = context.GetSharedPreferences("smartmeasure_ar", FileCreationMode.Private);
             using var editor = prefs?.Edit();
             editor?.Remove(RecoveryKeyPoints);
             editor?.Remove(RecoveryKeyContours);

@@ -12,6 +12,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly IArTransferService _arTransferService;
     private readonly IMeasurementService _measurementService;
     private readonly IProjectService _projectService;
+    private readonly IArCaptureService _arCaptureService;
     private readonly BackPressHelper _backPressHelper = new();
 
     // Child-ViewModels
@@ -45,6 +46,7 @@ public partial class MainViewModel : ViewModelBase
         IArTransferService arTransferService,
         IMeasurementService measurementService,
         IProjectService projectService,
+        IArCaptureService arCaptureService,
         SurveyViewModel surveyVm,
         TerrainViewModel terrainVm,
         GardenPlanViewModel gardenPlanVm,
@@ -55,6 +57,7 @@ public partial class MainViewModel : ViewModelBase
         _arTransferService = arTransferService;
         _measurementService = measurementService;
         _projectService = projectService;
+        _arCaptureService = arCaptureService;
         SurveyVm = surveyVm;
         TerrainVm = terrainVm;
         GardenPlanVm = gardenPlanVm;
@@ -126,6 +129,11 @@ public partial class MainViewModel : ViewModelBase
 
                 var count = await _arTransferService.TransferToProjectAsync(result, project.Id);
                 MessageRequested?.Invoke("AR-Capture", $"{count} Punkte übertragen");
+
+                // Erst NACH erfolgreicher Persistierung den AR-Session-Recovery-State
+                // freigeben — bei Crash/Fehler bis hierher bleibt die Session
+                // wiederherstellbar (FinishCapture loescht bewusst nicht mehr selbst).
+                _arCaptureService.ConfirmResultPersisted();
 
                 // GardenPlan mit neuen Konturen aktualisieren. CurrentProjectId MUSS gesetzt
                 // werden — sonst persistiert manuelles Nachzeichnen im Garten-Tab nicht

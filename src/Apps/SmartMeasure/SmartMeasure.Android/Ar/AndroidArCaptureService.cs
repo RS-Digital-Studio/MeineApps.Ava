@@ -51,6 +51,11 @@ public sealed class AndroidArCaptureService : IArCaptureService
     public void SetPreloadPoints(IReadOnlyList<SurveyPoint>? points)
         => ArCaptureActivity.SetPreloadPoints(points);
 
+    /// <summary>Das Ergebnis ist in der Projekt-DB angekommen — jetzt (und erst jetzt) darf
+    /// der Session-Recovery-State weg. FinishCapture loescht bewusst nicht mehr selbst.</summary>
+    public void ConfirmResultPersisted()
+        => ArCaptureActivity.ClearRecoveryState(_activity);
+
     public AndroidArCaptureService(Activity activity)
     {
         _activity = activity;

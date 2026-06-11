@@ -191,6 +191,17 @@ public class ArTransferService : IArTransferService
             // nach NN korrigieren (in DE ~48m Differenz).
             var finalAlt = _geoidService.EllipsoidToGeoid(finalLat, finalLon, finalAltEllipsoid);
 
+            // Recovery-Punkte ohne Geo-Bezug: X/Y/Z stammen aus dem Koordinatensystem einer
+            // ANDEREN (abgestuerzten) Session — die Rotation mit Anker/Heading der neuen
+            // Session kann um Meter danebenliegen. Ehrlich abwerten statt cm-Genauigkeit
+            // vorzutaeuschen (>= 5 m, Konfidenz auf "niedrig" gedeckelt).
+            var confidence = arPoint.Confidence;
+            if (arPoint.RestoredWithoutGeo)
+            {
+                finalAccuracyCm = Math.Max(finalAccuracyCm, 500f);
+                confidence = Math.Min(confidence, 0.3f);
+            }
+
             // VerticalAccuracy ist nach Plan-Kap. 4.1 konservativ schlechter als die
             // horizontale (GPS-Höhe hat höheres VDOP, AR-Höhe kommt zusätzlich aus
             // Ground-Plane-Schätzung). 1.8× ist ein vorsichtiger Mittelwert.
@@ -205,7 +216,7 @@ public class ArTransferService : IArTransferService
                 HorizontalAccuracy = finalAccuracyCm,
                 VerticalAccuracy = verticalAccCm,
                 // Echte ARCore-Punktgüte (Hit-Quality + Streuung + Tracking-Stabilitaet)
-                Confidence = arPoint.Confidence,
+                Confidence = confidence,
                 Timestamp = arPoint.Timestamp,
                 Label = arPoint.Label,
                 // Plan-Kap. 5.6: Foto-Annotation pro Punkt durchreichen

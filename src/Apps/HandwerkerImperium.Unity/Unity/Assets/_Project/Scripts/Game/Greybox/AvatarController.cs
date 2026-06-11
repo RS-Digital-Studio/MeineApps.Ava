@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -23,7 +24,7 @@ namespace HandwerkerImperium.Game
 
         private CharacterController _cc;
         private float _vy;
-        private int _visualCount;
+        private readonly List<GameObject> _carryVisuals = new List<GameObject>();
 
         public int CarriedCount { get; private set; }
         public int CarriedStation { get; private set; } = -1;
@@ -102,20 +103,23 @@ namespace HandwerkerImperium.Game
         {
             if (carryAnchor == null) return;
             GameObject prefab = WarePrefabFor(CarriedStation);
-            while (_visualCount < CarriedCount)
+            while (_carryVisuals.Count < CarriedCount)
             {
-                if (prefab != null)
-                {
-                    var go = Instantiate(prefab, carryAnchor);
-                    go.transform.localPosition = new Vector3(0f, _visualCount * carryWareHeight, 0f);
-                    go.transform.localRotation = Quaternion.identity;
-                }
-                _visualCount++;
+                if (prefab == null) break;
+                var go = Instantiate(prefab, carryAnchor);
+                go.transform.localPosition = new Vector3(0f, _carryVisuals.Count * carryWareHeight, 0f);
+                go.transform.localRotation = Quaternion.identity;
+                _carryVisuals.Add(go);
             }
-            while (_visualCount > CarriedCount && carryAnchor.childCount > 0)
+            // WICHTIG: Destroy() ist verzoegert (Ende des Frames) — childCount sinkt in der Schleife NICHT.
+            // Ueber childCount abzubauen zerstoert daher mehrfach DASSELBE letzte Kind (nur 1 Wuerfel
+            // verschwindet, der Rest klebt fuer immer in der Hand). Deshalb explizite Visual-Liste.
+            while (_carryVisuals.Count > CarriedCount)
             {
-                Destroy(carryAnchor.GetChild(carryAnchor.childCount - 1).gameObject);
-                _visualCount--;
+                int last = _carryVisuals.Count - 1;
+                var go = _carryVisuals[last];
+                _carryVisuals.RemoveAt(last);
+                if (go != null) Destroy(go);
             }
         }
 

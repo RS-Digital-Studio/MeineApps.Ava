@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:WorkTimePro.ViewModels"
              xmlns:models="using:WorkTimePro.Models"
@@ -378,6 +378,7 @@
     <Border Grid.Row="0" Grid.RowSpan="2"
             AutomationProperties.AutomationId="DayDetail_TimeEntryOverlay"
             IsVisible="{Binding IsTimeEntryOverlayVisible}"
+            Classes="ModalOverlay" Classes.open="{Binding IsTimeEntryOverlayVisible}"
             Background="{DynamicResource OverlayBrush}"
             ZIndex="10">
       <Border Classes="Card" Margin="0"
@@ -470,6 +471,7 @@
     <Border Grid.Row="0" Grid.RowSpan="2"
             AutomationProperties.AutomationId="DayDetail_PauseOverlay"
             IsVisible="{Binding IsPauseOverlayVisible}"
+            Classes="ModalOverlay" Classes.open="{Binding IsPauseOverlayVisible}"
             Background="{DynamicResource OverlayBrush}"
             ZIndex="10">
       <Border Classes="Card" Margin="0"
@@ -549,6 +551,7 @@
     <Border Grid.Row="0" Grid.RowSpan="2"
             AutomationProperties.AutomationId="DayDetail_ConfirmDeleteOverlay"
             IsVisible="{Binding IsConfirmDeleteVisible}"
+            Classes="ModalOverlay" Classes.open="{Binding IsConfirmDeleteVisible}"
             Background="{DynamicResource OverlayBrush}"
             ZIndex="10"
             PointerPressed="OnOverlayBackgroundPressed">
@@ -596,6 +599,7 @@
     <Border Grid.Row="0" Grid.RowSpan="2"
             AutomationProperties.AutomationId="DayDetail_StatusSelectionOverlay"
             IsVisible="{Binding IsStatusSelectionVisible}"
+            Classes="ModalOverlay" Classes.open="{Binding IsStatusSelectionVisible}"
             Background="{DynamicResource OverlayBrush}"
             ZIndex="10">
       <Border Classes="Card" Margin="0"
@@ -639,6 +643,7 @@
                                FontSize="{StaticResource FontSizeBodyMd}"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
                                Margin="10,0,0,0" />
                     <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="16" Height="16"
                                      Foreground="{DynamicResource SuccessBrush}"

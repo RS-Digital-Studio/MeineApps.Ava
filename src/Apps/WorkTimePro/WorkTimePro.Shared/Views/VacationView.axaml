@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:WorkTimePro.ViewModels"
              xmlns:models="using:WorkTimePro.Models"
@@ -52,7 +52,7 @@
     <!-- IsHitTestVisible=False wenn Overlay aktiv (verhindert Touch-Durchfall auf Android) -->
     <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="Vacation_ScrollViewer"
                   IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
-      <StackPanel Spacing="16" Margin="{StaticResource ThicknessLg}">
+      <StackPanel Spacing="12" Margin="{StaticResource ThicknessLg}">
 
         <!-- ==================== Quota Card (SkiaSharp-Ring-Gauge) ==================== -->
         <Border Classes="CardElevated StatsCard" AutomationProperties.AutomationId="Vacation_QuotaCard">
@@ -280,6 +280,7 @@
 
     <!-- ==================== Quota Edit Overlay ==================== -->
     <Border IsVisible="{Binding IsEditingQuota}"
+            Classes="ModalOverlay" Classes.open="{Binding IsEditingQuota}"
             AutomationProperties.AutomationId="Vacation_QuotaOverlay"
             Background="{DynamicResource ModalBackdropBrush}"
             ZIndex="99"
@@ -344,6 +345,7 @@
 
     <!-- ==================== Rewarded Ad Overlay ==================== -->
     <Border IsVisible="{Binding ShowRewardedAdOverlay}"
+            Classes="ModalOverlay" Classes.open="{Binding ShowRewardedAdOverlay}"
             AutomationProperties.AutomationId="Vacation_AdOverlay"
             Background="{DynamicResource ModalBackdropBrush}"
             ZIndex="100"

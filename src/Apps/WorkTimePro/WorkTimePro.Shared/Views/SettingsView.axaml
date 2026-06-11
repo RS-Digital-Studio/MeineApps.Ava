@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:WorkTimePro.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
@@ -121,7 +121,8 @@
                        Text="{loc:Translate DailyTarget}"
                        FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       VerticalAlignment="Center" />
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
             <TextBox Grid.Column="1"
                      AutomationProperties.AutomationId="Settings_TbDailyHours"
                      Text="{Binding DailyHours}"
@@ -136,7 +137,8 @@
                        Text="{loc:Translate WeeklyTarget}"
                        FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       VerticalAlignment="Center" />
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
             <TextBox Grid.Column="1"
                      AutomationProperties.AutomationId="Settings_TbWeeklyHours"
                      Text="{Binding WeeklyHours}"
@@ -249,7 +251,8 @@
             <TextBlock Text="{loc:Translate TimeRounding}"
                        FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       VerticalAlignment="Center" />
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
             <ComboBox Grid.Column="1"
                       AutomationProperties.AutomationId="Settings_CmbRounding"
                       ItemsSource="{Binding RoundingOptions}"
@@ -268,7 +271,8 @@
             <TextBlock Text="{loc:Translate HourlyRate}"
                        FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       VerticalAlignment="Center" />
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
             <NumericUpDown Grid.Column="1"
                            AutomationProperties.AutomationId="Settings_NudHourlyRate"
                            Value="{Binding HourlyRate}"
@@ -307,7 +311,8 @@
             <TextBlock Text="{loc:Translate AutoPauseAfterHours}"
                        FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       VerticalAlignment="Center" />
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
             <TextBox Grid.Column="1"
                      AutomationProperties.AutomationId="Settings_TbAutoPauseAfterHours"
                      Text="{Binding AutoPauseAfterHours}"
@@ -318,7 +323,8 @@
             <TextBlock Text="{loc:Translate PauseMinutes}"
                        FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       VerticalAlignment="Center" />
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
             <TextBox Grid.Column="1"
                      AutomationProperties.AutomationId="Settings_TbAutoPauseMinutes"
                      Text="{Binding AutoPauseMinutes}"
@@ -398,7 +404,8 @@
             <TextBlock Text="{loc:Translate VacationDaysPerYear}"
                        FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       VerticalAlignment="Center" />
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
             <TextBox Grid.Column="1"
                      AutomationProperties.AutomationId="Settings_TbVacationDays"
                      Text="{Binding VacationDaysPerYear}"
@@ -425,7 +432,8 @@
             <TextBlock Text="{loc:Translate VacationMaxCarryOver}"
                        FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       VerticalAlignment="Center" />
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
             <TextBox Grid.Column="1"
                      AutomationProperties.AutomationId="Settings_TbVacationMaxCarry"
                      Text="{Binding VacationMaxCarryOverDays}"
@@ -503,7 +511,8 @@
             <TextBlock Text="{loc:Translate OvertimeWarningHours}"
                        FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       VerticalAlignment="Center" />
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
             <TextBox Grid.Column="1"
                      AutomationProperties.AutomationId="Settings_TbOvertimeHours"
                      Text="{Binding OvertimeWarningHours}"
@@ -754,6 +763,7 @@
     <!-- Import-Bestätigung: Restore überschreibt ALLE aktuellen Daten → vorher bestätigen.
          Backdrop fängt Taps ab (kein Touch-Durchfall), ScrollViewer ist währenddessen gegated. -->
     <Border IsVisible="{Binding IsImportConfirmVisible}"
+            Classes="ModalOverlay" Classes.open="{Binding IsImportConfirmVisible}"
             Background="{DynamicResource ModalBackdropBrush}"
             AutomationProperties.AutomationId="Settings_ImportConfirmOverlay">
       <Border Classes="Card" MaxWidth="360" Margin="32"
@@ -778,6 +788,7 @@
     <!-- Kauf-Optionen: Trial (einmalig), Monatsabo oder Lifetime — explizite Wahl
          statt stillem Trial-Start beim Kauf-Klick. -->
     <Border IsVisible="{Binding IsPurchaseOptionsVisible}"
+            Classes="ModalOverlay" Classes.open="{Binding IsPurchaseOptionsVisible}"
             Background="{DynamicResource ModalBackdropBrush}"
             AutomationProperties.AutomationId="Settings_PurchaseOptionsOverlay">
       <Border Classes="Card" MaxWidth="360" Margin="32"
@@ -785,21 +796,28 @@
         <StackPanel Spacing="{StaticResource SpacingLg}">
           <TextBlock Classes="SectionTitle" Text="{loc:Translate PurchaseOptionTitle}" TextWrapping="Wrap" />
 
-          <Button Classes="Secondary" Content="{loc:Translate TrialOfferStart}"
+          <!-- Button-Texte umbruchfähig (FR/PT-Varianten sind länger als die Overlay-Breite bei 360dp) -->
+          <Button Classes="Secondary"
                   IsVisible="{Binding CanStartTrial}"
                   Command="{Binding StartTrialCommand}"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                  AutomationProperties.AutomationId="Settings_StartTrialButton" />
+                  AutomationProperties.AutomationId="Settings_StartTrialButton">
+            <TextBlock Text="{loc:Translate TrialOfferStart}" TextWrapping="Wrap" TextAlignment="Center" />
+          </Button>
 
-          <Button Classes="Primary" Content="{loc:Translate PurchaseOptionMonthly}"
+          <Button Classes="Primary"
                   Command="{Binding PurchaseMonthlyCommand}"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                  AutomationProperties.AutomationId="Settings_PurchaseMonthlyButton" />
+                  AutomationProperties.AutomationId="Settings_PurchaseMonthlyButton">
+            <TextBlock Text="{loc:Translate PurchaseOptionMonthly}" TextWrapping="Wrap" TextAlignment="Center" />
+          </Button>
 
-          <Button Classes="Primary" Content="{loc:Translate PurchaseOptionLifetime}"
+          <Button Classes="Primary"
                   Command="{Binding PurchaseLifetimeCommand}"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                  AutomationProperties.AutomationId="Settings_PurchaseLifetimeButton" />
+                  AutomationProperties.AutomationId="Settings_PurchaseLifetimeButton">
+            <TextBlock Text="{loc:Translate PurchaseOptionLifetime}" TextWrapping="Wrap" TextAlignment="Center" />
+          </Button>
 
           <Button Classes="Text" Content="{loc:Translate Cancel}"
                   Command="{Binding CancelPurchaseOptionsCommand}"

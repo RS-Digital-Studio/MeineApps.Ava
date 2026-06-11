@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:WorkTimePro.ViewModels"
              xmlns:models="using:WorkTimePro.Models"
@@ -10,7 +10,7 @@
              x:CompileBindings="True">
 
   <ScrollViewer AutomationProperties.AutomationId="Week_ScrollViewer">
-    <StackPanel Spacing="16" Margin="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Week_RootPanel">
+    <StackPanel Spacing="12" Margin="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Week_RootPanel">
 
       <!-- ==================== Week Navigation ==================== -->
       <Border Classes="CardElevated StatsCard" Padding="{StaticResource ThicknessLg}" AutomationProperties.AutomationId="Week_NavCard">

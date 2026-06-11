@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:WorkTimePro.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
@@ -177,7 +177,8 @@
                                Foreground="{DynamicResource PrimaryBrush}" />
             </Border>
             <TextBlock Text="{loc:Translate WorkTime}" FontSize="{StaticResource FontSizeLabelSm}"
-                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
           </StackPanel>
           <TextBlock Text="{Binding TotalWorkDisplay}"
                      AutomationProperties.AutomationId="Stats_TxtWorkTime"
@@ -193,7 +194,8 @@
               <mi:MaterialIcon Kind="TrendingUp" Width="11" Height="11" Foreground="{DynamicResource StatsOrangeBrush}" />
             </Border>
             <TextBlock Text="{loc:Translate Overtime}" FontSize="{StaticResource FontSizeLabelSm}"
-                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
           </StackPanel>
           <TextBlock Text="{Binding TotalOvertimeDisplay}"
                      AutomationProperties.AutomationId="Stats_TxtOvertime"
@@ -209,7 +211,8 @@
               <mi:MaterialIcon Kind="ChartTimelineVariant" Width="11" Height="11" Foreground="{DynamicResource StatsGreenBrush}" />
             </Border>
             <TextBlock Text="{loc:Translate AvgPerDay}" FontSize="{StaticResource FontSizeLabelSm}"
-                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
           </StackPanel>
           <TextBlock Text="{Binding AverageDailyDisplay}"
                      AutomationProperties.AutomationId="Stats_TxtAvgDaily"
@@ -225,7 +228,8 @@
               <mi:MaterialIcon Kind="CalendarCheck" Width="11" Height="11" Foreground="{DynamicResource StatsPurpleBrush}" />
             </Border>
             <TextBlock Text="{loc:Translate WorkedDaysCount}" FontSize="{StaticResource FontSizeLabelSm}"
-                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
           </StackPanel>
           <TextBlock Text="{Binding WorkedDays}"
                      AutomationProperties.AutomationId="Stats_TxtWorkedDays"
@@ -489,6 +493,7 @@
     <Border Grid.RowSpan="4"
             AutomationProperties.AutomationId="Stats_AdOverlay"
             IsVisible="{Binding ShowRewardedAdOverlay}"
+            Classes="ModalOverlay" Classes.open="{Binding ShowRewardedAdOverlay}"
             Background="{DynamicResource ModalBackdropBrush}" ZIndex="100">
       <Border Background="{DynamicResource CardBrush}" CornerRadius="{StaticResource RadiusXl}" Padding="{StaticResource ThicknessXl}"
               AutomationProperties.AutomationId="Stats_AdOverlayCard"
@@ -525,6 +530,7 @@
     <Border Grid.RowSpan="4"
             AutomationProperties.AutomationId="Stats_ExportFormatOverlay"
             IsVisible="{Binding ShowExportFormatOverlay}"
+            Classes="ModalOverlay" Classes.open="{Binding ShowExportFormatOverlay}"
             Background="{DynamicResource ModalBackdropBrush}" ZIndex="101">
       <Border Background="{DynamicResource CardBrush}" CornerRadius="{StaticResource RadiusXl}" Padding="{StaticResource ThicknessXl}"
               MaxWidth="340" HorizontalAlignment="Center" VerticalAlignment="Center">

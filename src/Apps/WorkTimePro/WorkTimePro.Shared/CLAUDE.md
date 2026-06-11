@@ -60,7 +60,7 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 | `Views/` | 11 App-Views + MainWindow (12 gesamt), UI-Patterns (Overlay, Keyboard-Shortcuts) | [Views/CLAUDE.md](Views/CLAUDE.md) |
 | `Services/` | 13 Interfaces + Implementierungen (DB, Zeiterfassung, Export, Backup, Reminder, ...) | [Services/CLAUDE.md](Services/CLAUDE.md) |
 | `Models/` | SQLite-Entitäten, Enums, berechnete Properties, AppColors | [Models/CLAUDE.md](Models/CLAUDE.md) |
-| `Graphics/` | 9 Visualisierungen + Splash + Background (+ ChartEmptyState) | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
+| `Graphics/` | 8 Visualisierungen + Splash + Background (+ ChartEmptyState) | [Graphics/CLAUDE.md](Graphics/CLAUDE.md) |
 | `Converters/` | App-eigene `IValueConverter`-Implementierungen | [Converters/CLAUDE.md](Converters/CLAUDE.md) |
 | `Helpers/` | `TimeFormatter`, `DurationMath` (DST-bewusste Dauer) | [Helpers/CLAUDE.md](Helpers/CLAUDE.md) |
 | `Loading/` | `WorkTimeProLoadingPipeline` (Startup-Sequenz) | [Loading/CLAUDE.md](Loading/CLAUDE.md) |

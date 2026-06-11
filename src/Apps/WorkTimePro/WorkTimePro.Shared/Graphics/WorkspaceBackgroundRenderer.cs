@@ -70,7 +70,7 @@ public sealed class WorkspaceBackgroundRenderer : IDisposable
 
     // DotMatrix-Kachel-Cache (vorgerendert, statt ~900 DrawCircle/Frame)
     private SKBitmap? _dotTileBitmap;
-    private float _dotTileW, _dotTileH;
+    private float _dotTileW;
 
     // =====================================================================
     // Spawn-Timer fuer Calendar-Blocks
@@ -163,10 +163,12 @@ public sealed class WorkspaceBackgroundRenderer : IDisposable
         const float spacing = 24f;
         const float dotRadius = 0.8f;
 
-        // Kachel bei Größenänderung neu erstellen (einmal, nicht pro Frame)
+        // Kachel bei Breitenänderung neu erstellen (einmal, nicht pro Frame).
+        // Die Kachel-Höhe ist konstant (spacing+1) — die Gesamthöhe gehört NICHT in den
+        // Cache-Key, sonst wird bei jeder reinen Höhenänderung (Banner/Tastatur/Rotation)
+        // unnötig eine neue Bitmap allokiert.
         if (_dotTileBitmap == null ||
-            MathF.Abs(bounds.Width - _dotTileW) > 1f ||
-            MathF.Abs(bounds.Height - _dotTileH) > 1f)
+            MathF.Abs(bounds.Width - _dotTileW) > 1f)
         {
             _dotTileBitmap?.Dispose();
 
@@ -185,7 +187,6 @@ public sealed class WorkspaceBackgroundRenderer : IDisposable
             }
 
             _dotTileW = bounds.Width;
-            _dotTileH = bounds.Height;
         }
 
         // Langsames vertikales Driften (1.5px/s) - Kachel tilen statt einzelne Kreise

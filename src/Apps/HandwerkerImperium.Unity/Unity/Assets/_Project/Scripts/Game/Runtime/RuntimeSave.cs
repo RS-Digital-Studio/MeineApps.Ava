@@ -15,19 +15,22 @@ namespace HandwerkerImperium.Game
     public static class RuntimeSave
     {
         private const string Key = "hwi_game_save_v1";
-        private const string CorruptBackupKey = "hwi_game_save_v1_corrupt";
 
         /// <summary>Gerätegebundener HMAC-Schlüssel (Anti-Cheat-Bindung an das Gerät).</summary>
         public static string DeviceKey => SystemInfo.deviceUniqueIdentifier;
 
         public static bool HasSave => PlayerPrefs.HasKey(Key);
 
-        public static void Save(GameModel model, string deviceKey)
+        /// <summary>
+        /// PlayerPrefs-Slot. WICHTIG: Tests MÜSSEN einen eigenen Test-Slot übergeben — der Default
+        /// ist der echte Spielstand (Clear()/Save() im Test würden ihn sonst zerstören; teuer gelernt).
+        /// </summary>
+        public static void Save(GameModel model, string deviceKey, string slot = Key)
         {
             if (model == null) return;
             var save = GameModelMapping.ToSave(model);
             SaveSignature.Sign(save, deviceKey);
-            PlayerPrefs.SetString(Key, JsonConvert.SerializeObject(save));
+            PlayerPrefs.SetString(slot, JsonConvert.SerializeObject(save));
             PlayerPrefs.Save();
         }
 
@@ -35,24 +38,25 @@ namespace HandwerkerImperium.Game
         /// Lädt das Modell. Kein Save → null. Beschädigtes JSON → null. Ungültige Signatur → Reparatur
         /// (Sanitize) statt Ablehnung, dann laden.
         /// </summary>
-        public static GameModel Load(string deviceKey, IdleBalancing idleBalancing)
+        public static GameModel Load(string deviceKey, IdleBalancing idleBalancing, string slot = Key)
         {
-            if (!PlayerPrefs.HasKey(Key)) return null;
-            string raw = PlayerPrefs.GetString(Key);
+            string corruptBackupKey = slot + "_corrupt";
+            if (!PlayerPrefs.HasKey(slot)) return null;
+            string raw = PlayerPrefs.GetString(slot);
             GameSave save;
             try { save = JsonConvert.DeserializeObject<GameSave>(raw); }
             catch (System.Exception ex)
             {
                 // Nie still wipen: nicht-parsebaren Save sichern (Diagnose/Recovery), DANN frisch starten.
                 Debug.LogWarning("[RuntimeSave] Save nicht parsebar (" + ex.GetType().Name + "): " + ex.Message + " — Raw in Backup-Slot gesichert.");
-                PlayerPrefs.SetString(CorruptBackupKey, raw);
+                PlayerPrefs.SetString(corruptBackupKey, raw);
                 PlayerPrefs.Save();
                 return null;
             }
             if (save == null)
             {
                 Debug.LogWarning("[RuntimeSave] Save deserialisiert zu null — Raw in Backup-Slot gesichert.");
-                PlayerPrefs.SetString(CorruptBackupKey, raw);
+                PlayerPrefs.SetString(corruptBackupKey, raw);
                 PlayerPrefs.Save();
                 return null;
             }
@@ -68,6 +72,6 @@ namespace HandwerkerImperium.Game
             return GameModelMapping.FromSave(save, idleBalancing);
         }
 
-        public static void Clear() => PlayerPrefs.DeleteKey(Key);
+        public static void Clear(string slot = Key) => PlayerPrefs.DeleteKey(slot);
     }
 }

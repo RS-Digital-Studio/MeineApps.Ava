@@ -203,7 +203,9 @@ namespace HandwerkerImperium.Game.Tests
         [Test]
         public void Save_Roundtrip_Preserves_Money_Levels_Stock_Worker_Unlock()
         {
-            GreyboxSave.Clear(); // sauberer Start (PlayerPrefs ist editor-persistent)
+            // WICHTIG: eigener Test-Slot — der Default-Slot ist der echte Greybox-Spielstand.
+            const string slot = "hwi_greybox_save_TEST";
+            GreyboxSave.Clear(slot); // sauberer Start (PlayerPrefs ist editor-persistent)
             try
             {
                 var r = NewRig(startMoney: 5000m);
@@ -213,8 +215,8 @@ namespace HandwerkerImperium.Game.Tests
                 r.Plots.Unlock(3);                             // Station 3 offen
                 r.Offline.MarkSeen(1_234_567_890L);            // Zeitstempel
 
-                GreyboxSave.Save(r.State);
-                GreyboxSimState loaded = GreyboxSave.Load();
+                GreyboxSave.Save(r.State, slot);
+                GreyboxSimState loaded = GreyboxSave.Load(slot);
 
                 Assert.IsNotNull(loaded, "Load liefert State zurueck");
                 Assert.AreEqual(r.State.Money, loaded.Money, "decimal Money exakt");
@@ -228,7 +230,7 @@ namespace HandwerkerImperium.Game.Tests
             }
             finally
             {
-                GreyboxSave.Clear();
+                GreyboxSave.Clear(slot);
             }
         }
     }

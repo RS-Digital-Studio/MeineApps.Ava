@@ -14,20 +14,24 @@ namespace HandwerkerImperium.Game
 
         public static bool HasSave => PlayerPrefs.HasKey(Key);
 
-        public static void Save(GreyboxSimState state)
+        /// <summary>
+        /// PlayerPrefs-Slot. WICHTIG: Tests MÜSSEN einen eigenen Test-Slot übergeben — der Default
+        /// ist der echte Spielstand (Clear()/Save() im Test würden ihn sonst zerstören).
+        /// </summary>
+        public static void Save(GreyboxSimState state, string slot = Key)
         {
             if (state == null) return;
-            PlayerPrefs.SetString(Key, JsonConvert.SerializeObject(state));
+            PlayerPrefs.SetString(slot, JsonConvert.SerializeObject(state));
             PlayerPrefs.Save();
         }
 
-        public static GreyboxSimState Load()
+        public static GreyboxSimState Load(string slot = Key)
         {
-            if (!PlayerPrefs.HasKey(Key)) return null;
-            try { return JsonConvert.DeserializeObject<GreyboxSimState>(PlayerPrefs.GetString(Key)); }
+            if (!PlayerPrefs.HasKey(slot)) return null;
+            try { return JsonConvert.DeserializeObject<GreyboxSimState>(PlayerPrefs.GetString(slot)); }
             catch { return null; }
         }
 
-        public static void Clear() => PlayerPrefs.DeleteKey(Key);
+        public static void Clear(string slot = Key) => PlayerPrefs.DeleteKey(slot);
     }
 }

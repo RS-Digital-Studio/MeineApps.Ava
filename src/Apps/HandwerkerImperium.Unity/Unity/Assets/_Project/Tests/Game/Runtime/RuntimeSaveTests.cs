@@ -12,11 +12,14 @@ namespace HandwerkerImperium.Game.Tests
     public sealed class RuntimeSaveTests
     {
         private const string Key = "test-device-key-runtime";
+        // WICHTIG: eigener Test-Slot — der Default-Slot ist der ECHTE Spielstand; Clear()/Save()
+        // ohne Slot haben ihn frueher bei jedem Test-Lauf zerstoert (teuer gelernt).
+        private const string Slot = "hwi_game_save_TEST";
 
         [Test]
         public void Save_Then_Load_PreservesState()
         {
-            RuntimeSave.Clear();
+            RuntimeSave.Clear(Slot);
             try
             {
                 var idleBal = new IdleBalancing();
@@ -24,9 +27,9 @@ namespace HandwerkerImperium.Game.Tests
                 m.Idle.Money = 4242m; m.Gems = 9m;
                 m.Meta.MasteryLevel = 5; m.Meta.PrestigeCount = 1; m.Meta.PrestigeMultiplier = 3m;
                 m.Idle.Stations[0].Stock = 4;
-                RuntimeSave.Save(m, Key);
+                RuntimeSave.Save(m, Key, Slot);
 
-                var loaded = RuntimeSave.Load(Key, idleBal);
+                var loaded = RuntimeSave.Load(Key, idleBal, Slot);
                 Assert.That(loaded, Is.Not.Null);
                 Assert.That(loaded.Idle.Money, Is.EqualTo(4242m));
                 Assert.That(loaded.Gems, Is.EqualTo(9m));
@@ -34,32 +37,32 @@ namespace HandwerkerImperium.Game.Tests
                 Assert.That(loaded.Meta.PrestigeMultiplier, Is.EqualTo(3m));
                 Assert.That(loaded.Idle.Stations[0].Stock, Is.EqualTo(4));
             }
-            finally { RuntimeSave.Clear(); }
+            finally { RuntimeSave.Clear(Slot); }
         }
 
         [Test]
         public void Load_NoSave_ReturnsNull()
         {
-            RuntimeSave.Clear();
-            Assert.That(RuntimeSave.Load(Key, new IdleBalancing()), Is.Null);
+            RuntimeSave.Clear(Slot);
+            Assert.That(RuntimeSave.Load(Key, new IdleBalancing(), Slot), Is.Null);
         }
 
         [Test]
         public void Load_InvalidSignature_RepairsNotWipe_NoCrash()
         {
-            RuntimeSave.Clear();
+            RuntimeSave.Clear(Slot);
             try
             {
                 var idleBal = new IdleBalancing();
                 var m = GameModel.CreateNew(idleBal);
                 m.Idle.Money = 1000m;
-                RuntimeSave.Save(m, Key);
+                RuntimeSave.Save(m, Key, Slot);
                 // Falscher Geräteschlüssel -> Signatur ungueltig -> Sanitize-Reparatur, kein Crash, Modell zurueck.
-                var loaded = RuntimeSave.Load("wrong-key", idleBal);
+                var loaded = RuntimeSave.Load("wrong-key", idleBal, Slot);
                 Assert.That(loaded, Is.Not.Null, "Reparatur statt Wipe");
                 Assert.That(loaded.Idle.Money, Is.GreaterThanOrEqualTo(0m));
             }
-            finally { RuntimeSave.Clear(); }
+            finally { RuntimeSave.Clear(Slot); }
         }
     }
 }

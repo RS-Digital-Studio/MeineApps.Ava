@@ -11,17 +11,19 @@
 ## 1. Ziel & Scope
 
 **Slice-Ziel (Definition of Done):** Spieler startet die App → Sektor-1-Levelauswahl → spielt **L1**
-aktiv (bewegen, Bomben legen, Blöcke sprengen, Gegner legen, PowerUps sammeln, Combos), schließt mit
+aktiv (bewegen, Bomben legen, Blöcke sprengen, Gegner besiegen, PowerUps sammeln, Combos), schließt mit
 **Sterne-Wertung** ab → progressiert bis **L10**, besiegt den **Granite Warden** → Victory-Cinematic →
 verdiente **Coins** landen im Persistenz-Save. 60/30 FPS auf High-/Low-End, deterministische Sim.
 
 ### In Scope
 - 15×10-Grid, Bomben-Lege-/Ketten-Logik, zerstörbare Blöcke, Exit.
-- 4 PowerUps des frühen Spiels: **BombUp, Fire, Speed** (+ Discovery-Overlay).
+- 4 PowerUps des frühen Spiels: **BombUp, Fire, Speed, Detonator** (+ Discovery-Overlay).
+  Detonator-Button erscheint nur bei `HasDetonator` (wie Original-NeonJoystick).
 - 2–3 Gegner-Typen aus Sektor 1: **Ballom, Onil** (+ optional Doll).
 - **Granite Warden** (Boss-Archetyp StoneGolem): Telegraph→Attack→Cooldown, Enrage 50 %, Multi-Cell, BlockRegen.
 - **Combo-System**, Score, Sterne (1–3), Lives, Timer, HUD.
 - Input (Touch-Joystick + Bomb-Button), Cinemachine-Top-Down, Placeholder-3D (Primitives + URP-Materialien).
+- **Basis-SFX:** Explosion, PowerUp-Pickup, Tod, Level-Win/Fail (Platzhalter-Sounds reichen).
 - Deterministische Sim (`IRngProvider` + `FixedTimestepRunner`), `ReplayCapture`-Hook, Coins-Persistenz.
 
 ### Out of Scope (später)
@@ -41,9 +43,12 @@ Anomaly-Dives, Grid-Rankings, Battle-Pass, Cloud-Save, finale 3D-Art/VFX, Audio-
 | **UI** | `BomberBlast.UI` | HUD-Binder (Timer/Score/Combo/Lives), Levelauswahl, Result-Screen |
 | **Composition** | `BomberBlast.Bootstrap` | VContainer: verdrahtet Sim + Services |
 
-**Tick-Fluss (pro Fixed-Step, 60 Hz):**
+**Tick-Fluss (pro Sim-Step, 60 Hz):** Verbindlicher Sim-Treiber ist der **`FixedTimestepRunner`**
+(eigener Akkumulator in `Update`, Clamp max 5 Steps/Frame) — **nicht** Unity-`FixedUpdate`;
+`Time.fixedDeltaTime` ist irrelevant. Der Sim-Kern rechnet **Integer/Fixed-Point**
+(1/256-Zellen) gemäß [ARCHITECTURE §13](ARCHITECTURE.md).
 ```
-GameLoopDriver (MonoBehaviour, FixedUpdate)
+GameLoopDriver (MonoBehaviour, Update → FixedTimestepRunner @ 60 Hz)
   → sammelt Input (InputService) → InputCommand
   → GameSimulation.Tick(dt_fixed, input)   // reine Domain-Logik
        ├─ Spieler bewegen (Pre-Turn-Buffering)
@@ -70,7 +75,7 @@ schreibt nie in den Sim-State. (CLAUDE.md Anti-Patterns.)
 | 1 | `DeterministicRandom` (xoshiro256+) | `Core` | bit-stabil; `GetState/SetState` für Replay |
 | 2 | `IRngProvider` (+ Sim-/Visual-Impl) | `Core` | Sim-RNG vs. `[Key("visual")]`-RNG |
 | 3 | `ReplayCapture` | `Core` | 1 Byte/Tick, Schema-V1 |
-| 4 | `FixedTimestepRunner` | `Core` | 60-Hz-Akkumulator (Referenz; echte Integration = Slice-Arbeit) |
+| 4 | `FixedTimestepRunner` | `Core` | **verbindlicher 60-Hz-Sim-Treiber** (Akkumulator in `Update`, Clamp max 5 Steps/Frame; Integration = Slice-Arbeit) |
 | 5 | `GameStateSnapshot` (FNV-1a-Hash) | `Core` | Replay-Hash für Determinismus-Test |
 | 6 | `CellType`, `Direction`, `EnemyType`, `PowerUpType` (Enums) | `Core` | Werte/Reihenfolge exakt halten |
 | 7 | `GameGrid` (15×10) | `Domain` | Zell-Zugriff, Block/Wall/Exit |
@@ -95,17 +100,19 @@ schreibt nie in den Sim-State. (CLAUDE.md Anti-Patterns.)
 - `PlayerState` (Pos, Dir, MaxBombs, FireRange, SpeedLevel, Lives, Buffs, i-Frames), `BombState`,
   `EnemyState`, `BossState` (Phase, HP, AttackTimer, Cells), `ExplosionResolver` (Ketten, iterativ max 5).
 - `InputCommand` (record: MoveDir, PlaceBomb, Detonate).
-- `SimSnapshot` (read-only struct/record für die View).
+- `SimSnapshot` — **struct (blittable)**, wird pro Frame in einen **vorallokierten Buffer**
+  geschrieben (kein `new` pro Frame — Acceptance-Criterion „keine GC-Spikes").
 - `BossController` (Granite Warden State-Machine).
 
 **Game (View/Treiber)**
-- `GameLoopDriver` (MonoBehaviour, FixedUpdate → Sim.Tick; Update → View-Interpolation).
+- `GameLoopDriver` (MonoBehaviour, `Update` → `FixedTimestepRunner` → Sim.Tick @ 60 Hz,
+  Clamp max 5 Steps/Frame; danach View-Interpolation — kein Unity-`FixedUpdate`).
 - `BoardRenderer` (instanziert Tile-/Block-Meshes, Pooling), `EntityViewPool` (Bomber/Bomb/Enemy/Boss-Prefabs),
   `ExplosionVfx` (Placeholder-Partikel), `CameraRig` (Cinemachine Top-Down + Impulse für Shake).
 - `InputService` (Input System → `InputCommand`; Touch-Joystick + Buttons).
 
 **UI**
-- `BattleHudViewModel` (POCO, R3-ReactiveProperties: Time/Score/Combo/Lives) + `BattleHudBinder`.
+- `BattleHUDViewModel` (POCO, R3-ReactiveProperties: Time/Score/Combo/Lives) + `BattleHUDBinder`.
 - `LevelSelectViewModel`/`Binder` (Sektor 1, L1–L10, Sterne), `ResultViewModel`/`Binder` (Sterne + Coins).
 
 **Bootstrap**
@@ -152,7 +159,7 @@ schreibt nie in den Sim-State. (CLAUDE.md Anti-Patterns.)
 5. `GameGrid` (15×10) + `GameSimulation`-Gerüst + `InputCommand`/`SimSnapshot`.
 6. Spieler-Bewegung (Pre-Turn-Buffering, SpeedLevel) + Lives/Death/i-Frames.
 7. Bomben legen + Timer + `ExplosionResolver` (Ketten, Blöcke zerstören, Exit).
-8. PowerUp-Drops (BombUp/Fire/Speed) + Aufnahme-Effekte.
+8. PowerUp-Drops (BombUp/Fire/Speed/Detonator) + Aufnahme-Effekte.
 9. Port `LevelLayoutGenerator` + Sektor-1-Layout-Pool (seed-stabil).
 10. Port `AStar` + `EnemyAI`; Ballom + Onil spawn/move/kill.
 11. `ComboSystem` + Score + Sterne-Berechnung.
@@ -160,15 +167,16 @@ schreibt nie in den Sim-State. (CLAUDE.md Anti-Patterns.)
 13. Win/Lose-Logik + Level-Übergang L1→L10.
 
 **C — View/Treiber (Game)**
-14. `GameLoopDriver` (FixedUpdate→Tick; Render-Interpolation in Update).
+14. `GameLoopDriver` (`Update` → `FixedTimestepRunner` → Tick, Clamp max 5 Steps/Frame; Render-Interpolation).
 15. `BoardRenderer` (Tile-/Block-Mesh-Pool) + `CameraRig` (Cinemachine Top-Down).
 16. `EntityViewPool` (Bomber/Bomb/Enemy/Boss Placeholder-Prefabs) + `ExplosionVfx`.
-17. `InputService` (Input System: Touch-Joystick + Bomb/Detonator) → `InputCommand`.
-18. Game-Juice-Minimal: Hit-Pause, Screen-Shake (Impulse), Floating-Score-Text.
+17. `InputService` (Input System: Touch-Joystick + Bomb/Detonator; Detonator-Button nur bei `HasDetonator`) → `InputCommand`.
+18. Game-Juice-Minimal: Hit-Pause, Screen-Shake (Impulse), Floating-Score-Text + Basis-SFX
+    (Explosion, PowerUp-Pickup, Tod, Level-Win/Fail — Platzhalter-Sounds).
 
 **D — UI**
 19. `LevelSelect` (Sektor 1, L1–L10, Sterne-Anzeige, Gating).
-20. `BattleHud` (Time/Score/Combo/Lives, NeonJoystick-Layout).
+20. `BattleHUD` (Time/Score/Combo/Lives, NeonJoystick-Layout).
 21. `Result`-Screen (Sterne, Coins, Retry/Next) + Coins-Persistenz (PlayerPrefs/JSON).
 22. Discovery-Overlay (Erst-PowerUp), Victory-Sequenz (Warden).
 
@@ -182,9 +190,15 @@ schreibt nie in den Sim-State. (CLAUDE.md Anti-Patterns.)
 
 ## 8. Acceptance-Criteria (Slice „fertig")
 
-- [ ] L1 aktiv spielbar: bewegen, Bombe legen, Block sprengen, Gegner legen, PowerUp aufnehmen, Combo auslösen.
+- [ ] L1 aktiv spielbar: bewegen, Bombe legen, Block sprengen, Gegner besiegen, PowerUp aufnehmen, Combo auslösen.
+- [ ] Alle 4 Slice-PowerUps droppen und wirken (BombUp/Fire/Speed/Detonator); Detonator-Button
+      erscheint nur bei `HasDetonator`, manuelle Zündung funktioniert.
 - [ ] L1–L10 durchspielbar; L10 = Granite Warden besiegbar (mit Enrage-Phase).
 - [ ] Sterne-Wertung + Coins werden vergeben und **persistiert** (Neustart behält Coins/Sterne).
+- [ ] **Bomb-Range-Indicator** (Boden-Kreuz, Standard an) sichtbar und korrekt.
+- [ ] Verdeckende Blöcke werden **gedithert/gefadet** (Spieler/Gegner bleiben lesbar).
+- [ ] **Grid-Lesbarkeit auf Galaxy A50 bestätigt** (Kamerawinkel-Test 55–65 Grad, sonst
+      Iso-Fallback) — konsistent mit [DESIGN.md](DESIGN.md).
 - [ ] 60 FPS High-End, 30 FPS Galaxy-A50, keine GC-Spikes im Hot-Path.
 - [ ] Determinismus-Replay-Test grün (CI).
 - [ ] 0 Compiler-Warnungen; `Domain` ohne `UnityEngine`-Referenz (CI-Gate).
@@ -196,23 +210,40 @@ schreibt nie in den Sim-State. (CLAUDE.md Anti-Patterns.)
 
 **IRngProvider + Sim-Tick-Treiber:**
 ```csharp
-// Core (Unity-frei)
-public interface IRngProvider { int NextInt(int min, int max); float NextFloat(); 
-    ulong GetState(); void SetState(ulong s); }
+// Core (Unity-frei) — xoshiro256+ hat 256 Bit Zustand (4x ulong).
+// C#9: readonly struct statt record struct (Unity = C#9/netstandard2.1).
+public readonly struct RngState
+{
+    public readonly ulong S0, S1, S2, S3;
+    public RngState(ulong s0, ulong s1, ulong s2, ulong s3) { S0 = s0; S1 = s1; S2 = s2; S3 = s3; }
+}
+public interface IRngProvider { int NextInt(int min, int max); float NextFloat();
+    RngState GetState(); void SetState(RngState s); }
 
-// Game (Treiber) — Sim-Tick im FixedUpdate, deterministisch
+// Game (Treiber) — FixedTimestepRunner ist der verbindliche 60-Hz-Sim-Treiber:
+// eigener Akkumulator in Update, Clamp max 5 Steps/Frame — NICHT Unity-FixedUpdate
+// (Time.fixedDeltaTime irrelevant). Sim-Kern rechnet Fixed-Point (ARCHITECTURE §13).
 public class GameLoopDriver : MonoBehaviour
 {
     private GameSimulation _sim; private IInputService _input; private IViewRenderer _view;
+    private FixedTimestepRunner _runner;
+    private SimSnapshot _snapshot;                  // vorallokierter Buffer (struct)
     [Inject] public void Construct(GameSimulation sim, IInputService input, IViewRenderer view)
-        { _sim = sim; _input = input; _view = view; }
+        { _sim = sim; _input = input; _view = view;
+          _runner = new FixedTimestepRunner(hz: 60, maxStepsPerFrame: 5, SimStep); }
 
-    private void FixedUpdate()
+    private void SimStep(Fixed dt)
     {
         var cmd = _input.PollCommand();             // InputCommand (MoveDir, PlaceBomb, Detonate)
-        _sim.Tick(FixedDt.Step, cmd);               // reine Domain-Logik, 1/60 s
+        _sim.Tick(dt, cmd);                         // reine Domain-Logik, 1/60 s, Fixed-Point
     }
-    private void Update() => _view.Render(_sim.Snapshot()); // read-only Interpolation
+
+    private void Update()
+    {
+        _runner.Advance(Time.deltaTime);            // Akkumulator → 0..5 Sim-Steps
+        _sim.Snapshot(ref _snapshot);               // schreibt in Buffer — kein new pro Frame
+        _view.Render(in _snapshot);                 // read-only Interpolation
+    }
 }
 ```
 
@@ -233,16 +264,19 @@ public sealed class GameSimulation
         _combo.Tick(dt);                  // 2-s-Fenster
         CheckWinLose();
     }
-    public SimSnapshot Snapshot() => /* read-only Kopie für die View */;
+    // SimSnapshot = blittables struct; schreibt in den vorallokierten Buffer des Aufrufers
+    // (kein new pro Frame — Acceptance-Criterion "keine GC-Spikes").
+    public void Snapshot(ref SimSnapshot buffer) { /* read-only Sicht für die View */ }
 }
 ```
 
 **HUD-Binder (View ↔ ViewModel):**
 ```csharp
-public class BattleHudBinder : MonoBehaviour
+public class BattleHUDBinder : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI _score, _combo, _time;
-    [Inject] private BattleHudViewModel _vm;
+    private BattleHUDViewModel _vm;
+    [Inject] public void Construct(BattleHUDViewModel vm) => _vm = vm;
     private void Start() {
         _vm.Score.Subscribe(v => _score.text = v.ToString("N0")).AddTo(this);
         _vm.Combo.Subscribe(c => _combo.text = c > 1 ? $"x{c}" : "").AddTo(this);

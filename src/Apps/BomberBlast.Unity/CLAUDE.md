@@ -9,13 +9,13 @@ KEIN AFK/Auto-Battle, kein Offline-Income** — Fortschritt nur durch aktives Sp
 
 | Aspekt | Wert |
 |--------|------|
-| Status | Konzept/Pre-MVP — noch **kein Unity-Projekt angelegt**, alle Angaben sind Soll-Vorgaben |
+| Status | Phase 0 (Scaffolding) — Projekt-Skelett unter `Unity/` angelegt (6000.4.8f1), Editor-Open/CI ausstehend |
 | Engine | Unity 6 (6000.x LTS) + URP 17.x |
 | Sprache | C# (.NET Standard 2.1), Nullable enable |
-| DI | VContainer 1.16+ · Async: UniTask 2.5+ · Reactive: R3 |
+| DI | VContainer 1.16+ · Async: UniTask 2.5+ · Reactive: R3 (R3-Kern via NuGetForUnity) |
 | Backend | Firebase (Auth/RTDB/Storage/Remote Config) — Cloud-Save + **asynchrone** Grid-Rankings (kein Echtzeit-MP) |
-| 3D-Asset-Pipeline | ComfyUI + TRELLIS/SPAR3D + Cloud-Fallback ([ASSETS_AI.md](ASSETS_AI.md)) |
-| Plattformen | Android (primär, API 24+) · Desktop (Test) · iOS/Steam optional/später |
+| 3D-Asset-Pipeline | Hunyuan3D-2.1 (Standalone-Runner, isolierte ComfyUI-Instanz) + Cloud-Fallback ([ASSETS_AI.md](ASSETS_AI.md)) |
+| Plattformen | Android (primär, API 24+) · Desktop (Test) — **kein iOS/Steam** |
 | Performance | 60 FPS High-End, 30 FPS Low-End (Hardware-Tier-System aus dem Original) |
 
 > Pflichtlektüre vor jeder Code-Änderung. Diese Datei enthält **nur Unity-Spezifisches**;
@@ -25,11 +25,11 @@ KEIN AFK/Auto-Battle, kein Offline-Income** — Fortschritt nur durch aktives Sp
 > Tech-Stack/Asmdefs → [ARCHITECTURE.md](ARCHITECTURE.md), Content-Reuse-Map (was wird aus
 > dem Original übernommen/modernisiert) → [PARITY.md](PARITY.md).
 
-> **Versions-Pinning (Pflicht beim Setup):** Beim Projekt-Anlegen die exakte Unity-6-LTS-
-> Patch-Version aus dem Unity Hub übernehmen und in `manifest.json` jede Paket-Version auf
-> eine konkrete Patch-Version festnageln (keine `x`-Platzhalter, keine ungewollten Pre-Releases).
-> Die Build-Befehle unten verwenden einen Platzhalter-Pfad — die real installierte Editor-Version
-> einsetzen.
+> **Versions-Pinning (Pflicht):** Editor-Version ist **6000.4.8f1**
+> (`Unity/ProjectSettings/ProjectVersion.txt`); in `manifest.json` ist jede Paket-Version auf
+> eine konkrete Patch-Version gepinnt (keine `x`-Platzhalter, keine ungewollten Pre-Releases) —
+> Paket-Liste → [SETUP.md §2](SETUP.md). Die Build-Befehle in §7 verwenden diese Version —
+> die real installierte Editor-Version prüfen.
 
 ---
 
@@ -38,13 +38,13 @@ KEIN AFK/Auto-Battle, kein Offline-Income** — Fortschritt nur durch aktives Sp
 ### Schichten-Modell (Asmdefs)
 
 ```
-Bootstrap → UI → Game → Domain → Core
-                ↓
-                LiveOps
+            ┌─→ UI ──────┐
+Bootstrap ──┤            ├─→ Game ─→ Domain ─→ Core
+            └─→ LiveOps ─┘
 ```
 
-- **Core** referenziert nichts · **Domain** nur Core · **Game** Core + Domain ·
-  **UI/LiveOps** Core + Domain + Game · **Bootstrap** alles.
+- Pfeil = „referenziert". **Core** referenziert nichts · **Domain** nur Core ·
+  **Game** Core + Domain · **UI/LiveOps** Core + Domain + Game · **Bootstrap** alles.
 - **`BomberBlast.Domain` darf KEINE Unity-API verwenden** (testbar, Compile-Constraint + CI-Gate).
 - Test-Asmdefs: `defineConstraints: ["UNITY_INCLUDE_TESTS"]`.
 - Zirkuläre Asmdef-Referenzen verboten (CI-Gate fängt das ab).
@@ -106,7 +106,8 @@ public class BattleHUDViewModel               // Unity-frei, testbar
 public class BattleHUDBinder : MonoBehaviour  // Adapter zur Unity-UI
 {
     [SerializeField] private TextMeshProUGUI _comboLabel;
-    [Inject] private BattleHUDViewModel _vm;
+    private BattleHUDViewModel _vm;
+    [Inject] public void Construct(BattleHUDViewModel vm) => _vm = vm;
     private void Start() =>
         _vm.ComboCount.Subscribe(c => _comboLabel.text = $"x{c}").AddTo(this);
 }
@@ -146,16 +147,15 @@ Match-Cloud-Functions).
 
 ## 4. UI/UX (UI Toolkit + UGUI Hybrid)
 
-- **UI Toolkit (UXML/USS):** statische UIs — Hub, Settings, Inventory, Shop, Clan-Liste, Chat.
-  Binder holt `_uiDoc.rootVisualElement.Q<T>("name")` und verdrahtet gegen das VM. (Statische UIs u.a.:
-  Hub, Settings, Shop, Inventory, Grid-Rankings.)
+- **UI Toolkit (UXML/USS):** statische UIs — Hub, Settings, Shop, Inventory, Grid-Rankings.
+  Binder holt `_uiDoc.rootVisualElement.Q<T>("name")` und verdrahtet gegen das VM.
 - **UGUI:** animations-lastige UIs — Battle-HUD, Combat-FX-Overlay, Tutorial, Cinematics
   (DOTween-Tweens).
 - **Modal-System:** zentraler `ModalService.ShowAsync<TViewModel>(args)` — Modal-Stack (max 3
   tief), Back-Button schließt oberstes Modal, 200 ms Slide-In + Fade-Background.
 - **Lokalisierung:** alle UI-Texte als `@key.path` (Unity-Localization-Keys), nie hardcoded.
-  6 Sprachen wie im Rest des Portfolios. Plurale via ICU-Format
-  (`{count, plural, one {1 Münze} other {{count} Münzen}}`).
+  6 Sprachen wie im Rest des Portfolios. Plurale via Unity-Localization **Smart Strings**
+  (`{0:plural:1 Münze|{} Münzen}`).
 
 ---
 
@@ -182,10 +182,21 @@ Frame-Debugger, Memory-Profiler.
 
 ## 6. Tests & Code-Style (Unity-spezifisch)
 
-Naming, modernes C#, Async-Konventionen, Records/Pattern-Matching → Root-CLAUDE.md. **Unity-Eigenes:**
+Naming und Async-Konventionen → Root-CLAUDE.md. **Sprachfeatures sind von dieser Delegation
+ausdrücklich ausgenommen** — Unity 6 ist **C# 9 / netstandard 2.1** (im Workspace validiert,
+Memory `unity-domain-port`), nicht das C# 14 des Avalonia-Portfolios:
 
-- **Mock-Framework: NSubstitute** (besser als Moq für Unity-AOT).
-- **Test-Layout:** `Assets/_Project/Scripts/Tests/{Domain,Game,...}/`, Klasse `{Subject}Tests`,
+- **KEINE** Primary Constructors, **KEINE** file-scoped Namespaces, **KEINE** Collection
+  Expressions (`[...]`).
+- **Kein** `Random.Shared`, kein `Enum.GetValues<T>()`, kein `HashCode.Combine`.
+- Records nur mit `IsExternalInit`-Shim; kein `record struct`.
+- **Newtonsoft.Json** statt `System.Text.Json`.
+
+**Unity-Eigenes:**
+
+- **Mock-Framework: NSubstitute** (läuft im EditMode/Mono — Wahl wegen API-Qualität, nicht AOT).
+- **Test-Layout:** `Assets/_Project/Tests/{Domain,...}/` mit eigenem Asmdef je Bereich (real:
+  `Tests/Domain/BomberBlast.Domain.Tests.asmdef`), Klasse `{Subject}Tests`,
   Methode `{Method}_{Scenario}_{Expected}`.
 - **Coverage-Ziele:** Domain ≥ 90 %, Core ≥ 80 %, Game ≥ 60 %, UI Best-Effort.
 - **Pflicht-Tests** bei Domain-Logik, Service-Logik (Liga/BP-XP/Achievements), Algorithmen
@@ -200,11 +211,12 @@ Naming, modernes C#, Async-Konventionen, Records/Pattern-Matching → Root-CLAUD
 
 ## 7. Build & Werkzeuge
 
-Editor-Pfad ist Platzhalter — real installierte Unity-6-Version einsetzen. Projektpfad:
+Editor-Version ist auf **6000.4.8f1** gepinnt — die real installierte Version prüfen
+(`Get-ChildItem "C:\Program Files\Unity\Hub\Editor"`). Projektpfad:
 `F:\Meine_Apps_Ava\src\Apps\BomberBlast.Unity\Unity`.
 
 ```powershell
-$unity = "C:\Program Files\Unity\Hub\Editor\<VERSION>\Editor\Unity.exe"
+$unity = "C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Unity.exe"
 $proj  = "F:\Meine_Apps_Ava\src\Apps\BomberBlast.Unity\Unity"
 
 # Editor öffnen
@@ -230,9 +242,13 @@ $proj  = "F:\Meine_Apps_Ava\src\Apps\BomberBlast.Unity\Unity"
 
 ### Git-LFS & .gitignore
 
-LFS-pflichtig: `*.psd/.ai/.png/.jpg/.tga` (Art), `*.fbx/.obj/.gltf/.glb` (3D), `*.wav/.mp3/.ogg`
-(Audio), `*.mp4/.webm` (Video), `*.unity` (Scenes), `*.asset` > 1 MB. Unity-`.gitignore`:
-`Library/ Temp/ obj/ Build/ Builds/ Logs/ UserSettings/ *.csproj *.sln *.user .vs/ .vscode/ .idea/`.
+Maßgeblich sind die realen Dateien unter `src/Apps/BomberBlast.Unity/`:
+[`.gitattributes`](.gitattributes) (LFS) und [`.gitignore`](.gitignore). LFS ist
+**pattern-basiert** (keine Größenregel): `*.psd/.ai/.png/.jpg/.tga` (Art),
+`*.fbx/.obj/.gltf/.glb` (3D), `*.wav/.mp3/.ogg` (Audio), `*.mp4/.webm` (Video), `*.xlsx`
+(Balancing-Workbook). **`*.unity` bewusst NICHT in LFS** — Szenen sind bei
+Force-Text-Serialisierung YAML-Text (diffbar, UnityYAMLMerge-fähig); `*.meta` bleibt Text.
+Details + Root-`.gitignore`-Negationen → [SETUP.md §5](SETUP.md).
 
 ---
 
@@ -242,8 +258,8 @@ LFS-pflichtig: `*.psd/.ai/.png/.jpg/.tga` (Art), `*.fbx/.obj/.gltf/.glb` (3D), `
 (NUnit/Unity Test Framework), `refactor`, `migrator` (Unity-Upgrades), `performance`,
 `security` (Single-Player-Anti-Cheat-Timer, Firebase-Rules), `documenter`.
 
-**Nicht passend** (Avalonia-spezifisch): `mvvm-auditor`, `skiasharp`, `ui`/`xaml-ui`, `localize`
-(RESX-basiert), `deploy` (AAB-Pipeline für .NET-Android), `bingxbot`.
+**Nicht passend** (Avalonia-spezifisch): `mvvm-auditor`, `skiasharp`, `ui` (AXAML-basiert),
+`localize` (RESX-basiert), `deploy` (AAB-Pipeline für .NET-Android), `bingxbot`.
 
 Beim Lesen von Code proaktiv auf Verletzungen achten und sofort korrigieren oder melden:
 Schichten-Verstöße, Service-Locator statt DI, `UnityEngine.Random` in Gameplay, hardcoded
@@ -256,8 +272,10 @@ Texte/Werte statt Localization-Keys/ScriptableObject.
 **Repo-intern:** [PLAN.md](PLAN.md) (Vision/KPIs/Roadmap) · [DESIGN.md](DESIGN.md)
 (Game-Design) · [PARITY.md](PARITY.md) (Original-System → Unity-Äquivalent, Reuse/Modernisierung) ·
 [ARCHITECTURE.md](ARCHITECTURE.md) (Tech-Stack/Asmdefs/Determinismus/Anti-Cheat) ·
-[ROADMAP.md](ROADMAP.md) · [ASSETS_AI.md](ASSETS_AI.md) (KI-Asset-Pipeline). `SETUP.md` und
-`Server/SERVEROPS.md` folgen nach Projekt-Anlage.
+[SETUP.md](SETUP.md) (Phase-0-Scaffolding, Single Source für Pakete) ·
+[VERTICAL_SLICE.md](VERTICAL_SLICE.md) (Phase 1: Sektor 1 + Granite Warden) ·
+[ROADMAP.md](ROADMAP.md) · [ASSETS_AI.md](ASSETS_AI.md) (KI-Asset-Pipeline).
+`Server/SERVEROPS.md` folgt.
 
 **Repo-übergreifend:** [Haupt-CLAUDE.md](../../../CLAUDE.md) (Conventions, Umlaute, MVVM,
 Build) · [../ArcaneKingdom/CLAUDE.md](../ArcaneKingdom/CLAUDE.md) (Schwester-Unity-Projekt,

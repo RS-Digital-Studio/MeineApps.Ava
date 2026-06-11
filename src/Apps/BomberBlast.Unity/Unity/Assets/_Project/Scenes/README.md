@@ -1,6 +1,6 @@
 # Scenes
 
-Dieser Ordner haelt die Unity-Szenen von BomberBlast.Unity.
+Dieser Ordner hält die Unity-Szenen von BomberBlast.Unity.
 
 ## Boot-Scene beim ersten Editor-Open anlegen
 
@@ -13,5 +13,5 @@ mit falschen GUIDs bricht Referenzen). Stattdessen beim ersten Öffnen des Proje
    (`BomberBlast.Bootstrap`) daran hängen.
 4. `Boot.unity` in `File -> Build Settings` als erste Szene (Index 0) eintragen.
 
-Weitere Szenen (MainMenu, Game, Pvp, Coop, Cinematic, Tutorial) folgen gemäß
+Weitere Szenen (MainMenu, Game, Cinematic, Tutorial) folgen gemäß
 [ARCHITECTURE.md](../../../ARCHITECTURE.md) Kapitel 5 (Scene-Architektur).

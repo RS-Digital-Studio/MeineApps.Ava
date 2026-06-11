@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "_note": "Vertical-Slice-Seed: Sektor 1 (Foundry) L1-L10 inkl. Granite Warden. Datei behaelt den Namen 'worlds.*.json' (Code-Identifier); inhaltlich = Sektoren. Werte = Vorschlag, tunebar.",
+  "_note": "Vertical-Slice-Seed: Sektor 1 (Foundry) L1-L10 inkl. Granite Warden. Datei behält den Namen 'worlds.*.json' (Code-Identifier); inhaltlich = Sektoren. Werte = Vorschlag, tunebar.",
   "sectorId": 1,
   "name": "Foundry",
   "theme": "Industrie/Stahl, Funken",

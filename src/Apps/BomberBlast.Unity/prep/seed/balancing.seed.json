@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "_note": "Single-Player. Erst-Werte aus DESIGN.md/PARITY.md (Original-Code). 'proposal' = gegen Code/Spielgefuehl tunen. Quelle: BalancingConfig.xlsx.",
+  "_note": "Single-Player. Erst-Werte aus DESIGN.md/PARITY.md (Original-Code). 'proposal' = gegen Code/Spielgefühl tunen. Quelle: BalancingConfig.xlsx.",
   "combo": [
     { "tier": 2,  "bonus": 200 },
     { "tier": 3,  "bonus": 500 },

@@ -23,8 +23,8 @@
 7. [Cloud-Save](#7-cloud-save)
 8. [Multiplayer/Netcode — nicht Teil von v0.5](#8-multiplayer--netcode--nicht-teil-von-v05)
 9. [(entfällt — siehe §8)](#9-entfällt--multiplayer-siehe-8)
-10. [Anti-Cheat-Pipeline](#10-anti-cheat-pipeline)
-11. [Cloud Functions (TypeScript)](#11-cloud-functions-typescript)
+10. [Anti-Cheat (Single-Player)](#10-anti-cheat-single-player)
+11. [Cloud Functions (minimal, TypeScript)](#11-cloud-functions-minimal-typescript)
 12. [Firebase-Security-Rules](#12-firebase-security-rules)
 13. [Determinismus-First-Design](#13-determinismus-first-design)
 14. [Performance-Targets + Hardware-Profile](#14-performance-targets--hardware-profile)
@@ -58,7 +58,7 @@
 |---------|------|---------|------------|
 | **DI** | **VContainer** | 1.16.9+ | AOT-kompatibel, schnell, identisch ArcaneKingdom |
 | **Async** | **UniTask** | 2.5.10+ | Allokationsarm, frame-deterministisch |
-| **Reactive** | **R3** (preferred) oder **UniRx** | R3 1.x oder UniRx 7.1+ | R3 ist Nachfolger, kompatibel mit UniTask |
+| **Reactive** | **R3** | 1.3.0 | UniRx-Nachfolger, kompatibel mit UniTask. Zweiteilig: R3-Kern-DLL via NuGetForUnity, `com.cysharp.r3` (R3.Unity-Integration) via OpenUPM |
 
 ### 1.3 Input & UI
 
@@ -71,9 +71,14 @@
 | **Animation** | **DOTween** | Pro v1.2.7+ | Tweens für UI + Camera + Custom-Animations |
 | **Cinemachine** | **Cinemachine** | 3.x | Procedural Camera, Damping, CinemachineConfiner2D/3D, CinemachineImpulseSource/-Listener |
 | **Timeline** | **Unity Timeline** | 1.8+ | Sektor-Cutscenes, Cinematic-Sequenzen |
-| **VFX** | **VFX Graph** | 17.0+ | GPU-Compute-Shader-Particles |
-| **Particle System** | **Built-in** | Unity 6 | Backup für simple Effekte (Trail, Pickup) |
+| **VFX** | **VFX Graph** | 17.0+ | GPU-Compute-Shader-Particles — **nur Vulkan + Mid+-Tier** (braucht Compute) |
+| **Particle System** | **Built-in** | Unity 6 | Simple Effekte (Trail, Pickup) **und** Pflicht-Fallback pro VFX-Kategorie für Low-Tier/GLES (Tier-Gate via `IHardwareProfileService`) |
 | **Shader Graph** | **URP-Built-in** | – | Custom Shaders (Glow, Dissolve, Hologramm, Outline, Liquid) |
+
+> **Graphics-API-Strategie:** Vulkan primär, GLES 3.1 als Fallback (Player-Settings-Reihenfolge
+> Vulkan → GLES 3.1). VFX-Graph-Effekte laufen nur unter Vulkan ab Mid-Tier; auf Low-Tier/GLES
+> wählt das Tier-Gate (`IHardwareProfileService`) automatisch die Built-in-Particle-Variante
+> der jeweiligen VFX-Kategorie.
 
 ### 1.4 Backend (asynchron, kein Echtzeit-MP)
 
@@ -86,9 +91,9 @@
 | **Notifications** | Firebase Cloud Messaging | Push + Local (Daily-/Event-Reminder) |
 | **Remote Config** | Firebase Remote Config | Live-Tuning, Event-Toggles |
 | **Cloud Storage** | Firebase Storage | optional: Addressables-CDN |
+| **Analytics/Crash** | Firebase Analytics + Crashlytics | **Launch-Bestandteil** (opt-in, DSGVO-konform — §21) |
 
 > **Entfernt (alte Logik):** Photon Fusion/Realtime/Chat/Voice, Real-time PvP/Co-op, Match-Cloud-Functions.
-> Analytics/Crashlytics optional/später — kein Launch-Blocker.
 
 ### 1.5 Persistenz
 
@@ -103,11 +108,19 @@
 
 | Bereich | Wahl | Version |
 |---------|------|---------|
-| **IAP** | **Unity IAP** | 4.13+ |
-| **Google Play Billing** | (via Unity IAP) | v6 |
+| **IAP** | **Unity IAP** | **5.x** |
+| **Google Play Billing** | (via Unity IAP 5.x) | Billing Library 7/8 |
 | **Ads** | **Google AdMob** | v9+ |
 | **Ads-Mediation** | **Unity LevelPlay** | (Backup) |
-| **Subscription** | Unity IAP + Server-Worker | Anti-Refund-Validation |
+| **Subscription** | Unity IAP + `validateIap`-Cloud-Function | Anti-Refund-Validation |
+
+> **Unity IAP 5.x ist Pflicht:** Unity IAP 4.13 (Billing Library v6) ist seit 31.08.2025 nicht mehr
+> bei Google Play einreichbar. Vor dem Launch die dann gültige Play-Mindestversion der Billing
+> Library prüfen.
+>
+> **Ad-Formate (wie Original):** **Keine Interstitials.** Nur Rewarded Ads. Remove-Ads (1,99 EUR)
+> wirkt wie im Original: Rewarded-Belohnungen ohne Video-Zwang (`IsPremium`-Bypass) + exklusive
+> Premium-Skins.
 
 ### 1.7 Tooling
 
@@ -116,52 +129,57 @@
 | **CI/CD** | GitHub Actions + game-ci/unity-builder (Linux) |
 | **Build-Cache** | GitHub-Cache für Library/ |
 | **Asset-CDN** | Firebase Storage (Addressables Remote Catalog) |
-| **Voice-Synthesis** | **ElevenLabs Enterprise** + Backup-Plan Mensch-Sprecher für Schlüssel-Lines |
+| **Voice-Synthesis** | **ElevenLabs** (Standard-Abo) — **deferred**, siehe §17.5 |
 | **Audio-Engine** (Optional) | **FMOD Studio** für adaptive Music (Lizenz 5k/Jahr Indie) |
-| **3D-Tools** | **Blender 4.x** (Standard), Maya/3ds Max (optional für komplexe Skins) |
-| **Texturen** | **Substance Painter** + Photoshop |
+| **3D-Assets** | **KI-Pipeline primär** (ComfyUI + TRELLIS/Hunyuan3D → [ASSETS_AI.md](ASSETS_AI.md)); **Blender 4.x** nur für Nachbearbeitung |
+| **Texturen** | KI-Pipeline primär; punktuelle Nachbearbeitung (Photoshop) |
 | **Mockups** | **Figma** (UI), **Penpot** (Open-Source-Alternative) |
-| **PM** | **Linear** oder **GitHub Projects** |
-| **Communication** | **Slack** + **Discord** (Community-Channel) |
+| **PM** | **GitHub Projects** (Solo-Entwicklung, ROADMAP) |
+| **Communication** | **Discord** (Community-Channel) |
 | **Code-Review** | GitHub PRs + ggf. Claude-Code-Review-Agent |
 
 ### 1.8 Dependencies via Unity Package Manager
 
-`Packages/manifest.json`:
+`Unity/Packages/manifest.json` — **real gepinnter Stand** (Unity-Module `com.unity.modules.*`
+der Übersicht halber ausgelassen):
 
 ```json
 {
   "dependencies": {
+    "com.cysharp.r3": "1.3.0",
     "com.cysharp.unitask": "2.5.10",
-    "com.cysharp.r3": "1.x",
     "com.unity.addressables": "2.9.1",
-    "com.unity.cinemachine": "3.x",
-    "com.unity.collab-proxy": "2.12.4",
+    "com.unity.cinemachine": "3.1.4",
     "com.unity.ide.rider": "3.0.40",
     "com.unity.ide.visualstudio": "2.0.23",
     "com.unity.inputsystem": "1.19.0",
     "com.unity.localization": "1.5.11",
+    "com.unity.mathematics": "1.3.2",
     "com.unity.mobile.notifications": "2.4.3",
     "com.unity.nuget.newtonsoft-json": "3.2.2",
     "com.unity.render-pipelines.universal": "17.0.4",
     "com.unity.test-framework": "1.5.1",
     "com.unity.timeline": "1.8.12",
     "com.unity.ugui": "2.0.0",
-    "com.unity.visualeffectgraph": "17.0.x",
-    "com.unity.purchasing": "4.13.x",
-    "com.unity.modules.androidjni": "1.0.0",
-    "com.unity.modules.audio": "1.0.0",
     "jp.hadashikick.vcontainer": "1.16.9"
   },
   "scopedRegistries": [
     {
       "name": "package.openupm.com",
       "url": "https://package.openupm.com",
-      "scopes": ["com.cysharp.unitask", "com.cysharp.r3", "jp.hadashikick.vcontainer"]
+      "scopes": ["com.cysharp", "jp.hadashikick.vcontainer"]
     }
   ]
 }
 ```
+
+> **R3 ist zweiteilig:** `com.cysharp.r3` (oben, via OpenUPM) ist nur die **R3.Unity-Integration**.
+> Die **R3-Kern-DLL** kommt via **NuGetForUnity** (`R3`-NuGet-Paket) — beim Setup zuerst
+> NuGetForUnity installieren, dann R3-NuGet, dann das OpenUPM-Paket.
+
+**Noch nicht installiert (folgen bei Bedarf):**
+- `com.unity.visualeffectgraph` (VFX Graph, §1.3)
+- `com.unity.purchasing` (Unity IAP **5.x**, §1.6)
 
 **Manuelle Installation (Asset Store / DLL):**
 - DOTween Pro
@@ -179,27 +197,20 @@ src/Apps/BomberBlast.Unity/
 ├── ARCHITECTURE.md
 ├── ROADMAP.md
 ├── CLAUDE.md
-├── SETUP.md                   (folgt nach Projekt-Anlage)
+├── SETUP.md                   (Projekt-Setup, vorhanden)
 ├── Server/
 │   ├── SERVEROPS.md
-│   ├── CloudFunctions/        (TypeScript)
+│   ├── CloudFunctions/        (TypeScript — kanonisches Inventar, siehe §11)
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   ├── src/
 │   │   │   ├── index.ts
-│   │   │   ├── matchValidation.ts
-│   │   │   ├── seasonRewards.ts
-│   │   │   ├── leagueRank.ts
-│   │   │   ├── reportPlayer.ts
 │   │   │   ├── accountDelete.ts
-│   │   │   ├── dataExport.ts
-│   │   │   ├── purchaseValidate.ts
-│   │   │   ├── notificationSend.ts
-│   │   │   └── migrateOldBomberBlast.ts
-│   │   └── tests/
-│   ├── DomainReplay/          (C# .NET 10 Worker für Replay-Re-Sim)
-│   │   ├── BomberBlast.ReplayWorker.csproj
-│   │   ├── Program.cs
+│   │   │   ├── seasonReset.ts
+│   │   │   ├── validateIap.ts
+│   │   │   ├── importLegacySave.ts
+│   │   │   ├── migrateSchema.ts
+│   │   │   └── dataExport.ts
 │   │   └── tests/
 │   └── firebase.rules.json
 └── Unity/
@@ -251,27 +262,30 @@ Assets/_Project/Scripts/
 │   │   └── ReplayEntry.cs
 │   └── Extensions/
 │
-├── Domain/                  (BomberBlast.Domain — keine Unity-API)
+├── Domain/                  (BomberBlast.Domain — keine Unity-API; alle *Definition.cs sind
+│   │                         Unity-freie POCO-Datenklassen, Farben als uint-RGBA-Hex — die
+│   │                         ScriptableObject-Wrapper mit Color-/Prefab-Referenzen leben in
+│   │                         Game/Data/, siehe §6.1)
 │   ├── Grid/
 │   │   ├── GameGrid.cs
 │   │   ├── CellType.cs
 │   │   └── GridUtils.cs
 │   ├── Bombs/
-│   │   ├── BombDefinition.cs (ScriptableObject)
+│   │   ├── BombDefinition.cs (POCO)
 │   │   ├── BombInstance.cs (runtime)
 │   │   ├── CardCatalog.cs   (13 Karten + Standard = 14 BombTypes)
 │   │   ├── BombEffects/   (pro BombType: Frost/Lava/Sticky/Smoke/Lightning/Gravity/Poison/TimeWarp/Mirror/Vortex/Phantom/Nova/BlackHole)
 │   │   └── BombFactory.cs
 │   ├── PowerUps/
-│   │   ├── PowerUpDefinition.cs (ScriptableObject)
+│   │   ├── PowerUpDefinition.cs (POCO)
 │   │   ├── PowerUpEffects/  (12 PowerUps + Cure)
 │   │   └── PowerUpFactory.cs
 │   ├── Heroes/
-│   │   ├── HeroDefinition.cs (ScriptableObject — 5 Helden)
+│   │   ├── HeroDefinition.cs (POCO — 5 Helden)
 │   │   ├── HeroTrait.cs      (None/DoubleDetonation/LuckyDrops/DemolitionExpert/QuickPocket)
 │   │   └── HeroState.cs
 │   ├── Enemies/
-│   │   ├── EnemyDefinition.cs (ScriptableObject)
+│   │   ├── EnemyDefinition.cs (POCO)
 │   │   ├── EnemyType.cs
 │   │   ├── EnemyStats.cs
 │   │   └── AI/
@@ -280,11 +294,11 @@ Assets/_Project/Scripts/
 │   │       ├── DangerZone.cs
 │   │       └── EnemyAI.cs
 │   ├── Bosses/
-│   │   ├── BossDefinition.cs (ScriptableObject)
+│   │   ├── BossDefinition.cs (POCO)
 │   │   ├── BossPhase.cs
 │   │   └── BossModifier.cs
 │   ├── Worlds/
-│   │   ├── WorldDefinition.cs (ScriptableObject)
+│   │   ├── WorldDefinition.cs (POCO)
 │   │   ├── LevelDefinition.cs
 │   │   └── LevelLayoutGenerator.cs (port aus alt)
 │   ├── Modes/
@@ -329,21 +343,28 @@ Assets/_Project/Scripts/
 │   │   ├── BattlePassRewardDefinition.cs
 │   │   └── XpToTier.cs
 │   ├── Achievements/
-│   │   ├── AchievementDefinition.cs (ScriptableObject)
+│   │   ├── AchievementDefinition.cs (POCO)
 │   │   ├── Achievement.cs
 │   │   └── AchievementTrigger.cs
 │   ├── Cards/
 │   │   ├── OwnedCard.cs              (CardId + Level + Count)
 │   │   ├── Deck.cs                   (4 Basis-Slots + 1 freischaltbar)
-│   │   └── CardCrafter.cs            (Coin-Sink: 5+2000C->Rare, 5+8000C->Epic, 5+25000C->Legendary)
-│   └── Chat/
-│       ├── ProfanityFilter.cs (port aus alt)
-│       └── ChatMessage.cs
+│   │   └── CardCrafter.cs            (Coin-Sink: 5+1.000C->Rare, 5+4.000C->Epic, 5+12.500C->Legendary)
+│   └── Moderation/
+│       └── ProfanityFilter.cs (port aus alt — filtert Leaderboard-Anzeigenamen)
 │
 ├── Game/                    (BomberBlast.Game — mit Unity-API)
 │   ├── Bootstrap/
 │   │   ├── GameLifetimeScope.cs
 │   │   └── GameController.cs
+│   ├── Data/                (ScriptableObject-Wrapper um Domain-POCOs — Color/Prefab-Referenzen, §6.1)
+│   │   ├── HeroDatabase.cs
+│   │   ├── BombDatabase.cs
+│   │   ├── PowerUpDatabase.cs
+│   │   ├── EnemyDatabase.cs
+│   │   ├── BossDatabase.cs
+│   │   ├── WorldDatabase.cs
+│   │   └── AchievementDatabase.cs
 │   ├── Grid/
 │   │   ├── GridView.cs (MonoBehaviour, renders Grid)
 │   │   └── BlockPrefab.cs
@@ -511,8 +532,8 @@ Test-Assemblies:
 RootLifetimeScope (Boot-Scene, DontDestroyOnLoad)
 │
 ├─ Core
-│  ├─ ILogger → UnityLogger (Singleton)
-│  ├─ ILoggerFactory → ZLoggerFactory mit File-Sink (Singleton)
+│  ├─ ILoggerFactory → LoggerFactory mit Sinks UnityLogger/FileLogger/FirebaseAnalyticsLogger (Singleton)
+│  ├─ ILogger<T> → Logger<T> (Open-Generic-Registrierung, Singleton — löst über ILoggerFactory auf, §21.1)
 │  ├─ IRngProvider → DeterministicRngProvider (Singleton)
 │  ├─ IGameClock → UnityGameClock (Singleton)
 │  ├─ FixedTimestepRunner (Singleton)
@@ -580,71 +601,83 @@ GameLifetimeScope (Game-Scene)
 
 ```
 
-### 4.3 RootLifetimeScope.cs (vollständig)
+### 4.3 RootLifetimeScope.cs (Auszug — vollständige Registrierung siehe §4.1)
 
 ```csharp
-namespace BomberBlast.Bootstrap;
-
+// Block-Namespace: Unity 6 = C#9/netstandard2.1, file-scoped Namespaces (C#10) sind
+// nicht verfügbar (im Workspace validiert, siehe §23.2).
 using VContainer;
 using VContainer.Unity;
 using BomberBlast.Core;
 using BomberBlast.Domain;
 using BomberBlast.Services;
 
-public class RootLifetimeScope : LifetimeScope
+namespace BomberBlast.Bootstrap
 {
-    [SerializeField] private HeroDatabase _heroDatabase;
-    [SerializeField] private BombDatabase _bombDatabase;
-    [SerializeField] private WorldDatabase _worldDatabase;
-    [SerializeField] private BalancingConfig _balancingConfig;
-    // ... weitere ScriptableObjects
-
-    protected override void Configure(IContainerBuilder builder)
+    public class RootLifetimeScope : LifetimeScope
     {
-        // ── Core ──
-        builder.Register<ILogger, UnityLogger>(Lifetime.Singleton);
-        builder.Register<IRngProvider, DeterministicRngProvider>(Lifetime.Singleton);
-        builder.Register<IGameClock, UnityGameClock>(Lifetime.Singleton);
-        builder.Register<FixedTimestepRunner>(Lifetime.Singleton);
+        [SerializeField] private HeroDatabase _heroDatabase;
+        [SerializeField] private BombDatabase _bombDatabase;
+        [SerializeField] private WorldDatabase _worldDatabase;
+        [SerializeField] private BalancingConfig _balancingConfig;
+        // ... weitere ScriptableObjects
 
-        // ── Services ──
-        builder.Register<IAuthService, FirebaseAuthService>(Lifetime.Singleton);
-        builder.Register<ISaveService, FirebaseSaveService>(Lifetime.Singleton);
-        builder.Register<IAudioService, UnityAudioService>(Lifetime.Singleton);
-        builder.Register<ISceneLoaderService, AdditiveSceneLoaderService>(Lifetime.Singleton);
-        builder.Register<ILocalizationService, UnityLocalizationService>(Lifetime.Singleton);
-        builder.Register<IAnalyticsService, FirebaseAnalyticsService>(Lifetime.Singleton);
-        builder.Register<IRemoteConfigService, FirebaseRemoteConfigService>(Lifetime.Singleton);
-        builder.Register<INotificationService, MobileNotificationService>(Lifetime.Singleton);
-        builder.Register<IIapService, UnityIapService>(Lifetime.Singleton);
+        protected override void Configure(IContainerBuilder builder)
+        {
+            // ── Core ──
+            // Logging: Factory + Open-Generic, damit ILogger<T> per Constructor Injection
+            // auflösbar ist. Core-ILogger ist die Abstraktion (§2.1); UnityLogger/FileLogger/
+            // FirebaseAnalyticsLogger sind Sinks, die die LoggerFactory kombiniert (§21.1).
+            builder.Register<ILoggerFactory, LoggerFactory>(Lifetime.Singleton);
+            builder.Register(typeof(ILogger<>), typeof(Logger<>), Lifetime.Singleton);
+            builder.Register<IRngProvider, DeterministicRngProvider>(Lifetime.Singleton);
+            builder.Register<IGameClock, UnityGameClock>(Lifetime.Singleton);
+            builder.Register<FixedTimestepRunner>(Lifetime.Singleton);
+            builder.Register<ReplayCapture>(Lifetime.Scoped);   // pro Match (§4.1)
 
-        // ── Domain-Services ──
-        builder.Register<IHeroService, HeroService>(Lifetime.Singleton);
-        builder.Register<ICardService, CardService>(Lifetime.Singleton);
-        builder.Register<IDeckService, DeckService>(Lifetime.Singleton);
+            // ── Services ──
+            builder.Register<IAuthService, FirebaseAuthService>(Lifetime.Singleton);
+            builder.Register<ISaveService, FirebaseSaveService>(Lifetime.Singleton);
+            builder.Register<IAudioService, UnityAudioService>(Lifetime.Singleton);
+            builder.Register<ISceneLoaderService, AdditiveSceneLoaderService>(Lifetime.Singleton);
+            builder.Register<ILocalizationService, UnityLocalizationService>(Lifetime.Singleton);
+            builder.Register<IAnalyticsService, FirebaseAnalyticsService>(Lifetime.Singleton);
+            builder.Register<IRemoteConfigService, FirebaseRemoteConfigService>(Lifetime.Singleton);
+            builder.Register<INotificationService, MobileNotificationService>(Lifetime.Singleton);
+            builder.Register<IIapService, UnityIapService>(Lifetime.Singleton);
 
-        // ── Meta-Services ──
-        builder.Register<IProgressService, ProgressService>(Lifetime.Singleton);
-        builder.Register<IEconomyService, EconomyService>(Lifetime.Singleton);
-        builder.Register<IShopService, ShopService>(Lifetime.Singleton);
-        builder.Register<IBattlePassService, BattlePassService>(Lifetime.Singleton);
-        builder.Register<IQuestService, QuestService>(Lifetime.Singleton);
-        builder.Register<IAchievementService, AchievementService>(Lifetime.Singleton);
-        builder.Register<ICosmeticService, CosmeticService>(Lifetime.Singleton);
-        builder.Register<IRetentionService, RetentionService>(Lifetime.Singleton);
+            // ── Domain-Services ──
+            builder.Register<IHeroService, HeroService>(Lifetime.Singleton);
+            builder.Register<ICardService, CardService>(Lifetime.Singleton);
+            builder.Register<IDeckService, DeckService>(Lifetime.Singleton);
+            builder.Register<IPowerUpService, PowerUpService>(Lifetime.Singleton);
+            builder.Register<IBombService, BombService>(Lifetime.Singleton);
 
-        // ── Async-Services (kein Multiplayer) ──
-        builder.Register<ILeagueService, LeagueService>(Lifetime.Singleton);   // Grid-Rankings (async)
-        builder.Register<IReplayService, ReplayService>(Lifetime.Singleton);   // Daily-Race-Replay
+            // ── Meta-Services ──
+            builder.Register<IProgressService, ProgressService>(Lifetime.Singleton);
+            builder.Register<IEconomyService, EconomyService>(Lifetime.Singleton);
+            builder.Register<IShopService, ShopService>(Lifetime.Singleton);
+            builder.Register<IBattlePassService, BattlePassService>(Lifetime.Singleton);
+            builder.Register<IQuestService, QuestService>(Lifetime.Singleton);
+            builder.Register<IAchievementService, AchievementService>(Lifetime.Singleton);
+            builder.Register<ICosmeticService, CosmeticService>(Lifetime.Singleton);
+            builder.Register<IDailyRewardService, DailyRewardService>(Lifetime.Singleton);
+            builder.Register<IRetentionService, RetentionService>(Lifetime.Singleton);
+            builder.Register<IEventCalendarService, EventCalendarService>(Lifetime.Singleton);
 
-        // ── ScriptableObject-Instances ──
-        builder.RegisterInstance(_heroDatabase);
-        builder.RegisterInstance(_bombDatabase);
-        builder.RegisterInstance(_worldDatabase);
-        builder.RegisterInstance(_balancingConfig);
+            // ── Async-Services (kein Multiplayer) ──
+            builder.Register<ILeagueService, LeagueService>(Lifetime.Singleton);   // Grid-Rankings (async)
+            builder.Register<IReplayService, ReplayService>(Lifetime.Singleton);   // Daily-Race-Replay
 
-        // ── EntryPoints (VContainer's IInitializable / ITickable) ──
-        builder.RegisterEntryPoint<BootController>();
+            // ── ScriptableObject-Instances (Auszug — alle Datenbanken aus §4.1) ──
+            builder.RegisterInstance(_heroDatabase);
+            builder.RegisterInstance(_bombDatabase);
+            builder.RegisterInstance(_worldDatabase);
+            builder.RegisterInstance(_balancingConfig);
+
+            // ── EntryPoints (VContainer's IInitializable / ITickable) ──
+            builder.RegisterEntryPoint<BootController>();
+        }
     }
 }
 ```
@@ -708,20 +741,17 @@ Settlement-Modal (in MainMenu, kein Scene-Wechsel)
 
 ### 6.1 ScriptableObject-Datenbanken
 
-```csharp
-// Beispiel: HeroDatabase
-[CreateAssetMenu(fileName = "HeroDatabase", menuName = "BomberBlast/HeroDatabase")]
-public class HeroDatabase : ScriptableObject
-{
-    public List<HeroDefinition> Heroes = new();
-    
-    public HeroDefinition GetById(string id) => Heroes.Find(h => h.Id == id);
-}
+**Split-Prinzip:** `BomberBlast.Domain` ist Unity-frei (`noEngineReferences`) — Engine-Typen
+wie `Color` oder `GameObject` sind dort verboten. Daher liegen die **POCO-Datenklassen**
+(Stats/IDs/Multiplikatoren, Farben als uint-RGBA-Hex) in `Domain/`, die
+**ScriptableObject-Wrapper** mit `Color`-/Prefab-Referenzen in `Game/Data/`. Der
+JSON-Importer (§6.2) befüllt beide.
 
-// 1:1 aus dem Original (HeroDefinition.cs) — 5 Helden, NUR Stat-Variation + Trait + Skin-Farben.
-// KEINE Skills/Ultimates/Talent-Baeume (das war die verworfene Sci-Fi-Reinvention).
-[CreateAssetMenu(fileName = "Hero_Default", menuName = "BomberBlast/Hero")]
-public class HeroDefinition : ScriptableObject
+```csharp
+// BomberBlast.Domain — POCO, Unity-frei. 1:1 aus dem Original (HeroDefinition.cs) —
+// 5 Helden, NUR Stat-Variation + Trait + Skin-Farben.
+// KEINE Skills/Ultimates/Talent-Bäume (das war die verworfene Sci-Fi-Reinvention).
+public class HeroDefinition
 {
     public string Id;                       // "hero_default", "hero_speedy_sam", ...
     public string NameKey;                  // Localization-Key (z.B. "HeroSpeedySamName")
@@ -735,7 +765,24 @@ public class HeroDefinition : ScriptableObject
     public float BlockDropChanceBonus = 0f;
     public HeroTrait Trait;                 // None / DoubleDetonation / LuckyDrops / DemolitionExpert / QuickPocket
     public string UnlockCondition;          // "default" / "ach_speed_demon" / "gems_500" ...
-    public Color BodyColor;                 // Skin-Hauptfarbe
+    public uint BodyColorRgba;              // Skin-Hauptfarbe als 0xRRGGBBAA (Unity-frei)
+    public uint AccentColorRgba;
+}
+
+// BomberBlast.Game/Data — ScriptableObject-Wrapper mit Engine-Referenzen
+[CreateAssetMenu(fileName = "HeroDatabase", menuName = "BomberBlast/HeroDatabase")]
+public class HeroDatabase : ScriptableObject
+{
+    public List<HeroEntry> Heroes = new();
+
+    public HeroEntry GetById(string id) => Heroes.Find(h => h.Definition.Id == id);
+}
+
+[Serializable]
+public class HeroEntry
+{
+    public HeroDefinition Definition;       // Domain-POCO (serialisiert)
+    public Color BodyColor;                 // vom Importer aus BodyColorRgba abgeleitet
     public Color AccentColor;
     public GameObject HeroModelPrefab;      // 3D-Modell (im Neon-Arcade-Stil)
 }
@@ -746,7 +793,8 @@ public class HeroDefinition : ScriptableObject
 
 ### 6.2 Daten-Importer (Editor-Tool)
 
-Analog ArcaneKingdom: JSON-Sources in `Resources/Data/` → ScriptableObject-Assets via Menü `BomberBlast → Data → Import All`.
+Analog ArcaneKingdom: JSON-Sources in `Resources/Data/` → Domain-POCOs **und**
+ScriptableObject-Wrapper-Assets (§6.1) via Menü `BomberBlast → Data → Import All`.
 
 JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 2026-05-30):
 - `heroes.json` (**5 Helden**)
@@ -761,15 +809,17 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
 - `events.json` (**8 Wochen-Events** + 4 saisonale)
 - `battle_pass_s1.json` (30 Tiers, Saison-1-Rewards)
 - `cosmetics.json` (**98 Items**: 32 Trails / 33 Frames / 33 Victories + Skins)
-- `shop_upgrades.json` (12 permanente Upgrades: 9 Stat-Upgrades + 3 Bomb-Unlocks IceBomb/FireBomb/StickyBomb)
+- `shop_upgrades.json` (12 permanente Upgrades: 9 Stat-Upgrades + 3 Bomb-Unlocks IceBomb/FireBomb/StickyBomb —
+  Shop-Namen sind die spielersichtbaren Produktnamen, intern mappen sie auf die Effekt-IDs:
+  `IceBomb` = `BombType.Frost`, `FireBomb` = `BombType.Lava`, `StickyBomb` = `BombType.Sticky`)
 - `balancing.json` (Stat-Curves, Drop-Gewichte, Combo-Boni)
 - `localization_de.json`, `localization_en.json`, ... (6 Sprachen initial)
 - `tutorial.json` (3 Tutorial-Phasen: Movement/Bombs/PowerUps)
 - `loading_tips.json` (33 globale + 10 welt-spezifische)
 - `world_story.json` (10 Sektor-Intros + 9 Outros, neue Neo-Grid-Story; Dateiname bleibt `world_story.json`)
 
-> Keine `talents.json` / `affixes.json` — Talent-Baeume und Affix-System gehoeren zur verworfenen
-> Sci-Fi-Reinvention. Progression laeuft ueber die 12 permanenten Shop-Upgrades (9 Stat + 3 Bomb-Unlocks, siehe DESIGN §16.2).
+> Keine `talents.json` / `affixes.json` — Talent-Bäume und Affix-System gehören zur verworfenen
+> Sci-Fi-Reinvention. Progression läuft über die 12 permanenten Shop-Upgrades (9 Stat + 3 Bomb-Unlocks, siehe DESIGN §16.2).
 
 ### 6.3 Save-Schema (Firebase RTDB)
 
@@ -792,7 +842,7 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
    ├── currencies {
    │     coins: number,
    │     gems: number,
-   │     dungeon_coins: number      // nur 3 Waehrungen (wie Original)
+   │     dungeon_coins: number      // nur 3 Währungen (wie Original)
    │   }
    ├── shop_upgrades {              // 12 permanente Upgrades (PlayerUpgrades / UpgradeType)
    │     startBombs, startFire, startSpeed, extraLives, scoreMultiplier,
@@ -838,10 +888,6 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
    │     daily: [{ id, progress, completed, rerollUsed }],
    │     weekly: [{ id, progress, completed }]
    │   }
-   ├── friends {
-   │     [friendUid]: { friendCode, accepted, since: ServerValue.TIMESTAMP }
-   │   }
-   ├── blocked: { [uid]: ServerValue.TIMESTAMP }
    ├── settings {
    │     language, audio: {music, sfx, voice, ambient},
    │     graphics: {tier, frameLimit, particles},
@@ -849,15 +895,14 @@ JSON-Files in `Resources/Data/` (Inhalte 1:1 aus dem Original-Code, verifiziert 
    │     accessibility: {colorblind, highContrast, uiScale, subtitles, reducedMotion}
    │   }
    ├── consent {
-   │     analytics: bool, marketing: bool, voiceChat: bool,
+   │     analytics: bool, marketing: bool,
    │     dsgvoSignedAt: ServerValue.TIMESTAMP
    │   }
    ├── crashCount: number,
-   ├── version: number,            // Save-Schema-Version
-   └── schemaVersion: number       // Current = 1 (neues arena-Schema; die Legacy-Import-Bruecke
+   └── schemaVersion: number       // Current = 1 (neues arena-Schema; die Legacy-Import-Brücke
                                     // liest weiterhin das Original-V3-Schema ein — kein Konflikt, getrennte Projekte, siehe §6.5)
 
-/leagues/s{season}/{tier}/{uid}
+/leagues/{seasonKey}/{tier}/{uid}   // seasonKey = "s1", "s2", ... (ganzer Pfad-Key, siehe §12.1)
    ├── displayName, country, points, last_updated: ServerValue.TIMESTAMP
 
 /daily_race/{date_YYYYMMDD}/{tier}/{uid}
@@ -875,7 +920,7 @@ Schema-Version-Feld auf `players/{uid}/schemaVersion` (neues Projekt startet bei
 ```typescript
 // CloudFunctions/src/migrateSchema.ts — betrifft NUR das neue arena-Schema (intra)
 export async function migrateSchema(uid: string, fromV: number, toV: number) {
-  if (fromV === 1 && toV === 2) { /* neue Felder mit Defaults auffuellen */ }
+  if (fromV === 1 && toV === 2) { /* neue Felder mit Defaults auffüllen */ }
   // ... weitere Forward-Migrations, danach schemaVersion setzen
 }
 ```
@@ -899,11 +944,11 @@ export async function migrateSchema(uid: string, fromV: number, toV: number) {
    Shop-Upgrade-Level → `shop_upgrades`; OwnedCards (CSV) → `inventory.cards`; Cosmetics/Skins; Achievements;
    Liga-Punkte/Tier/Saison; BattlePass-Tier/XP; DungeonStats/DungeonCoins; Hero-Unlocks + aktiver Hero;
    Accessibility/Consent-Flags; DailyReward/Streak. (Quelle: `CloudSaveData.cs`-SyncKeys.)
-4. **Konflikt-Resolution** wie Original `ChooseBest`: TotalStars → Wealth → Cards → Keys.Count → Timestamp.
+4. **Konflikt-Resolution** wie Original `ChooseBest`: TotalStars → Wealth → Cards → Keys.Count → Timestamp → Cloud-Default (identische Kette wie §7.2).
 5. **Validierung + Logging**, kein Datenverlust bei Teilfehler (Best-Effort, Corruption-Flag wie `PersistenceHealth`).
 
 **Pflicht-Test vor Launch:** Import mit echten Alt-Accounts (alle 35 Keys, CSV-Karten, leere/teilweise Saves).
-Erfolgsrate-Ziel ≥ 99 % (PLAN §4.4).
+Erfolgsrate-Ziel ≥ 99 %.
 
 ---
 
@@ -914,7 +959,7 @@ Erfolgsrate-Ziel ≥ 99 % (PLAN §4.4).
 
 ### 7.2 Save-Sync
 - Firebase RTDB als Source-of-Truth, lokaler JSON-Cache als Last-Known-Good.
-- Pull bei App-Start, Push-Debounce 5 s. Konflikt-Resolution: TotalStars → Wealth → Cards → Timestamp → Cloud-Default.
+- Pull bei App-Start, Push-Debounce 5 s. Konflikt-Resolution (`ChooseBest`, identische Kette wie §6.5): TotalStars → Wealth → Cards → Keys.Count → Timestamp → Cloud-Default.
 - `PersistenceHealth`-Corruption-Schutz: bei erkannter Korruption Pull statt Push (kein Data-Loss).
 
 > **Entfernt (alte Logik):** Cross-Save Mobile↔PC, separate PvP-Pools — reiner Single-Player, Android-fokussiert.
@@ -926,9 +971,10 @@ Erfolgsrate-Ziel ≥ 99 % (PLAN §4.4).
 (Fusion-PvP, Realtime-Co-op, Snapshot-/Rollback-/Loot-Sharing-Mechanik) sind **entfernt** — sie gehörten
 zur abgelösten Online-MP-Richtung.
 
-**Grid-Rankings** und **Daily-Race** sind **asynchron**: der Client submittet einen Score an Firebase RTDB
-(rule-validiert, Server-Timestamp, Rate-Limit), kein Live-Match. Ein etwaiger künftiger Multiplayer wäre
-ein **separates Projekt** und ist hier nicht vorausgesetzt.
+**Grid-Rankings** und **Daily-Race** sind **asynchron**: der Client schreibt seinen Score **direkt**
+nach Firebase RTDB — abgesichert durch `.validate`-Rules (Wertebereich, Server-Timestamp, Rate-Limit,
+siehe §12.1), **keine** `submitScore`-Cloud-Function, kein Live-Match. Ein etwaiger künftiger
+Multiplayer wäre ein **separates Projekt** und ist hier nicht vorausgesetzt.
 
 ---
 
@@ -941,19 +987,24 @@ ein **separates Projekt** und ist hier nicht vorausgesetzt.
 Kein Online-Match → **kein server-autoritatives Anti-Cheat, keine Replay-Re-Simulation auf Server-Workern.**
 Fokus auf lokale Integrität + Plausibilität der asynchron eingereichten Scores:
 
-- **Zeit-Manipulation:** Hybrid-Timer (`Environment.TickCount64` **+** persistierte `DateTime.UtcNow`, OR-verknüpft)
-  für Daily-Bonus/Cooldowns/Comeback.
+- **Zeit-Manipulation:** Hybrid-Timer (monotone Quelle `System.Diagnostics.Stopwatch.GetTimestamp()` **+**
+  persistierte `DateTime.UtcNow`, OR-verknüpft) für Daily-Bonus/Cooldowns/Comeback.
+  (`Environment.TickCount64` aus dem Original existiert in netstandard2.1/Unity nicht.)
 - **Save-Integrität:** Overflow-Guards (`(long)+amount`-Clamp), `PersistenceHealth`-Corruption-Flag, Pull-statt-Push bei Korruption.
 - **Grid-Rankings/Daily-Race (async):** Plausibilität über Firebase-RTDB-Rules (Wertebereiche, Server-Timestamp,
   Write-Rate-Limit) + Report-Button + Profanity-Filter. Bewusst leichtgewichtig — kein Live-Validierungs-Backend.
 
 ## 11. Cloud Functions (minimal, TypeScript)
 
-**Kein Match-Validation/Submit** (kein Multiplayer). Nur das Nötigste — vieles läuft über RTDB-Rules ohne Functions:
+**Kein Match-Validation/Submit** (kein Multiplayer), **keine `submitScore`-Function** — Score-Submits
+laufen als rule-validierter Client-Write (§12.1). Kanonisches Inventar (identisch zu §2-Folder-Layout):
 
 - **`accountDelete`** (DSGVO Art. 17): kaskadiertes Löschen Local→RTDB.
 - **`seasonReset`** (Scheduled): Liga-/BP-Saison-Reset (sofern nicht rule-seitig gelöst).
 - **`validateIap`** (optional): serverseitige Kaufbeleg-Prüfung (Play Billing).
+- **`importLegacySave`** (HTTP-Callable, Auth): Cross-Projekt-Import des Original-Saves (§6.5).
+- **`migrateSchema`**: Intra-Schema-Forward-Migration des arena-Saves (§6.4).
+- **`dataExport`** (DSGVO Art. 20): Export aller Spieler-Daten als JSON.
 
 > **Entfernt (alte Logik):** `submitMatchResult`, `validateMatch` (Pub/Sub), Match-Anti-Cheat-Worker.
 
@@ -988,12 +1039,13 @@ Fokus auf lokale Integrität + Plausibilität der asynchron eingereichten Scores
     },
 
     "leagues": {
-      "s$season": {
-        "$tier": {
+      "$season": {                // ganzer Pfad-Key: "s1", "s2", ... ($-Variablen müssen ein
+        "$tier": {                // komplettes Pfadsegment sein — "s$season" wäre ungültig)
           ".read": "auth != null",
           "$uid": {
-            ".write": "false",  // Nur Cloud Functions dürfen schreiben
-            ".validate": "newData.hasChildren(['displayName', 'points', 'last_updated'])"
+            // Rule-validierter Client-Write — keine submitScore-Cloud-Function:
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.hasChildren(['displayName', 'points', 'last_updated']) && newData.child('points').isNumber() && newData.child('points').val() >= 0 && newData.child('points').val() <= 100000 && newData.child('last_updated').val() === now && (!data.exists() || now - data.child('last_updated').val() > 30000)"
           }
         }
       }
@@ -1004,7 +1056,9 @@ Fokus auf lokale Integrität + Plausibilität der asynchron eingereichten Scores
         "$tier": {
           ".read": "auth != null",
           "$uid": {
-            ".write": "false"  // Nur Cloud Functions
+            // Rule-validierter Client-Write — keine submitScore-Cloud-Function:
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.hasChildren(['score', 'replay_hash', 'completed_at']) && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 10000000 && newData.child('completed_at').val() === now && (!data.exists() || now - data.child('completed_at').val() > 60000)"
           }
         }
       }
@@ -1024,19 +1078,10 @@ Fokus auf lokale Integrität + Plausibilität der asynchron eingereichten Scores
 
 ### 12.2 Cloud Storage Security-Rules
 
-`firebase.storage.rules`:
-
-```
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /avatars/{uid}/{file} {
-      allow read: if true;  // Public
-      allow write: if request.auth != null && request.auth.uid == uid && request.resource.size < 1 * 1024 * 1024;  // Max 1 MB
-    }
-  }
-}
-```
+Es gibt **kein Avatar-Upload-Feature** — das Profil nutzt `bannerSkinId`/`frameId` aus dem
+Cosmetic-Inventar (§6.3). Cloud Storage dient ausschließlich als Addressables-CDN (§16.2):
+Client-Lesezugriff auf den `addressables/`-Pfad, Schreibzugriff nur über die CI-Pipeline
+(Service-Account) — keine Client-Write-Rules nötig.
 
 ### 12.3 (entfällt — kein Multiplayer)
 
@@ -1051,10 +1096,29 @@ Determinismus dient **Single-Player-Zwecken**: **Daily-Race** (weltweit identisc
 `FixedTimestepRunner` (60 Hz Fixed-Step, nie `Time.deltaTime`). Ein Replay muss denselben State-Hash
 reproduzieren (CI-Gate).
 
+**Verbindliche Festlegung: Fixed-Point-Simulation.** Der Sim-Kern rechnet ausschließlich in
+**Integer-/Fixed-Point-Arithmetik** — Grid-Positionen in **1/256-Zellen-Einheiten als `int`**
+(`SUBCELL = 256`), keine transzendenten float-Math-Funktionen (`Mathf.Sin/Cos/Sqrt/Pow` etc.)
+in der Sim. Dadurch sind die FNV-1a-State-Hashes **plattformübergreifend bit-stabil**
+(CI Linux/Mono vs. Android ARM64/IL2CPP) — float-Arithmetik wäre das nicht garantiert.
+Der **Render-Layer interpoliert in float** (Sub-Cell → Weltkoordinaten), beeinflusst die Sim
+aber nie. Das CI-Gate vergleicht Geräte-Replays gegen die CI-Re-Simulation.
+
 > **Kein** Online-/Server-Re-Sim, **keine** Float-Determinismus-Anforderung für Online-Versus (kein Multiplayer).
-> `DeterministicRandom` (xoshiro256+) ist integer-bit-stabil — für die Daily-Race-Replay-Verifikation ausreichend.
+> `DeterministicRandom` (xoshiro256+) ist integer-bit-stabil — zusammen mit der Fixed-Point-Sim
+> für die Daily-Race-Replay-Verifikation ausreichend.
 
 ### 13.1 Pflicht-Konstanten
+
+```csharp
+public static class SimConstants
+{
+    public const int   TICK_RATE = 60;            // Sim-Ticks pro Sekunde
+    public const float FIXED_DELTA = 1f / 60f;    // Schrittweite des FixedTimestepRunner (§13.4)
+    public const int   SUBCELL = 256;             // Fixed-Point: 1 Grid-Zelle = 256 Sub-Einheiten (int)
+    public const int   MAX_STEPS_PER_FRAME = 5;   // Accumulator-Clamp, Spiral-of-Death-Schutz (§13.4)
+}
+```
 
 > Nach der Integration gilt: Alle gameplay-relevanten Random-Calls gehen über `IRngProvider`.
 > Alle Tick-Updates laufen über `FixedTimestepRunner` bei 60 Hz. Alle Inputs werden in `ReplayCapture` aufgezeichnet.
@@ -1125,20 +1189,34 @@ builder.Register<IRngProvider, SystemRngProvider>(Lifetime.Singleton)
 ```csharp
 public class FixedTimestepRunner
 {
-    private const float FixedDeltaTime = 1f / 60f;  // 60 Hz
+    private const float FixedDeltaTime = 1f / 60f;   // 60 Hz (SimConstants.FIXED_DELTA)
+    private const float MaxFrameDelta = 0.25f;       // Clamp pro Frame (App-Resume, Hitches)
+    private const int MaxStepsPerFrame = 5;          // SimConstants.MAX_STEPS_PER_FRAME
     private float _accumulator = 0f;
-    
+
     public void Tick(float realDeltaTime, Action<float> simulateFunc)
     {
-        _accumulator += realDeltaTime;
-        while (_accumulator >= FixedDeltaTime)
+        // Spiral-of-Death-Schutz: eingehende Frame-Zeit kappen, max. 5 Sim-Steps pro Frame.
+        _accumulator += Math.Min(realDeltaTime, MaxFrameDelta);
+        var steps = 0;
+        while (_accumulator >= FixedDeltaTime && steps < MaxStepsPerFrame)
         {
             simulateFunc(FixedDeltaTime);
             _accumulator -= FixedDeltaTime;
+            steps++;
         }
+        // Rest-Accumulator zusätzlich kappen: bei dauerhafter Überlast dehnt sich die
+        // Sim-Zeit gegenüber der Realzeit (Slow-Motion), statt dass die Schleife jeden
+        // Frame länger wird und das Spiel in einer Todesspirale einfriert.
+        if (_accumulator > MaxFrameDelta) _accumulator = MaxFrameDelta;
     }
 }
 ```
+
+**Verhalten:** Bei normalem Betrieb (Frame-Zeit < 83 ms) läuft die Sim 1:1 in Realzeit. Bei
+langen Hitches (App-Resume, GC-Spike) werden maximal 5 Steps nachgeholt; was darüber hinausgeht,
+verfällt kontrolliert — deterministisch unkritisch, weil Replays über Tick-Indizes laufen, nicht
+über Realzeit.
 
 ### 13.5 ReplayCapture
 
@@ -1187,10 +1265,10 @@ Bei 60 Hz und 10 Min Match: 60 × 600 = 36.000 Bytes raw. RLE-komprimiert: ~5-10
 
 | Tier | Beispiel-Geräte | CPU | RAM | GPU | Target FPS |
 |------|----------------|-----|-----|-----|------------|
-| **Low** | Galaxy A50, Galaxy S8, Pixel 3a | 4 Cores @ 1.8 GHz | 2-3 GB | Adreno 530 | 30 FPS stabil |
-| **Mid** | Pixel 5, Galaxy S20, Redmi Note 11 | 6-8 Cores @ 2.4 GHz | 4-6 GB | Adreno 650 | 60 FPS stabil |
-| **High** | Pixel 7+, Galaxy S22+ | 8 Cores @ 3.0 GHz | 6-8 GB | Adreno 730 | 60 FPS, optional 120 FPS |
-| **Ultra** | ROG Phone 7, Galaxy S24 Ultra, Pixel 8 Pro | 8 Cores @ 3.3+ GHz | 8-12 GB | Adreno 750 | 120 FPS, alle VFX |
+| **Low** | Galaxy A50 (Exynos 9610), Galaxy S8, Pixel 3a | 8 Cores @ 1.7-2.3 GHz | 3-4 GB | Mali-G72 MP3 / Adreno 615 | 30 FPS stabil |
+| **Mid** | Pixel 5, Galaxy S20, Redmi Note 11 | 6-8 Cores @ 2.4 GHz | 4-8 GB | Adreno 620 / Mali-G77 | 60 FPS stabil |
+| **High** | Pixel 7+, Galaxy S22+ | 8 Cores @ 2.8-3.0 GHz | 8 GB | Adreno 730 / Mali-G710 / Xclipse 920 | 60 FPS, optional 120 FPS |
+| **Ultra** | ROG Phone 7, Galaxy S24 Ultra, Pixel 8 Pro | 8 Cores @ 3.3+ GHz | 8-16 GB | Adreno 750 / Mali-G715 | 120 FPS, alle VFX |
 
 ### 14.2 Tier-Auto-Detection
 
@@ -1232,8 +1310,11 @@ User kann manuell überschreiben in Settings.
 | Bloom | Off | Off | Off | On |
 | Post-Processing | Minimal | Basic | Standard | Full |
 | Texture-Quality | Half | Standard | Standard | High |
-| Anti-Aliasing | Off | FXAA | SMAA | SMAA + TAA |
+| Anti-Aliasing | Off | FXAA | SMAA | MSAA 4× |
 | Resolution-Scale | 0.75 | 1.0 | 1.0 | 1.0 |
+
+> **AA-Festlegung (genau ein Verfahren pro Tier):** Low keins, Mid FXAA (Post), High SMAA (Post),
+> Ultra MSAA 4× (Hardware, §15.1) — keine Kombinationen.
 
 ### 14.5 Memory-Targets
 
@@ -1249,17 +1330,19 @@ User kann manuell überschreiben in Settings.
 | Plattform | App-Größe (Initial) | After Install + Addressables |
 |-----------|---------------------|------------------------------|
 | Android AAB | < 250 MB | < 800 MB |
-| Steam | < 1.5 GB | < 1.5 GB (PC kann mehr) |
+
+Desktop-Builds dienen nur zum Testen — kein eigenes Größen-Target, **kein Steam-Release**.
 
 **Strategie:**
 - Initial nur Helden 1-3 + Sektor 1-3 im AAB
 - Restliche Assets via Addressables nach Sektor-Freischaltung lazy geladen
+- Budget-Summenrechnung gegen das 800-MB-Ziel → §16.1
 
 ### 14.7 Battery-Saver-Mode
 
 Auto-Aktivierung bei <20 % Akku:
-- Tier um 1 Stufe senken
-- Bloom aus
+- Tier um 1 Stufe senken (höchstens auf das High-Profil — Bloom ist damit automatisch aus,
+  denn Bloom gibt es nur im Ultra-Profil, §14.4)
 - Particle-Cap halbieren
 - Frame-Cap bei 30 FPS (auch wenn High-End)
 
@@ -1272,7 +1355,7 @@ Auto-Aktivierung bei <20 % Akku:
 | Setting | Wert |
 |---------|------|
 | Render-Path | Forward+ |
-| MSAA | 4× (High/Ultra), Off (Mid/Low) |
+| MSAA | 4× nur Ultra — High nutzt SMAA, Mid FXAA, Low keins (AA-Festlegung §14.4) |
 | HDR | Enabled (High/Ultra) |
 | Shadow-Distance | 30 (High/Ultra), 15 (Mid), 0 (Low) |
 | Shadow-Resolution | 2048 (Ultra), 1024 (High), 512 (Mid) |
@@ -1299,7 +1382,7 @@ Auto-Aktivierung bei <20 % Akku:
 
 ### 15.4 Lighting-Strategy
 
-- **Static-Lights**: Backed (Lightmap) für Map-Decoration
+- **Static-Lights**: Baked (Lightmap) für Map-Decoration
 - **Dynamic-Lights**: Each Bomb = Point-Light (Tier-skaliert)
 - **Hero-Aura-Lights**: 1 Spotlight pro Hero (Tier-aware)
 - **Sektor-Atmosphäre**: Volumetric-Lighting via URP-Custom-Pass (Ultra only)
@@ -1318,13 +1401,22 @@ Auto-Aktivierung bei <20 % Akku:
 | `Heroes.Seasonal` | Saisonale Helden | Remote CDN, post-Saison-Start | 10 MB pro Saison |
 | `Worlds.1-3` | Sektor 1-3 Assets | Sync, im AAB | 80 MB |
 | `Worlds.4-10` | Sektor 4-10 Assets | Lazy, nach Sektor-Unlock | 200 MB |
-| `VFX.Bombs` | VFX-Graph für 22 Bomben | Pre-Load mit Game-Scene | 50 MB |
+| `VFX.Bombs` | VFX-Graph für 14 Bomben-Typen (+ Built-in-Particle-Fallback je Kategorie für Low-Tier/GLES, §1.3) | Pre-Load mit Game-Scene | 50 MB |
 | `VFX.HeroTraits` | Hero-Trait-/Skin-VFX (passive Traits, keine Ultimates) | Pre-Load mit Hero-Pick | 30 MB |
 | `Audio.BGM` | Sektor-Music-Loops | Streaming | 100 MB (alle Sektoren) |
 | `Audio.SFX` | Sound-Effects | Pre-Load | 50 MB |
-| `Audio.Voice` | Hero-VoiceLines (alle Sprachen) | Lazy nach Sprach-Wahl | 150 MB pro Sprache |
 | `Cosmetics.Launch` | Cosmetic-Pool Launch | Lazy, Cache-LRU | 80 MB |
 | `Cosmetics.Saison` | Saisonale Cosmetics | Remote CDN, lazy | 30 MB pro Saison |
+
+> **`Audio.Voice` (Hero-VoiceLines, ~150 MB pro Sprache) ist deferred** — Voice kommt erst nach
+> gesonderter Freigabe (§17.5) und ist im Budget unten **nicht** enthalten; bei Aktivierung wird
+> die Gruppe als On-Demand-Download (Remote CDN, nur gewählte Sprache) ausgelegt.
+
+**Summenrechnung gegen das 800-MB-Ziel (§14.6):** feste Gruppen
+5 + 30 + 20 + 80 + 200 + 50 + 30 + 100 + 50 + 80 = **645 MB**. Saisonale Gruppen
+(`Heroes.Seasonal` 10 MB + `Cosmetics.Saison` 30 MB pro Saison) kommen on-demand vom Remote CDN
+und werden LRU-gecacht — selbst mit 2-3 gecachten Saisons (~80-120 MB) bleibt die Summe bei
+**~725-765 MB**, also **35-155 MB Puffer** unter dem 800-MB-Ziel.
 
 ### 16.2 Addressables Profile-Setup
 
@@ -1339,11 +1431,12 @@ Auto-Aktivierung bei <20 % Akku:
 ### 16.3 Asset-Production-Workflow
 
 ```
-3D-Artist erstellt FBX in Blender
+KI-Pipeline (Primär-Workflow): ComfyUI + TRELLIS/Hunyuan3D → GLB/FBX + Texturen
+(Details, Modelle, Qualitäts-Gates → ASSETS_AI.md)
     ↓
-Substance Painter: PBR-Texturen
+Nachbearbeitung nur bei Bedarf: Blender (Retopo/Rigging/Fixes), Substance Painter (Textur-Fixes)
     ↓
-Export: FBX + Materials + Textures (UE-Format optional)
+Export: FBX + Materials + Textures
     ↓
 Unity-Import: Custom-Import-Settings (Compression: ASTC, max-texture-size 1024)
     ↓
@@ -1359,8 +1452,7 @@ CI: Build Addressables → Upload zu Firebase Storage
 | Platform | Format | Quality |
 |----------|--------|---------|
 | Android | ASTC 6×6 | Medium |
-| Steam (Windows) | DXT5 / BC7 | High |
-| Steam (Linux/macOS) | BC7 / ETC2 | High |
+| Desktop (Test-Builds) | Unity-Standalone-Default | – (kein Tuning, kein Steam-Target) |
 
 Texture-Max-Size:
 - Hero-/Charakter-Modelle: 1024×1024 (Mid/High), 512×512 (Low)
@@ -1381,7 +1473,7 @@ Master (Mixer-Root)
    │   ├── PowerUps (Pickup-Sounds)
    │   ├── UI (Button-Clicks, Modal-Open)
    │   └── Combat (Hit-Sounds, Damage-Vocal)
-   ├── Voice
+   ├── Voice (deferred — Voice kommt erst nach gesonderter Freigabe, §17.5)
    │   ├── Heroes (VoiceLines)
    │   ├── Announcer (Match-Events: "Match Start!", "Combo!")
    │   └── Story (Cutscene-Voices)
@@ -1410,17 +1502,21 @@ Master (Mixer-Root)
 Falls Budget: FMOD-Studio mit Layer-Music + Crossfade-Markers
 - 1 Hauptloop pro Sektor mit 5 Layern (Base / Standard / Combat / Boss / Victory)
 - Trigger via Code: `FMODUnity.RuntimeManager.PlayOneShot()`
-- Saves manche Implementierungs-Aufwand für adaptive Music
+- Spart einen Großteil des Implementierungs-Aufwands für adaptive Musik
 
 Falls kein FMOD: Manueller AudioMixer mit Crossfade-Animation via DOTween.
 
-### 17.5 AI-Voice-Pipeline (ElevenLabs)
+### 17.5 AI-Voice-Pipeline (ElevenLabs) — deferred
+
+> **Deferred — erst nach gesonderter Freigabe** (siehe ASSETS_AI.md). Die Pipeline unten ist die
+> Soll-Spezifikation für den Fall der Aktivierung; bis dahin gibt es keine Voice-Assets, keine
+> `Audio.Voice`-Addressables-Gruppe (§16.1) und der Voice-Mixer-Zweig (§17.1) bleibt ungenutzt.
 
 ```
 Skript-Files in Resources/Voices/Heroes/ (Markdown)
-├── nova_en.md
-├── nova_de.md
-├── cryo_en.md
+├── default_en.md
+├── default_de.md
+├── speedy_sam_de.md
 └── ...
 
 Build-Step (Editor-Tool):
@@ -1467,7 +1563,8 @@ Mastering-Step (Build-Pipeline):
 - Pure-Funktionen, Algorithmen (Combo-System, DungeonSynergyResolver, LevelLayoutGenerator)
 - Math-Funktionen (Overflow-Guard, Liga-Punkt-/Sub-Tier-Berechnung, Combo-Score)
 
-**Coverage-Ziel:** 90 % für BomberBlast.Domain, 75 % für BomberBlast.Core
+**Coverage-Ziele** (Convention-Quelle: CLAUDE.md §6): Domain ≥ 90 %, Core ≥ 80 %,
+Game ≥ 60 %, UI Best-Effort
 
 **Framework:** NUnit (via Unity Test Framework)
 
@@ -1498,7 +1595,9 @@ public void ComboSystem_FiveKillsInTwoSeconds_TriggersUltraCombo()
 
 ### 18.4 Determinismus-Suite (KRITISCH)
 
-**Zweck:** Sicherstellen, dass Client + Server-Worker bei gleichen Inputs identische States produzieren.
+**Zweck:** Sicherstellen, dass jedes Replay in der CI-Re-Simulation den identischen State-Hash
+reproduziert (Daily-Race-Verifikation) — auch plattformübergreifend (CI Linux vs. Android
+ARM64/IL2CPP, Fixed-Point-Sim §13.0). Kein Server-Worker — die Re-Simulation läuft als CI-Test.
 
 **Setup:**
 ```
@@ -1568,14 +1667,17 @@ name: Unity Build
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [master]
   push:
-    branches: [main, develop]
+    branches: [master]
     tags: ['v*']
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        testMode: [EditMode, PlayMode]   # PlayMode ist Pflicht (§18.3)
     steps:
       - uses: actions/checkout@v4
         with: { lfs: true }
@@ -1587,13 +1689,13 @@ jobs:
         with:
           unityVersion: 6000.4.8f1
           projectPath: src/Apps/BomberBlast.Unity/Unity
-          testMode: EditMode
+          testMode: ${{ matrix.testMode }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
   build-android:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
     steps:
       - uses: actions/checkout@v4
         with: { lfs: true }
@@ -1621,9 +1723,7 @@ jobs:
 | Target | Build-Zeit (Cold-Cache) | Build-Zeit (Warm-Cache) |
 |--------|-------------------------|--------------------------|
 | Android (AAB Release) | 25-35 min | 8-12 min |
-| Steam (Windows x64) | 15-25 min | 5-8 min |
-| Steam (Linux x64) | 15-25 min | 5-8 min |
-| Steam (macOS) | 20-30 min | 7-10 min |
+| Desktop Windows x64 (Test-Builds) | 15-25 min | 5-8 min |
 
 ### 19.3 Cloud Functions Deploy
 
@@ -1633,7 +1733,7 @@ name: Deploy Cloud Functions
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths: ['src/Apps/BomberBlast.Unity/Server/CloudFunctions/**']
 
 jobs:
@@ -1648,7 +1748,7 @@ jobs:
           npm install
           npm run build
           npm test
-      - uses: w9jds/firebase-action@master
+      - uses: w9jds/firebase-action@v13.0.0   # gepinnt — Version beim Einrichten aktualisieren
         with:
           args: deploy --only functions
         env:
@@ -1663,7 +1763,7 @@ jobs:
 
 `MAJOR.MINOR.PATCH` (z.B. 1.0.0):
 - **MAJOR**: Breaking-Change im Save-Schema
-- **MINOR**: Saison-Release mit neuem Inhalt
+- **MINOR**: Content-Release mit neuem Inhalt (8-Wochen-Fenster, §20.3)
 - **PATCH**: Bugfixes, Balancing-Tweaks, Hotfixes
 
 **Build-Number**: Auto-inkrementiert via CI (z.B. `1.0.0+123`)
@@ -1676,11 +1776,19 @@ Bei Production-Issues:
 2. **Hot-Fix via Addressables** (gleicher Tag, kein Play-Store-Update): Asset-Fix (z.B. fehlerhafte Texture)
 3. **Hot-Fix via App-Update** (1-3 Tage, Play-Store-Review): Code-Fix
 
-### 20.3 Saison-Release-Schedule
+### 20.3 Content-Release-Schedule
 
-- **Saison-Cut**: alle 8 Wochen, Mittwoch 10:00 UTC
-- **Pre-Saison-Beta**: 1 Woche vorher, Closed-Beta-Channel
-- **Saison-Post-Mortem**: 2 Wochen nach Saison-End
+**Drei getrennte Rhythmen** (nicht verwechseln):
+
+| Rhythmus | Dauer | Inhalt |
+|----------|-------|--------|
+| **Liga-Saison** | 14 Tage | Promotion/Demotion der Grid-Rankings (§6.3 `league.season`) |
+| **Battle-Pass-Saison** | 30 Tage | BP-Tiers/Rewards (§6.3 `battle_pass.season`) |
+| **Content-Release-Fenster** | 8 Wochen | Neue Inhalte (Sektoren, Cosmetics, Events) — MINOR-Version (§20.1) |
+
+- **Content-Release-Cut**: alle 8 Wochen, Mittwoch 10:00 UTC
+- **Pre-Release-Beta**: 1 Woche vorher, Closed-Beta-Channel
+- **Release-Post-Mortem**: 2 Wochen nach Release
 
 ---
 
@@ -1703,6 +1811,10 @@ public class BattleController
     }
 }
 ```
+
+Der Core-`ILogger`/`ILogger<T>` (§2.1 `Core/Logging/`) ist die **Abstraktion**; `ILogger<T>` ist
+über die Open-Generic-Registrierung (§4.3) per Constructor Injection auflösbar und schreibt über
+die `LoggerFactory` in alle konfigurierten **Sinks**:
 
 **Sinks:**
 - `UnityLogger` → Unity-Console
@@ -1748,7 +1860,7 @@ Funnel-Events:
 - [ ] `Core/Combat/SpecialExplosionEffects.cs` → `BomberBlast.Domain/Bombs/Effects/`
 - [ ] `Core/Combat/EnemyPositionIndex.cs` → `BomberBlast.Domain/Combat/`
 - [ ] `Core/Dungeon/DungeonSynergyResolver.cs` → `BomberBlast.Domain/Dungeon/`
-- [ ] `GameStateSnapshot.cs` (FNV-1a State-Hash für Daily-Race-Replay-Verifikation) → `BomberBlast.Domain/Determinism/`; Input-Recording via `ReplayCapture`. *(MP-Wire-Bits PlayerInputSnapshot/InputBuffer entfallen — Single-Player.)*
+- [ ] `Core/Multiplayer/GameStateSnapshot.cs` (Original-Pfad; FNV-1a State-Hash für Daily-Race-Replay-Verifikation) → `BomberBlast.Domain/Determinism/`; Input-Recording via `ReplayCapture`. *(MP-Wire-Bits PlayerInputSnapshot/InputBuffer entfallen — Single-Player.)*
 
 ### 22.2 Port-Checkliste (Priority-2, Sprint 3-4)
 
@@ -1776,8 +1888,8 @@ Funnel-Events:
 - [ ] `Services/HighScoreService.cs` (Top-10) + `SurvivalSpawner` (Survival-Modus) + `QuickPlay`-Logik → `BomberBlast.Domain/Modes/`
 - [ ] `Services/MasterModeService.cs`, `BossRushService.cs`, `WorldStoryService.cs`, `WhatsNewService.cs`, `FeatureUnlockChoreographer.cs`, `TutorialService.cs`, `HeroService.cs`, `CustomizationService.cs`, `CollectionService.cs`, `AccessibilityService.cs` → jeweiliges Modul
 - [ ] `Services/RemoteConfigService` (+ `RemoteConfigKeys`) + `PushNotificationService` (FCM + Local) → Plattform-Layer
-- [ ] Hybridtimer-Pattern (TickCount64 + persistierte UTC) → `BomberBlast.Core/HybridTimer.cs`
-- [ ] Profanity-Filter (NFKD, im Original **inline** in `LeagueService.cs`) → als `BomberBlast.Domain/Chat/ProfanityFilter.cs` **extrahieren**
+- [ ] Hybridtimer-Pattern (im Original `Environment.TickCount64`; in Unity `Stopwatch.GetTimestamp()` + persistierte UTC, §10) → `BomberBlast.Core/HybridTimer.cs`
+- [ ] Profanity-Filter (NFKD, im Original **inline** in `LeagueService.cs`) → als `BomberBlast.Domain/Moderation/ProfanityFilter.cs` **extrahieren**
 
 ### 22.4 Geschätzte Port-Zeit
 
@@ -1810,15 +1922,18 @@ Funnel-Events:
 | Event | `On{Verb}{Past}` (Unity-Standard) | `OnBombPlaced`, `OnPlayerDied` |
 | ScriptableObject Asset | PascalCase + `_` für ID | `Hero_Default.asset`, `Bomb_Frost.asset` |
 | Scene | PascalCase | `Boot.unity`, `MainMenu.unity` |
-| Prefab | PascalCase + `_Prefab` Suffix | `BombPrefab`, `HeroViewPrefab` |
+| Prefab | PascalCase + `Prefab`-Suffix (ohne Underscore) | `BombPrefab`, `HeroViewPrefab` |
 | asmdef | `BomberBlast.{Module}` | `BomberBlast.Game.asmdef` |
 | Test-Class | `{Subject}Tests` | `ComboSystemTests`, `LeagueServiceTests` |
 | Test-Method | `{Method}_{Scenario}_{Expected}` | `ProcessInput_ValidMove_UpdatesPosition` |
 
 ### 23.2 Code-Style
 
-- **Modernes C#** (Primary Constructors, Records, Pattern-Matching, Switch-Expressions)
-- **File-scoped Namespaces** (`namespace BomberBlast.Game;`)
+- **C# 9** (Unity 6 = C#9/netstandard2.1, im Workspace validiert — siehe Memory
+  `unity-domain-port`): Records (mit `IsExternalInit`-Shim), Pattern-Matching,
+  Switch-Expressions, Target-Typed `new`
+- **Block-Namespaces** (`namespace BomberBlast.Game { ... }`) — file-scoped Namespaces sind
+  C#10 und in Unity 6 nicht verfügbar
 - **Nullable Reference Types** aktiv (`<Nullable>enable</Nullable>`)
 - **var** wenn Typ aus Kontext klar
 - **Async-Konventionen:** `Async`-Suffix, `CancellationToken` als letzter Parameter

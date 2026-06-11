@@ -95,8 +95,6 @@ public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSourc
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // === TimeEntry Overlay Properties ===
 
@@ -260,8 +258,6 @@ public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSourc
             OnPropertyChanged(nameof(HasNoPauseEntries));
             OnPropertyChanged(nameof(StatusIconKind));
 
-            // Premium Status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
         }
         catch (OperationCanceledException)
         {

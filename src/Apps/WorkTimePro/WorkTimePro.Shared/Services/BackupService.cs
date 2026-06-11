@@ -246,6 +246,19 @@ public sealed class BackupService : IBackupService
                     return false;
             }
 
+            // FK-Integrität: EmployerId-Verweise (nullable) müssen in Employers existieren —
+            // verwaiste IDs würden Arbeitgeber-Aggregationen still ins Leere laufen lassen
+            {
+                var employerIds = new HashSet<int>(
+                    backupData.Employers?.Select(e => e.Id) ?? Enumerable.Empty<int>());
+                if (backupData.WorkDays != null &&
+                    backupData.WorkDays.Any(w => w.EmployerId is int id && !employerIds.Contains(id)))
+                    return false;
+                if (backupData.VacationQuotas != null &&
+                    backupData.VacationQuotas.Any(q => q.EmployerId is int id && !employerIds.Contains(id)))
+                    return false;
+            }
+
             ProgressChanged?.Invoke(this, 30);
 
             // Sicherheits-Backup der aktuellen Daten VOR dem Import — RAM + Disk

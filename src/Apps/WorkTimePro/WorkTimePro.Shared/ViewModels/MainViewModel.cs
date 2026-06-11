@@ -312,8 +312,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // === Predictive Insights (TodayView) ===
 
@@ -562,8 +560,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             WeekProgress = await _calculation.GetWeekProgressAsync(_cachedSettings);
             WeekProgressText = $"{WeekProgress:F0}%";
 
-            // Premium status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
 
             // Start timer if active
             if (CurrentStatus != TrackingStatus.Idle)

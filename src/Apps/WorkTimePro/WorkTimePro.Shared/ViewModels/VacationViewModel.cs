@@ -61,8 +61,6 @@ public sealed partial class VacationViewModel : ViewModelBase, INavigationSource
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // Quota-Edit Overlay
     [ObservableProperty]
@@ -165,7 +163,6 @@ public sealed partial class VacationViewModel : ViewModelBase, INavigationSource
         {
             IsLoading = true;
             IsPremium = _purchaseService.IsPremium || _trialService.IsTrialActive;
-            ShowAds = !IsPremium;
 
             // Load statistics
             Statistics = await _vacationService.GetStatisticsAsync(SelectedYear);

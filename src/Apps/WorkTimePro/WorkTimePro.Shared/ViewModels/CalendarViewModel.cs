@@ -70,8 +70,6 @@ public sealed partial class CalendarViewModel : ViewModelBase, IMessageSource
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // === Status Overlay ===
 
@@ -175,8 +173,6 @@ public sealed partial class CalendarViewModel : ViewModelBase, IMessageSource
             // Kalender-Tage mit DB-Daten generieren (ein Aufruf reicht, da CalculateMonth die DB bereits geladen hat)
             await GenerateCalendarDaysAsync();
 
-            // Premium status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
         }
         catch (Exception ex)
         {

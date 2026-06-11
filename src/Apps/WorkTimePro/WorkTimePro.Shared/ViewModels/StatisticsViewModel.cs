@@ -214,8 +214,6 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource,
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // Tabellen-Ansicht (Standard: Tabelle anzeigen)
     [ObservableProperty]
@@ -271,9 +269,6 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource,
                 CreateWeekdayChartData(workDays),
                 CreatePauseChartData(workDays)
             );
-
-            // Premium-Status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
 
             OnPropertyChanged(nameof(HasPauseChartData));
             OnPropertyChanged(nameof(HasOvertimeData));

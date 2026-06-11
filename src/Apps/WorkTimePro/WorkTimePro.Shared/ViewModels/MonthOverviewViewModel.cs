@@ -88,8 +88,6 @@ public sealed partial class MonthOverviewViewModel : ViewModelBase, INavigationS
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     public string LockMonthButtonText => AppStrings.CloseMonth;
     public string UnlockMonthButtonText => AppStrings.UnlockMonth;
@@ -144,8 +142,6 @@ public sealed partial class MonthOverviewViewModel : ViewModelBase, INavigationS
 
             Weeks = new ObservableCollection<WorkWeek>(weeksList);
 
-            // Premium status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
         }
         catch (Exception ex)
         {

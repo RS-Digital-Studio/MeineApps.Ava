@@ -57,7 +57,9 @@ public sealed class CalculationService : ICalculationService
         // Zeitrundung anwenden (falls konfiguriert)
         if (settings.RoundingMinutes > 0)
         {
-            netMinutes = (int)(Math.Round((double)netMinutes / settings.RoundingMinutes) * settings.RoundingMinutes);
+            // Kaufmännisch runden (AwayFromZero) — Banker's Rounding (.5 → gerade) wäre
+            // bei Arbeitszeit-Abrechnung überraschend (30,5 min → 30 statt 31).
+            netMinutes = (int)(Math.Round((double)netMinutes / settings.RoundingMinutes, MidpointRounding.AwayFromZero) * settings.RoundingMinutes);
         }
 
         workDay.ActualWorkMinutes = netMinutes;
@@ -86,7 +88,7 @@ public sealed class CalculationService : ICalculationService
     {
         var manualMinutes = pauses
             .Where(p => !p.IsAutoPause && p.EndTime != null)
-            .Sum(p => (int)Math.Round(p.Duration.TotalMinutes));
+            .Sum(p => (int)Math.Round(p.Duration.TotalMinutes, MidpointRounding.AwayFromZero));
 
         workDay.ManualPauseMinutes = manualMinutes;
     }
@@ -119,7 +121,7 @@ public sealed class CalculationService : ICalculationService
         var lastCheckOut = entries.LastOrDefault(e => e.Type == EntryType.CheckOut);
         if (lastCheckIn != null && (lastCheckOut == null || lastCheckIn.Timestamp > lastCheckOut.Timestamp))
         {
-            bruttoMinutes += (int)Math.Round(DurationMath.RealElapsedMinutes(lastCheckIn.Timestamp, DateTime.Now));
+            bruttoMinutes += (int)Math.Round(DurationMath.RealElapsedMinutes(lastCheckIn.Timestamp, DateTime.Now), MidpointRounding.AwayFromZero);
         }
 
         // Gesetzlich vorgeschriebene Pause — §4 ArbZG bemisst die Pausenstaffel an der
@@ -499,7 +501,7 @@ public sealed class CalculationService : ICalculationService
             {
                 // DST-bewusst: tatsächlich verstrichene Zeit (korrigiert Sommer-/Winterzeit-Sprung
                 // bei über die Umstellung laufenden Schichten).
-                totalMinutes += (int)Math.Round(DurationMath.RealElapsedMinutes(lastCheckIn.Timestamp, entry.Timestamp));
+                totalMinutes += (int)Math.Round(DurationMath.RealElapsedMinutes(lastCheckIn.Timestamp, entry.Timestamp), MidpointRounding.AwayFromZero);
                 lastCheckOut = entry.Timestamp;
                 lastCheckIn = null;
             }

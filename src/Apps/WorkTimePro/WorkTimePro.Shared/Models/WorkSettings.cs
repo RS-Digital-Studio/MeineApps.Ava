@@ -266,13 +266,13 @@ public class WorkSettings
     /// Tägliche Soll-Zeit in Minuten
     /// </summary>
     [Ignore]
-    public int DailyMinutes => (int)Math.Round(DailyHours * 60);
+    public int DailyMinutes => (int)Math.Round(DailyHours * 60, MidpointRounding.AwayFromZero);
 
     /// <summary>
     /// Wöchentliche Soll-Zeit in Minuten
     /// </summary>
     [Ignore]
-    public int WeeklyMinutes => (int)Math.Round(WeeklyHours * 60);
+    public int WeeklyMinutes => (int)Math.Round(WeeklyHours * 60, MidpointRounding.AwayFromZero);
 
     // Cache für WorkDaysArray (wird bei jedem set/get von WorkDays invalidiert)
     private int[]? _cachedWorkDaysArray;
@@ -337,7 +337,7 @@ public class WorkSettings
         // Math.Round (nicht (int)-Truncation) — symmetrisch zur gerundeten Ist-Seite
         // (CalculateBruttoMinutes nutzt Math.Round), sonst driftet das Soll bei krummen
         // Stundeneingaben (z.B. 8,2h → 491,99 → ohne Round 491 statt 492) nach unten.
-        return (int)Math.Round(GetHoursForDay(ourDay) * 60);
+        return (int)Math.Round(GetHoursForDay(ourDay) * 60, MidpointRounding.AwayFromZero);
     }
 
     /// <summary>

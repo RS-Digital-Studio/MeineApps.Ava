@@ -59,11 +59,10 @@ public class PauseEntry
                 return TimeSpan.Zero;
             // DST-bewusst: tatsächlich verstrichene Zeit (korrigiert Sommer-/Winterzeit-Sprung)
             var duration = Helpers.DurationMath.RealElapsed(StartTime, EndTime.Value);
-            // Negative Dauer bei Mitternachts-Übergang abfangen
-            if (duration < TimeSpan.Zero)
-                duration += TimeSpan.FromHours(24);
-            // Unplausible Pausendauer begrenzen (max 12h)
-            if (duration > TimeSpan.FromHours(12))
+            // Pausen werden immer mit vollem DateTime gespeichert — eine negative Dauer
+            // bedeutet korrupte Daten (End vor Start), nicht "Mitternachts-Übergang".
+            // Den Fehler sichtbar auf 0 setzen statt mit +24h zu maskieren.
+            if (duration < TimeSpan.Zero || duration > TimeSpan.FromHours(12))
             {
                 System.Diagnostics.Debug.WriteLine($"PauseEntry.Duration unplausibel ({duration}) - auf 0 gesetzt");
                 return TimeSpan.Zero;

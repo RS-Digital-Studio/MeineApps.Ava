@@ -43,8 +43,6 @@ public sealed partial class YearOverviewViewModel : ViewModelBase, INavigationSo
     [ObservableProperty]
     private bool _isPremium;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // Year overview
     [ObservableProperty]
@@ -130,7 +128,6 @@ public sealed partial class YearOverviewViewModel : ViewModelBase, INavigationSo
         {
             IsLoading = true;
             IsPremium = _purchaseService.IsPremium || _trialService.IsTrialActive;
-            ShowAds = !IsPremium;
 
             var monthSummaries = new List<MonthSummary>();
             var monthlyWorkHours = new List<double>();

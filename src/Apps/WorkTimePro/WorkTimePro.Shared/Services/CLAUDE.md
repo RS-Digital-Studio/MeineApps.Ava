@@ -51,6 +51,12 @@ Mitternachts-Übergang: `LoadStatusAsync` prüft auch den gestrigen WorkDay (Nac
 - **Saldo** = Netto − Soll (aus `WorkSettings.GetHoursForDay()` — gecachtes JSON-Dictionary).
 - **§3 ArbZG**: 6-Monats-Durchschnitt ≤ 8h/Tag über Mo–Sa (Sonntage ausgeschlossen),
   Vacation/Sick zählen als 0h, Mindest-Schwelle 60 Werktage.
+- **Rundungs-Konvention (bewusste Entscheidung):** Der kumulative Saldo
+  (`GetCumulativeBalanceAsync` → Summe `BalanceMinutes`) läuft auf der **gerundeten
+  Abrechnungsbasis** (`ActualWorkMinutes` nach `RoundingMinutes`) — das ist die Zahl,
+  die der Nutzer pro Tag sieht und abrechnet. NUR die gesetzlichen Prüfungen (§3/§4 ArbZG)
+  nutzen `UnroundedWorkMinutes`. Zeitwerte runden kaufmännisch
+  (`MidpointRounding.AwayFromZero`), nicht Banker's Rounding.
 
 ## HolidayCalculator — reine Feiertagsberechnung
 

@@ -28,8 +28,9 @@ WorkTimePro.Desktop ┘                       ├─> MeineApps.Core.Premium.Ava
 Composition-Flow: Host (`AndroidApp` / `Program.cs`) → `WorkTimePro.Shared/App.axaml.cs`
 (DI + Loading-Pipeline + Splash) → `MainViewModel` (5 Tabs + 5 Sub-Pages) → `ViewLocator` löst Views.
 
-**Premium:** 3,99 EUR/Monat oder 19,99 EUR Lifetime. 7 Tage Trial. Rewarded Ads als Gate
-für Export und erweiterte Statistiken.
+**Premium:** 3,99 EUR/Monat oder 19,99 EUR Lifetime. 14 Tage Trial (werbefrei, einmalig,
+über das Kauf-Optionen-Overlay in den Settings). Rewarded Ads als Gate für Export und
+erweiterte Statistiken.
 
 ---
 

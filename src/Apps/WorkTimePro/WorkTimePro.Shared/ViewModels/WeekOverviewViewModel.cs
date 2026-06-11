@@ -106,8 +106,6 @@ public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSo
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // === Predictive Insights ===
 
@@ -172,8 +170,6 @@ public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSo
             // Predictive Insights berechnen
             await UpdatePredictiveInsightAsync();
 
-            // Premium status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
         }
         catch (Exception ex)
         {

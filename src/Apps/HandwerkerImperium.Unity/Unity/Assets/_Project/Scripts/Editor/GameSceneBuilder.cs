@@ -119,6 +119,8 @@ namespace HandwerkerImperium.Editor
                 var binder = hudGo.AddComponent<HandwerkerImperium.UI.Hud.GameHudBinder>();
                 SetRef(binder, "controller", runtime);
                 SetRef(binder, "audioHub", gameAudio);
+                var joystick = hudGo.AddComponent<TouchJoystick>(); // Android-Primärsteuerung (GDD §4)
+                SetRef(joystick, "hudDocument", doc);
             }
             else
             {
@@ -154,8 +156,28 @@ namespace HandwerkerImperium.Editor
             var follow = camGo.AddComponent<FollowCamera>();
             BuildPostProcessing(cam);
 
-            // Tresen + Kunde (echtes Modell) + Cash-Spawn
-            var counterGo = MakeBox("Counter", new Vector3(0f, 0.5f, 0f), new Vector3(3.2f, 1f, 1.4f), new Color(0.38f, 0.30f, 0.23f), trigger: true);
+            // Tresen: Marktstand-Modell der Pipeline (Fallback: brauner Block) + Trigger + Cash-Spawn
+            GameObject counterGo;
+            float counterSignY;
+            if (AssetDatabase.LoadMainAssetAtPath(ModelDir + "/market_counter.glb") != null)
+            {
+                counterGo = new GameObject("Counter");
+                counterGo.transform.position = Vector3.zero;
+                AttachModel(counterGo.transform, ModelDir + "/market_counter.glb", 2.4f);
+                var counterTrigger = counterGo.AddComponent<BoxCollider>();
+                counterTrigger.isTrigger = true;
+                counterTrigger.center = new Vector3(0f, 1f, 0f);
+                counterTrigger.size = new Vector3(3.4f, 2f, 2.4f);
+                var counterRb = counterGo.AddComponent<Rigidbody>();
+                counterRb.isKinematic = true;
+                counterRb.useGravity = false;
+                counterSignY = 3.0f; // über dem Marktstand-Dach
+            }
+            else
+            {
+                counterGo = MakeBox("Counter", new Vector3(0f, 0.5f, 0f), new Vector3(3.2f, 1f, 1.4f), new Color(0.38f, 0.30f, 0.23f), trigger: true);
+                counterSignY = 1.9f;
+            }
             var counter = counterGo.AddComponent<CounterView>();
             var cashSpawn = new GameObject("CashSpawn").transform;
             cashSpawn.SetParent(counterGo.transform);
@@ -163,12 +185,27 @@ namespace HandwerkerImperium.Editor
             SetRef(counter, "controller", controller);
             SetRef(counter, "cashSpawnPoint", cashSpawn);
             SetRef(counter, "cashPrefab", coinPrefab);
-            var customerRoot = new GameObject("Customer");
-            customerRoot.transform.position = new Vector3(0f, 0f, 3.1f);   // Kunden-Seite, mit Abstand (überlappt sonst aus Kamerasicht den Tresen)
-            customerRoot.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // schaut zum Tresen
-            AttachCharacter(customerRoot.transform, "customer_npc", 1.65f);
-            MakeSign("Verkauf", counterGo.transform.position + new Vector3(0f, 1.9f, 0f), 0.34f,
+            MakeSign("Verkauf", counterGo.transform.position.WithY(0f) + new Vector3(0f, counterSignY, 0f), 0.34f,
                 new Color(0.98f, 0.95f, 0.88f), new Color(0.30f, 0.22f, 0.15f));
+
+            // Lebendige Kunden-Schlange: NPCs kommen vom Stadttor, stellen sich an, gehen nach
+            // der Bedienung ab — spiegelt die Domain-Queue (OrderQueueState.PendingCustomers).
+            var customerPrefabs = new Object[]
+            {
+                MakeCustomerPrefab("customer_npc", 1.65f),
+                MakeCustomerPrefab("customer_woman", 1.62f),
+                MakeCustomerPrefab("customer_elder", 1.6f)
+            };
+            var queueFront = new GameObject("CustomerQueueFront").transform;
+            queueFront.position = new Vector3(0f, 0f, 2.6f);                  // Kundenseite des Tresens
+            queueFront.rotation = Quaternion.LookRotation(Vector3.forward);   // Schlange wächst nach Norden
+            var customerSpawn = new GameObject("CustomerSpawn").transform;
+            customerSpawn.position = new Vector3(2.5f, 0f, 14f);              // neben dem Stadttor
+            var queue = counterGo.AddComponent<CustomerQueueView>();
+            SetRef(queue, "controller", controller);
+            SetRefArray(queue, "customerPrefabs", customerPrefabs);
+            SetRef(queue, "spawnPoint", customerSpawn);
+            SetRef(queue, "queueFront", queueFront);
 
             // Stationen: alle 10 Gewerke (GDD §6.1) im Hof-Layout, je eigenes Pipeline-Modell.
             // Nord-Reihe 0-4, Süd-Reihe 5-9, alle zur Hof-Mitte orientiert. Nur die Schreinerei startet offen;
@@ -240,14 +277,37 @@ namespace HandwerkerImperium.Editor
                 // Gewerk-Schild knapp über dem Zaun an der Plot-Front (über der Station läge es außerhalb
                 // des Kamera-Framings; höher im Sichtkegel würde es den Avatar verdecken)
                 MakeSign(stationNames[i], pos + toCenter * 3.2f + Vector3.up * 2.2f, 0.36f,
-                    new Color(0.99f, 0.96f, 0.90f), new Color(0.33f, 0.24f, 0.16f));
+                    new Color(0.99f, 0.96f, 0.90f), new Color(0.33f, 0.24f, 0.16f), post: true);
 
                 // Gesperrte Plots: Bauzaun (lockedVisual + fenceVisual) + Preis-Schild + Hold-to-Pay-Zone
                 if (i > 0)
                 {
-                    var fence = MakeBox($"Fence_{i}", pos + toCenter * 2.6f + Vector3.up * 0.6f, new Vector3(4.6f, 1.2f, 0.3f), fencePalette, trigger: false);
-                    fence.transform.rotation = Quaternion.LookRotation(toCenter);
-                    fence.transform.SetParent(stGo.transform, true);
+                    GameObject fence;
+                    if (AssetDatabase.LoadMainAssetAtPath(ModelDir + "/fence_construction.glb") != null)
+                    {
+                        // Pipeline-Zaun: zwei Segmente decken die Plot-Front (~4,6 m)
+                        fence = new GameObject($"Fence_{i}");
+                        fence.transform.position = pos + toCenter * 2.6f;
+                        fence.transform.rotation = Quaternion.LookRotation(toCenter);
+                        var segL = new GameObject("Segment_L");
+                        segL.transform.SetParent(fence.transform, false);
+                        segL.transform.localPosition = new Vector3(-1.15f, 0f, 0f);
+                        AttachModel(segL.transform, ModelDir + "/fence_construction.glb", 1.4f);
+                        var segR = new GameObject("Segment_R");
+                        segR.transform.SetParent(fence.transform, false);
+                        segR.transform.localPosition = new Vector3(1.15f, 0f, 0f);
+                        AttachModel(segR.transform, ModelDir + "/fence_construction.glb", 1.4f);
+                        var fenceCol = fence.AddComponent<BoxCollider>();
+                        fenceCol.center = new Vector3(0f, 0.7f, 0f);
+                        fenceCol.size = new Vector3(4.6f, 1.4f, 0.35f);
+                        fence.transform.SetParent(stGo.transform, true);
+                    }
+                    else
+                    {
+                        fence = MakeBox($"Fence_{i}", pos + toCenter * 2.6f + Vector3.up * 0.6f, new Vector3(4.6f, 1.2f, 0.3f), fencePalette, trigger: false);
+                        fence.transform.rotation = Quaternion.LookRotation(toCenter);
+                        fence.transform.SetParent(stGo.transform, true);
+                    }
                     SetRef(view, "lockedVisual", fence);
 
                     // Preis am Zaun (Kind des Zauns -> verschwindet mit dem Unlock)
@@ -273,9 +333,9 @@ namespace HandwerkerImperium.Editor
             MakeUpgradePad("Pad_Tempo", new Vector3(-6f, 0.1f, 2.5f), UpgradeTrack.StationSpeed, controller, new Color(0.9f, 0.4f, 0.4f));
             MakeUpgradePad("Pad_Radius", new Vector3(-6f, 0.1f, 0f), UpgradeTrack.CollectRadius, controller, new Color(0.4f, 0.9f, 0.4f));
             MakeUpgradePad("Pad_Kapazitaet", new Vector3(-6f, 0.1f, -2.5f), UpgradeTrack.CarryCapacity, controller, new Color(0.4f, 0.5f, 0.9f));
-            MakeSign("Tempo", new Vector3(-6f, 1.1f, 2.5f), 0.26f, new Color(0.95f, 0.40f, 0.40f));
-            MakeSign("Radius", new Vector3(-6f, 1.1f, 0f), 0.26f, new Color(0.35f, 0.85f, 0.35f));
-            MakeSign("Tragkraft", new Vector3(-6f, 1.1f, -2.5f), 0.26f, new Color(0.45f, 0.55f, 0.95f));
+            MakeSign("Tempo", new Vector3(-6f, 1.1f, 2.5f), 0.26f, new Color(0.95f, 0.40f, 0.40f), post: true);
+            MakeSign("Radius", new Vector3(-6f, 1.1f, 0f), 0.26f, new Color(0.35f, 0.85f, 0.35f), post: true);
+            MakeSign("Tragkraft", new Vector3(-6f, 1.1f, -2.5f), 0.26f, new Color(0.45f, 0.55f, 0.95f), post: true);
 
             // Wahrzeichen des Stadt-Wiederaufbaus (GDD §6.4): Ruine -> Hold-to-Pay-Sanierung -> saniertes Modell.
             // Ids = LandmarkCatalog (Domain); Index-frei per Id verdrahtet (Alt-Save-robust).
@@ -286,9 +346,22 @@ namespace HandwerkerImperium.Editor
             MakeLandmark("stadttor", "Stadttor", new Vector3(0f, 0f, 15f), 4.5f,
                 ModelDir + "/landmark_gate_ruined.glb", ModelDir + "/landmark_gate_restored.glb", controller);
 
-            // Kunden-Vielfalt an der Tresen-Queue
-            MakeBystander("Customer_Woman", "customer_woman", new Vector3(1.4f, 0f, 4.3f), 195f, 1.62f);
-            MakeBystander("Customer_Elder", "customer_elder", new Vector3(-1.5f, 0f, 4.6f), 165f, 1.6f);
+            // Deko-Schicht gegen den "leeren Hof": Laternen (mit warmem Punktlicht), Fässer,
+            // Blumenbeete am Plaza-Rand, Handkarren — nur platziert, wenn das Pipeline-GLB existiert.
+            TryPlaceProp("street_lantern", new Vector3(8.5f, 0f, 4.2f), 0f, 2.6f, lantern: true);
+            TryPlaceProp("street_lantern", new Vector3(-8.5f, 0f, 4.2f), 0f, 2.6f, lantern: true);
+            TryPlaceProp("street_lantern", new Vector3(8.5f, 0f, -4.2f), 0f, 2.6f, lantern: true);
+            TryPlaceProp("street_lantern", new Vector3(-8.5f, 0f, -4.2f), 0f, 2.6f, lantern: true);
+            TryPlaceProp("street_lantern", new Vector3(2.8f, 0f, 12.0f), 0f, 2.6f, lantern: true);
+            TryPlaceProp("street_lantern", new Vector3(-2.8f, 0f, 12.0f), 0f, 2.6f, lantern: true);
+            TryPlaceProp("flower_planter", new Vector3(5.6f, 0f, 3.6f), 32f, 0.55f);
+            TryPlaceProp("flower_planter", new Vector3(-5.6f, 0f, 3.6f), -32f, 0.55f);
+            TryPlaceProp("flower_planter", new Vector3(5.6f, 0f, -3.6f), 148f, 0.55f);
+            TryPlaceProp("flower_planter", new Vector3(-5.6f, 0f, -3.6f), -148f, 0.55f);
+            TryPlaceProp("barrel_crates", new Vector3(4.3f, 0f, -1.6f), 15f, 1.1f);
+            TryPlaceProp("barrel_crates", new Vector3(-11f, 0f, 5.2f), 70f, 1.1f);
+            TryPlaceProp("handcart", new Vector3(7.2f, 0f, 1.6f), 205f, 1.15f);
+            TryPlaceProp("handcart", new Vector3(-14.5f, 0f, -4.5f), 130f, 1.15f);
 
             // Avatar-/Kamera-Verdrahtung. WICHTIG: Start-Position UND Start-Rotation setzen —
             // FollowCamera richtet erst im Play-Mode aus, sonst schaut die Edit-Game-View horizontal in den Himmel.
@@ -612,7 +685,7 @@ namespace HandwerkerImperium.Editor
         /// Welt-Schild (Billboard): Holzbrett + 3D-Text (built-in Font, kein TMP-Essentials-Zwang).
         /// Genre-Lesbarkeit: Gewerk-Namen über den Stationen, Preise an den Bauzäunen, Pad-Beschriftung.
         /// </summary>
-        private static GameObject MakeSign(string text, Vector3 worldPos, float textSize, Color textColor, Color? boardColor = null)
+        private static GameObject MakeSign(string text, Vector3 worldPos, float textSize, Color textColor, Color? boardColor = null, bool post = false)
         {
             // Breite deckeln: lange Namen (z. B. "Generalunternehmer") skalieren den Text herunter,
             // statt ein meterbreites Brett mitten ins Blickfeld zu haengen.
@@ -623,6 +696,19 @@ namespace HandwerkerImperium.Editor
             var root = new GameObject("Sign_" + text);
             root.transform.position = worldPos;
             root.AddComponent<BillboardLabel>();
+
+            // Holzpfosten bis zum Boden — Schilder schweben sonst frei in der Luft (Generik-Killer).
+            // Zylindrisch, darf also mit dem Billboard mitdrehen.
+            if (post && worldPos.y > 0.2f)
+            {
+                var pole = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                pole.name = "Post";
+                Object.DestroyImmediate(pole.GetComponent<Collider>());
+                pole.transform.SetParent(root.transform, false);
+                pole.transform.localScale = new Vector3(0.09f, worldPos.y * 0.5f, 0.09f);
+                pole.transform.localPosition = new Vector3(0f, -worldPos.y * 0.5f, 0f);
+                Paint(pole, new Color(0.36f, 0.27f, 0.18f));
+            }
 
             if (boardColor.HasValue)
             {
@@ -757,7 +843,7 @@ namespace HandwerkerImperium.Editor
             var view = pay.AddComponent<LandmarkView>();
 
             MakeSign(displayName, pos + toCenter * 1.6f + Vector3.up * 2.5f, 0.36f,
-                new Color(0.99f, 0.96f, 0.90f), new Color(0.30f, 0.24f, 0.18f));
+                new Color(0.99f, 0.96f, 0.90f), new Color(0.30f, 0.24f, 0.18f), post: true);
             var progSign = MakeSign("0/0", pos + toCenter * 1.6f + Vector3.up * 1.75f, 0.30f,
                 new Color(1.0f, 0.85f, 0.25f), new Color(0.25f, 0.20f, 0.12f));
             var progText = progSign.GetComponentInChildren<TextMesh>();
@@ -769,13 +855,47 @@ namespace HandwerkerImperium.Editor
             SetRef(view, "progressText", progText);
         }
 
-        /// <summary>Statischer NPC-Statist (Kunden-Vielfalt an der Queue) mit Idle-Atmen.</summary>
-        private static void MakeBystander(string name, string baseName, Vector3 pos, float yRotation, float height)
+        /// <summary>
+        /// Deko-Prop aus der Pipeline (nur wenn das GLB existiert): bounds-skaliert, grober
+        /// Box-Collider (Avatar läuft nicht hindurch), Laternen bekommen ein warmes Punktlicht.
+        /// </summary>
+        private static GameObject TryPlaceProp(string glbName, Vector3 pos, float yRotation, float height, bool lantern = false)
         {
-            var root = new GameObject(name);
+            string path = ModelDir + "/" + glbName + ".glb";
+            if (AssetDatabase.LoadMainAssetAtPath(path) == null) return null;
+            var root = new GameObject("Prop_" + glbName);
             root.transform.position = pos;
-            root.transform.rotation = Quaternion.Euler(0f, yRotation, 0f);
-            AttachCharacter(root.transform, baseName, height);
+            var visual = AttachModel(root.transform, path, height);
+
+            var bounds = CalcBounds(root);
+            var col = root.AddComponent<BoxCollider>();
+            col.center = new Vector3(0f, height * 0.5f, 0f);
+            col.size = new Vector3(Mathf.Max(0.3f, bounds.size.x * 0.8f), height, Mathf.Max(0.3f, bounds.size.z * 0.8f));
+
+            if (lantern)
+            {
+                var lightGo = new GameObject("LanternLight");
+                lightGo.transform.SetParent(root.transform, false);
+                lightGo.transform.localPosition = new Vector3(0f, height * 0.78f, 0f);
+                var pt = lightGo.AddComponent<Light>();
+                pt.type = LightType.Point;
+                pt.color = new Color(1.0f, 0.78f, 0.45f);
+                pt.intensity = 1.6f;
+                pt.range = 7f;
+                pt.shadows = LightShadows.None; // Punktlicht-Schatten sind auf Mobile zu teuer
+            }
+
+            root.transform.rotation = Quaternion.Euler(0f, yRotation, 0f); // nach Collider-Aufbau (lokale Box dreht mit)
+            return root;
+        }
+
+        /// <summary>Laufender Queue-Kunde als Prefab (CustomerQueueView spawnt zur Laufzeit; Gang via Walker).</summary>
+        private static GameObject MakeCustomerPrefab(string baseName, float height)
+        {
+            var go = new GameObject("Game_" + baseName);
+            AttachCharacter(go.transform, baseName, height);
+            go.AddComponent<CustomerAgent>();
+            return SavePrefab(go, "Game_" + baseName);
         }
 
         private static GameObject SavePrefab(GameObject go, string name)
@@ -838,7 +958,7 @@ namespace HandwerkerImperium.Editor
             SetRef(view, "stationPoint", stationPoint);
             SetRef(view, "counterPoint", counterPoint);
             SetRef(view, "spawnPoint", pad.transform);
-            var label = MakeSign("Arbeiter", pos + Vector3.up * 1.0f, 0.24f, new Color(0.15f, 0.75f, 0.85f));
+            var label = MakeSign("Arbeiter", pos + Vector3.up * 1.0f, 0.24f, new Color(0.15f, 0.75f, 0.85f), post: true);
             label.transform.SetParent(pad.transform, true); // verschwindet mit dem Pad nach der Anstellung
         }
 

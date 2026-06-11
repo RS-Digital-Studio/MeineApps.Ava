@@ -71,18 +71,35 @@ namespace HandwerkerImperium.Game
             // WICHTIG: UniRig-Skelette sind seitlich versetzt (nicht um x=0 zentriert) — alle
             // Links/Rechts-Messungen laufen RELATIV zur Körper-Achse (x der Hüfte bzw. Brust),
             // sonst wird der Hals als "seitlichstes Kind" fehlklassifiziert (Kopf schwingt mit).
-            float hipsX = _root.InverseTransformPoint(_hips.position).x;
-
-            // Direkte Hüft-Kinder: Ketten, deren Ende nahe dem Boden liegt = Beine; die übrige Kette = Wirbelsäule.
-            Transform spineStart = null;
-            var legs = new List<Transform>();
-            foreach (Transform child in _hips)
+            // Und: Manche Skelette haben die Wurzel am BODEN mit einem einzelnen Kind als echtem
+            // Becken (z. B. Kleid-Charaktere) — Pelvis = erster Knoten mit >= 2 Kindern abwärts.
+            var pelvis = _hips;
+            for (int guard = 0; guard < 10; guard++)
             {
-                if (!boneSet.Contains(child)) continue;
+                var kids = ChildrenIn(pelvis, boneSet);
+                if (kids.Count != 1) break;
+                pelvis = kids[0];
+            }
+            float hipsX = _root.InverseTransformPoint(pelvis.position).x;
+
+            // Pelvis-Kinder: Ketten bis zum Boden = Beine; Wirbelsäule = das Nicht-Bein-Kind mit dem
+            // HÖCHSTEN Ketten-Ende (Kleid-/Rock-Ketten enden auf halber Höhe und fallen so heraus).
+            Transform spineStart = null;
+            float spineLeafNy = float.MinValue;
+            var legs = new List<Transform>();
+            foreach (var child in ChildrenIn(pelvis, boneSet))
+            {
                 var leaf = FollowToLeaf(child, boneSet);
                 float leafNy = (_root.InverseTransformPoint(leaf.position).y - minY) / h;
-                if (leafNy < 0.2f) legs.Add(child);
-                else spineStart = child;
+                if (leafNy < 0.2f)
+                {
+                    legs.Add(child);
+                }
+                else if (leafNy > spineLeafNy)
+                {
+                    spineLeafNy = leafNy;
+                    spineStart = child;
+                }
             }
             if (legs.Count >= 2)
             {
@@ -153,6 +170,13 @@ namespace HandwerkerImperium.Game
         {
             foreach (Transform c in bone) if (boneSet.Contains(c)) return c;
             return null;
+        }
+
+        private static List<Transform> ChildrenIn(Transform bone, HashSet<Transform> boneSet)
+        {
+            var list = new List<Transform>();
+            foreach (Transform c in bone) if (boneSet.Contains(c)) list.Add(c);
+            return list;
         }
 
         private void LateUpdate()

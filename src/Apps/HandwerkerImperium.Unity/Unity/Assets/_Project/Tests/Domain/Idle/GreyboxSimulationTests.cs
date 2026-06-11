@@ -159,13 +159,16 @@ namespace HandwerkerImperium.Domain.Tests.Idle
             GreyboxSimulation.TickProduction(st, bal, 4.0);
             Assert.That(st.Stations[0].Stock, Is.EqualTo(4));
             Assert.That(st.Stations[0].BoostRemainingSeconds, Is.EqualTo(6.0).Within(1e-9));
-            // Buff laeuft ab und raeumt sich auf; danach wieder normale Rate.
+            // Buff laeuft ab und raeumt sich auf (Station erreicht dabei den Cap — egal fuer den Ablauf).
             GreyboxSimulation.TickProduction(st, bal, 6.0);
             Assert.That(st.Stations[0].BoostRemainingSeconds, Is.EqualTo(0));
             Assert.That(st.Stations[0].BoostMultiplier, Is.EqualTo(1.0));
-            int before = st.Stations[0].Stock;
+            // Danach gilt wieder die normale Rate — Cap-Einfluss neutralisieren (Stapel leeren,
+            // Akkumulator nullen; der Cap-Deckel haelt sonst bewusst 1 Intervall vor).
+            GreyboxSimulation.PlayerPickup(st, bal, 0, 8);
+            st.Stations[0].ProduceProgressSeconds = 0;
             GreyboxSimulation.TickProduction(st, bal, 2.0);
-            Assert.That(st.Stations[0].Stock - before, Is.EqualTo(1)); // 2 s / interval 2.0
+            Assert.That(st.Stations[0].Stock, Is.EqualTo(1)); // 2 s / interval 2.0 = 1 Ware
         }
 
         [Test]

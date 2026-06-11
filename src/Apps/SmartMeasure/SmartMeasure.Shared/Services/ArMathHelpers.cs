@@ -23,6 +23,11 @@ public static class ArMathHelpers
         TooLarge,
         /// <summary>Kontur entartet (offen, &lt; 3 Punkte oder Gesamtstrecke ~0).</summary>
         Degenerate,
+        /// <summary>Korrektur bewusst NICHT angewandt: Der letzte Punkt ist keine
+        /// Wiederholungsmessung des Startpunkts (implizites Schließen via Button/Moduswechsel/
+        /// Fertig) — die Schlusskante ist eine echte Polygonkante, kein Messfehler. Eine
+        /// Verteilung würde das Polygon verzerren.</summary>
+        NotApplied,
     }
 
     /// <summary>

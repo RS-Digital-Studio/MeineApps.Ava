@@ -793,7 +793,21 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 p.AnchorId = null;
             }
         }
-        var bowditch = ArPrecisionHelpers.ApplyBowditchCorrection(contour);
+
+        // Bowditch NUR wenn der letzte Punkt eine WIEDERHOLUNGSMESSUNG des Startpunkts ist
+        // (Grundriss-Abstand <= AutoCloseDistanceMeters — der Auto-Close-Ring zeigt dem
+        // Nutzer genau diese Zone an). Bei implizitem Schliessen (Schliessen-Button/
+        // Moduswechsel/Fertig ohne Re-Tap) ist die Schlusskante eine ECHTE Polygonkante:
+        // sie als "Schlussfehler" auf alle Punkte zu verteilen wuerde das Polygon verzerren.
+        var first = contour.Points[0];
+        var last = contour.Points[^1];
+        var cdx = last.X - first.X;
+        var cdz = last.Z - first.Z;
+        var isRemeasuredStart = MathF.Sqrt(cdx * cdx + cdz * cdz) <= AutoCloseDistanceMeters;
+        var bowditch = isRemeasuredStart
+            ? ArPrecisionHelpers.ApplyBowditchCorrection(contour)
+            : ArMathHelpers.BowditchResult.NotApplied;
+
         _contours.Add(contour);
         _activeContour = null;
         _undoStack.Push(new AddContourAction(_dataLock, _contours, contour));
@@ -4692,17 +4706,19 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             chipActiveContourCount = _activeContour?.Points.Count ?? 0;
             chipTapeCount = _tapeMeasurePoints.Count;
 
-            // Alle Konturen
+            // Alle Konturen. Laenge HORIZONTAL — konsistent mit den Segment-Pillen
+            // (Distance2DTo) und dem persistierten GardenElement.LengthMeters (2D-UTM).
+            // Nur das Massband zeigt bewusst die 3D-Schraegdistanz (Luftlinie).
             foreach (var c in _contours)
             {
-                liveLength += c.CalculateLength();
+                liveLength += c.CalculateHorizontalLength();
                 if (c.IsClosed) liveArea += c.CalculateArea();
             }
 
             // Aktive Kontur
             if (_activeContour != null)
             {
-                liveLength += _activeContour.CalculateLength();
+                liveLength += _activeContour.CalculateHorizontalLength();
                 if (_activeContour.Points.Count >= 3)
                 {
                     // Provisorische Fläche (als wäre sie geschlossen). CalculateArea ist read-only,

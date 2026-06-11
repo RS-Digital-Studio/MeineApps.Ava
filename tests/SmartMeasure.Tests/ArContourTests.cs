@@ -65,6 +65,40 @@ public class ArContourTests
     }
 
     [Fact]
+    public void CalculateHorizontalLength_IgnoriertHoehenanteil()
+    {
+        // 10 m horizontale Kante mit 2 m Hoehenunterschied: 3D = sqrt(104) ~ 10.198,
+        // horizontal = exakt 10 (die kanonische Plan-Laenge).
+        var c = new ArContour
+        {
+            Points = [
+                new ArPoint { X = 0, Y = 0, Z = 0 },
+                new ArPoint { X = 10, Y = 2, Z = 0 },
+            ],
+        };
+        c.CalculateHorizontalLength().Should().BeApproximately(10f, 1e-4f);
+        c.CalculateLength().Should().BeApproximately(MathF.Sqrt(104f), 1e-3f);
+    }
+
+    [Fact]
+    public void CalculateHorizontalLength_GeschlossenesQuadratAmHang_4Kanten()
+    {
+        // Quadrat 10x10 im Grundriss, Punkte auf verschiedenen Hoehen — horizontal bleibt 40.
+        var c = new ArContour
+        {
+            IsClosed = true,
+            Points = [
+                new ArPoint { X = 0, Y = 0f, Z = 0 },
+                new ArPoint { X = 10, Y = 1.5f, Z = 0 },
+                new ArPoint { X = 10, Y = 3f, Z = 10 },
+                new ArPoint { X = 0, Y = 1.5f, Z = 10 },
+            ],
+        };
+        c.CalculateHorizontalLength().Should().BeApproximately(40f, 1e-4f);
+        c.CalculateLength().Should().BeGreaterThan(40f);
+    }
+
+    [Fact]
     public void CalculateArea_OffeneKontur_IstNull()
     {
         var c = new ArContour

@@ -28,7 +28,8 @@ namespace HandwerkerImperium.Game
             for (int i = 0; i < n; i++)
             {
                 var cash = _hits[i].GetComponent<CashCube>();
-                if (cash != null) cash.Collect(transform);
+                if (cash != null && cash.Collect(transform))
+                    controller.Audio?.Play(GameSfx.CoinCollect);
             }
         }
     }

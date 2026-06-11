@@ -26,6 +26,11 @@ namespace HandwerkerImperium.Game
         [SerializeField] private float autoSaveIntervalSeconds = 15f;
         [Tooltip("Optional: koppelt die physischen Views an den vollen Runtime (eine Wahrheit, ein Save).")]
         [SerializeField] private RuntimeGameController runtime;
+        [Tooltip("Audio-Hub der Szene (SFX-Hooks der Views; optional).")]
+        [SerializeField] private GameAudio audioHub;
+
+        /// <summary>Audio-Hub für die View-SFX (null-tolerant verwenden: <c>controller.Audio?.Play(...)</c>).</summary>
+        public GameAudio Audio => audioHub;
 
         private GreyboxSession _session;
         private StationService _stations;

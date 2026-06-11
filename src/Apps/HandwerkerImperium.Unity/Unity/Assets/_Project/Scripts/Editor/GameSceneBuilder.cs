@@ -86,6 +86,22 @@ namespace HandwerkerImperium.Editor
             var hud = runtimeGo.AddComponent<RuntimeHud>();
             SetRef(hud, "controller", runtime);
 
+            // Audio-Hub: kuratierter SoundForge-Bestand (AudioSync aus dem Avalonia-HWI), Musik-Loop + SFX-Hooks
+            AudioSync.Sync();
+            var audioGo = new GameObject("GameAudio");
+            var gameAudio = audioGo.AddComponent<GameAudio>();
+            string[] sfxNames =
+            {
+                "sfx_button_tap", "sfx_money_earned", "sfx_coin_collect", "sfx_building_complete",
+                "sfx_intern_ready", "sfx_hammering", "sfx_milestone_major", "sfx_prestige_complete",
+                "sfx_offline_earnings", "sfx_news_ping", "sfx_costs_paid", "sfx_drop_common"
+            };
+            var clips = new Object[sfxNames.Length];
+            for (int i = 0; i < sfxNames.Length; i++)
+                clips[i] = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/_Project/Audio/Sfx/" + sfxNames[i] + ".ogg");
+            SetRefArray(gameAudio, "sfxClips", clips);
+            SetRef(gameAudio, "musicLoop", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/_Project/Audio/Music/music_idle_workshop.ogg"));
+
             // Premium-HUD (UI Toolkit): Statuskarten/Tagesaufgaben/Hans-Toast (GameHud.uxml/.uss)
             var panelSettings = LoadOrCreate<UnityEngine.UIElements.PanelSettings>(SceneDir + "/Runtime_PanelSettings.asset");
             panelSettings.scaleMode = UnityEngine.UIElements.PanelScaleMode.ScaleWithScreenSize;
@@ -103,6 +119,7 @@ namespace HandwerkerImperium.Editor
                 doc.visualTreeAsset = uxml;
                 var binder = hudGo.AddComponent<HandwerkerImperium.UI.Hud.GameHudBinder>();
                 SetRef(binder, "controller", runtime);
+                SetRef(binder, "audioHub", gameAudio);
             }
             else
             {
@@ -113,6 +130,7 @@ namespace HandwerkerImperium.Editor
             var controllerGo = new GameObject("GreyboxGameController");
             var controller = controllerGo.AddComponent<GreyboxGameController>();
             SetRef(controller, "runtime", runtime);
+            SetRef(controller, "audioHub", gameAudio);
 
             // Avatar: CharacterController-Root (Füße auf y=0) + echtes Meister-Hans-Modell
             var avatarGo = new GameObject("Avatar");
@@ -135,6 +153,7 @@ namespace HandwerkerImperium.Editor
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.55f, 0.70f, 0.82f);
             cam.fieldOfView = 45f; // enger als der 60er-Default — weniger Verzerrung, Figuren größer
+            camGo.AddComponent<AudioListener>();
             var follow = camGo.AddComponent<FollowCamera>();
 
             // Tresen + Kunde (echtes Modell) + Cash-Spawn

@@ -18,6 +18,7 @@ namespace HandwerkerImperium.Game
             if (controller.Plots.Unlock(stationIndex))
             {
                 if (fenceVisual != null) fenceVisual.SetActive(false);
+                controller.Audio?.Play(GameSfx.PlotUnlock);
             }
         }
     }

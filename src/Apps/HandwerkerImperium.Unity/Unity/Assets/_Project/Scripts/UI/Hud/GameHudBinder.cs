@@ -17,6 +17,7 @@ namespace HandwerkerImperium.UI.Hud
     public sealed class GameHudBinder : MonoBehaviour
     {
         [SerializeField] private RuntimeGameController controller;
+        [SerializeField] private GameAudio audioHub;
         [SerializeField] private float slowPollSeconds = 0.25f;
         [SerializeField] private float toastSeconds = 4.5f;
 
@@ -63,14 +64,21 @@ namespace HandwerkerImperium.UI.Hud
             _offlineAmount = root.Q<Label>("offline-amount");
             var continueButton = root.Q<Button>("offline-continue");
             if (continueButton != null)
-                continueButton.clicked += () => _offlineOverlay?.AddToClassList("modal-overlay--hidden");
+                continueButton.clicked += () =>
+                {
+                    audioHub?.Play(GameSfx.ButtonTap);
+                    _offlineOverlay?.AddToClassList("modal-overlay--hidden");
+                };
             var doubleButton = root.Q<Button>("offline-double");
             if (doubleButton != null)
                 doubleButton.clicked += () =>
                 {
                     decimal extra = controller != null ? controller.DoubleOfflineOnce() : 0m;
                     if (extra > 0m && _offlineAmount != null)
+                    {
                         _offlineAmount.text = "+" + MoneyFormat.Short(extra * 2m);
+                        audioHub?.Play(GameSfx.MoneyEarned);
+                    }
                     doubleButton.SetEnabled(false); // einmalig je Start
                 };
 
@@ -84,11 +92,18 @@ namespace HandwerkerImperium.UI.Hud
                 prestigeConfirm.clicked += () =>
                 {
                     if (controller != null && controller.TryPrestige())
+                    {
+                        audioHub?.Play(GameSfx.Prestige);
                         _prestigeOverlay?.AddToClassList("modal-overlay--hidden");
+                    }
                 };
             var prestigeCancel = root.Q<Button>("prestige-cancel");
             if (prestigeCancel != null)
-                prestigeCancel.clicked += () => _prestigeOverlay?.AddToClassList("modal-overlay--hidden");
+                prestigeCancel.clicked += () =>
+                {
+                    audioHub?.Play(GameSfx.ButtonTap);
+                    _prestigeOverlay?.AddToClassList("modal-overlay--hidden");
+                };
 
             ApplySafeArea(root.Q<VisualElement>("top-bar"));
         }
@@ -106,6 +121,7 @@ namespace HandwerkerImperium.UI.Hud
                 {
                     _offlineAmount.text = "+" + MoneyFormat.Short(controller.LastOfflineEarned);
                     _offlineOverlay.RemoveFromClassList("modal-overlay--hidden");
+                    audioHub?.Play(GameSfx.OfflineEarnings);
                 }
             }
 
@@ -172,6 +188,7 @@ namespace HandwerkerImperium.UI.Hud
                 _toast.text = BeatTexts.TryGetValue(beat, out var txt) ? txt : beat;
                 _toast.RemoveFromClassList("story-toast--hidden");
                 _toastTimer = toastSeconds;
+                audioHub?.Play(GameSfx.StoryPing);
             }
             else if (_toastTimer > 0f)
             {

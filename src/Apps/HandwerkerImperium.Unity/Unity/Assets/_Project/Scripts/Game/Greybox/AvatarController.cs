@@ -81,6 +81,7 @@ namespace HandwerkerImperium.Game
                 CarriedStation = stationIndex;
                 CarriedCount += taken;
                 RebuildCarryVisual();
+                controller.Audio?.Play(GameSfx.Pickup);
             }
             return taken;
         }

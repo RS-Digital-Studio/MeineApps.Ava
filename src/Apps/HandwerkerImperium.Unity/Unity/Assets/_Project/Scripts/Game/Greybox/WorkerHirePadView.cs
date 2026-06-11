@@ -19,6 +19,7 @@ namespace HandwerkerImperium.Game
         protected override void TryPayStep()
         {
             if (!controller.Workers.Hire(stationIndex)) return;
+            controller.Audio?.Play(GameSfx.WorkerHired);
 
             if (workerNpcPrefab != null)
             {

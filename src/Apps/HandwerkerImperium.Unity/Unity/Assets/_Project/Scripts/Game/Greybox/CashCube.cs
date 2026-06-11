@@ -31,12 +31,14 @@ namespace HandwerkerImperium.Game
             if (_age >= lifeSeconds) Destroy(gameObject);
         }
 
-        /// <summary>Optik-Einsammeln (kein Geld) — der Wuerfel fliegt zum Sammler und despawnt.</summary>
-        public void Collect(Transform collector)
+        /// <summary>Optik-Einsammeln (kein Geld) — der Wuerfel fliegt zum Sammler und despawnt.
+        /// Liefert true nur beim ERSTEN Einsammeln (für den Coin-SFX des Aufrufers).</summary>
+        public bool Collect(Transform collector)
         {
-            if (_collected) return;
+            if (_collected) return false;
             _collected = true;
             _collector = collector;
+            return true;
         }
     }
 }

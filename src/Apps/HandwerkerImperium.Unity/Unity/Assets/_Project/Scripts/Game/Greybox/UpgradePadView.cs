@@ -15,7 +15,8 @@ namespace HandwerkerImperium.Game
 
         protected override void TryPayStep()
         {
-            controller.Upgrades.Buy(track);
+            if (controller.Upgrades.Buy(track))
+                controller.Audio?.Play(GameSfx.UpgradePaid);
         }
     }
 }

@@ -23,6 +23,7 @@ namespace HandwerkerImperium.Game
 
             int sold = avatar.Deposit();
             controller.NotifyPhysicalSale(sold); // gekoppelt: bedient wartende Kunden der Runtime-Queue
+            if (sold > 0) controller.Audio?.Play(GameSfx.MoneyEarned);
             SpawnCash(sold);
         }
 

@@ -26,14 +26,20 @@ namespace HandwerkerImperium.Game
 
         protected override void TryPayStep()
         {
-            controller.InvestLandmark(landmarkId, (decimal)investStep);
+            if (controller.InvestLandmark(landmarkId, (decimal)investStep) > 0)
+                controller.Audio?.Play(GameSfx.LandmarkPhase);
         }
+
+        private bool _wasDone;
 
         private void LateUpdate()
         {
             var lm = controller != null ? controller.GetLandmark(landmarkId) : null;
             if (lm == null) return;
             bool done = RestorationFormulas.IsComplete(lm);
+            if (done && !_wasDone && restoredVisual != null && !restoredVisual.activeSelf)
+                controller.Audio?.Play(GameSfx.LandmarkComplete); // der Vorher/Nachher-Moment
+            _wasDone = done;
             if (ruinedVisual != null && ruinedVisual.activeSelf == done) ruinedVisual.SetActive(!done);
             if (restoredVisual != null && restoredVisual.activeSelf != done) restoredVisual.SetActive(done);
             if (progressText != null)

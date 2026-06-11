@@ -21,3 +21,7 @@ Assets/_Project/Art/Models/*.glb
 Assets/_Project/Art/Models/*.gltf
 Assets/_Project/Art/Models/*.fbx
 Assets/_Project/Art/Models/*.bin
+
+# Audio-Kopien (Quelle versioniert im Avalonia-HWI-Shared; Sync via Menü
+# "HandwerkerImperium/Runtime/Sync Audio von Avalonia" bzw. automatisch im Szene-Builder)
+Assets/_Project/Audio/

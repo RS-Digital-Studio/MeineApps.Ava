@@ -25,5 +25,14 @@
             <ui:Label name="task-2" text="" class="task-row" picking-mode="Ignore"/>
         </ui:VisualElement>
         <ui:Label name="story-toast" text="" class="story-toast story-toast--hidden" picking-mode="Ignore"/>
+        <!-- Offline-Verdienst-Modal ("Während du weg warst") — blockiert bewusst den Input, bis bestätigt. -->
+        <ui:VisualElement name="offline-overlay" class="modal-overlay modal-overlay--hidden">
+            <ui:VisualElement name="offline-card" class="modal-card">
+                <ui:Label text="Willkommen zurück!" class="modal-title"/>
+                <ui:Label text="Während du weg warst, haben deine Arbeiter verdient:" class="modal-text"/>
+                <ui:Label name="offline-amount" text="0" class="modal-amount"/>
+                <ui:Button name="offline-continue" text="Einsammeln" class="modal-button"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -91,3 +91,65 @@
 }
 
 .story-toast--hidden { opacity: 0; }
+
+/* Offline-Verdienst-Modal */
+
+.modal-overlay {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background-color: rgba(12, 8, 4, 0.62);
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: 0.3s;
+}
+
+.modal-overlay--hidden {
+    opacity: 0;
+    display: none;
+}
+
+.modal-card {
+    background-color: rgb(46, 33, 21);
+    border-radius: 18px;
+    border-width: 2px;
+    border-color: rgb(217, 119, 6);
+    padding: 22px 34px 24px 34px;
+    align-items: center;
+    max-width: 70%;
+}
+
+.modal-title {
+    color: rgb(255, 211, 92);
+    font-size: 26px;
+    -unity-font-style: bold;
+    margin-bottom: 6px;
+}
+
+.modal-text {
+    color: rgb(230, 218, 198);
+    font-size: 15px;
+    white-space: normal;
+    -unity-text-align: middle-center;
+}
+
+.modal-amount {
+    color: rgb(255, 211, 92);
+    font-size: 36px;
+    -unity-font-style: bold;
+    margin: 10px 0 14px 0;
+}
+
+.modal-button {
+    background-color: rgb(217, 119, 6);
+    color: rgb(28, 18, 8);
+    font-size: 18px;
+    -unity-font-style: bold;
+    border-radius: 12px;
+    border-width: 0;
+    padding: 10px 36px;
+}
+
+.modal-button:hover { background-color: rgb(240, 150, 40); }
+.modal-button:active { background-color: rgb(190, 100, 0); }

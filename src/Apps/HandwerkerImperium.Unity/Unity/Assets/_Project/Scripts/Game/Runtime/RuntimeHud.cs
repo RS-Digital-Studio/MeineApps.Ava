@@ -15,10 +15,19 @@ namespace HandwerkerImperium.Game
         [SerializeField] private RuntimeGameController controller;
         [Tooltip("Referenz-Bildschirmhöhe für die Schrift-Skalierung (kleiner = größeres HUD).")]
         [SerializeField] private float referenceHeight = 820f;
+        [Tooltip("Dev-Werkzeug: standardmäßig unsichtbar (Premium-HUD übernimmt die Spieler-Sicht), F1 blendet ein/aus.")]
+        [SerializeField] private bool visible;
 
         private Rect _win = new Rect(20f, 20f, 460f, 120f);
         private float _k = -1f;
         private GUIStyle _window, _label, _title, _button;
+
+        private void Update()
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null && kb.f1Key.wasPressedThisFrame)
+                visible = !visible;
+        }
 
         private void BuildStyles(float k)
         {
@@ -31,7 +40,7 @@ namespace HandwerkerImperium.Game
 
         private void OnGUI()
         {
-            if (controller == null || controller.Model == null) return;
+            if (!visible || controller == null || controller.Model == null) return;
 
             float k = Mathf.Clamp(Screen.height / referenceHeight, 1f, 3f);
             if (_window == null || !Mathf.Approximately(k, _k)) { _k = k; BuildStyles(k); }

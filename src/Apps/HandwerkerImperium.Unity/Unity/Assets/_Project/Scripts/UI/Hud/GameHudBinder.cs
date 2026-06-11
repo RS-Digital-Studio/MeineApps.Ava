@@ -40,11 +40,13 @@ namespace HandwerkerImperium.UI.Hud
             { "dt_cash_10000", "10.000 Geld ansammeln" },
         };
 
-        private Label _money, _income, _gems, _city, _star, _toast;
+        private Label _money, _income, _gems, _city, _star, _toast, _offlineAmount;
+        private VisualElement _offlineOverlay;
         private readonly Label[] _tasks = new Label[3];
         private float _slowTimer;
         private float _toastTimer;
         private string _lastBeat = "";
+        private bool _offlineShown;
 
         private void OnEnable()
         {
@@ -56,6 +58,11 @@ namespace HandwerkerImperium.UI.Hud
             _star = root.Q<Label>("star-value");
             _toast = root.Q<Label>("story-toast");
             for (int i = 0; i < 3; i++) _tasks[i] = root.Q<Label>("task-" + i);
+            _offlineOverlay = root.Q<VisualElement>("offline-overlay");
+            _offlineAmount = root.Q<Label>("offline-amount");
+            var continueButton = root.Q<Button>("offline-continue");
+            if (continueButton != null)
+                continueButton.clicked += () => _offlineOverlay?.AddToClassList("modal-overlay--hidden");
             ApplySafeArea(root.Q<VisualElement>("top-bar"));
         }
 
@@ -63,6 +70,17 @@ namespace HandwerkerImperium.UI.Hud
         {
             if (controller == null || controller.Model == null || _money == null) return;
             var m = controller.Model;
+
+            // Offline-Verdienst-Modal einmalig zeigen (Runtime rechnet den Betrag in Start an)
+            if (!_offlineShown)
+            {
+                _offlineShown = true;
+                if (controller.LastOfflineEarned > 0m && _offlineOverlay != null && _offlineAmount != null)
+                {
+                    _offlineAmount.text = "+" + MoneyFormat.Short(controller.LastOfflineEarned);
+                    _offlineOverlay.RemoveFromClassList("modal-overlay--hidden");
+                }
+            }
 
             _money.text = MoneyFormat.Short(m.Idle.Money);
 

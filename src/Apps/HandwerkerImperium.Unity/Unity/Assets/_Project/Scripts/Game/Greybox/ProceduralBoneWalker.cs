@@ -20,7 +20,8 @@ namespace HandwerkerImperium.Game
         [SerializeField] private float legSwingDegrees = 30f;
         [SerializeField] private float kneeBendDegrees = 24f;
         [SerializeField] private float armSwingDegrees = 16f;
-        [SerializeField] private float stepFrequency = 4.5f;
+        [Tooltip("Schrittzyklen pro Sekunde bei normalem Gehtempo (~1,5-2 ist natürlich).")]
+        [SerializeField] private float stepFrequency = 1.7f;
         [SerializeField] private float speedThreshold = 0.15f;
         [SerializeField] private float bobAmplitude = 0.03f;
 

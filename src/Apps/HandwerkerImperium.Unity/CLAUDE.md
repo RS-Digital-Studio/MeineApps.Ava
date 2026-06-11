@@ -57,8 +57,13 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > Endgame-Renommee-Akkumulation, Rush-Event (2×), Saison-Erkennung, Free-Cash-Pad (Monetarisierung), Tagesaufgaben
 > (3/Tag → Gems, UTC-Reset, persistiert + HMAC-signiert). Der headless-baubare Logik-Layer ist damit komplett.
 >
-> **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **170 NUnit /
-> 0 Fehler** (156 Domain + 14 Game, via unity-mcp-Reflection-Runner). Zusätzlich **2 adversariale Mehr-Agenten-Reviews**
+> **Welt-Bestand (Assets + Verdrahtung):** 33 Pipeline-GLBs in `Art/Models/` — 10 Gewerke-Gebäude, 10 Trag-Waren
+> (1,2k Tris, stationsspezifischer Stapel + Carry via `AvatarController.stationWarePrefabs`), 3 Wahrzeichen-Paare
+> (Ruine/saniert, `LandmarkCatalog` + `LandmarkView`-Hold-to-Pay-Sanierung mit sichtbarem Modell-Swap), Avatar +
+> 3 Kunden + Worker. Details/Re-Import/Sichtungs-Lehren → `Assets/_Project/Art/Models/README.md`.
+>
+> **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **173 NUnit /
+> 0 Fehler** (159 Domain + 14 Game, via unity-mcp-Reflection-Runner). Zusätzlich **2 adversariale Mehr-Agenten-Reviews**
 > gegen die .md-Specs → alle gefundenen Bugs (Anti-Cheat-Lücken, Determinismus, Overflow, Off-by-one) fix-forward behoben.
 > **HMAC-Mapping (CLAUDE.md §7-Tuple → neue Slices):** `Gems` ≙ GoldenScrews, kein `PlayerLevel` (stattdessen `Mastery.Level`
 > signiert) — bewusste Schema-Neuausrichtung.

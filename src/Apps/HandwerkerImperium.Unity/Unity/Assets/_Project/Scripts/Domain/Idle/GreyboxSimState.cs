@@ -27,6 +27,11 @@ namespace HandwerkerImperium.Domain.Idle
         public bool HasWorker;
         /// <summary>Waren-Akkumulator des Workers (fraktionales Tragen ueber Ticks).</summary>
         public double WorkerProgress;
+        /// <summary>Temporaerer Tempo-Buff der Perfekt-Aktion (GDD §6.7). FLUECHTIG — bewusst
+        /// nicht persistiert (Buff-Dauer ~Sekunden; Save-Schema + HMAC bleiben unberuehrt).</summary>
+        public double BoostMultiplier = 1.0;
+        /// <summary>Restlaufzeit des Tempo-Buffs in Sekunden (0 = kein Buff aktiv).</summary>
+        public double BoostRemainingSeconds;
 
         public StationState() { }
         public StationState(string id, bool unlocked) { Id = id; Unlocked = unlocked; }

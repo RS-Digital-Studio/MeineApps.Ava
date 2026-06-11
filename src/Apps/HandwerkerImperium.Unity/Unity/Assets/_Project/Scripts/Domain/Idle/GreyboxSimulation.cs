@@ -31,7 +31,21 @@ namespace HandwerkerImperium.Domain.Idle
                 double interval = IdleEconomyFormulas.EffectiveProduceInterval(sb.ProduceInterval, state.StationSpeedLevel, balancing.UpgradeStep);
                 if (interval <= 0) continue;
 
-                st.ProduceProgressSeconds += dtSeconds;
+                // Perfekt-Aktions-Buff (GDD §6.7): beschleunigt die Produktion temporaer; die
+                // Restlaufzeit laeuft auch bei vollem Stapel ab (kein "eingefrorener" Buff).
+                double speedFactor = 1.0;
+                if (st.BoostRemainingSeconds > 0)
+                {
+                    if (st.BoostMultiplier > 1.0) speedFactor = st.BoostMultiplier;
+                    st.BoostRemainingSeconds -= dtSeconds;
+                    if (st.BoostRemainingSeconds <= 0)
+                    {
+                        st.BoostRemainingSeconds = 0;
+                        st.BoostMultiplier = 1.0;
+                    }
+                }
+
+                st.ProduceProgressSeconds += dtSeconds * speedFactor;
                 while (st.ProduceProgressSeconds >= interval && st.Stock < sb.StackCap)
                 {
                     st.Stock++;
@@ -41,6 +55,21 @@ namespace HandwerkerImperium.Domain.Idle
                 if (st.Stock >= sb.StackCap && st.ProduceProgressSeconds > interval)
                     st.ProduceProgressSeconds = interval;
             }
+        }
+
+        /// <summary>
+        /// Setzt den temporaeren Tempo-Buff der Perfekt-Aktion (GDD §6.7) auf eine Station.
+        /// Multiplikator &lt;= 1 oder Dauer &lt;= 0 (Miss) sind no-ops; ein staerkerer/neuer Buff
+        /// ersetzt den laufenden (kein Stapeln).
+        /// </summary>
+        public static void ApplyBoost(GreyboxSimState state, int stationIndex, double multiplier, double durationSeconds)
+        {
+            if (stationIndex < 0 || stationIndex >= state.Stations.Count) return;
+            if (multiplier <= 1.0 || durationSeconds <= 0) return;
+            var st = state.Stations[stationIndex];
+            if (!st.Unlocked) return;
+            st.BoostMultiplier = multiplier;
+            st.BoostRemainingSeconds = durationSeconds;
         }
 
         /// <summary>Automatisierte Stationen: Worker bewegt Stock->Tresen (Waren/s), wandelt in Geld. Liefert Geld-Delta.</summary>

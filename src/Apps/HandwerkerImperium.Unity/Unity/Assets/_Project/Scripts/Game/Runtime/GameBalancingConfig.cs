@@ -79,6 +79,13 @@ namespace HandwerkerImperium.Game
         public int[] referralTierThresholds = { 1, 5, 10 };
         public int[] referralTierRewards = { 50, 200, 500 };
 
+        [Header("Perfekt-Aktionen (Tap-Timing, GDD §6.7)")]
+        public float miniGamePerfectWindow = 0.07f;
+        public float miniGameGoodWindow = 0.16f;
+        public float miniGameOkWindow = 0.30f;
+        public float miniGameBoostBaseDuration = 20f;
+        public float miniGamePulsePeriod = 1.4f;
+
         /// <summary>Idle-Loop-Balancing (P0); fällt auf Default zurück, wenn kein Idle-Config gesetzt ist.</summary>
         public IdleBalancing ToIdleBalancing() => idle != null ? idle.ToDomain() : new IdleBalancing();
 
@@ -140,6 +147,12 @@ namespace HandwerkerImperium.Game
 
             b.Referral.TierThresholds = new List<int>(referralTierThresholds);
             b.Referral.TierRewards = new List<int>(referralTierRewards);
+
+            b.MiniGames.PerfectWindowSeconds = miniGamePerfectWindow;
+            b.MiniGames.GoodWindowSeconds = miniGameGoodWindow;
+            b.MiniGames.OkWindowSeconds = miniGameOkWindow;
+            b.MiniGames.BoostBaseDurationSeconds = miniGameBoostBaseDuration;
+            b.MiniGames.PulsePeriodSeconds = miniGamePulsePeriod;
             return b;
         }
 

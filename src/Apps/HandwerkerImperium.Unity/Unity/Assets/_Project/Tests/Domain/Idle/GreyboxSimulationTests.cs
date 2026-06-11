@@ -150,6 +150,50 @@ namespace HandwerkerImperium.Domain.Tests.Idle
         }
 
         [Test]
+        public void Boost_SpeedsUpProduction_AndExpires()
+        {
+            var bal = Bal();
+            var st = GreyboxSimState.CreateNew(bal);
+            // Station 0: interval 2.0. Mit 2x-Boost produzieren 4 s wie 8 s -> 4 Waren statt 2.
+            GreyboxSimulation.ApplyBoost(st, 0, 2.0, 10.0);
+            GreyboxSimulation.TickProduction(st, bal, 4.0);
+            Assert.That(st.Stations[0].Stock, Is.EqualTo(4));
+            Assert.That(st.Stations[0].BoostRemainingSeconds, Is.EqualTo(6.0).Within(1e-9));
+            // Buff laeuft ab und raeumt sich auf; danach wieder normale Rate.
+            GreyboxSimulation.TickProduction(st, bal, 6.0);
+            Assert.That(st.Stations[0].BoostRemainingSeconds, Is.EqualTo(0));
+            Assert.That(st.Stations[0].BoostMultiplier, Is.EqualTo(1.0));
+            int before = st.Stations[0].Stock;
+            GreyboxSimulation.TickProduction(st, bal, 2.0);
+            Assert.That(st.Stations[0].Stock - before, Is.EqualTo(1)); // 2 s / interval 2.0
+        }
+
+        [Test]
+        public void Boost_IgnoresInvalidRequests()
+        {
+            var bal = Bal();
+            var st = GreyboxSimState.CreateNew(bal);
+            GreyboxSimulation.ApplyBoost(st, 99, 2.0, 10.0);   // Index ausserhalb
+            GreyboxSimulation.ApplyBoost(st, 0, 1.0, 10.0);    // Miss (Multiplikator 1 = kein Buff)
+            GreyboxSimulation.ApplyBoost(st, 0, 2.0, 0.0);     // Dauer 0
+            GreyboxSimulation.ApplyBoost(st, 3, 2.0, 10.0);    // gesperrte Station
+            Assert.That(st.Stations[0].BoostRemainingSeconds, Is.EqualTo(0));
+            Assert.That(st.Stations[3].BoostRemainingSeconds, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Boost_RunsOutEvenWhenStockIsFull()
+        {
+            var bal = Bal();
+            var st = GreyboxSimState.CreateNew(bal);
+            GreyboxSimulation.TickProduction(st, bal, 16.0); // Station 0 voll (Cap 8)
+            GreyboxSimulation.ApplyBoost(st, 0, 2.0, 5.0);
+            GreyboxSimulation.TickProduction(st, bal, 5.0);  // Stock bleibt am Cap, Buff laeuft trotzdem ab
+            Assert.That(st.Stations[0].Stock, Is.EqualTo(8));
+            Assert.That(st.Stations[0].BoostRemainingSeconds, Is.EqualTo(0));
+        }
+
+        [Test]
         public void Offline_Staggered_AndCapped()
         {
             var bal = Bal();

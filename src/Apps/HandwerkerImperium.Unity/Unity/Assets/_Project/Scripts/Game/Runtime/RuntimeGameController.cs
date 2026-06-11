@@ -153,6 +153,10 @@ namespace HandwerkerImperium.Game
         /// <summary>Fortschritt 0..1 einer Tagesaufgabe (für die UI).</summary>
         public double DailyTaskProgress01(DailyTaskRuntime t) => GameProgress.DailyTaskProgress01(_model, t);
 
+        /// <summary>Perfekt-Aktion (GDD §6.7): setzt den temporaeren Tempo-Buff auf eine Station.</summary>
+        public void ApplyStationBoost(int stationIndex, decimal multiplier, double durationSeconds) =>
+            GreyboxSimulation.ApplyBoost(_model.Idle, stationIndex, (double)multiplier, durationSeconds);
+
         /// <summary>Free-Cash-Pad (per Ad): 2× Einkommen je Zeitblock. Liefert den gutgeschriebenen Betrag.</summary>
         public decimal ClaimFreeCash()
         {

@@ -25,6 +25,7 @@ namespace HandwerkerImperium.Domain.Config
         public OfflineConfig Offline = new OfflineConfig();
         public MonetizationConfig Monetization = new MonetizationConfig();
         public ReferralConfig Referral = new ReferralConfig();
+        public MiniGameConfig MiniGames = new MiniGameConfig();
 
         // ── Stern-Rating (P1 §3/§4) ────────────────────────────────────────
         public sealed class StarConfig
@@ -142,6 +143,19 @@ namespace HandwerkerImperium.Domain.Config
         {
             public List<int> TierThresholds = new List<int> { 1, 5, 10 };
             public List<int> TierRewards = new List<int> { 50, 200, 500 };
+        }
+
+        // ── Perfekt-Aktionen / Tap-Timing (GDD §6.7) ───────────────────────
+        public sealed class MiniGameConfig
+        {
+            /// <summary>Timing-Fenster in Sekunden (perfect ⊂ good ⊂ ok; darueber Miss).</summary>
+            public double PerfectWindowSeconds = 0.07;
+            public double GoodWindowSeconds = 0.16;
+            public double OkWindowSeconds = 0.30;
+            /// <summary>Basis-Buff-Dauer (Perfect = voll; Good/Ok skaliert, siehe MiniGameBoostFormulas).</summary>
+            public double BoostBaseDurationSeconds = 20;
+            /// <summary>Puls-Periode des Timing-Rings in Sekunden (eine Schrumpf-Wachs-Schwingung).</summary>
+            public double PulsePeriodSeconds = 1.4;
         }
     }
 }

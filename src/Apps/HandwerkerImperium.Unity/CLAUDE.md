@@ -127,7 +127,7 @@ Avalonia-Original bleibt produktiv. Cutover erst nach erfolgreicher Beta.
 | JSON | Newtonsoft.Json 3.2.2 | Kompatibel zum Avalonia-Save-Format |
 | Lokalisierung | Unity Localization 1.5.11 | String-Tables (NICHT RESX) |
 | Asset-Loading | Addressables 2.9.1 | NICHT `Resources.Load` (außer Bootstrap) |
-| 3D-Asset-Import | **glTFast 6.12.0** (`com.unity.cloud.gltfast`, Apache-2.0) | GLB der ComfyUI-Pipeline → URP-Lit mit vollem PBR (Albedo+Metallic/Roughness) automatisch. NICHT FBX/OBJ (verlieren Metallic/Roughness). `Packages/manifest.json` ist git-ignored → Dependency hier dokumentiert. Asset-Quelle/Re-Import → `Assets/_Project/Art/Models/README.md` |
+| 3D-Asset-Import | **glTFast 6.12.0** (`com.unity.cloud.gltfast`, Apache-2.0, **embedded + gepatcht**) | GLB der ComfyUI-Pipeline → URP-Lit mit vollem PBR (Albedo+Metallic/Roughness) automatisch. NICHT FBX/OBJ (verlieren Metallic/Roughness). `Packages/manifest.json` ist git-ignored → Dependency hier dokumentiert. **Pflicht-Patch (glTFast #764, Android/IL2CPP):** Paket embedden (`Packages/com.unity.cloud.gltfast/`, lokal/git-ignored) und in `Runtime/Scripts/Animation/AnimationPlayableComponent.cs` das `using NUnit.Framework;` entfernen + beide `Assert.IsTrue` → `Debug.Assert` — sonst bricht der CIL-Linker mit `IL1005 … Failed to resolve 'nunit.framework'`. Registry bietet kein gefixtes 6.13 (nur bis 6.6.0-pre). Asset-Quelle/Re-Import → `Assets/_Project/Art/Models/README.md` |
 | Audio | Unity AudioMixer | plattformneutral (war Avalonia-Schmerzpunkt) |
 | Animation | Animator + DOTween + Timeline | NICHT CSS-Hacks (war Avalonia-Schmerzpunkt) |
 | Camera | Cinemachine 3.x | Orbit + Pan + Impulse-Shake (Unity-6-Default `com.unity.cinemachine`, API-inkompatibel zu 2.10) |

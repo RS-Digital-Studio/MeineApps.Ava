@@ -788,7 +788,11 @@ das Modus-Präfix `Local{Name}Service` / `Remote{Name}Service` (z.B. `LocalBotCo
   JsonException riss sonst den Equity-Snapshot)
 - **API-Code 100410 (rate limited) kommt in HTTP-200-Antworten** — `SendSignedRequestAsync`
   behandelt ihn wie HTTP 429 (Backoff-Retry, Timestamp/Signatur pro Versuch neu). Vorher gab z.B.
-  `CloseAllPositionsAsync` beim Stop nach dem ersten 100410 auf und liess Positionen offen
+  `CloseAllPositionsAsync` beim Stop nach dem ersten 100410 auf und liess Positionen offen.
+  **AUSNAHME `PlaceOrderAsync` (`retryRateLimit=false`)**: Position-eroeffnende Orders duerfen bei
+  100410 NICHT blind erneut gesendet werden — BingX kann die Order trotz Rate-Limit-Antwort
+  angenommen haben, der Retry platzierte sie doppelt (doppelte Exposure). Close-/reduce-only-Pfade
+  sind retry-sicher (zweiter Close auf leerer Position = harmloser Reject)
 - **`SetMarginTypeAsync` VOR jeder Order** — BingX-Default kann Cross sein, try-catch (Fehler bei offener Position ignorieren)
 - **Kill-Switch**: alle 60s refreshen (`ActivateKillSwitchAsync(120s)`), bei sauberem Stop explizit `DeactivateKillSwitchAsync()`
 - **Server-Zeit-Sync**: `SyncServerTimeAsync()` bei Connect — Error 100421 bei > 5s Drift

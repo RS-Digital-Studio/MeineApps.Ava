@@ -319,6 +319,19 @@ public class BingXRestClient : IExchangeClient
 
                 if (apiResponse.Code != 0)
                 {
+                    // 100410 (rate limited) kommt als API-Code in einer HTTP-200-Antwort — genauso
+                    // transient wie HTTP 429, daher mit Backoff erneut versuchen (Timestamp/Signatur
+                    // werden pro Versuch neu erzeugt). Live beobachtet: CloseAll beim Stop gab nach
+                    // dem ersten 100410 auf und liess eine Position offen.
+                    if (apiResponse.Code == 100410 && attempt < MaxRetries)
+                    {
+                        var rateBackoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
+                        _logger.LogWarning("API Error 100410 (rate limited), Retry in {Backoff}s (Versuch {Attempt}/{Max})",
+                            rateBackoff.TotalSeconds, attempt + 1, MaxRetries);
+                        await Task.Delay(rateBackoff, ct).ConfigureAwait(false);
+                        continue;
+                    }
+
                     _logger.LogError("API Error {Code}: {Msg}", apiResponse.Code, apiResponse.Msg);
                     throw new BingXApiException(apiResponse.Code, apiResponse.Msg ?? "Unbekannter Fehler");
                 }
@@ -1147,13 +1160,24 @@ public class BingXRestClient : IExchangeClient
 
     public async Task<AccountInfo> GetAccountInfoAsync()
     {
-        // v3: Response ist ein Array von Balance-Objekten (eines pro Settlement-Asset)
-        // Wir handeln nur USDT-M Futures → USDT-Eintrag nehmen
-        var balances = await SendSignedRequestAsync<List<BingXBalanceDetail>>(
+        // v3: Response ist normalerweise ein Array von Balance-Objekten (eines pro Settlement-Asset).
+        // BingX liefert vereinzelt aber die v2-Form (einzelnes Objekt, ggf. mit "balance"-Wrapper) —
+        // live beobachtet 12.06.2026 (JsonException riss den Equity-Snapshot). Beide Formen tolerieren.
+        var data = await SendSignedRequestAsync<JsonElement>(
             HttpMethod.Get,
             "/openApi/swap/v3/user/balance",
             null,
             "queries");
+
+        List<BingXBalanceDetail> balances = data.ValueKind switch
+        {
+            JsonValueKind.Array => data.Deserialize<List<BingXBalanceDetail>>() ?? [],
+            JsonValueKind.Object when data.TryGetProperty("balance", out var inner)
+                                      && inner.ValueKind == JsonValueKind.Object
+                => [inner.Deserialize<BingXBalanceDetail>()!],
+            JsonValueKind.Object => [data.Deserialize<BingXBalanceDetail>()!],
+            _ => throw new BingXApiException(-1, $"Unerwartete Balance-Response-Form: {data.ValueKind}"),
+        };
 
         // USDT-Balance finden (Standard für Perpetual Futures)
         var balance = balances.FirstOrDefault(b => b.Asset == "USDT") ?? balances.FirstOrDefault();

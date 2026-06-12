@@ -84,8 +84,14 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > **HMAC-Mapping (CLAUDE.md §7-Tuple → neue Slices):** `Gems` ≙ GoldenScrews, kein `PlayerLevel` (stattdessen `Mastery.Level`
 > signiert) — bewusste Schema-Neuausrichtung.
 >
-> **Offen (externe/gated Schichten):** Premium-UI (UI Toolkit) statt Diagnose-HUD, volle 3D-Scene (Avatar/Stationen/
-> Cinematics) + 3D-Assets (ComfyUI), Firebase-Backend/Push/Ad-IAP-SDK, Beta/Store/KPIs/Performance/Cutover. **Spiel-Design** folgt
+> **Android-Durchstich (bewiesen):** `AndroidBuild.cs` (Menü `…/Build/Android APK (Durchstich)`) baut die
+> Game.unity als IL2CPP/ARM64-APK unter der Beta-App-ID — Succeeded, 0 Fehler (~13 min ohne Target-Switch;
+> der erste Lauf inkl. Switch dauerte >6 h). Pflicht-Patch dafür: glTFast embedded + NUnit-Asserts ersetzt
+> (siehe Tech-Stack-Tabelle). Bekannt offen: APK ist ~536 MB (unkomprimierte Texturen/GLBs) — Texture-
+> Compression (ASTC) + Strip-Pass sind P4-Arbeit; Release-Signing/AAB ebenfalls P4.
+>
+> **Offen (externe/gated Schichten):** Firebase-Backend/Push/Ad-IAP-SDK, Lokalisierung (6 Sprachen),
+> Beta/Store/KPIs/Performance/Cutover. **Spiel-Design** folgt
 > dem GDD ([3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)); ARCHITECTURE/DESIGN/ROADMAP-Mechanik = Referenz,
 > Infra/Tech (Scenes, Save, Netz, Pipeline) = Soll.
 

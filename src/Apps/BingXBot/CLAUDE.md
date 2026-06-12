@@ -247,6 +247,19 @@ Top-50 — die Cross-Asset-Dispersion (Gold/Indizes/Forex) traegt den Edge. Betr
 - **Auto-Resume startet die richtige Engine**: `SaveResumeEngineAsync`/`LoadResumeEngineAsync`
   (separate DB-Keys `ResumeMode`/`ResumeEngine`, beim Start persistiert) — ohne sie kaeme nach
   jedem Reboot der Scalper-Default zurueck. `LastEngineMode` ist Server-Authority-Property.
+- **Drift-Refill zwischen Rebalances** (`RefillBasketDriftAsync`, pro 30-min-Tick): extern
+  (manuell) geschlossene Korb-Positionen werden erkannt und die freien Slots mit einem frischen
+  Momentum-Ranking aufgefuellt — sonst liefe der Korb bis zu RebalanceDays unter-investiert und
+  verloere die Market-Neutralitaet. Sicherheits-Regeln: **Zwei-Tick-Bestaetigung** (Schutz vor
+  transienter leerer Positions-Antwort → sonst Korb-Doppelaufbau), **Wiedereroeffnungs-Sperre**
+  fuer extern geschlossene Symbole bis zum naechsten vollen Rebalance (`ExcludedUntilRebalance`,
+  im State persistiert), **Fremd-Positionen unangetastet** (werden dem Reconcile-Ziel nur als
+  Schutz beigemischt). Der Soll-Korb wird aus `RebalanceResult.Filled` gebaut (tatsaechlich
+  gehalten/eroeffnet) — NICHT per erneutem `GetPositions` (frische Market-Orders erscheinen dort
+  teils erst Sekunden spaeter, Race). `LastRebalanceUtc` bleibt beim Refill unveraendert.
+- **Heartbeat im Xsec-Tick**: `SaveLastHeartbeatAsync` pro Tick — sonst altert der Heartbeat
+  ueber den 21-Tage-Zyklus und der Income-Backfill rechnet nach jedem Reboot mit einem
+  riesigen Offline-Fenster.
 
 ```
 CrossSectionalManager (Lifecycle: Paper=SimulatedExchange / Live=BingXRestClient + zwingend Hedge)
@@ -769,7 +782,13 @@ das Modus-Präfix `Local{Name}Service` / `Remote{Name}Service` (z.B. `LocalBotCo
 
 ### BingX-API
 
-- **Balance v3-Endpoint**: `/openApi/swap/v3/user/balance` — Array-Response, nach `asset == "USDT"` filtern
+- **Balance v3-Endpoint**: `/openApi/swap/v3/user/balance` — normalerweise Array-Response (nach
+  `asset == "USDT"` filtern), BingX liefert aber vereinzelt die v2-Form (einzelnes Objekt, ggf. mit
+  `balance`-Wrapper). `GetAccountInfoAsync` parst beide Formen via `JsonElement` (live beobachtet:
+  JsonException riss sonst den Equity-Snapshot)
+- **API-Code 100410 (rate limited) kommt in HTTP-200-Antworten** — `SendSignedRequestAsync`
+  behandelt ihn wie HTTP 429 (Backoff-Retry, Timestamp/Signatur pro Versuch neu). Vorher gab z.B.
+  `CloseAllPositionsAsync` beim Stop nach dem ersten 100410 auf und liess Positionen offen
 - **`SetMarginTypeAsync` VOR jeder Order** — BingX-Default kann Cross sein, try-catch (Fehler bei offener Position ignorieren)
 - **Kill-Switch**: alle 60s refreshen (`ActivateKillSwitchAsync(120s)`), bei sauberem Stop explizit `DeactivateKillSwitchAsync()`
 - **Server-Zeit-Sync**: `SyncServerTimeAsync()` bei Connect — Error 100421 bei > 5s Drift

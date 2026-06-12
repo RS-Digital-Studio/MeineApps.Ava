@@ -5,8 +5,15 @@ using BingXBot.Core.Models;
 
 namespace BingXBot.Trading.CrossSectional;
 
-/// <summary>Ergebnis eines Rebalance-Durchlaufs (fuer Logging/Events/Tests).</summary>
-public sealed record RebalanceResult(int Closed, int Opened, int SkippedMinOrder, int FailedClose);
+/// <summary>
+/// Ergebnis eines Rebalance-Durchlaufs (fuer Logging/Events/Tests). <see cref="Filled"/> enthaelt
+/// die Ziel-Symbole, die nach dem Durchlauf tatsaechlich gehalten werden (bereits korrekt offen
+/// ODER erfolgreich eroeffnet) — Min-Order-Skips und Rejects fehlen. Der Aufrufer baut seinen
+/// Soll-Korb daraus, statt die Exchange erneut zu fragen (frische Market-Orders erscheinen in
+/// GetPositions teils erst Sekunden spaeter — eine Nachfrage waere ein Race).
+/// </summary>
+public sealed record RebalanceResult(
+    int Closed, int Opened, int SkippedMinOrder, int FailedClose, IReadOnlySet<string> Filled);
 
 /// <summary>
 /// Fuehrt den Cross-Sectional-Rebalance gegen einen <see cref="IExchangeClient"/> aus: bringt die offenen
@@ -56,12 +63,14 @@ public static class CrossSectionalRebalancer
         // 2. Verifizieren: erneut abfragen; bereits korrekt gehaltene merken, fehlgeschlagene Closes zaehlen.
         var after = await ex.GetPositionsAsync(ct).ConfigureAwait(false);
         var held = new HashSet<string>();
+        var filled = new HashSet<string>();
         var failedClose = 0;
         foreach (var pos in after)
         {
             if (target.TryGetValue(pos.Symbol, out var want) && want == pos.Side)
             {
                 held.Add($"{pos.Symbol}_{pos.Side}");   // schon korrekt → kein Re-Open
+                filled.Add(pos.Symbol);
             }
             else
             {
@@ -74,7 +83,7 @@ public static class CrossSectionalRebalancer
         var acc = await ex.GetAccountInfoAsync().ConfigureAwait(false);
         var equity = acc.Balance + acc.UnrealizedPnl;
         if (equity <= 0m || slots <= 0)
-            return new RebalanceResult(closed, 0, 0, failedClose);
+            return new RebalanceResult(closed, 0, 0, failedClose, filled);
         var perSlotMargin = equity * cfg.MarginUtilization / slots;
 
         // 4. Ziel-Positionen oeffnen, die noch nicht gehalten werden.
@@ -117,8 +126,9 @@ public static class CrossSectionalRebalancer
                 continue;
             }
             opened++;
+            filled.Add(symbol);
         }
 
-        return new RebalanceResult(closed, opened, skippedMin, failedClose);
+        return new RebalanceResult(closed, opened, skippedMin, failedClose, filled);
     }
 }

@@ -46,6 +46,15 @@ public sealed class CrossSectionalTradingService : IDisposable
     private DateTime _lastRebalanceUtc = DateTime.MinValue;
     private DateTime _lastFundingUtc = DateTime.MinValue;
     private Dictionary<string, Side> _currentBasket = new();
+    // Symbole, deren Korb-Position zwischen den Rebalances extern (manuell) geschlossen wurde.
+    // Der Drift-Refill eroeffnet sie NICHT erneut (User-Entscheidung respektieren) — erst der
+    // naechste volle Rebalance darf sie wieder ranken. Persistiert im State (Crash-Recovery).
+    private HashSet<string> _excludedUntilRebalance = new();
+    // Zwei-Tick-Bestaetigung fuer den Drift-Check: Ein Symbol gilt erst als extern geschlossen,
+    // wenn seine Position in ZWEI aufeinanderfolgenden Ticks fehlt. Schuetzt vor einem transienten
+    // API-Glitch (leere/unvollstaendige Positions-Antwort), der sonst den ganzen Korb sperren und
+    // parallel neu aufbauen wuerde (doppelte Exposure mit echtem Geld).
+    private HashSet<string> _pendingDriftConfirm = new();
 
     public bool IsRunning { get; private set; }
     public IReadOnlyDictionary<string, Side> CurrentBasket => _currentBasket;
@@ -75,6 +84,10 @@ public sealed class CrossSectionalTradingService : IDisposable
     public async Task StartAsync()
     {
         if (IsRunning) return;
+        // Drift-Tracking zuruecksetzen (Service-Instanz kann ueber Stop/Start wiederverwendet werden);
+        // RestoreOrAdoptStateAsync laedt die persistierte Sperrliste danach ggf. wieder.
+        _pendingDriftConfirm = new();
+        _excludedUntilRebalance = new();
         await RestoreOrAdoptStateAsync().ConfigureAwait(false);
 
         IsRunning = true;
@@ -133,9 +146,20 @@ public sealed class CrossSectionalTradingService : IDisposable
         var acc = await _execution.GetAccountInfoAsync().ConfigureAwait(false);
         _eventBus.PublishEquity(new EquityPoint(DateTime.UtcNow, acc.Balance + acc.UnrealizedPnl));
 
-        // 3. Rebalance faellig? (Wall-Clock — robust gegen Downtime.)
+        // 3. Heartbeat persistieren — sonst altert LastHeartbeatUtc waehrend des 21-Tage-Zyklus
+        //    tagelang und der Income-Backfill nach einem Reboot rechnet mit einem riesigen
+        //    Offline-Fenster (Dedup faengt das, aber unnoetig viele API-Calls + Log-Rauschen).
+        if (_dbService != null)
+        {
+            try { await _dbService.SaveLastHeartbeatAsync(DateTime.UtcNow).ConfigureAwait(false); }
+            catch { /* Heartbeat ist Best-Effort — DB-Hickup darf den Tick nicht reissen. */ }
+        }
+
+        // 4. Rebalance faellig? (Wall-Clock — robust gegen Downtime.) Sonst: Korb-Drift pruefen.
         if (DateTime.UtcNow >= _lastRebalanceUtc + TimeSpan.FromDays(Math.Max(1, _cfg.RebalanceDays)))
             await RebalanceAsync(ct).ConfigureAwait(false);
+        else
+            await RefillBasketDriftAsync(ct).ConfigureAwait(false);
     }
 
     private async Task RefreshPaperPricingAsync(CancellationToken ct)
@@ -159,9 +183,18 @@ public sealed class CrossSectionalTradingService : IDisposable
         }
     }
 
-    private async Task RebalanceAsync(CancellationToken ct)
+    private sealed record UniverseData(
+        List<(string Symbol, IReadOnlyList<Candle> Candles)> Universe,
+        Dictionary<string, decimal> Prices,
+        Dictionary<string, MarketCategory> Categories);
+
+    /// <summary>
+    /// Baut das Momentum-Universum auf: Top-N nach 24h-Volumen (Live-Scanner-Spiegel, optional inkl.
+    /// TradFi) + Klines je Symbol (genug Vorlauf fuer den Lookback) + Preise + Kategorien.
+    /// Geteilt zwischen vollem Rebalance und Drift-Refill. <c>null</c> wenn kein brauchbares Universum.
+    /// </summary>
+    private async Task<UniverseData?> BuildUniverseAsync(string context, CancellationToken ct)
     {
-        // a. Universum: Top-N nach 24h-Volumen (Live-Scanner-Spiegel), optional inkl. TradFi.
         var tickers = await _marketData.GetAllTickersAsync(ct).ConfigureAwait(false);
         var symbols = tickers
             .Where(t => t.Symbol.EndsWith("-USDT", StringComparison.OrdinalIgnoreCase)
@@ -171,9 +204,8 @@ public sealed class CrossSectionalTradingService : IDisposable
             .Take(Math.Max(_cfg.LongK + _cfg.ShortK, _cfg.UniverseTopN))
             .Select(t => t.Symbol)
             .ToList();
-        if (symbols.Count == 0) { Log(LogLevel.Warning, "Engine", "Rebalance: kein Universum (keine Tickers)."); return; }
+        if (symbols.Count == 0) { Log(LogLevel.Warning, "Engine", $"{context}: kein Universum (keine Tickers)."); return null; }
 
-        // b. Klines je Symbol (genug Vorlauf fuer den Lookback) + Preise + Kategorien.
         var navTf = ParseTf(_cfg.NavTimeframe);
         var from = DateTime.UtcNow - TimeSpan.FromHours(TfHours(navTf) * (_cfg.LookbackCandles + 40));
         var to = DateTime.UtcNow;
@@ -191,24 +223,39 @@ public sealed class CrossSectionalTradingService : IDisposable
             prices[symbol] = candles[^1].Close;
             categories[symbol] = SymbolClassifier.Classify(symbol);
         }
-        if (universe.Count == 0) { Log(LogLevel.Warning, "Engine", "Rebalance: kein Symbol mit genug Klines."); return; }
+        if (universe.Count == 0) { Log(LogLevel.Warning, "Engine", $"{context}: kein Symbol mit genug Klines."); return null; }
 
-        // c. Paper: alle Preise in die SimulatedExchange einspeisen (Sizing + Mark-to-Market).
+        // Paper: alle Preise in die SimulatedExchange einspeisen (Sizing + Mark-to-Market).
         if (_paper != null)
             foreach (var (sym, px) in prices) _paper.SetPrice(sym, px);
 
-        // d. Ziel-Korb (geteilter Calculator — identisch zum Backtest).
+        return new UniverseData(universe, prices, categories);
+    }
+
+    private async Task RebalanceAsync(CancellationToken ct)
+    {
+        var data = await BuildUniverseAsync("Rebalance", ct).ConfigureAwait(false);
+        if (data == null) return;
+
+        // Ziel-Korb (geteilter Calculator — identisch zum Backtest).
         var basket = MomentumBasketCalculator.ComputeBasket(
-            universe, _cfg.LookbackCandles, _cfg.LongK, _cfg.ShortK, _cfg.RiskAdjusted);
+            data.Universe, _cfg.LookbackCandles, _cfg.LongK, _cfg.ShortK, _cfg.RiskAdjusted);
         if (basket.Count == 0) { Log(LogLevel.Info, "Engine", "Rebalance: leerer Ziel-Korb (kein klares Momentum)."); }
 
-        // e. Reconciliation (Close-vor-Open, Safety) — geteilt mit Paper/Live.
+        // Reconciliation (Close-vor-Open, Safety) — geteilt mit Paper/Live.
         var result = await CrossSectionalRebalancer.ReconcileAsync(
-            _execution, basket, prices, categories, _cfg, _risk,
+            _execution, basket, data.Prices, data.Categories, _cfg, _risk,
             msg => Log(LogLevel.Info, "Exit", msg), ct).ConfigureAwait(false);
 
-        // f. State persistieren + Trades publishen.
-        _currentBasket = new Dictionary<string, Side>(basket);
+        // State persistieren + Trades publishen. Exclusion-Set leeren: der volle Rebalance darf
+        // extern geschlossene Symbole wieder ranken (neuer 21-Tage-Zyklus = neue Entscheidung).
+        // Soll-Korb = nur tatsaechlich gefuellte Ziel-Symbole — Min-Order-Skips/Rejects wuerden
+        // sonst vom Drift-Check faelschlich als "extern geschlossen" gesperrt.
+        _currentBasket = basket
+            .Where(kv => result.Filled.Contains(kv.Key))
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+        _excludedUntilRebalance.Clear();
+        _pendingDriftConfirm.Clear();
         _lastRebalanceUtc = DateTime.UtcNow;
         SaveState();
         DrainPaperTrades();
@@ -218,6 +265,97 @@ public sealed class CrossSectionalTradingService : IDisposable
             + $"{result.SkippedMinOrder} Min-Order-Skip, {result.FailedClose} Close-Fehler. "
             + $"Korb ({basket.Count}): {DescribeBasket(basket)}. Naechster: "
             + $"{(_lastRebalanceUtc + TimeSpan.FromDays(_cfg.RebalanceDays)):yyyy-MM-dd HH:mm} UTC.");
+    }
+
+    /// <summary>
+    /// Drift-Erkennung zwischen den Rebalances: Wurden Korb-Positionen extern geschlossen (manuell
+    /// auf BingX/in der App), werden die freien Slots mit einem frischen Momentum-Ranking aufgefuellt —
+    /// sonst laeuft der Korb bis zu RebalanceDays lang unter-investiert und verliert die
+    /// Market-Neutralitaet (z.B. 3 Longs zu, nur Shorts uebrig = volles direktionales Risiko).
+    /// Extern geschlossene Symbole werden bis zum naechsten vollen Rebalance NICHT erneut eroeffnet
+    /// (User-Entscheidung respektieren); Fremd-Positionen (manuell eroeffnet) bleiben unangetastet.
+    /// </summary>
+    // Internal fuer Testbarkeit (InternalsVisibleTo=BingXBot.Tests).
+    internal async Task RefillBasketDriftAsync(CancellationToken ct)
+    {
+        if (_currentBasket.Count == 0) return;
+
+        // 1. Extern geschlossene Korb-Positionen erkennen (billig: 1 API-Call pro Tick).
+        //    Zwei-Tick-Bestaetigung: erst handeln, wenn dieselbe Position in zwei
+        //    aufeinanderfolgenden Ticks fehlt (Schutz vor transienten API-Glitches).
+        var positions = await _execution.GetPositionsAsync(ct).ConfigureAwait(false);
+        var openKeys = positions.Select(p => $"{p.Symbol}_{p.Side}").ToHashSet();
+        var missingNow = _currentBasket
+            .Where(kv => !openKeys.Contains($"{kv.Key}_{kv.Value}"))
+            .Select(kv => kv.Key)
+            .ToHashSet();
+        var closedExternally = missingNow.Where(_pendingDriftConfirm.Contains).ToList();
+        _pendingDriftConfirm = missingNow;
+
+        if (closedExternally.Count > 0)
+        {
+            foreach (var symbol in closedExternally)
+            {
+                _currentBasket.Remove(symbol);
+                _excludedUntilRebalance.Add(symbol);
+            }
+            SaveState();
+            Log(LogLevel.Warning, "Engine",
+                $"Korb-Drift: {closedExternally.Count} Position(en) extern geschlossen "
+                + $"({string.Join(", ", closedExternally)}) — Slots werden mit frischem Momentum-Ranking "
+                + "aufgefuellt (geschlossene Symbole bleiben bis zum naechsten Rebalance gesperrt).");
+        }
+
+        // 2. Freie Slots je Seite? (Korb soll LongK Longs + ShortK Shorts halten.)
+        var freeLongSlots = Math.Max(0, _cfg.LongK - _currentBasket.Count(kv => kv.Value == Side.Buy));
+        var freeShortSlots = Math.Max(0, _cfg.ShortK - _currentBasket.Count(kv => kv.Value == Side.Sell));
+        if (freeLongSlots == 0 && freeShortSlots == 0) return;
+
+        // 3. Frisches Ranking NUR fuer die freien Slots. Ausgeschlossen: aktueller Korb (nicht doppeln),
+        //    extern geschlossene Symbole (Sperre bis Rebalance) und Symbole mit offener Fremd-Position
+        //    (kein ungewollter Hedge/Doppel-Exposure).
+        var data = await BuildUniverseAsync("Drift-Refill", ct).ConfigureAwait(false);
+        if (data == null) return;
+
+        var excluded = new HashSet<string>(_currentBasket.Keys);
+        excluded.UnionWith(_excludedUntilRebalance);
+        foreach (var pos in positions) excluded.Add(pos.Symbol);
+        var candidates = data.Universe.Where(u => !excluded.Contains(u.Symbol)).ToList();
+
+        var refill = MomentumBasketCalculator.ComputeBasket(
+            candidates, _cfg.LookbackCandles, freeLongSlots, freeShortSlots, _cfg.RiskAdjusted);
+        if (refill.Count == 0)
+        {
+            Log(LogLevel.Info, "Engine",
+                $"Drift-Refill: {freeLongSlots}L/{freeShortSlots}S Slot(s) frei, aber kein Kandidat mit klarem Momentum — naechster Versuch in {_cfg.CheckIntervalMinutes} min.");
+            return;
+        }
+
+        // 4. Reconcile-Ziel = gehaltener Korb + Refill + Fremd-Positionen (nur als Schutz, damit
+        //    Close-vor-Open sie zwischen den Rebalances nicht schliesst — erst der volle Rebalance darf das).
+        var target = new Dictionary<string, Side>(_currentBasket);
+        foreach (var (symbol, side) in refill) target[symbol] = side;
+        foreach (var pos in positions)
+            if (!target.ContainsKey(pos.Symbol)) target[pos.Symbol] = pos.Side;
+
+        var result = await CrossSectionalRebalancer.ReconcileAsync(
+            _execution, target, data.Prices, data.Categories, _cfg, _risk,
+            msg => Log(LogLevel.Info, "Exit", msg), ct).ConfigureAwait(false);
+
+        // 5. Nur den Korb (ohne Fremd-Schutz-Eintraege) persistieren — aufgenommen werden
+        //    ausschliesslich tatsaechlich gefuellte Refill-Symbole (Min-Order-Skips/Rejects
+        //    gehoeren nicht in den Soll-Korb, sonst sperrt der Drift-Check sie faelschlich).
+        //    LastRebalanceUtc bleibt — ein Drift-Refill ist KEIN Rebalance, der 21-Tage-Rhythmus
+        //    laeuft unveraendert weiter.
+        foreach (var (symbol, side) in refill)
+            if (result.Filled.Contains(symbol))
+                _currentBasket[symbol] = side;
+        SaveState();
+        DrainPaperTrades();
+
+        Log(LogLevel.Trade, "Engine",
+            $"Drift-Refill fertig: {result.Opened} eroeffnet, {result.SkippedMinOrder} Min-Order-Skip. "
+            + $"Korb ({_currentBasket.Count}): {DescribeBasket(_currentBasket)}.");
     }
 
     private void DrainPaperTrades()
@@ -246,9 +384,14 @@ public sealed class CrossSectionalTradingService : IDisposable
 
     // ─────────── State-Persistenz (Crash-Recovery) ───────────
 
-    private sealed record PersistedState(DateTime LastRebalanceUtc, Dictionary<string, Side> Basket);
+    // ExcludedUntilRebalance ist optional (null bei alten State-Dateien — abwaertskompatibel).
+    private sealed record PersistedState(
+        DateTime LastRebalanceUtc,
+        Dictionary<string, Side> Basket,
+        List<string>? ExcludedUntilRebalance = null);
 
-    private async Task RestoreOrAdoptStateAsync()
+    // Internal fuer Testbarkeit (InternalsVisibleTo=BingXBot.Tests).
+    internal async Task RestoreOrAdoptStateAsync()
     {
         // Paper startet IMMER frisch: Die SimulatedExchange ist nach jedem Prozess-Start leer
         // (Positionen + PnL weg) — einen persistierten Korb zu adoptieren wuerde den Lauf bis zu
@@ -271,9 +414,13 @@ public sealed class CrossSectionalTradingService : IDisposable
                 {
                     _lastRebalanceUtc = st.LastRebalanceUtc;
                     _currentBasket = st.Basket ?? new();
+                    _excludedUntilRebalance = st.ExcludedUntilRebalance?.ToHashSet() ?? new();
                     Log(LogLevel.Info, "Recovery",
                         $"Cross-Sectional-State geladen: Korb {_currentBasket.Count} Positionen, letzter Rebalance "
-                        + $"{_lastRebalanceUtc:yyyy-MM-dd HH:mm} UTC.");
+                        + $"{_lastRebalanceUtc:yyyy-MM-dd HH:mm} UTC"
+                        + (_excludedUntilRebalance.Count > 0
+                            ? $", {_excludedUntilRebalance.Count} Symbol(e) bis zum Rebalance gesperrt."
+                            : "."));
                     return;
                 }
             }
@@ -302,7 +449,9 @@ public sealed class CrossSectionalTradingService : IDisposable
         if (_stateFilePath == null) return;
         try
         {
-            var json = JsonSerializer.Serialize(new PersistedState(_lastRebalanceUtc, _currentBasket));
+            var json = JsonSerializer.Serialize(new PersistedState(
+                _lastRebalanceUtc, _currentBasket,
+                _excludedUntilRebalance.Count > 0 ? _excludedUntilRebalance.ToList() : null));
             File.WriteAllText(_stateFilePath, json);
         }
         catch (Exception ex) { Log(LogLevel.Warning, "Engine", $"State speichern fehlgeschlagen: {ex.Message}"); }

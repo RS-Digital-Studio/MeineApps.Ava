@@ -37,5 +37,24 @@ namespace HandwerkerImperium.Game
             if (ok) _economy.RaiseMoneyChanged();
             return ok;
         }
+
+        /// <summary>Gekaufte Worker-Tempo-Stufen einer Station (GDD §6.2; 0 = Basis).</summary>
+        public int Level(int stationIndex) =>
+            stationIndex >= 0 && stationIndex < _session.State.Stations.Count ? _session.State.Stations[stationIndex].WorkerLevel : 0;
+
+        /// <summary>Maximal kaufbare Worker-Stufen.</summary>
+        public int MaxLevel => _session.Balancing.WorkerMaxLevel;
+
+        /// <summary>Kosten der naechsten Worker-Stufe.</summary>
+        public decimal UpgradeCost(int stationIndex) =>
+            GreyboxSimulation.WorkerUpgradeCostFor(_session.State, _session.Balancing, stationIndex);
+
+        /// <summary>Kauft die naechste Worker-Tempo-Stufe. Liefert true bei Erfolg.</summary>
+        public bool Upgrade(int stationIndex)
+        {
+            bool ok = GreyboxSimulation.UpgradeWorker(_session.State, _session.Balancing, stationIndex);
+            if (ok) _economy.RaiseMoneyChanged();
+            return ok;
+        }
     }
 }

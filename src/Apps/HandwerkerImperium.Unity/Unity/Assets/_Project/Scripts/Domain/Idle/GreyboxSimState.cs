@@ -27,6 +27,8 @@ namespace HandwerkerImperium.Domain.Idle
         public bool HasWorker;
         /// <summary>Waren-Akkumulator des Workers (fraktionales Tragen ueber Ticks).</summary>
         public double WorkerProgress;
+        /// <summary>Gekaufte Worker-Tempo-Stufen (GDD §6.2: 3-5 Stufen; 0 = frisch angestellt). Persistiert.</summary>
+        public int WorkerLevel;
         /// <summary>Temporaerer Tempo-Buff der Perfekt-Aktion (GDD §6.7). FLUECHTIG — bewusst
         /// nicht persistiert (Buff-Dauer ~Sekunden; Save-Schema + HMAC bleiben unberuehrt).</summary>
         public double BoostMultiplier = 1.0;

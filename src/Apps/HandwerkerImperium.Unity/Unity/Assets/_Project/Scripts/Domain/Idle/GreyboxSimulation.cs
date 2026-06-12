@@ -57,6 +57,34 @@ namespace HandwerkerImperium.Domain.Idle
             }
         }
 
+        /// <summary>Effektive Worker-Tragegeschwindigkeit (Waren/s) nach gekauften Stufen (GDD §6.2).</summary>
+        public static double EffectiveWorkerCarrySpeed(IdleBalancing balancing, int workerLevel) =>
+            Math.Max(0, balancing.WorkerCarrySpeed) * (1.0 + Math.Max(0, workerLevel) * balancing.WorkerUpgradeStep);
+
+        /// <summary>Kosten der naechsten Worker-Tempo-Stufe einer Station (geometrisch).</summary>
+        public static decimal WorkerUpgradeCostFor(GreyboxSimState state, IdleBalancing balancing, int stationIndex)
+        {
+            if (stationIndex < 0 || stationIndex >= state.Stations.Count) return 0m;
+            int level = state.Stations[stationIndex].WorkerLevel;
+            return Math.Round(balancing.WorkerUpgradeCostBase * (decimal)Math.Pow(balancing.WorkerUpgradeCostGrowth, level));
+        }
+
+        /// <summary>
+        /// Kauft die naechste Worker-Tempo-Stufe (GDD §6.2: 3-5 Stufen). Erfordert angestellten
+        /// Worker, Stufe unter Max und genug Geld. Liefert true bei Erfolg.
+        /// </summary>
+        public static bool UpgradeWorker(GreyboxSimState state, IdleBalancing balancing, int stationIndex)
+        {
+            if (stationIndex < 0 || stationIndex >= state.Stations.Count) return false;
+            var st = state.Stations[stationIndex];
+            if (!st.HasWorker || st.WorkerLevel >= balancing.WorkerMaxLevel) return false;
+            decimal cost = WorkerUpgradeCostFor(state, balancing, stationIndex);
+            if (state.Money < cost) return false;
+            state.Money -= cost;
+            st.WorkerLevel++;
+            return true;
+        }
+
         /// <summary>
         /// Setzt den temporaeren Tempo-Buff der Perfekt-Aktion (GDD §6.7) auf eine Station.
         /// Multiplikator &lt;= 1 oder Dauer &lt;= 0 (Miss) sind no-ops; ein staerkerer/neuer Buff
@@ -83,7 +111,7 @@ namespace HandwerkerImperium.Domain.Idle
                 if (!st.Unlocked || !st.HasWorker) continue;
                 var sb = balancing.Stations[i];
 
-                st.WorkerProgress += Math.Max(0, balancing.WorkerCarrySpeed) * dtSeconds;
+                st.WorkerProgress += EffectiveWorkerCarrySpeed(balancing, st.WorkerLevel) * dtSeconds;
                 int whole = (int)st.WorkerProgress;
                 int take = Math.Min(whole, st.Stock);
                 if (take > 0)
@@ -218,7 +246,7 @@ namespace HandwerkerImperium.Domain.Idle
                 if (!st.Unlocked || !st.HasWorker) continue;
                 var sb = balancing.Stations[i];
                 double interval = IdleEconomyFormulas.EffectiveProduceInterval(sb.ProduceInterval, state.StationSpeedLevel, balancing.UpgradeStep);
-                double throughput = IdleEconomyFormulas.WorkerThroughputPerSecond(interval, balancing.WorkerCarrySpeed);
+                double throughput = IdleEconomyFormulas.WorkerThroughputPerSecond(interval, EffectiveWorkerCarrySpeed(balancing, st.WorkerLevel));
                 sum += IdleEconomyFormulas.AutomatedIncomePerSecond(sb.SellValue, throughput);
             }
             return sum;

@@ -1122,7 +1122,8 @@ namespace HandwerkerImperium.Editor
             SetRef(view, "counterPoint", counterPoint);
             SetRef(view, "spawnPoint", pad.transform);
             var label = MakeSign("Arbeiter", pos + Vector3.up * 1.0f, 0.24f, new Color(0.15f, 0.75f, 0.85f), post: true);
-            label.transform.SetParent(pad.transform, true); // verschwindet mit dem Pad nach der Anstellung
+            label.transform.SetParent(pad.transform, true); // verschwindet mit dem Pad (Max-Stufe)
+            SetRef(view, "labelText", label.GetComponentInChildren<TextMesh>()); // Pad aktualisiert: Arbeiter -> Tempo x/4 -> MAX
         }
 
         private static GameObject MakeBox(string name, Vector3 pos, Vector3 scale, Color color, bool trigger)

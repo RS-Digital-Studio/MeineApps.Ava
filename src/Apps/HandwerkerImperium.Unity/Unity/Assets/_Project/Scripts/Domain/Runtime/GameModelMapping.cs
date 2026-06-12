@@ -33,7 +33,7 @@ namespace HandwerkerImperium.Domain.Runtime
             {
                 s.Stations.Stations.Add(new StationSaveData { Id = st.Id, Unlocked = st.Unlocked, Stock = st.Stock });
                 if (st.HasWorker)
-                    s.Workers.Workers.Add(new WorkerSaveData { StationId = st.Id, Hired = true, Level = 0 });
+                    s.Workers.Workers.Add(new WorkerSaveData { StationId = st.Id, Hired = true, Level = st.WorkerLevel });
             }
 
             s.Orders.TotalServed = m.Orders.TotalServed;
@@ -96,7 +96,11 @@ namespace HandwerkerImperium.Domain.Runtime
             {
                 if (w == null || !w.Hired) continue;
                 var st = FindStation(m.Idle, w.StationId);
-                if (st != null) st.HasWorker = true;
+                if (st != null)
+                {
+                    st.HasWorker = true;
+                    st.WorkerLevel = w.Level > 0 ? w.Level : 0;
+                }
             }
 
             m.Orders.TotalServed = s.Orders.TotalServed;

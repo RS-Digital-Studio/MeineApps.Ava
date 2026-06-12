@@ -75,8 +75,16 @@ namespace HandwerkerImperium.Domain.Idle
 
         // ── Worker (NPC-Automatisierung) ───────────────────────────────────
         public decimal WorkerHireCost = 200m;
-        /// <summary>Waren/Sekunde, die ein angestellter Worker Station->Tresen bewegt.</summary>
+        /// <summary>Waren/Sekunde, die ein angestellter Worker Station->Tresen bewegt (Stufe 0).</summary>
         public double WorkerCarrySpeed = 1.0;
+        /// <summary>Worker-Tempo-Stufen (GDD §6.2): Basis-Kosten der ersten Stufe.</summary>
+        public decimal WorkerUpgradeCostBase = 300m;
+        /// <summary>Geometrischer Wachstumsfaktor je Worker-Stufe.</summary>
+        public double WorkerUpgradeCostGrowth = 2.2;
+        /// <summary>Tempo-Effekt je Worker-Stufe (0.5 = +50 % Tragegeschwindigkeit).</summary>
+        public double WorkerUpgradeStep = 0.5;
+        /// <summary>Maximal kaufbare Worker-Stufen (4 = insgesamt 5 Leistungsstufen inkl. Basis).</summary>
+        public int WorkerMaxLevel = 4;
 
         // ── Plot-Unlock-Fallback (greift nur, wenn StationBalance.UnlockCost = 0) ──
         public decimal PlotUnlockCost = 500m;

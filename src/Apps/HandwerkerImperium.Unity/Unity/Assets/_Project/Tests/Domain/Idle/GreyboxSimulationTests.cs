@@ -150,6 +150,38 @@ namespace HandwerkerImperium.Domain.Tests.Idle
         }
 
         [Test]
+        public void WorkerUpgrade_GeometricCost_SpeedEffect_AndMaxLevel()
+        {
+            var bal = Bal();
+            var st = GreyboxSimState.CreateNew(bal);
+            // Ohne Worker kein Upgrade
+            st.Money = 100000m;
+            Assert.That(GreyboxSimulation.UpgradeWorker(st, bal, 0), Is.False, "erst anstellen");
+            st.Money = 200m;
+            Assert.That(GreyboxSimulation.HireWorker(st, bal, 0), Is.True);
+
+            // Geometrische Kosten: 300, dann 300*2.2=660
+            Assert.That(GreyboxSimulation.WorkerUpgradeCostFor(st, bal, 0), Is.EqualTo(300m));
+            st.Money = 299m;
+            Assert.That(GreyboxSimulation.UpgradeWorker(st, bal, 0), Is.False, "zu arm");
+            st.Money = 300m;
+            Assert.That(GreyboxSimulation.UpgradeWorker(st, bal, 0), Is.True);
+            Assert.That(st.Stations[0].WorkerLevel, Is.EqualTo(1));
+            Assert.That(GreyboxSimulation.WorkerUpgradeCostFor(st, bal, 0), Is.EqualTo(660m));
+
+            // Tempo-Effekt: Stufe 1 = 1.0 * (1 + 0.5) = 1.5 Waren/s
+            Assert.That(GreyboxSimulation.EffectiveWorkerCarrySpeed(bal, 1), Is.EqualTo(1.5).Within(1e-9));
+            st.Stations[0].Stock = 8;
+            decimal earned = GreyboxSimulation.TickWorkers(st, bal, 2.0); // 3 Waren statt 2
+            Assert.That(earned, Is.EqualTo(15m)); // 3 × 5
+
+            // Max-Stufe deckelt
+            st.Money = 1000000m;
+            while (GreyboxSimulation.UpgradeWorker(st, bal, 0)) { }
+            Assert.That(st.Stations[0].WorkerLevel, Is.EqualTo(bal.WorkerMaxLevel));
+        }
+
+        [Test]
         public void Boost_SpeedsUpProduction_AndExpires()
         {
             var bal = Bal();

@@ -53,6 +53,11 @@ namespace HandwerkerImperium.Game
         [Header("Worker")]
         public float workerHireCost = 200f;
         public float workerCarrySpeed = 1f;
+        [Tooltip("Worker-Tempo-Stufen (GDD §6.2): Basis-Kosten, Wachstum je Stufe, Effekt, Max-Stufen.")]
+        public float workerUpgradeCostBase = 300f;
+        public float workerUpgradeCostGrowth = 2.2f;
+        public float workerUpgradeStep = 0.5f;
+        public int workerMaxLevel = 4;
 
         [Header("Plot-Unlock-Fallback (greift nur bei unlockCost = 0)")]
         public float plotUnlockCost = 500f;
@@ -74,6 +79,10 @@ namespace HandwerkerImperium.Game
                 UpgradeStep = upgradeStep,
                 WorkerHireCost = (decimal)workerHireCost,
                 WorkerCarrySpeed = workerCarrySpeed,
+                WorkerUpgradeCostBase = (decimal)workerUpgradeCostBase,
+                WorkerUpgradeCostGrowth = workerUpgradeCostGrowth,
+                WorkerUpgradeStep = workerUpgradeStep,
+                WorkerMaxLevel = workerMaxLevel,
                 PlotUnlockCost = (decimal)plotUnlockCost,
                 OfflineCapSeconds = offlineCapSeconds,
                 OfflineRatePerWorker = (decimal)offlineRatePerWorker,

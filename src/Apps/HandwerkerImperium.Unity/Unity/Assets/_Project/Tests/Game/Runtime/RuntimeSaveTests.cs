@@ -27,6 +27,8 @@ namespace HandwerkerImperium.Game.Tests
                 m.Idle.Money = 4242m; m.Gems = 9m;
                 m.Meta.MasteryLevel = 5; m.Meta.PrestigeCount = 1; m.Meta.PrestigeMultiplier = 3m;
                 m.Idle.Stations[0].Stock = 4;
+                m.Idle.Stations[0].HasWorker = true;
+                m.Idle.Stations[0].WorkerLevel = 3; // Worker-Tempo-Stufen ueberleben den Roundtrip
                 RuntimeSave.Save(m, Key, Slot);
 
                 var loaded = RuntimeSave.Load(Key, idleBal, Slot);
@@ -36,6 +38,8 @@ namespace HandwerkerImperium.Game.Tests
                 Assert.That(loaded.Meta.MasteryLevel, Is.EqualTo(5));
                 Assert.That(loaded.Meta.PrestigeMultiplier, Is.EqualTo(3m));
                 Assert.That(loaded.Idle.Stations[0].Stock, Is.EqualTo(4));
+                Assert.That(loaded.Idle.Stations[0].HasWorker, Is.True);
+                Assert.That(loaded.Idle.Stations[0].WorkerLevel, Is.EqualTo(3));
             }
             finally { RuntimeSave.Clear(Slot); }
         }

@@ -234,15 +234,17 @@ public class BingXRestClient : IExchangeClient
         HttpMethod method,
         string path,
         Dictionary<string, string>? parameters,
-        string rateCategory)
-        => SendSignedRequestAsync<T>(method, path, parameters, rateCategory, CancellationToken.None);
+        string rateCategory,
+        bool retryRateLimit = true)
+        => SendSignedRequestAsync<T>(method, path, parameters, rateCategory, CancellationToken.None, retryRateLimit);
 
     private async Task<T> SendSignedRequestAsync<T>(
         HttpMethod method,
         string path,
         Dictionary<string, string>? parameters,
         string rateCategory,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool retryRateLimit = true)
     {
         for (int attempt = 0; attempt <= MaxRetries; attempt++)
         {
@@ -323,7 +325,11 @@ public class BingXRestClient : IExchangeClient
                     // transient wie HTTP 429, daher mit Backoff erneut versuchen (Timestamp/Signatur
                     // werden pro Versuch neu erzeugt). Live beobachtet: CloseAll beim Stop gab nach
                     // dem ersten 100410 auf und liess eine Position offen.
-                    if (apiResponse.Code == 100410 && attempt < MaxRetries)
+                    // ACHTUNG: NICHT fuer Position-eroeffnende Orders (retryRateLimit=false in
+                    // PlaceOrderAsync) — BingX kann die Order trotz Rate-Limit-Antwort angenommen
+                    // haben, der Retry wuerde sie doppelt platzieren (doppelte Exposure). Close-/
+                    // reduce-only-Pfade sind retry-sicher (zweiter Close auf leerer Position = Reject).
+                    if (apiResponse.Code == 100410 && retryRateLimit && attempt < MaxRetries)
                     {
                         var rateBackoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
                         _logger.LogWarning("API Error 100410 (rate limited), Retry in {Backoff}s (Versuch {Attempt}/{Max})",
@@ -528,11 +534,15 @@ public class BingXRestClient : IExchangeClient
         _logger.LogInformation("Platziere Order: {Symbol} {Side} {Type} Qty={Quantity} (Original: {OrigQty})",
             request.Symbol, request.Side, request.Type, adjustedQty, request.Quantity);
 
+        // retryRateLimit=false: Position-eroeffnende Order darf bei 100410 NICHT blind erneut
+        // gesendet werden — BingX kann sie trotz Rate-Limit-Antwort angenommen haben (Doppel-Order).
+        // Der Aufrufer (Reconcile/Drift-Refill/Scan) versucht es im naechsten Durchlauf erneut.
         var data = await SendSignedRequestAsync<BingXOrderData>(
             HttpMethod.Post,
             "/openApi/swap/v2/trade/order",
             parameters,
-            "orders");
+            "orders",
+            retryRateLimit: false);
 
         var order = data.Order!;
         return new Order(
@@ -1169,13 +1179,20 @@ public class BingXRestClient : IExchangeClient
             null,
             "queries");
 
+        // Unbekannte Formen werfen statt still equity=0 zu liefern — eine 0-Equity wuerde z.B.
+        // im Cross-Sectional-Rebalance alles schliessen und nichts mehr eroeffnen (Totalausfall);
+        // eine Exception haelt dagegen den alten Zustand (Tick-Catch/Snapshot-Warn).
         List<BingXBalanceDetail> balances = data.ValueKind switch
         {
             JsonValueKind.Array => data.Deserialize<List<BingXBalanceDetail>>() ?? [],
-            JsonValueKind.Object when data.TryGetProperty("balance", out var inner)
-                                      && inner.ValueKind == JsonValueKind.Object
-                => [inner.Deserialize<BingXBalanceDetail>()!],
-            JsonValueKind.Object => [data.Deserialize<BingXBalanceDetail>()!],
+            JsonValueKind.Object when data.TryGetProperty("balance", out var inner) => inner.ValueKind switch
+            {
+                JsonValueKind.Object => [inner.Deserialize<BingXBalanceDetail>()!],
+                JsonValueKind.Array => inner.Deserialize<List<BingXBalanceDetail>>() ?? [],
+                _ => throw new BingXApiException(-1, $"Unerwartete balance-Wrapper-Form: {inner.ValueKind}"),
+            },
+            JsonValueKind.Object when data.TryGetProperty("asset", out _)
+                => [data.Deserialize<BingXBalanceDetail>()!],
             _ => throw new BingXApiException(-1, $"Unerwartete Balance-Response-Form: {data.ValueKind}"),
         };
 

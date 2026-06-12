@@ -79,12 +79,18 @@ public static class CrossSectionalRebalancer
             }
         }
 
-        // 3. Sizing: Equity-gleichgewichtet ueber die Slots.
+        // 3. Sizing: Equity-gleichgewichtet ueber die Slots. Zusaetzlich gegen die FREIE Margin
+        //    deckeln: beim Drift-Refill binden die gehaltenen Korb- und Fremd-Positionen bereits
+        //    Margin — ohne Cap wuerden die neuen Slots so dimensioniert, als waere der Korb leer,
+        //    und BingX lehnte die Orders mit Insufficient Margin ab (Slot bliebe dauerhaft leer).
         var acc = await ex.GetAccountInfoAsync().ConfigureAwait(false);
         var equity = acc.Balance + acc.UnrealizedPnl;
         if (equity <= 0m || slots <= 0)
             return new RebalanceResult(closed, 0, 0, failedClose, filled);
         var perSlotMargin = equity * cfg.MarginUtilization / slots;
+        var opensNeeded = target.Count(kv => !held.Contains($"{kv.Key}_{kv.Value}"));
+        if (opensNeeded > 0 && acc.AvailableBalance > 0m)
+            perSlotMargin = Math.Min(perSlotMargin, acc.AvailableBalance * 0.95m / opensNeeded);
 
         // 4. Ziel-Positionen oeffnen, die noch nicht gehalten werden.
         var opened = 0;
@@ -106,27 +112,40 @@ public static class CrossSectionalRebalancer
             var cat = categories.TryGetValue(symbol, out var c) ? c : MarketCategory.Crypto;
             var catLev = (int)risk.GetCategorySettings(cat).MaxLeverage;
             var leverage = Math.Max(1, cfg.LeverageCap > 0 ? Math.Min(catLev, cfg.LeverageCap) : catLev);
-            await ex.SetLeverageAsync(symbol, leverage, side).ConfigureAwait(false);
 
-            var notional = perSlotMargin * leverage;
-            var qty = notional / price;
-            if (qty <= 0m) continue;
-            if (!ex.MeetsMinimumOrder(symbol, qty, price))
+            // Pro Slot gekapselt: ein Fehlschlag (z.B. 100410 ohne Retry bei Order-Eroeffnung,
+            // Insufficient Margin) darf die restlichen Slots nicht abbrechen — der Slot bleibt
+            // leer und der naechste Durchlauf (Rebalance/Drift-Refill) versucht es erneut.
+            try
+            {
+                await ex.SetLeverageAsync(symbol, leverage, side).ConfigureAwait(false);
+
+                var notional = perSlotMargin * leverage;
+                var qty = notional / price;
+                if (qty <= 0m) continue;
+                if (!ex.MeetsMinimumOrder(symbol, qty, price))
+                {
+                    skippedMin++;
+                    log($"Rebalance: {symbol} {side} unter Min-Order (qty {qty:F6} @ {price:F4}) → Slot leer.");
+                    continue;
+                }
+
+                var order = await ex.PlaceOrderAsync(new OrderRequest(symbol, side, OrderType.Market, qty), price).ConfigureAwait(false);
+                if (order.Status == OrderStatus.Rejected)
+                {
+                    skippedMin++;
+                    log($"Rebalance: {symbol} {side} Order abgelehnt ({order.RejectionReason ?? "?"}).");
+                    continue;
+                }
+                opened++;
+                filled.Add(symbol);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception exn)
             {
                 skippedMin++;
-                log($"Rebalance: {symbol} {side} unter Min-Order (qty {qty:F6} @ {price:F4}) → Slot leer.");
-                continue;
+                log($"Rebalance: {symbol} {side} Order fehlgeschlagen ({exn.Message}) → Slot leer, naechster Durchlauf versucht erneut.");
             }
-
-            var order = await ex.PlaceOrderAsync(new OrderRequest(symbol, side, OrderType.Market, qty), price).ConfigureAwait(false);
-            if (order.Status == OrderStatus.Rejected)
-            {
-                skippedMin++;
-                log($"Rebalance: {symbol} {side} Order abgelehnt ({order.RejectionReason ?? "?"}).");
-                continue;
-            }
-            opened++;
-            filled.Add(symbol);
         }
 
         return new RebalanceResult(closed, opened, skippedMin, failedClose, filled);

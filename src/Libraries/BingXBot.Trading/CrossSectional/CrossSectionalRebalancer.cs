@@ -59,9 +59,21 @@ public static class CrossSectionalRebalancer
             ct.ThrowIfCancellationRequested();
             if (!target.TryGetValue(pos.Symbol, out var want) || want != pos.Side)
             {
-                await ex.ClosePositionAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
-                closeAttempts.Add(pos);
-                closed++;
+                // Pro Symbol gekapselt: ein fehlgeschlagener Close (z.B. TradFi am Wochenende →
+                // BingX 101413 "non-trading hours", oder 100410 Rate-Limit) darf NICHT den ganzen
+                // Rebalance abbrechen — sonst baut der Korb gar nicht auf. Die Position bleibt offen
+                // (failedClose im Verify-Schritt), der naechste Durchlauf versucht erneut.
+                try
+                {
+                    await ex.ClosePositionAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
+                    closeAttempts.Add(pos);
+                    closed++;
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception exn)
+                {
+                    log($"Rebalance: Close {pos.Symbol} {pos.Side} fehlgeschlagen ({exn.Message}) — Position bleibt, naechster Durchlauf erneut.");
+                }
             }
         }
 

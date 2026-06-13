@@ -179,8 +179,7 @@ namespace HandwerkerImperium.Game
             };
         }
 
-        /// <summary>Stellt den Worker einer Station an (HUD-Panel). Liefert true bei Erfolg.</summary>
-        public bool HireWorker(int i) => GreyboxSimulation.HireWorker(_model.Idle, _idleBal, i);
+        // Anstellen nutzt die bereits vorhandene HireWorker(int) oben (GameActions).
 
         /// <summary>Kauft die nächste Worker-Tempo-Stufe (HUD-Panel). Liefert true bei Erfolg.</summary>
         public bool UpgradeWorker(int i) => GreyboxSimulation.UpgradeWorker(_model.Idle, _idleBal, i);

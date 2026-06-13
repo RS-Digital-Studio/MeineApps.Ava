@@ -117,9 +117,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IsAdBannerVisible = _adService.BannerVisible;
         _adService.AdsStateChanged += OnAdsStateChanged;
 
-        // Banner beim Start anzeigen (fuer Desktop + Fallback falls AdMobHelper fehlschlaegt)
-        if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-            _adService.ShowBanner();
+        // Banner-Sichtbarkeit zentral steuern: Premium UND aktiver Trial sind werbefrei
+        // (Trial verspricht "ohne Werbung"). Status-Wechsel (Kauf, Trial-Start/-Ablauf)
+        // aktualisieren den Banner live.
+        UpdateBannerVisibility();
+        _trialService.TrialStatusChanged += OnTrialStatusChanged;
+        _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
 
         // Child VMs
         WeekVm = weekVm;
@@ -309,8 +312,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // === Predictive Insights (TodayView) ===
 
@@ -559,8 +560,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             WeekProgress = await _calculation.GetWeekProgressAsync(_cachedSettings);
             WeekProgressText = $"{WeekProgress:F0}%";
 
-            // Premium status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
 
             // Start timer if active
             if (CurrentStatus != TrackingStatus.Idle)
@@ -590,28 +589,73 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// </summary>
     public bool HandleBackPressed()
     {
-        // 1. Sub-Page offen → schließen
+        // 1. Offenes Overlay → über den jeweiligen Cancel-Pfad schließen
+        //    (räumt auch _pendingAction der Rewarded-Overlays auf)
+        if (TryCloseOpenOverlays())
+            return true;
+
+        // 2. Sub-Page offen → schließen
         if (IsSubPageActive)
         {
             GoBack();
             return true;
         }
 
-        // 2. Nicht auf Today-Tab → zurück zu Today
+        // 3. Nicht auf Today-Tab → zurück zu Today
         if (CurrentTab != 0)
         {
             CurrentTab = 0;
             return true;
         }
 
-        // 3. Auf Today-Tab → Double-Back prüfen (2 Sekunden Fenster)
+        // 4. Auf Today-Tab → Double-Back prüfen (2 Sekunden Fenster)
         return _backPressHelper.HandleDoubleBack(AppStrings.PressBackAgainToExit);
+    }
+
+    /// <summary>
+    /// Schließt das aktuell offene Overlay eines Child-VMs über dessen Cancel-Command
+    /// (Schritt 1 des Back-Patterns). Gibt true zurück, wenn ein Overlay offen war.
+    /// </summary>
+    private bool TryCloseOpenOverlays()
+    {
+        if (StatisticsVm.ShowExportFormatOverlay) { StatisticsVm.CancelExportFormatCommand.Execute(null); return true; }
+        if (StatisticsVm.ShowRewardedAdOverlay) { StatisticsVm.CancelAdOverlayCommand.Execute(null); return true; }
+
+        if (VacationVm.IsEditingQuota) { VacationVm.CancelEditQuotaCommand.Execute(null); return true; }
+        if (VacationVm.ShowRewardedAdOverlay) { VacationVm.CancelAdOverlayCommand.Execute(null); return true; }
+
+        if (YearVm.ShowRewardedAdOverlay) { YearVm.CancelAdOverlayCommand.Execute(null); return true; }
+
+        if (CalendarVm.IsOverlayVisible) { CalendarVm.CancelOverlayCommand.Execute(null); return true; }
+
+        if (DayDetailVm.IsTimeEntryOverlayVisible) { DayDetailVm.CancelTimeEntryOverlayCommand.Execute(null); return true; }
+        if (DayDetailVm.IsPauseOverlayVisible) { DayDetailVm.CancelPauseOverlayCommand.Execute(null); return true; }
+        if (DayDetailVm.IsConfirmDeleteVisible) { DayDetailVm.CancelDeleteCommand.Execute(null); return true; }
+        if (DayDetailVm.IsStatusSelectionVisible) { DayDetailVm.CancelStatusSelectionCommand.Execute(null); return true; }
+
+        if (SettingsVm.IsImportConfirmVisible) { SettingsVm.CancelImportCommand.Execute(null); return true; }
+        if (SettingsVm.IsPurchaseOptionsVisible) { SettingsVm.CancelPurchaseOptionsCommand.Execute(null); return true; }
+
+        return false;
     }
 
     [RelayCommand]
     private async Task RefreshAsync()
     {
         await LoadDataAsync();
+    }
+
+    /// <summary>
+    /// Vom Stempel-QR-Deep-Link (worktimepro://stamp) ausgelöst: stempelt ein bzw. aus —
+    /// identisches Verhalten zum CheckIn/Out-Button (inkl. Initialisierungs-Wait,
+    /// Undo-Fenster und Status-Feedback). Aufrufer: MainActivity (Intent-Filter).
+    /// </summary>
+    public async Task HandleStampScanAsync()
+    {
+        // Zum Today-Tab wechseln, damit der Nutzer das Stempel-Ergebnis sieht
+        CloseAllSubPages();
+        CurrentTab = 0;
+        await ToggleTrackingAsync();
     }
 
     // === Undo Mechanismus ===
@@ -702,6 +746,27 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private void OnAdsStateChanged(object? sender, EventArgs e)
     {
         IsAdBannerVisible = _adService.BannerVisible;
+    }
+
+    private void OnTrialStatusChanged(object? sender, EventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(UpdateBannerVisibility);
+    }
+
+    private void OnPremiumStatusChanged(object? sender, EventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(UpdateBannerVisibility);
+    }
+
+    /// <summary>
+    /// Banner anzeigen, solange weder Premium gekauft noch ein Trial aktiv ist.
+    /// </summary>
+    private void UpdateBannerVisibility()
+    {
+        if (_adService.AdsEnabled && !_purchaseService.IsPremium && !_trialService.IsTrialActive)
+            _adService.ShowBanner();
+        else
+            _adService.HideBanner();
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)
@@ -889,6 +954,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _localization.LanguageChanged -= OnLanguageChanged;
         _rewardedAdService.AdUnavailable -= OnAdUnavailable;
         _adService.AdsStateChanged -= OnAdsStateChanged;
+        _trialService.TrialStatusChanged -= OnTrialStatusChanged;
+        _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
         SettingsVm.SettingsChanged -= OnSettingsChanged;
 
         // Sub-Page Navigation/Message Events abmelden (typed statt Reflection)
@@ -905,6 +972,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // AutoSave-CancellationTokenSource in SettingsVm bis zum Prozessende).
         (SettingsVm as IDisposable)?.Dispose();
         (DayDetailVm as IDisposable)?.Dispose();
+        (StatisticsVm as IDisposable)?.Dispose();
+        (VacationVm as IDisposable)?.Dispose();
+        (WeekVm as IDisposable)?.Dispose();
 
         GC.SuppressFinalize(this);
     }

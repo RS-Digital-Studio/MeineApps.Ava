@@ -23,12 +23,6 @@
       <Color x:Key="AccentColor">#22C55E</Color>
       <Color x:Key="AccentHoverColor">#4ADE80</Color>
 
-      <!-- Feature Accent Colors -->
-      <Color x:Key="TimerAccentColor">#F59E0B</Color>
-      <Color x:Key="StopwatchAccentColor">#38E8FF</Color>
-      <Color x:Key="AlarmAccentColor">#A78BFA</Color>
-      <Color x:Key="PomodoroAccentColor">#EF4444</Color>
-
       <!-- Background Colors (Premium Dark - deutliche Kontraststufen) -->
       <Color x:Key="BackgroundColor">#182640</Color>
       <Color x:Key="SurfaceColor">#223656</Color>
@@ -78,11 +72,6 @@
       <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}" />
       <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
 
-      <SolidColorBrush x:Key="TimerAccentBrush" Color="{DynamicResource TimerAccentColor}" />
-      <SolidColorBrush x:Key="StopwatchAccentBrush" Color="{DynamicResource StopwatchAccentColor}" />
-      <SolidColorBrush x:Key="AlarmAccentBrush" Color="{DynamicResource AlarmAccentColor}" />
-      <SolidColorBrush x:Key="PomodoroAccentBrush" Color="{DynamicResource PomodoroAccentColor}" />
-
       <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundColor}" />
       <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />
       <SolidColorBrush x:Key="CardBrush" Color="{DynamicResource CardColor}" />
@@ -130,18 +119,147 @@
         <GradientStop Color="#D97706" Offset="1" />
       </LinearGradientBrush>
 
-      <!-- Calculator-spezifische Ressourcen -->
-      <LinearGradientBrush x:Key="EqualsGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- APP-LOKALE FONT-TOKENS (Lücken der ThemeColors-Skala, Werte exakt) -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+
+      <!-- 15: hervorgehobene Labels (Premium-Card-Titel, Vorlagen-Namen, Quote-Summen) -->
+      <x:Double x:Key="FontSizeLabelXl">15</x:Double>
+      <!-- 20: Header-Titel aller Calculator-/Tab-Header -->
+      <x:Double x:Key="FontSizeHeadlineSm">20</x:Double>
+      <!-- 26: große Ergebnis-Zahl (AreaMeasure Gesamtfläche) -->
+      <x:Double x:Key="FontSizeDisplaySm">26</x:Double>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- ON-GRADIENT-FARBEN (weiße Akzente auf Header-/Premium-Gradients) -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+
+      <!-- Icon-Chip-Hintergrund in allen Headern (rundes Chip hinter Material-Icon) -->
+      <Color x:Key="HeaderChipColor">#33FFFFFF</Color>
+      <SolidColorBrush x:Key="HeaderChipBrush" Color="{DynamicResource HeaderChipColor}" />
+
+      <!-- Subtext unter Header-Titeln (Calculator-Header, Premium-Card-Preis) -->
+      <Color x:Key="OnGradientSubtextColor">#CCFFFFFF</Color>
+      <SolidColorBrush x:Key="OnGradientSubtextBrush" Color="{DynamicResource OnGradientSubtextColor}" />
+
+      <!-- Hero-Header App-Beschreibung -->
+      <Color x:Key="OnGradientSubtitleColor">#BBFFFFFF</Color>
+      <SolidColorBrush x:Key="OnGradientSubtitleBrush" Color="{DynamicResource OnGradientSubtitleColor}" />
+
+      <!-- Icon-Akzent auf Gradient (Premium-Card Chevron) -->
+      <Color x:Key="OnGradientIconColor">#AAFFFFFF</Color>
+      <SolidColorBrush x:Key="OnGradientIconBrush" Color="{DynamicResource OnGradientIconColor}" />
+
+      <!-- Tertiärtext auf Gradient (Hero-Header Rechner-Anzahl) -->
+      <Color x:Key="OnGradientMutedColor">#99FFFFFF</Color>
+      <SolidColorBrush x:Key="OnGradientMutedBrush" Color="{DynamicResource OnGradientMutedColor}" />
+
+      <!-- Lila-Akzent (Vorlagen-Badges, MaterialCompare-Chip) -->
+      <Color x:Key="PurpleAccentColor">#A855F7</Color>
+      <SolidColorBrush x:Key="PurpleAccentBrush" Color="{DynamicResource PurpleAccentColor}" />
+
+      <!-- Tab-Header-Gradients (History/Projects haben eigene Akzent-Gradients) -->
+      <LinearGradientBrush x:Key="HistoryHeaderGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#6366F1" Offset="0" />
+        <GradientStop Color="#4F46E5" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="ProjectsHeaderGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#10B981" Offset="0" />
+        <GradientStop Color="#0891B2" Offset="1" />
+      </LinearGradientBrush>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- KACHEL-ICON-GRADIENTS (Kategorie-Farbsystem, je Rechner ein Token) -->
+      <!-- Identische Werte = gleiche Kategorie-Farbe; Hero-Value-Boxen in   -->
+      <!-- CableSizing/Insulation/Plaster/Screed nutzen dieselben Brushes.   -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+
+      <LinearGradientBrush x:Key="TileGradientTileBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#F59E0B" Offset="0" />
+        <GradientStop Color="#D97706" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientWallpaperBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#8B5CF6" Offset="0" />
+        <GradientStop Color="#7C3AED" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientPaintBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#22C55E" Offset="0" />
+        <GradientStop Color="#16A34A" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientFlooringBrush" StartPoint="0%,0%" EndPoint="100%,100%">
         <GradientStop Color="#3B82F6" Offset="0" />
-        <GradientStop Color="#60A5FA" Offset="1" />
+        <GradientStop Color="#2563EB" Offset="1" />
       </LinearGradientBrush>
-      <LinearGradientBrush x:Key="DisplayGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Color="#223656" Offset="0" />
-        <GradientStop Color="#182640" Offset="1" />
+      <LinearGradientBrush x:Key="TileGradientConcreteBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#78716C" Offset="0" />
+        <GradientStop Color="#57534E" Offset="1" />
       </LinearGradientBrush>
-      <BoxShadows x:Key="OperatorGlowShadow">0 0 12 2 #403B82F6</BoxShadows>
-      <SolidColorBrush x:Key="DigitButtonBrush" Color="#15FFFFFF" />
-      <SolidColorBrush x:Key="DigitButtonHoverBrush" Color="#25FFFFFF" />
+      <LinearGradientBrush x:Key="TileGradientDrywallBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#EF4444" Offset="0" />
+        <GradientStop Color="#DC2626" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientElectricalBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#F97316" Offset="0" />
+        <GradientStop Color="#EA580C" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientMetalBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#6B7280" Offset="0" />
+        <GradientStop Color="#4B5563" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientGardenBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#10B981" Offset="0" />
+        <GradientStop Color="#059669" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientRoofSolarBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#06B6D4" Offset="0" />
+        <GradientStop Color="#0891B2" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientStairsBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#A855F7" Offset="0" />
+        <GradientStop Color="#9333EA" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientPlasterBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#F97316" Offset="0" />
+        <GradientStop Color="#EA580C" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientScreedBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#78716C" Offset="0" />
+        <GradientStop Color="#57534E" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientInsulationBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#14B8A6" Offset="0" />
+        <GradientStop Color="#0D9488" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientCableSizingBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#F59E0B" Offset="0" />
+        <GradientStop Color="#D97706" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientGroutBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#EC4899" Offset="0" />
+        <GradientStop Color="#DB2777" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientHourlyRateBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#22C55E" Offset="0" />
+        <GradientStop Color="#16A34A" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientMaterialCompareBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#8B5CF6" Offset="0" />
+        <GradientStop Color="#7C3AED" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientAreaMeasureBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#3B82F6" Offset="0" />
+        <GradientStop Color="#2563EB" Offset="1" />
+      </LinearGradientBrush>
+
+      <!-- Business-Schnellzugriff-Kacheln (MainView unten) -->
+      <LinearGradientBrush x:Key="TileGradientTemplatesBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#10B981" Offset="0" />
+        <GradientStop Color="#059669" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="TileGradientQuoteBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#F59E0B" Offset="0" />
+        <GradientStop Color="#D97706" Offset="1" />
+      </LinearGradientBrush>
 
       <!-- Theme Identifier -->
       <x:String x:Key="ThemeName">HandwerkerRechner</x:String>

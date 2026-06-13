@@ -70,8 +70,8 @@ public class VacationEntry
         get
         {
             if (StartDate.Date == EndDate.Date)
-                return StartDate.ToString("dd.MM.yyyy");
-            return $"{StartDate:dd.MM.} - {EndDate:dd.MM.yyyy}";
+                return StartDate.ToString("d");
+            return $"{Helpers.TimeFormatter.FormatDayMonth(StartDate)} - {EndDate.ToString("d")}";
         }
     }
 

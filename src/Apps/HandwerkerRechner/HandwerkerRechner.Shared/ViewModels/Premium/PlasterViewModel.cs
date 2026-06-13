@@ -51,7 +51,7 @@ public sealed partial class PlasterViewModel : ViewModelBase, IDisposable, ICalc
         _priceService = priceService;
 
         // Standard-Materialpreis laden
-        PricePerBag = _priceService.GetPrice("plaster_sack")?.EffectivePrice ?? 0;
+        PricePerBag = (double)(_priceService.GetPrice("plaster_sack")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

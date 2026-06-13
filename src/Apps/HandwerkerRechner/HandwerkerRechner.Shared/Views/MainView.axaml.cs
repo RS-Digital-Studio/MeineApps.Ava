@@ -17,6 +17,8 @@ public partial class MainView : UserControl
 
     // SkiaSharp Blueprint-Hintergrund
     private readonly BlueprintBackgroundRenderer _backgroundRenderer = new();
+    // Lifecycle: Start in OnDataContextChanged (StartRenderTimer), Stop + Tick-Unsubscribe + null
+    // in OnDetachedFromVisualTree. DispatcherTimer implementiert kein IDisposable — Stop() genügt.
     private DispatcherTimer? _renderTimer;
     private float _renderTime;
 

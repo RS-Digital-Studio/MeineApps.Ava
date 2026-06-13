@@ -48,7 +48,7 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalcul
         _priceService = priceService;
 
         // Standard-Materialpreis laden
-        PricePerKg = _priceService.GetPrice("steel_flat")?.EffectivePrice ?? 0;
+        PricePerKg = (double)(_priceService.GetPrice("steel_flat")?.EffectivePrice ?? 0);
     }
 
     /// <summary>
@@ -88,47 +88,7 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalcul
         _localization.GetString("ThreadDrill")
     ];
 
-    // Live-Berechnung: Debounce bei Eingabe-Änderungen
-    partial void OnSelectedMetalChanged(int value) => ScheduleAutoCalculate();
-    partial void OnSelectedProfileChanged(int value) => ScheduleAutoCalculate();
-    partial void OnLengthChanged(double value) => ScheduleAutoCalculate();
-    partial void OnDimension1Changed(double value) => ScheduleAutoCalculate();
-    partial void OnDimension2Changed(double value) => ScheduleAutoCalculate();
-    partial void OnWallThicknessChanged(double value) => ScheduleAutoCalculate();
-    partial void OnSelectedThreadChanged(int value) => ScheduleAutoCalculate();
-
-    // Metal Weight Inputs
-    [ObservableProperty] private int _selectedMetal;
-    [ObservableProperty] private int _selectedProfile;
-    [ObservableProperty] private double _length = 1.0;
-    [ObservableProperty] private double _dimension1 = 20;
-    [ObservableProperty] private double _dimension2 = 10;
-    [ObservableProperty] private double _wallThickness = 2;
-
-    public List<string> Metals => [
-        _localization.GetString("MetalSteel"),
-        _localization.GetString("MetalStainlessSteel"),
-        _localization.GetString("MetalAluminum"),
-        _localization.GetString("MetalCopper"),
-        _localization.GetString("MetalBrass"),
-        _localization.GetString("MetalBronze")
-    ];
-    public List<string> Profiles => [
-        _localization.GetString("ProfileRoundBar"),
-        _localization.GetString("ProfileFlatBar"),
-        _localization.GetString("ProfileSquareBar"),
-        _localization.GetString("ProfileRoundTube"),
-        _localization.GetString("ProfileSquareTube"),
-        _localization.GetString("ProfileAngle")
-    ];
-
-    // Thread Drill Inputs
-    [ObservableProperty] private int _selectedThread;
-    public List<string> ThreadSizes { get; } = ["M3", "M4", "M5", "M6", "M8", "M10", "M12", "M14", "M16", "M18", "M20", "M22", "M24", "M27", "M30"];
-
-    // Results
-    [ObservableProperty] private MetalWeightResult? _weightResult;
-    [ObservableProperty] private ThreadDrillResult? _threadResult;
+    // Results (geteilt)
     [ObservableProperty] private bool _hasResult;
 
     [ObservableProperty]
@@ -136,35 +96,6 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalcul
 
     [ObservableProperty]
     private bool _isExporting;
-
-    #region Cost Calculation
-
-    // Metallgewicht: Preis pro kg
-    [ObservableProperty]
-    private double _pricePerKg = 0;
-
-    [ObservableProperty]
-    private bool _showMetalCost = false;
-
-    public string MetalCostDisplay => (ShowMetalCost && PricePerKg > 0 && WeightResult != null && WeightResult.Weight > 0)
-        ? $"{_localization.GetString("ResultMaterialCost")}: {(WeightResult.Weight * PricePerKg):F2} {_localization.GetString("CurrencySymbol")}"
-        : "";
-
-    partial void OnPricePerKgChanged(double value)
-    {
-        ShowMetalCost = value > 0;
-        OnPropertyChanged(nameof(MetalCostDisplay));
-        ScheduleAutoCalculate();
-    }
-
-    partial void OnWeightResultChanged(MetalWeightResult? value)
-    {
-        OnPropertyChanged(nameof(MetalCostDisplay));
-    }
-
-    // Gewindebohrer: Keine Kostenberechnung (nur Tabelle)
-
-    #endregion
 
     /// <summary>
     /// Debounce: Berechnung 300ms nach letzter Eingabe-Änderung auslösen
@@ -189,7 +120,11 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalcul
             switch (SelectedCalculator)
             {
                 case 0: // Metal Weight
-                    if (Length <= 0 || Dimension1 <= 0)
+                    var selectedProfile = (ProfileType)SelectedProfile;
+
+                    // FlatBar/Angle brauchen Dimension2 (Breite bzw. 2. Schenkel) — sonst Gewicht 0 statt Meldung
+                    if (Length <= 0 || Dimension1 <= 0 ||
+                        (selectedProfile is ProfileType.FlatBar or ProfileType.Angle && Dimension2 <= 0))
                     {
                         HasResult = false;
                         MessageRequested?.Invoke(
@@ -199,7 +134,6 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalcul
                     }
 
                     // Wandstärke bei Hohlprofilen begrenzen: darf nicht größer als halber Außendurchmesser sein
-                    var selectedProfile = (ProfileType)SelectedProfile;
                     if (selectedProfile is ProfileType.RoundTube or ProfileType.SquareTube &&
                         WallThickness >= Dimension1 / 2)
                     {
@@ -585,7 +519,13 @@ public sealed partial class MetalViewModel : ViewModelBase, IDisposable, ICalcul
     /// <summary>
     /// Räumt Event-Subscriptions und Timer auf (wird von MainViewModel beim Navigieren aufgerufen)
     /// </summary>
-    public void Cleanup() => _debounceTimer?.Dispose();
+    public void Cleanup()
+    {
+        // Timer nullen, damit ein nachfolgendes ScheduleAutoCalculate keinen
+        // Change() auf einem disposed Timer wirft (Pattern wie TileCalculatorViewModel)
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
 
     public void Dispose()
     {

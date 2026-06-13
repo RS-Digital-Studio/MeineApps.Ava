@@ -21,7 +21,6 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter</value></resheader>
 
-  <data name="AppName" xml:space="preserve"><value>WorkTime Pro</value></data>
   <data name="Status_Idle" xml:space="preserve"><value>Non avviato</value></data>
   <data name="Status_Working" xml:space="preserve"><value>Al lavoro</value></data>
   <data name="Status_OnBreak" xml:space="preserve"><value>In pausa</value></data>
@@ -32,37 +31,25 @@
   <data name="Target" xml:space="preserve"><value>Obiettivo</value></data>
   <data name="Start" xml:space="preserve"><value>Inizio</value></data>
   <data name="Remaining" xml:space="preserve"><value>Rimanente</value></data>
-  <data name="DayProgress" xml:space="preserve"><value>Progresso giornaliero</value></data>
   <data name="WeekProgress" xml:space="preserve"><value>Progresso settimanale</value></data>
-  <data name="StartPause" xml:space="preserve"><value>Inizia pausa</value></data>
   <data name="EndPause" xml:space="preserve"><value>Termina pausa</value></data>
   <data name="DayDetails" xml:space="preserve"><value>Dettagli giornata</value></data>
   <data name="AutoPause" xml:space="preserve"><value>Pausa automatica</value></data>
   <data name="AutoPauseAdded" xml:space="preserve"><value>Pausa automatica aggiunta</value></data>
   <data name="AutoPauseLegal" xml:space="preserve"><value>Aggiunta automaticamente (legale)</value></data>
   <data name="Week" xml:space="preserve"><value>Settimana</value></data>
-  <data name="WeekOverview" xml:space="preserve"><value>Riepilogo settimanale</value></data>
-  <data name="ThisWeek" xml:space="preserve"><value>Questa settimana</value></data>
-  <data name="WorkedDays" xml:space="preserve"><value>Giorni lavorati</value></data>
   <data name="Month" xml:space="preserve"><value>Mese</value></data>
   <data name="MonthOverview" xml:space="preserve"><value>Riepilogo mensile</value></data>
   <data name="MonthBalance" xml:space="preserve"><value>Saldo mensile</value></data>
   <data name="CumulativeBalance" xml:space="preserve"><value>Saldo cumulativo</value></data>
   <data name="CloseMonth" xml:space="preserve"><value>Chiudi mese</value></data>
   <data name="UnlockMonth" xml:space="preserve"><value>Sblocca mese</value></data>
-  <data name="MonthLocked" xml:space="preserve"><value>Mese chiuso</value></data>
-  <data name="MonthOpen" xml:space="preserve"><value>Aperto</value></data>
   <data name="Calendar" xml:space="preserve"><value>Calendario</value></data>
   <data name="Legend" xml:space="preserve"><value>Legenda</value></data>
   <data name="Statistics" xml:space="preserve"><value>Statistiche</value></data>
-  <data name="Period" xml:space="preserve"><value>Periodo</value></data>
   <data name="Quarter" xml:space="preserve"><value>Trimestre</value></data>
   <data name="Year" xml:space="preserve"><value>Anno</value></data>
-  <data name="TotalWorkTime" xml:space="preserve"><value>Orario totale</value></data>
   <data name="Overtime" xml:space="preserve"><value>Straordinari</value></data>
-  <data name="AveragePerDay" xml:space="preserve"><value>Media giornaliera</value></data>
-  <data name="WeeklyWorkTime" xml:space="preserve"><value>Orario settimanale</value></data>
-  <data name="OvertimeTrend" xml:space="preserve"><value>Andamento straordinari</value></data>
   <data name="DayStatus_WorkDay" xml:space="preserve"><value>Giorno lavorativo</value></data>
   <data name="DayStatus_Weekend" xml:space="preserve"><value>Fine settimana</value></data>
   <data name="DayStatus_Vacation" xml:space="preserve"><value>Ferie</value></data>
@@ -75,8 +62,6 @@
   <data name="DailyTarget" xml:space="preserve"><value>Obiettivo giornaliero (ore)</value></data>
   <data name="WeeklyTarget" xml:space="preserve"><value>Obiettivo settimanale</value></data>
   <data name="WorkDays" xml:space="preserve"><value>Giorni lavorativi</value></data>
-  <data name="AutoPauseSettings" xml:space="preserve"><value>Pausa automatica</value></data>
-  <data name="AutoPauseEnabled" xml:space="preserve"><value>Pausa automatica attivata</value></data>
   <data name="AutoPauseAfterHours" xml:space="preserve"><value>Dopo ore</value></data>
   <data name="AutoPauseDescription" xml:space="preserve"><value>Aggiungere automaticamente il tempo di pausa richiesto per legge</value></data>
   <data name="PauseMinutes" xml:space="preserve"><value>Durata pausa (minuti)</value></data>
@@ -93,10 +78,8 @@
   <data name="LegalSourceArbZG" xml:space="preserve"><value>Legge sull'orario di lavoro (ArbZG)</value></data>
   <data name="LegalSourceHolidays" xml:space="preserve"><value>Festività ufficiali (BMI)</value></data>
   <data name="LegalCompliance" xml:space="preserve"><value>Conformità orario lavoro</value></data>
-  <data name="LegalComplianceDescription" xml:space="preserve"><value>Mostra avvisi di non conformita (max. 10h/giorno, min. 11h riposo)</value></data>
-  <data name="SaveSettings" xml:space="preserve"><value>Salva impostazioni</value></data>
+  <data name="LegalComplianceDescription" xml:space="preserve"><value>Mostra avvisi di non conformità (max. 10h/giorno, min. 11h riposo)</value></data>
   <data name="PrivacyPolicy" xml:space="preserve"><value>Informativa sulla privacy</value></data>
-  <data name="Premium" xml:space="preserve"><value>Premium</value></data>
   <data name="PremiumStatus" xml:space="preserve"><value>Stato Premium</value></data>
   <data name="PremiumActive" xml:space="preserve"><value>Premium attivo</value></data>
   <data name="TrialDaysLeft" xml:space="preserve"><value>Prova: {0} giorni rimanenti</value></data>
@@ -104,32 +87,21 @@
   <data name="BuyPremium" xml:space="preserve"><value>Acquista Premium</value></data>
   <data name="RestorePurchases" xml:space="preserve"><value>Ripristina acquisti</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annulla</value></data>
-  <data name="Delete" xml:space="preserve"><value>Elimina</value></data>
   <data name="Edit" xml:space="preserve"><value>Modifica</value></data>
   <data name="Save" xml:space="preserve"><value>Salva</value></data>
   <data name="OK" xml:space="preserve"><value>OK</value></data>
-  <data name="Close" xml:space="preserve"><value>Chiudi</value></data>
   <data name="Error" xml:space="preserve"><value>Errore</value></data>
   <data name="Info" xml:space="preserve"><value>Info</value></data>
-  <data name="PurchaseFailed" xml:space="preserve"><value>Acquisto fallito</value></data>
-  <data name="RestoreFailed" xml:space="preserve"><value>Ripristino fallito</value></data>
   <data name="TimeEntries" xml:space="preserve"><value>Registrazioni</value></data>
   <data name="CheckIn" xml:space="preserve"><value>Entrata</value></data>
   <data name="CheckOut" xml:space="preserve"><value>Uscita</value></data>
   <data name="AddEntry" xml:space="preserve"><value>Aggiungi registrazione</value></data>
-  <data name="DeleteEntry" xml:space="preserve"><value>Elimina registrazione</value></data>
   <data name="DeleteEntryConfirm" xml:space="preserve"><value>Vuoi eliminare la registrazione delle {0}?</value></data>
   <data name="NoEntries" xml:space="preserve"><value>Nessuna registrazione</value></data>
   <data name="Pauses" xml:space="preserve"><value>Pause</value></data>
   <data name="ManualPause" xml:space="preserve"><value>Pausa manuale</value></data>
-  <data name="DeletePause" xml:space="preserve"><value>Elimina pausa</value></data>
   <data name="DeletePauseConfirm" xml:space="preserve"><value>Vuoi eliminare la pausa dalle {0} alle {1}?</value></data>
-  <data name="NoPauses" xml:space="preserve"><value>Nessuna pausa registrata</value></data>
   <data name="AutoPauseCannotDelete" xml:space="preserve"><value>Le pause automatiche vengono calcolate automaticamente e non possono essere eliminate manualmente.</value></data>
-  <data name="LegalWarnings" xml:space="preserve"><value>Avvisi orario lavoro</value></data>
-  <data name="MaxDailyHoursExceeded" xml:space="preserve"><value>Giornata superiore a {0}h</value></data>
-  <data name="MinBreakNotMet" xml:space="preserve"><value>Pausa minima di {0} min richiesta dopo {1}h di lavoro</value></data>
-  <data name="MinRestNotMet" xml:space="preserve"><value>Riposo tra i turni inferiore a {0}h</value></data>
   <data name="Monday" xml:space="preserve"><value>Lunedì</value></data>
   <data name="Tuesday" xml:space="preserve"><value>Martedì</value></data>
   <data name="Wednesday" xml:space="preserve"><value>Mercoledì</value></data>
@@ -146,10 +118,7 @@
   <data name="Sun" xml:space="preserve"><value>Do</value></data>
 
   <!-- Trial Offer -->
-  <data name="TrialOfferTitle" xml:space="preserve"><value>Provare Premium gratis?</value></data>
   <data name="TrialOfferStart" xml:space="preserve"><value>14 giorni di prova gratis</value></data>
-  <data name="TrialOfferBuyNow" xml:space="preserve"><value>Acquista ora</value></data>
-  <data name="TrialStartedTitle" xml:space="preserve"><value>Prova avviata!</value></data>
   <data name="TrialStartedMessage" xml:space="preserve"><value>Ora hai {0} giorni Premium senza pubblicità. Buon divertimento!</value></data>
 
   <!-- Purchase Options -->
@@ -164,8 +133,6 @@
   <data name="ShowDayDetails" xml:space="preserve"><value>Mostra dettagli giornata</value></data>
   <data name="DaysThisWeek" xml:space="preserve"><value>Giorni di questa settimana</value></data>
   <data name="Days" xml:space="preserve"><value>giorni</value></data>
-  <data name="Charts" xml:space="preserve"><value>Grafici</value></data>
-  <data name="Table" xml:space="preserve"><value>Tabella</value></data>
   <data name="WorkTimeTable" xml:space="preserve"><value>Tabella orario di lavoro</value></data>
   <data name="WeeklyWorkTimeChart" xml:space="preserve"><value>Orario settimanale</value></data>
   <data name="OvertimeTrendChart" xml:space="preserve"><value>Andamento straordinari</value></data>
@@ -179,18 +146,11 @@
   <data name="VacationDaysPerYear" xml:space="preserve"><value>Giorni di ferie all'anno</value></data>
   <data name="VacationDefault" xml:space="preserve"><value>Predefinito: 30 giorni</value></data>
   <data name="IndividualHoursPerDay" xml:space="preserve"><value>Ore individuali per giorno</value></data>
-  <data name="SelectRegion" xml:space="preserve"><value>Seleziona regione</value></data>
-  <data name="Saved" xml:space="preserve"><value>Salvato</value></data>
-  <data name="SettingsSaved" xml:space="preserve"><value>Impostazioni salvate con successo</value></data>
   <data name="Sick" xml:space="preserve"><value>Malattia</value></data>
   <data name="Home" xml:space="preserve"><value>Casa</value></data>
   <data name="Holiday" xml:space="preserve"><value>Festivo</value></data>
   <data name="AvgPerDay" xml:space="preserve"><value>Media/giorno</value></data>
   <data name="WorkedDaysCount" xml:space="preserve"><value>Giorni lavorativi</value></data>
-  <data name="Export" xml:space="preserve"><value>Esporta</value></data>
-  <data name="ExportAs" xml:space="preserve"><value>Esporta come...</value></data>
-  <data name="ExportSuccess" xml:space="preserve"><value>Esportazione riuscita</value></data>
-  <data name="ExportFailed" xml:space="preserve"><value>Esportazione fallita</value></data>
 
   <!-- DayDetailPage -->
   <data name="LockedMonthClosure" xml:space="preserve"><value>Bloccato (mese chiuso)</value></data>
@@ -199,7 +159,6 @@
   <data name="NoBreaksRecorded" xml:space="preserve"><value>Nessuna pausa registrata</value></data>
 
   <!-- VacationPage -->
-  <data name="VacationManagement" xml:space="preserve"><value>Gestione ferie</value></data>
   <data name="VacationAccount" xml:space="preserve"><value>Conto ferie</value></data>
   <data name="AddNewVacation" xml:space="preserve"><value>Aggiungi nuove ferie</value></data>
   <data name="From" xml:space="preserve"><value>Da</value></data>
@@ -216,7 +175,6 @@
 
   <!-- ShiftPlanPage -->
   <data name="ShiftPlan" xml:space="preserve"><value>Piano turni</value></data>
-  <data name="TotalHoursFormat" xml:space="preserve"><value>Totale: {0} ore</value></data>
   <data name="SelectShiftPattern" xml:space="preserve"><value>Seleziona modello turno</value></data>
   <data name="AddNew" xml:space="preserve"><value>+ Nuovo</value></data>
   <data name="ApplyToWeek" xml:space="preserve"><value>Applica a settimana</value></data>
@@ -241,7 +199,6 @@
   <data name="OvertimeDevelopment" xml:space="preserve"><value>Andamento straordinari</value></data>
   <data name="MonthsOverviewTitle" xml:space="preserve"><value>Riepilogo mesi</value></data>
   <data name="Actual" xml:space="preserve"><value>Effettivo</value></data>
-  <data name="TargetShort" xml:space="preserve"><value>Obiett.</value></data>
 
   <!-- MonthOverviewPage -->
   <data name="Completed" xml:space="preserve"><value>Completato</value></data>
@@ -251,56 +208,22 @@
   <data name="MoreFeatures" xml:space="preserve"><value>Altre funzioni</value></data>
 
   <!-- New strings for Code Review Cleanup -->
-  <data name="EditDay" xml:space="preserve"><value>Modifica giorno</value></data>
-  <data name="DeleteBreakConfirm" xml:space="preserve"><value>Eliminare la pausa?</value></data>
-  <data name="DeleteVacationConfirm" xml:space="preserve"><value>Eliminare le ferie?</value></data>
-  <data name="DeleteVacationMessage" xml:space="preserve"><value>Vuoi davvero eliminare queste ferie?</value></data>
   <data name="Yes" xml:space="preserve"><value>Sì</value></data>
   <data name="No" xml:space="preserve"><value>No</value></data>
-  <data name="SelectDayType" xml:space="preserve"><value>Seleziona tipo di giorno</value></data>
-  <data name="Regular" xml:space="preserve"><value>Normale</value></data>
   <data name="NoData" xml:space="preserve"><value>Nessun dato disponibile</value></data>
-  <data name="BreakDeleted" xml:space="preserve"><value>Pausa eliminata</value></data>
-  <data name="VacationDeleted" xml:space="preserve"><value>Ferie eliminate</value></data>
   <data name="ConfirmDelete" xml:space="preserve"><value>Conferma eliminazione</value></data>
   <data name="LoadingData" xml:space="preserve"><value>Caricamento...</value></data>
-  <data name="Saving" xml:space="preserve"><value>Salvataggio...</value></data>
-  <data name="ChangeStatus" xml:space="preserve"><value>Cambia stato</value></data>
-  <data name="ShowDetails" xml:space="preserve"><value>Mostra dettagli</value></data>
-  <data name="EnterVacation" xml:space="preserve"><value>Registra ferie</value></data>
-  <data name="MultiDayVacation" xml:space="preserve"><value>Ferie (più giorni)</value></data>
-  <data name="ReportSick" xml:space="preserve"><value>Segnala malattia</value></data>
   <data name="ResetStatus" xml:space="preserve"><value>Ripristina stato</value></data>
-  <data name="EnterVacationTitle" xml:space="preserve"><value>Registra ferie</value></data>
-  <data name="HowManyDays" xml:space="preserve"><value>Quanti giorni?</value></data>
-  <data name="NumberOfDays" xml:space="preserve"><value>Numero di giorni</value></data>
-  <data name="VacationEntered" xml:space="preserve"><value>Ferie registrate</value></data>
   <data name="VacationDaysEnteredFormat" xml:space="preserve"><value>{0} giorni di ferie dal {1} sono stati registrati.</value></data>
-  <data name="HomeOfficeTitle" xml:space="preserve"><value>Smart working</value></data>
-  <data name="OptionalNotePrompt" xml:space="preserve"><value>Nota opzionale (es. motivo, progetto):</value></data>
   <data name="NotePlaceholder" xml:space="preserve"><value>es. Lavoro di progetto, concentrazione</value></data>
-  <data name="InvalidTimeFormat" xml:space="preserve"><value>Formato ora non valido. Usare HH:mm.</value></data>
-  <data name="EnterTime" xml:space="preserve"><value>Inserire l'ora:</value></data>
-  <data name="EditTime" xml:space="preserve"><value>Modifica ora</value></data>
-  <data name="NewTimeFor" xml:space="preserve"><value>Nuovo orario per {0}:</value></data>
   <data name="EditBreak" xml:space="preserve"><value>Modifica pausa</value></data>
-  <data name="BreakStartTime" xml:space="preserve"><value>Ora di inizio pausa:</value></data>
-  <data name="BreakEndTime" xml:space="preserve"><value>Ora di fine pausa:</value></data>
   <data name="AutoBreakInfo" xml:space="preserve"><value>Le pause automatiche vengono calcolate automaticamente e non possono essere modificate manualmente.</value></data>
-  <data name="CloseMonthConfirm" xml:space="preserve"><value>Vuoi chiudere {0}? Le registrazioni non potranno più essere modificate.</value></data>
-  <data name="UnlockMonthConfirm" xml:space="preserve"><value>Vuoi sbloccare {0}?</value></data>
-  <data name="Unlock" xml:space="preserve"><value>Sblocca</value></data>
   <data name="Note" xml:space="preserve"><value>Nota</value></data>
-  <data name="VacationDaysInfo" xml:space="preserve"><value>Giorni di ferie per quest'anno:</value></data>
   <data name="CarryOverDays" xml:space="preserve"><value>Riporta giorni</value></data>
   <data name="DaysCarriedOver" xml:space="preserve"><value>{0} giorni del {1} sono stati riportati.</value></data>
   <data name="NoDaysToCarryOver" xml:space="preserve"><value>Nessun giorno residuo del {0} da riportare.</value></data>
-  <data name="RemainingDays" xml:space="preserve"><value>rimanente</value></data>
   <data name="Planned" xml:space="preserve"><value>pianificato</value></data>
   <data name="NoWorkDaysInPeriod" xml:space="preserve"><value>Il periodo selezionato non contiene giorni lavorativi.</value></data>
-  <data name="PremiumFeature" xml:space="preserve"><value>Funzione Premium</value></data>
-  <data name="PremiumRequired" xml:space="preserve"><value>Questa funzione richiede Premium. Aggiorna ora!</value></data>
-  <data name="PdfExportPremium" xml:space="preserve"><value>L'esportazione PDF è una funzione Premium.</value></data>
   <data name="ExportFailedMessage" xml:space="preserve"><value>Esportazione fallita: {0}</value></data>
   <data name="SpecialLeave" xml:space="preserve"><value>Permesso speciale</value></data>
   <data name="UnpaidLeave" xml:space="preserve"><value>Permesso non retribuito</value></data>
@@ -317,14 +240,6 @@
   <data name="TableBalance" xml:space="preserve"><value>Saldo</value></data>
 
   <!-- Chart Labels -->
-  <data name="ChartActualHours" xml:space="preserve"><value>Ore effettive</value></data>
-  <data name="ChartTargetFormat" xml:space="preserve"><value>Obiettivo ({0}h)</value></data>
-  <data name="ChartHours" xml:space="preserve"><value>Ore</value></data>
-  <data name="ChartDaily" xml:space="preserve"><value>Giornaliero</value></data>
-  <data name="ChartCumulative" xml:space="preserve"><value>Cumulativo</value></data>
-  <data name="ChartAvgHours" xml:space="preserve"><value>Ore medie</value></data>
-  <data name="ChartWorkHours" xml:space="preserve"><value>Ore di lavoro</value></data>
-  <data name="ChartCumulativeBalance" xml:space="preserve"><value>Saldo cum.</value></data>
 
   <!-- Shift Plan -->
   <data name="ShiftOff" xml:space="preserve"><value>Libero</value></data>
@@ -338,9 +253,6 @@
   </data>
   <data name="ErrorGeneric" xml:space="preserve">
     <value>Errore: {0}</value>
-  </data>
-  <data name="ErrorOpenUrl" xml:space="preserve">
-    <value>Impossibile aprire l'URL: {0}</value>
   </data>
   <data name="DayStatus_Training" xml:space="preserve">
     <value>Formazione</value>
@@ -370,15 +282,6 @@
   </data>
   <data name="WatchVideoOnce" xml:space="preserve">
     <value>Guarda Video – Usa una volta</value>
-  </data>
-  <data name="BuyPremiumUnlimited" xml:space="preserve">
-    <value>Acquista Premium – Illimitato</value>
-  </data>
-  <data name="VideoRewardSuccess" xml:space="preserve">
-    <value>Funzione sbloccata!</value>
-  </data>
-  <data name="VideoAdFailed" xml:space="preserve">
-    <value>Impossibile caricare il video</value>
   </data>
   <data name="EndOfDay" xml:space="preserve">
     <value>Fine giornata!</value>
@@ -480,12 +383,6 @@
   <data name="Undo" xml:space="preserve">
     <value>Annulla</value>
   </data>
-  <data name="UndoCheckIn" xml:space="preserve">
-    <value>Timbratura annullata</value>
-  </data>
-  <data name="UndoCheckOut" xml:space="preserve">
-    <value>Uscita annullata</value>
-  </data>
 
   <!-- Arrotondamento & Guadagno -->
   <data name="MinutesShortFormat" xml:space="preserve"><value>{0} min</value></data>
@@ -493,13 +390,10 @@
   <data name="NoRounding" xml:space="preserve"><value>Nessuno</value></data>
   <data name="HourlyRate" xml:space="preserve"><value>Tariffa oraria</value></data>
   <data name="TodayEarnings" xml:space="preserve"><value>Guadagno di oggi</value></data>
-  <data name="TotalEarnings" xml:space="preserve"><value>Guadagno totale</value></data>
-  <data name="Earnings" xml:space="preserve"><value>Guadagno</value></data>
   <data name="PressBackAgainToExit" xml:space="preserve"><value>Premi di nuovo per uscire</value></data>
 
   <!-- UI/UX Overhaul -->
   <data name="WeekGoalReached" xml:space="preserve"><value>Obiettivo settimanale raggiunto!</value></data>
-  <data name="PerHour" xml:space="preserve"><value>all'ora</value></data>
   <data name="SettingsChangedWarning" xml:space="preserve"><value>Nota: {0} giorni esistenti mantengono le impostazioni attuali. Le nuove impostazioni si applicano ai giorni futuri.</value></data>
 
   <data name="AbsenceOverview" xml:space="preserve"><value>Panoramica assenze</value></data>
@@ -521,9 +415,6 @@
   <data name="ImportBackup" xml:space="preserve"><value>Importa backup</value></data>
   <data name="LoadingInit" xml:space="preserve">
     <value>Inizializzazione database</value>
-  </data>
-  <data name="LoadingReminders" xml:space="preserve">
-    <value>Caricamento promemoria</value>
   </data>
   <data name="SelectStatus" xml:space="preserve">
     <value>Seleziona stato</value>
@@ -571,4 +462,8 @@
   <data name="Taken" xml:space="preserve"><value>Presi</value></data>
   <data name="FormatExcel" xml:space="preserve"><value>Excel</value></data>
   <data name="ReminderNotificationsOff" xml:space="preserve"><value>Le notifiche sono disattivate per WorkTime Pro — i promemoria non verranno recapitati finché non le attivi nelle impostazioni di sistema.</value></data>
+  <data name="ExactAlarmPermissionHint" xml:space="preserve"><value>Per promemoria puntuali, consenti «Sveglie e promemoria» per WorkTime Pro nelle impostazioni di sistema — altrimenti i promemoria potrebbero arrivare in ritardo.</value></data>
+  <data name="QrStampTitle" xml:space="preserve"><value>Codice QR di timbratura</value></data>
+  <data name="QrStampDescription" xml:space="preserve"><value>Scansiona questo codice con la fotocamera del telefono per timbrare automaticamente l'entrata o l'uscita. Stampalo e appendilo sul posto di lavoro.</value></data>
+  <data name="QrStampShare" xml:space="preserve"><value>Condividi come immagine</value></data>
 </root>

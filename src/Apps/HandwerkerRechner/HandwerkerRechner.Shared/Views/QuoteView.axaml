@@ -23,35 +23,35 @@
             AutomationProperties.AutomationId="Quote_HeaderBorder">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <Button Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0"
-                AutomationProperties.Name="Zurück"
+                AutomationProperties.Name="{loc:Translate Back}"
                 AutomationProperties.AutomationId="Quote_BtnBack">
           <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" Foreground="White" />
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
                     Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
             <mi:MaterialIcon Kind="FileDocumentEditOutline" Width="22" Height="22"
                              Foreground="White"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="{Binding PageTitle}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                      VerticalAlignment="Center"
                      AutomationProperties.AutomationId="Quote_TxtTitle" />
         </StackPanel>
         <!-- Neues Angebot Button (nur in Listen-Ansicht) -->
         <Button Grid.Column="2"
                 Command="{Binding CreateNewQuoteCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0"
                 IsVisible="{Binding !IsEditing}"
-                AutomationProperties.Name="Neues Angebot"
+                AutomationProperties.Name="{loc:Translate NewQuote}"
                 AutomationProperties.AutomationId="Quote_BtnNew">
           <mi:MaterialIcon Kind="Plus" Width="22" Height="22" Foreground="White" />
         </Button>
@@ -98,7 +98,8 @@
                   <Grid ColumnDefinitions="*,Auto">
 
                     <!-- Angebot-Info (klickbar → Editor öffnen) -->
-                    <Button Grid.Column="0"
+                    <Button AutomationProperties.AutomationId="Quote_BtnEditQuote"
+                            Grid.Column="0"
                             Command="{Binding $parent[UserControl].((vm:QuoteViewModel)DataContext).EditQuoteCommand}"
                             CommandParameter="{Binding}"
                             Background="Transparent"
@@ -109,16 +110,16 @@
                       <StackPanel Spacing="4">
                         <Grid ColumnDefinitions="*,Auto">
                           <TextBlock Grid.Column="0" Text="{Binding QuoteNumber}"
-                                     FontSize="15" FontWeight="Bold"
+                                     FontSize="{StaticResource FontSizeLabelXl}" FontWeight="Bold"
                                      Foreground="{DynamicResource TextPrimaryBrush}" />
                           <TextBlock Grid.Column="1" Text="{Binding TotalGross, StringFormat='{}{0:F2} €'}"
-                                     FontSize="15" FontWeight="Bold"
+                                     FontSize="{StaticResource FontSizeLabelXl}" FontWeight="Bold"
                                      Foreground="{DynamicResource PrimaryBrush}" />
                         </Grid>
                         <TextBlock Text="{Binding CustomerName}"
-                                   FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                   FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
                         <TextBlock Text="{Binding ProjectDescription}"
-                                   FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap"
                                    MaxLines="2" />
                       </StackPanel>
@@ -132,7 +133,8 @@
                             Padding="12"
                             MinHeight="44" MinWidth="44"
                             VerticalAlignment="Center"
-                            AutomationProperties.Name="Angebot löschen">
+                            AutomationProperties.Name="{loc:Translate A11yDeleteQuote}"
+                            AutomationProperties.AutomationId="Quote_BtnDeleteQuote">
                       <mi:MaterialIcon Kind="DeleteOutline" Width="22" Height="22"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                     </Button>
@@ -160,13 +162,13 @@
             </i:Interaction.Behaviors>
             <StackPanel Spacing="12">
               <TextBlock Text="{loc:Translate CustomerData}"
-                         FontSize="16" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
 
               <!-- Angebotsnummer -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding QuoteNumberLabel}"
-                           FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding QuoteNumber}" Classes="Outlined"
                          AutomationProperties.AutomationId="Quote_TxtBoxNumber" />
               </StackPanel>
@@ -174,7 +176,7 @@
               <!-- Kundenname -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding CustomerNameLabel}"
-                           FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding CustomerName}" Classes="Outlined"
                          AutomationProperties.AutomationId="Quote_TxtBoxCustomerName" />
               </StackPanel>
@@ -182,7 +184,7 @@
               <!-- Adresse -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding CustomerAddressLabel}"
-                           FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding CustomerAddress}" Classes="Outlined"
                          AutomationProperties.AutomationId="Quote_TxtBoxAddress" />
               </StackPanel>
@@ -190,7 +192,7 @@
               <!-- Projektbeschreibung -->
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding ProjectDescriptionLabel}"
-                           FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBox Text="{Binding ProjectDescription}"
                          Classes="Outlined"
                          AcceptsReturn="True"
@@ -209,7 +211,7 @@
             </i:Interaction.Behaviors>
             <StackPanel Spacing="12">
               <TextBlock Text="{Binding QuoteItemsLabel}"
-                         FontSize="16" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
 
               <!-- Vorhandene Positionen -->
@@ -222,9 +224,9 @@
                       <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
                           <TextBlock Text="{Binding Description}"
-                                     FontSize="14" FontWeight="SemiBold"
+                                     FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                                      Foreground="{DynamicResource TextPrimaryBrush}" />
-                          <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
+                          <TextBlock FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource TextSecondaryBrush}">
                             <Run Text="{Binding Quantity, StringFormat='{}{0:F2}'}" />
                             <Run Text="{Binding Unit}" />
                             <Run Text="×" />
@@ -234,14 +236,15 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                                     VerticalAlignment="Center">
                           <TextBlock Text="{Binding Total, StringFormat='{}{0:F2} €'}"
-                                     FontSize="14" FontWeight="Bold"
+                                     FontSize="{StaticResource FontSizeBodyMd}" FontWeight="Bold"
                                      Foreground="{DynamicResource PrimaryBrush}" />
                           <Button Command="{Binding $parent[UserControl].((vm:QuoteViewModel)DataContext).RemoveItemCommand}"
                                   CommandParameter="{Binding}"
                                   Background="Transparent"
                                   Padding="4"
                                   MinHeight="36" MinWidth="36"
-                                  AutomationProperties.Name="Position entfernen">
+                                  AutomationProperties.Name="{loc:Translate A11yRemoveItem}"
+                                  AutomationProperties.AutomationId="Quote_BtnRemoveItem">
                             <mi:MaterialIcon Kind="Close" Width="16" Height="16"
                                              Foreground="{DynamicResource TextSecondaryBrush}" />
                           </Button>
@@ -258,7 +261,7 @@
                       AutomationProperties.AutomationId="Quote_AddItemSection">
                 <StackPanel Spacing="8">
                   <TextBlock Text="{Binding AddItemLabel}"
-                             FontSize="13" FontWeight="SemiBold"
+                             FontSize="{StaticResource FontSizeBodySm}" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
 
                   <!-- Bezeichnung -->
@@ -302,7 +305,7 @@
                           HorizontalAlignment="Stretch"
                           HorizontalContentAlignment="Center"
                           MinHeight="44"
-                          AutomationProperties.Name="Position hinzufügen"
+                          AutomationProperties.Name="{loc:Translate AddItem}"
                           AutomationProperties.AutomationId="Quote_BtnAddItem">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                       <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
@@ -322,21 +325,21 @@
             </i:Interaction.Behaviors>
             <StackPanel Spacing="12">
               <TextBlock Text="{loc:Translate Calculation}"
-                         FontSize="16" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
 
               <Grid ColumnDefinitions="*,8,*">
                 <!-- Marge -->
                 <StackPanel Grid.Column="0" Spacing="4">
                   <TextBlock Text="{Binding MarginLabel}"
-                             FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                             FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding MarginPercent}" PlaceholderText="%" Classes="Outlined"
                            AutomationProperties.AutomationId="Quote_TxtBoxMargin" />
                 </StackPanel>
                 <!-- MwSt -->
                 <StackPanel Grid.Column="2" Spacing="4">
                   <TextBlock Text="{Binding VatLabel}"
-                             FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                             FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding VatPercent}" PlaceholderText="%" Classes="Outlined"
                            AutomationProperties.AutomationId="Quote_TxtBoxVat" />
                 </StackPanel>
@@ -349,15 +352,15 @@
                   AutomationProperties.AutomationId="Quote_CardTotals">
             <StackPanel Spacing="10">
               <TextBlock Text="{loc:Translate Summary}"
-                         FontSize="16" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                          Foreground="{DynamicResource PrimaryBrush}" />
 
               <!-- Zwischensumme -->
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding SubtotalNetLabel}"
-                           FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Grid.Column="1" Text="{Binding SubtotalNet, StringFormat='{}{0:F2} €'}"
-                           FontSize="14" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            AutomationProperties.AutomationId="Quote_TxtSubtotal" />
               </Grid>
@@ -365,9 +368,9 @@
               <!-- Marge -->
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding MarginLabel}"
-                           FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Grid.Column="1" Text="{Binding MarginAmount, StringFormat='{}{0:F2} €'}"
-                           FontSize="14" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            AutomationProperties.AutomationId="Quote_TxtMargin" />
               </Grid>
@@ -375,9 +378,9 @@
               <!-- Gesamt netto -->
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding TotalNetLabel}"
-                           FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Grid.Column="1" Text="{Binding TotalNet, StringFormat='{}{0:F2} €'}"
-                           FontSize="14" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            AutomationProperties.AutomationId="Quote_TxtTotalNet" />
               </Grid>
@@ -385,9 +388,9 @@
               <!-- MwSt -->
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding VatLabel}"
-                           FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                           FontSize="{StaticResource FontSizeBodyMd}" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Grid.Column="1" Text="{Binding VatAmount, StringFormat='{}{0:F2} €'}"
-                           FontSize="14" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            AutomationProperties.AutomationId="Quote_TxtVat" />
               </Grid>
@@ -398,9 +401,9 @@
               <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding TotalGrossLabel}"
-                             FontSize="15" FontWeight="Bold" Foreground="White" />
+                             FontSize="{StaticResource FontSizeLabelXl}" FontWeight="Bold" Foreground="White" />
                   <TextBlock Grid.Column="1" Text="{Binding TotalGross, StringFormat='{}{0:F2} €'}"
-                             FontSize="22" FontWeight="Bold" Foreground="White"
+                             FontSize="{StaticResource FontSizeTitleLg}" FontWeight="Bold" Foreground="White"
                              AutomationProperties.AutomationId="Quote_TxtTotalGross" />
                 </Grid>
               </Border>
@@ -412,7 +415,7 @@
                       HorizontalContentAlignment="Center"
                       MinHeight="44"
                       Margin="0,4,0,0"
-                      AutomationProperties.Name="Angebot als PDF exportieren"
+                      AutomationProperties.Name="{loc:Translate A11yExportQuotePdf}"
                       AutomationProperties.AutomationId="Quote_BtnExport">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18"
@@ -431,7 +434,7 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     MinHeight="48"
-                    AutomationProperties.Name="Abbrechen"
+                    AutomationProperties.Name="{loc:Translate Cancel}"
                     AutomationProperties.AutomationId="Quote_BtnCancelEdit">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <mi:MaterialIcon Kind="Close" Width="18" Height="18"
@@ -445,7 +448,7 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     MinHeight="48"
-                    AutomationProperties.Name="Angebot speichern"
+                    AutomationProperties.Name="{loc:Translate A11ySaveQuote}"
                     AutomationProperties.AutomationId="Quote_BtnSave">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <mi:MaterialIcon Kind="ContentSave" Width="18" Height="18" />

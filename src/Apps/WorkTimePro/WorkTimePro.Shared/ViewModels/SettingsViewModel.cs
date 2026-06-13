@@ -5,6 +5,7 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
+using WorkTimePro.Graphics;
 using WorkTimePro.Helpers;
 using WorkTimePro.Models;
 using WorkTimePro.Resources.Strings;
@@ -34,6 +35,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     private readonly IBackupService _backupService;
     private readonly IHolidayService _holidayService;
     private readonly INotificationService _notificationService;
+    private readonly IFileShareService _fileShareService;
 
     private WorkSettings? _settings;
     private bool _disposed;
@@ -53,7 +55,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         IReminderService reminderService,
         IBackupService backupService,
         IHolidayService holidayService,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        IFileShareService fileShareService)
     {
         _database = database;
         _localization = localization;
@@ -63,6 +66,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         _backupService = backupService;
         _holidayService = holidayService;
         _notificationService = notificationService;
+        _fileShareService = fileShareService;
 
         // Regionen aus HolidayService laden (DE + AT + CH)
         var regions = _holidayService.GetAvailableRegions();
@@ -400,6 +404,13 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     [ObservableProperty]
     private bool _isLoading;
 
+    [ObservableProperty]
+    private bool _isPurchaseOptionsVisible;
+
+    /// <summary>Trial-Option im Kauf-Overlay nur anbieten, solange noch nie ein Trial lief.</summary>
+    [ObservableProperty]
+    private bool _canStartTrial;
+
     // Localized texts
     public string AppVersion
     {
@@ -421,12 +432,24 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     /// <summary>
     /// Hinweis, wenn ein Reminder eingeschaltet wird, System-Benachrichtigungen aber deaktiviert
     /// sind (sonst würden Erinnerungen still verschluckt). Nutzt das verdrahtete MessageRequested.
+    /// Prüft zusätzlich die Exact-Alarm-Permission (Android 13+ gewährt SCHEDULE_EXACT_ALARM
+    /// nicht mehr automatisch → Reminder feuern sonst nur ungenau) und führt den Nutzer
+    /// direkt zur System-Einstellung "Wecker und Erinnerungen".
     /// </summary>
     private void WarnIfNotificationsDisabled()
     {
         if (_isInitializing) return;
         if (!_notificationService.AreNotificationsEnabled())
+        {
             MessageRequested?.Invoke(AppStrings.Info, AppStrings.ReminderNotificationsOff);
+            return;
+        }
+
+        if (!_notificationService.CanScheduleExactAlarms())
+        {
+            MessageRequested?.Invoke(AppStrings.Info, AppStrings.ExactAlarmPermissionHint);
+            _notificationService.RequestExactAlarmPermission();
+        }
     }
     partial void OnLegalComplianceEnabledChanged(bool value) => ScheduleAutoSave();
     partial void OnSelectedRegionIndexChanged(int value) => ScheduleAutoSave();
@@ -657,15 +680,19 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
             await _database.SaveSettingsAsync(_settings);
 
+            // Flag VOR den folgenden awaits lesen UND zurücksetzen — setzt der Nutzer
+            // währenddessen erneut ein arbeitszeit-relevantes Feld, geht dessen
+            // Flag-Setzung sonst durch das späte Zurücksetzen verloren.
+            var requiresReload = _workTimeSettingsChanged;
+            _workTimeSettingsChanged = false;
+
             // Andere Tabs über Änderungen informieren — Bool signalisiert ob ein
             // Daten-Reload nötig ist (nur bei arbeitszeit-relevanten Settings).
-            var requiresReload = _workTimeSettingsChanged;
             SettingsChanged?.Invoke(this, requiresReload);
 
             // Warnung bei Arbeitszeit-relevanten Änderungen wenn bestehende Daten vorhanden
-            if (_workTimeSettingsChanged)
+            if (requiresReload)
             {
-                _workTimeSettingsChanged = false;
                 await ShowWorkTimeSettingsWarningAsync();
             }
         }
@@ -698,24 +725,70 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     }
 
     [RelayCommand]
-    private async Task PurchasePremiumAsync()
+    private void PurchasePremium()
+    {
+        // Kauf-Optionen-Overlay öffnen: Trial (falls noch nie gestartet), Monatsabo
+        // oder Lifetime. Kein stiller Trial-Start mehr — die Kauf-Intention des
+        // Nutzers wird nicht umgeleitet.
+        CanStartTrial = !_trialService.IsTrialStarted;
+        IsPurchaseOptionsVisible = true;
+    }
+
+    [RelayCommand]
+    private void StartTrial()
+    {
+        IsPurchaseOptionsVisible = false;
+        _trialService.MarkTrialOfferAsSeen();
+        _trialService.StartTrial();
+        MessageRequested?.Invoke(AppStrings.Info, string.Format(AppStrings.TrialStartedMessage, _trialService.DaysRemaining));
+        UpdatePremiumStatus();
+    }
+
+    [RelayCommand]
+    private async Task PurchaseMonthlyAsync() => await PurchaseAsync(_purchaseService.PurchaseMonthlyAsync);
+
+    [RelayCommand]
+    private async Task PurchaseLifetimeAsync() => await PurchaseAsync(_purchaseService.PurchaseLifetimeAsync);
+
+    [RelayCommand]
+    private void CancelPurchaseOptions() => IsPurchaseOptionsVisible = false;
+
+    /// <summary>
+    /// Exportiert den Stempel-QR-Code als PNG und öffnet den Share-Dialog
+    /// (Android: Share-Sheet → z.B. drucken/senden; Desktop: Standard-Bildanzeige).
+    /// </summary>
+    [RelayCommand]
+    private async Task ShareStampQrAsync()
     {
         try
         {
-            // If trial is active, go directly to purchase
-            // If trial not started and offer not seen, show dialog
-            if (!_trialService.IsTrialActive && !_trialService.HasSeenTrialOffer && !_trialService.IsTrialStarted)
-            {
-                // Start trial by default in Avalonia (no action sheet available)
-                _trialService.MarkTrialOfferAsSeen();
-                _trialService.StartTrial();
-                MessageRequested?.Invoke(AppStrings.Info, string.Format(AppStrings.TrialStartedMessage, _trialService.DaysRemaining));
-                UpdatePremiumStatus();
-                return;
-            }
-
             IsLoading = true;
-            bool success = await _purchaseService.PurchaseLifetimeAsync();
+
+            var png = QrStampRenderer.CreatePngBytes();
+            var dir = _fileShareService.GetExportDirectory("WorkTimePro");
+            Directory.CreateDirectory(dir);
+            var path = Path.Combine(dir, "WorkTimePro_Stempel_QR.png");
+            await File.WriteAllBytesAsync(path, png);
+
+            await _fileShareService.ShareFileAsync(path, AppStrings.QrStampTitle, "image/png");
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task PurchaseAsync(Func<Task<bool>> purchase)
+    {
+        try
+        {
+            IsPurchaseOptionsVisible = false;
+            IsLoading = true;
+            bool success = await purchase();
 
             if (success)
             {
@@ -783,6 +856,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
 
     [ObservableProperty]
     private string _importConfirmText = "";
+
+    /// <summary>Gate für den ScrollViewer-Hit-Test, solange irgendein Overlay offen ist.</summary>
+    public bool IsAnyOverlayVisible => IsImportConfirmVisible || IsPurchaseOptionsVisible;
+
+    partial void OnIsImportConfirmVisibleChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
+    partial void OnIsPurchaseOptionsVisibleChanged(bool value) => OnPropertyChanged(nameof(IsAnyOverlayVisible));
 
     private string? _pendingImportPath;
 

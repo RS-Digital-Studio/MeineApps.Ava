@@ -26,7 +26,7 @@
             AutomationProperties.AutomationId="Metal_HeaderBorder">
       <Grid ColumnDefinitions="Auto,*">
         <Button Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0"
@@ -35,13 +35,13 @@
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
                     Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
             <mi:MaterialIcon Kind="HammerWrench" Width="22" Height="22"
                              Foreground="White"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="{loc:Translate MetalCalculator}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                      VerticalAlignment="Center"
                      AutomationProperties.AutomationId="Metal_TxtTitle" />
         </StackPanel>
@@ -79,12 +79,12 @@
                     AutomationProperties.AutomationId="Metal_CardWeightInput">
               <StackPanel Spacing="12">
                 <TextBlock Text="{loc:Translate MetalWeight}"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate Material}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <ComboBox ItemsSource="{Binding Metals}"
                             SelectedIndex="{Binding SelectedMetal}"
@@ -94,7 +94,7 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate Profile}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <ComboBox ItemsSource="{Binding Profiles}"
                             SelectedIndex="{Binding SelectedProfile}"
@@ -104,7 +104,7 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate LengthM}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding Length}" PlaceholderText="mm"
                            AutomationProperties.AutomationId="Metal_TxtBoxLength" />
@@ -112,7 +112,7 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate Dimension1}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding Dimension1}" PlaceholderText="mm"
                            AutomationProperties.AutomationId="Metal_TxtBoxDimension1" />
@@ -120,7 +120,7 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate Dimension2}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding Dimension2}" PlaceholderText="mm"
                            AutomationProperties.AutomationId="Metal_TxtBoxDimension2" />
@@ -128,7 +128,7 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate WallThickness}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding WallThickness}" PlaceholderText="mm"
                            AutomationProperties.AutomationId="Metal_TxtBoxWallThickness" />
@@ -136,10 +136,10 @@
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate CostCalculation}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBox Text="{Binding PricePerKg}"
-                           PlaceholderText="EUR/kg"
+                           PlaceholderText="{loc:Translate PlaceholderPricePerKg}"
                            AutomationProperties.AutomationId="Metal_TxtBoxPricePerKg" />
                 </StackPanel>
               </StackPanel>
@@ -151,7 +151,7 @@
                     AutomationProperties.AutomationId="Metal_CardWeightResult">
               <StackPanel Spacing="10">
                 <TextBlock Text="{loc:Translate Result}"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="Metal_TxtWeightResultHeader" />
 
@@ -159,10 +159,10 @@
                 <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
                         Margin="0,4,0,8">
                   <StackPanel>
-                    <TextBlock Text="{loc:Translate UnitKilograms}" FontSize="12"
-                               Foreground="#CCFFFFFF" />
+                    <TextBlock Text="{loc:Translate UnitKilograms}" FontSize="{StaticResource FontSizeLabelMd}"
+                               Foreground="{DynamicResource OnGradientSubtextBrush}" />
                     <TextBlock AutomationProperties.AutomationId="Metal_TxtWeight"
-                               Text="{Binding WeightResult.Weight}" FontSize="28" FontWeight="Bold"
+                               Text="{Binding WeightResult.Weight}" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                                Foreground="White">
                       <i:Interaction.Behaviors>
                         <behaviors:CountUpBehavior TargetValue="{Binding WeightResult.Weight}" Format="F2" Suffix=" kg" Duration="500" />
@@ -173,10 +173,10 @@
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate Volume}"
-                             FontSize="14"
+                             FontSize="{StaticResource FontSizeLabelLg}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding WeightResult.Volume}"
-                             FontSize="14" FontWeight="SemiBold"
+                             FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Metal_TxtVolume" />
                 </Grid>
@@ -184,16 +184,16 @@
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowMetalCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                             FontSize="14"
+                             FontSize="{StaticResource FontSizeLabelLg}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding MetalCostDisplay}"
-                             FontSize="14" FontWeight="SemiBold"
+                             FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                              Foreground="{DynamicResource PrimaryBrush}"
                              AutomationProperties.AutomationId="Metal_TxtMetalCost" />
                 </Grid>
 
                 <!-- Aktions-Buttons: Share + PDF Export -->
-                <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+                <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
                   <Button Grid.Column="0"
                           Command="{Binding ShareResultCommand}"
                           Classes="Outlined"
@@ -204,7 +204,7 @@
                       <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                        Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate ShareResult}"
-                                 FontSize="12" TextTrimming="CharacterEllipsis"
+                                 FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
@@ -219,14 +219,15 @@
                       <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                        Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate ExportMaterialList}"
-                                 FontSize="12" TextTrimming="CharacterEllipsis"
+                                 FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
-                          <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                            <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                             Foreground="{DynamicResource AccentBrush}" />
-                          </Button>
+                  <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                          AutomationProperties.AutomationId="Metal_BtnExportCsvWeight">
+                    <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                     Foreground="{DynamicResource AccentBrush}" />
+                  </Button>
                 </Grid>
               </StackPanel>
             </Border>
@@ -243,12 +244,12 @@
                     AutomationProperties.AutomationId="Metal_CardThreadInput">
               <StackPanel Spacing="12">
                 <TextBlock Text="{loc:Translate ThreadDrill}"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <StackPanel Spacing="4">
                   <TextBlock Text="{loc:Translate ThreadDrill}"
-                             FontSize="13"
+                             FontSize="{StaticResource FontSizeBodySm}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <ComboBox ItemsSource="{Binding ThreadSizes}"
                             SelectedIndex="{Binding SelectedThread}"
@@ -264,7 +265,7 @@
                     AutomationProperties.AutomationId="Metal_CardThreadResult">
               <StackPanel Spacing="10">
                 <TextBlock Text="{loc:Translate Result}"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="Metal_TxtThreadResultHeader" />
 
@@ -272,10 +273,10 @@
                 <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
                         Margin="0,4,0,8">
                   <StackPanel>
-                    <TextBlock Text="{loc:Translate DrillSize}" FontSize="12"
-                               Foreground="#CCFFFFFF" />
+                    <TextBlock Text="{loc:Translate DrillSize}" FontSize="{StaticResource FontSizeLabelMd}"
+                               Foreground="{DynamicResource OnGradientSubtextBrush}" />
                     <TextBlock AutomationProperties.AutomationId="Metal_TxtDrillSize"
-                               Text="{Binding ThreadResult.DrillSize}" FontSize="28" FontWeight="Bold"
+                               Text="{Binding ThreadResult.DrillSize}" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                                Foreground="White">
                       <i:Interaction.Behaviors>
                         <behaviors:CountUpBehavior TargetValue="{Binding ThreadResult.DrillSize}" Format="F1" Suffix=" mm" Duration="500" />
@@ -286,16 +287,16 @@
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate ThreadDrill}"
-                             FontSize="14"
+                             FontSize="{StaticResource FontSizeLabelLg}"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding ThreadResult.ThreadSize}"
-                             FontSize="14" FontWeight="SemiBold"
+                             FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Metal_TxtThreadSize" />
                 </Grid>
 
                 <!-- Aktions-Buttons: Share + PDF Export -->
-                <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+                <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
                   <Button Grid.Column="0"
                           Command="{Binding ShareResultCommand}"
                           Classes="Outlined"
@@ -306,7 +307,7 @@
                       <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                        Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate ShareResult}"
-                                 FontSize="12" TextTrimming="CharacterEllipsis"
+                                 FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
@@ -321,14 +322,15 @@
                       <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                        Foreground="{DynamicResource AccentBrush}" />
                       <TextBlock Text="{loc:Translate ExportMaterialList}"
-                                 FontSize="12" TextTrimming="CharacterEllipsis"
+                                 FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
-                          <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                            <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                             Foreground="{DynamicResource AccentBrush}" />
-                          </Button>
+                  <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                          AutomationProperties.AutomationId="Metal_BtnExportCsvThread">
+                    <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                     Foreground="{DynamicResource AccentBrush}" />
+                  </Button>
                 </Grid>
               </StackPanel>
             </Border>
@@ -353,7 +355,7 @@
             <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{loc:Translate Reset}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -366,7 +368,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Calculate}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -381,7 +383,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Save}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -391,7 +393,7 @@
     <!-- Save Project Dialog Overlay -->
     <Border Grid.Row="0" Grid.RowSpan="3"
             ZIndex="100"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowSaveDialog}"
             AutomationProperties.AutomationId="Metal_SaveDialogOverlay">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -403,7 +405,7 @@
               AutomationProperties.AutomationId="Metal_SaveDialogCard">
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Translate SaveProject}"
-                     FontSize="18" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Metal_TxtSaveDialogTitle" />

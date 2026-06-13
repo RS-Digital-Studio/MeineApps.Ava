@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using WorkTimePro.Graphics;
@@ -40,6 +41,17 @@ public partial class VacationView : UserControl
         // Bei neuen Quota-Daten den Ring-Gauge neu zeichnen.
         if (e.PropertyName == nameof(VacationViewModel.Statistics))
             QuotaGaugeCanvas?.InvalidateSurface();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        // Gegenstück zum Abo in OnDataContextChanged (Projektkonvention: Detach-Cleanup)
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+        base.OnDetachedFromVisualTree(e);
     }
 
     private void OnPaintQuotaGauge(object? sender, SKPaintSurfaceEventArgs e)

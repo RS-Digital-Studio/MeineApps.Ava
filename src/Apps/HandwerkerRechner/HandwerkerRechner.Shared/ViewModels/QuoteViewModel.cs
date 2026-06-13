@@ -41,21 +41,21 @@ public sealed partial class QuoteViewModel : ViewModelBase
     [ObservableProperty] private string _customerName = "";
     [ObservableProperty] private string _customerAddress = "";
     [ObservableProperty] private string _projectDescription = "";
-    [ObservableProperty] private double _vatPercent = 19.0;
-    [ObservableProperty] private double _marginPercent = 15.0;
+    [ObservableProperty] private decimal _vatPercent = 19.0m;
+    [ObservableProperty] private decimal _marginPercent = 15.0m;
 
     // Summen bei MwSt/Marge-Änderung aktualisieren
-    partial void OnVatPercentChanged(double value) => RecalculateTotals();
-    partial void OnMarginPercentChanged(double value) => RecalculateTotals();
+    partial void OnVatPercentChanged(decimal value) => RecalculateTotals();
+    partial void OnMarginPercentChanged(decimal value) => RecalculateTotals();
 
     public ObservableCollection<QuoteItem> CurrentItems { get; } = [];
 
     // Berechnete Werte
-    [ObservableProperty] private double _subtotalNet;
-    [ObservableProperty] private double _marginAmount;
-    [ObservableProperty] private double _totalNet;
-    [ObservableProperty] private double _vatAmount;
-    [ObservableProperty] private double _totalGross;
+    [ObservableProperty] private decimal _subtotalNet;
+    [ObservableProperty] private decimal _marginAmount;
+    [ObservableProperty] private decimal _totalNet;
+    [ObservableProperty] private decimal _vatAmount;
+    [ObservableProperty] private decimal _totalGross;
 
     #endregion
 
@@ -63,7 +63,7 @@ public sealed partial class QuoteViewModel : ViewModelBase
 
     [ObservableProperty] private string _newItemDescription = "";
     [ObservableProperty] private double _newItemQuantity = 1;
-    [ObservableProperty] private double _newItemUnitPrice;
+    [ObservableProperty] private decimal _newItemUnitPrice;
     [ObservableProperty] private string _newItemUnit = "m²";
     [ObservableProperty] private int _newItemTypeIndex; // 0=Material, 1=Arbeit, 2=Sonstiges
 
@@ -146,8 +146,8 @@ public sealed partial class QuoteViewModel : ViewModelBase
         CustomerName = "";
         CustomerAddress = "";
         ProjectDescription = "";
-        VatPercent = 19.0;
-        MarginPercent = 15.0;
+        VatPercent = 19.0m;
+        MarginPercent = 15.0m;
         CurrentItems.Clear();
         RecalculateTotals();
         IsEditing = true;
@@ -203,11 +203,19 @@ public sealed partial class QuoteViewModel : ViewModelBase
 
     private void RecalculateTotals()
     {
-        SubtotalNet = CurrentItems.Sum(i => i.Total);
-        MarginAmount = SubtotalNet * MarginPercent / 100.0;
-        TotalNet = SubtotalNet + MarginAmount;
-        VatAmount = TotalNet * VatPercent / 100.0;
-        TotalGross = TotalNet + VatAmount;
+        // Eine Quelle der Wahrheit: die berechneten Properties aus Quote (inkl. definierter Rundung)
+        var quote = new Quote
+        {
+            Items = [.. CurrentItems],
+            VatPercent = VatPercent,
+            MarginPercent = MarginPercent
+        };
+
+        SubtotalNet = quote.SubtotalNet;
+        MarginAmount = quote.MarginAmount;
+        TotalNet = quote.TotalNet;
+        VatAmount = quote.VatAmount;
+        TotalGross = quote.TotalGross;
     }
 
     [RelayCommand]
@@ -304,8 +312,20 @@ public sealed partial class QuoteViewModel : ViewModelBase
         NavigationRequested?.Invoke("..");
     }
 
+    /// <summary>Lokalisierte Properties — gezielte Invalidierung statt OnPropertyChanged(string.Empty).</summary>
+    private static readonly string[] LocalizedPropertyNames =
+    [
+        nameof(PageTitle), nameof(NewQuoteText), nameof(QuoteNumberLabel), nameof(CustomerNameLabel),
+        nameof(CustomerAddressLabel), nameof(ProjectDescriptionLabel), nameof(ValidUntilLabel),
+        nameof(QuoteItemsLabel), nameof(AddItemLabel), nameof(ItemDescriptionLabel), nameof(ItemUnitLabel),
+        nameof(ItemQuantityLabel), nameof(ItemUnitPriceLabel), nameof(SubtotalNetLabel), nameof(MarginLabel),
+        nameof(TotalNetLabel), nameof(VatLabel), nameof(TotalGrossLabel), nameof(ExportQuoteText),
+        nameof(ItemTypeOptions)
+    ];
+
     public void UpdateLocalizedTexts()
     {
-        OnPropertyChanged(string.Empty);
+        foreach (var name in LocalizedPropertyNames)
+            OnPropertyChanged(name);
     }
 }

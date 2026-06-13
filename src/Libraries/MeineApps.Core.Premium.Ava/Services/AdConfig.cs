@@ -190,6 +190,9 @@ public static class AdConfig
 
             // HandwerkerRechner
             ("HandwerkerRechner", "premium_access") => HandwerkerRechner.RewardedPremiumAccess,
+            // calculation_ad (Opt-in nach jeder 3. Berechnung): keine eigene AdMob-Unit vorhanden —
+            // bewusst auf die PremiumAccess-Unit gemappt. TODO: eigene Unit im AdMob-Dashboard erstellen.
+            ("HandwerkerRechner", "calculation_ad") => HandwerkerRechner.RewardedPremiumAccess,
             ("HandwerkerRechner", "material_pdf") => HandwerkerRechner.RewardedMaterialPdf,
             ("HandwerkerRechner", "project_export") => HandwerkerRechner.RewardedProjectExport,
             ("HandwerkerRechner", "extended_history") => HandwerkerRechner.RewardedExtendedHistory,

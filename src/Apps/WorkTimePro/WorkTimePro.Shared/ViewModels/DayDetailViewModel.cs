@@ -95,8 +95,6 @@ public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSourc
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // === TimeEntry Overlay Properties ===
 
@@ -206,20 +204,28 @@ public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSourc
         _loadCts?.Dispose();
         _loadCts = new CancellationTokenSource();
 
-        LoadDataAsync().Forget(ex =>
+        LoadDataAsync(_loadCts.Token).Forget(ex =>
             MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message)));
     }
 
     // === Commands ===
 
     [RelayCommand]
-    public async Task LoadDataAsync()
+    public async Task LoadDataAsync() => await LoadDataAsync(CancellationToken.None);
+
+    /// <summary>
+    /// Lädt die Tagesdaten. Das Token stammt aus dem Tageswechsel-Pfad (OnDateStringChanged) —
+    /// ein überholter Ladevorgang bricht ab, bevor er veraltete Daten in die UI schreibt.
+    /// </summary>
+    public async Task LoadDataAsync(CancellationToken ct)
     {
         try
         {
             IsLoading = true;
 
-            WorkDay = await _database.GetOrCreateWorkDayAsync(SelectedDate);
+            var workDay = await _database.GetOrCreateWorkDayAsync(SelectedDate);
+            ct.ThrowIfCancellationRequested();
+            WorkDay = workDay;
 
             DateDisplay = SelectedDate.ToString("D");
             StatusDisplay = TimeFormatter.GetStatusName(WorkDay.Status);
@@ -227,9 +233,11 @@ public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSourc
 
             // Einträge laden
             var entries = await _database.GetTimeEntriesAsync(WorkDay.Id);
+            ct.ThrowIfCancellationRequested();
             TimeEntries = new ObservableCollection<TimeEntry>(entries);
 
             var pauses = await _database.GetPauseEntriesAsync(WorkDay.Id);
+            ct.ThrowIfCancellationRequested();
             PauseEntries = new ObservableCollection<PauseEntry>(pauses);
 
             // Zeiten
@@ -242,6 +250,7 @@ public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSourc
 
             // Warnungen
             var warningList = await _calculation.CheckLegalComplianceAsync(WorkDay);
+            ct.ThrowIfCancellationRequested();
             Warnings = new ObservableCollection<string>(warningList);
 
             OnPropertyChanged(nameof(HasWarnings));
@@ -249,8 +258,10 @@ public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSourc
             OnPropertyChanged(nameof(HasNoPauseEntries));
             OnPropertyChanged(nameof(StatusIconKind));
 
-            // Premium Status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
+        }
+        catch (OperationCanceledException)
+        {
+            // Überholter Ladevorgang (schneller Tageswechsel) — bewusst ignorieren
         }
         catch (Exception ex)
         {

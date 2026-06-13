@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:WorkTimePro.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
@@ -426,7 +426,7 @@
             <TextBlock Text="{loc:Translate MonthOverview}"
                        FontSize="{StaticResource FontSizeCaption}" Foreground="{DynamicResource PrimaryContrastBrush}"
                        HorizontalAlignment="Center"
-                       TextAlignment="Center" />
+                       TextAlignment="Center" TextWrapping="Wrap" />
           </StackPanel>
         </Button>
 
@@ -456,7 +456,7 @@
             <TextBlock Text="{loc:Translate YearOverview}"
                        FontSize="{StaticResource FontSizeCaption}" Foreground="{DynamicResource PrimaryContrastBrush}"
                        HorizontalAlignment="Center"
-                       TextAlignment="Center" />
+                       TextAlignment="Center" TextWrapping="Wrap" />
           </StackPanel>
         </Button>
 
@@ -486,7 +486,7 @@
             <TextBlock Text="{loc:Translate Vacation}"
                        FontSize="{StaticResource FontSizeCaption}" Foreground="{DynamicResource PrimaryContrastBrush}"
                        HorizontalAlignment="Center"
-                       TextAlignment="Center" />
+                       TextAlignment="Center" TextWrapping="Wrap" />
           </StackPanel>
         </Button>
 
@@ -516,7 +516,7 @@
             <TextBlock Text="{loc:Translate ShiftPlan}"
                        FontSize="{StaticResource FontSizeCaption}" Foreground="{DynamicResource PrimaryContrastBrush}"
                        HorizontalAlignment="Center"
-                       TextAlignment="Center" />
+                       TextAlignment="Center" TextWrapping="Wrap" />
           </StackPanel>
         </Button>
 

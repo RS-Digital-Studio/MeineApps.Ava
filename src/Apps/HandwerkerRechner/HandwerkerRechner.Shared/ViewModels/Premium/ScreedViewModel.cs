@@ -51,7 +51,7 @@ public sealed partial class ScreedViewModel : ViewModelBase, IDisposable, ICalcu
         _priceService = priceService;
 
         // Standard-Materialpreis laden
-        PricePerBag = _priceService.GetPrice("screed_sack")?.EffectivePrice ?? 0;
+        PricePerBag = (double)(_priceService.GetPrice("screed_sack")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

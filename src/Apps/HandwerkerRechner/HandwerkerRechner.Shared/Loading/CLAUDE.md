@@ -12,18 +12,19 @@ Composition Root + `RunLoadingAsync`-Aufruf → [HandwerkerRechner.Shared/CLAUDE
 
 ## Pipeline-Schritte
 
-Ein Schritt (Gewicht 45), alle drei Tasks parallel via `Task.WhenAll`:
+Ein Schritt (Gewicht 45):
 
-1. `ShaderPreloader.PreloadAll()` auf `Task.Run` — GPU-Shader kompilieren.
-2. `services.GetRequiredService<MainViewModel>()` auf `Task.Run` — VM-Graph instanziieren,
-   löst alle Singleton-Services transitiv auf.
-3. `IPurchaseService.InitializeAsync()` direkt — Google Play Billing abgleichen,
-   Premium-Status bei Geräte-/Datenwechsel wiederherstellen.
+1. `ShaderPreloader.PreloadAll()` auf `Task.Run` — GPU-Shader kompilieren (parallel).
+2. `IPurchaseService.InitializeAsync()` direkt — Google Play Billing abgleichen,
+   Premium-Status bei Geräte-/Datenwechsel wiederherstellen (parallel).
+3. `services.GetRequiredService<MainViewModel>()` via `Dispatcher.UIThread.InvokeAsync` —
+   VM-Graph auf dem **UI-Thread** instanziieren, löst alle Singleton-Services transitiv auf.
 
-## Gotcha: VM-Instanziierung auf Background-Thread
+## Gotcha: VM-Instanziierung NIE auf Background-Thread
 
-`MainViewModel` wird auf einem `Task.Run`-Thread erzeugt. Das ist nur erlaubt, weil
-`MainViewModel` **keine** Avalonia-UI-Objekte im Konstruktor erstellt (keine `SolidColorBrush`,
-keine `IBrush`-`[ObservableProperty]`). Würde das VM UI-Objekte anlegen, müsste die Erzeugung
-auf `Dispatcher.UIThread.InvokeAsync(...)` verlagert werden — andernfalls Render-Crash
-("calling thread cannot access"). Detailliertes Thread-Safety-Pattern → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
+`MainViewModel` wird bewusst via `Dispatcher.UIThread.InvokeAsync(...)` erzeugt — **nicht**
+auf `Task.Run`. ViewModels haben UI-Thread-Affinität (Avalonia-UI-Objekte wie
+`SolidColorBrush` im Objektgraphen), eine Background-Erzeugung riskiert Render-Crashes
+("calling thread cannot access"). Beim Erweitern der Pipeline: nur echte Background-Arbeit
+(Shader-Preload, I/O, Service-`InitializeAsync`) in `Task.Run` legen.
+Detailliertes Thread-Safety-Pattern → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).

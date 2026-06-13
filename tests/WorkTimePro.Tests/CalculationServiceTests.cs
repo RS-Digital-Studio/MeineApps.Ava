@@ -317,17 +317,30 @@ public class CalculationServiceTests
     }
 
     [Fact]
-    public void GetFirstDayOfWeek_Woche1_2026_GibtMontag()
+    public void GetFirstDayOfWeek_Woche1_2026_GibtMontag29Dezember2025()
     {
-        // Vorbereitung
+        // Vorbereitung: 2026 beginnt an einem Donnerstag → ISO-KW 1/2026 startet
+        // am Montag 29.12.2025. (Konkrete Datums-Assertion — eine reine
+        // DayOfWeek-Prüfung hatte den Jan4=Sonntag-Bug maskiert.)
         var db = ErstelleDbMock();
         var sut = new CalculationService(db);
 
         // Ausführung
         var ergebnis = sut.GetFirstDayOfWeek(2026, 1);
 
-        // Prüfung: Ergebnis ist immer ein Montag
-        ergebnis.DayOfWeek.Should().Be(DayOfWeek.Monday);
+        // Prüfung
+        ergebnis.Should().Be(new DateTime(2025, 12, 29));
+    }
+
+    [Fact]
+    public void GetIsoWeekNumber_ErsterJanuar2027_GibtWoche53DesVorjahres()
+    {
+        // Vorbereitung: 01.01.2027 ist ein Freitag → gehört zu ISO-KW 53/2026
+        var db = ErstelleDbMock();
+        var sut = new CalculationService(db);
+
+        // Ausführung + Prüfung
+        sut.GetIsoWeekNumber(new DateTime(2027, 1, 1)).Should().Be(53);
     }
 
     [Fact]
@@ -354,6 +367,7 @@ public class CalculationServiceTests
     public async Task CheckLegalComplianceAsync_NormalerArbeitstag_KeineWarnungen()
     {
         // Vorbereitung: 7h Arbeit, 30min Pause → keine Verstöße
+        // (Compliance prüft die UNGERUNDETE Netto-Zeit, nicht ActualWorkMinutes)
         var db = ErstelleDbMock();
         var sut = new CalculationService(db);
         var arbeitstag = new WorkDay
@@ -361,6 +375,7 @@ public class CalculationServiceTests
             Id = 1,
             Date = new DateTime(2026, 1, 13),
             ActualWorkMinutes = 420,   // 7h
+            UnroundedWorkMinutes = 420,
             ManualPauseMinutes = 30,
             AutoPauseMinutes = 0
         };
@@ -376,6 +391,7 @@ public class CalculationServiceTests
     public async Task CheckLegalComplianceAsync_UeberMaximalzeit_GibtWarnung()
     {
         // Vorbereitung: 11h Arbeit überschreitet ArbZG-Maximum (10h)
+        // (Compliance prüft die UNGERUNDETE Netto-Zeit, nicht ActualWorkMinutes)
         var db = ErstelleDbMock();
         var sut = new CalculationService(db);
         var arbeitstag = new WorkDay
@@ -383,6 +399,7 @@ public class CalculationServiceTests
             Id = 1,
             Date = new DateTime(2026, 1, 13),
             ActualWorkMinutes = 660, // 11h
+            UnroundedWorkMinutes = 660,
             ManualPauseMinutes = 45,
             AutoPauseMinutes = 0
         };
@@ -398,6 +415,7 @@ public class CalculationServiceTests
     public async Task CheckLegalComplianceAsync_UeberSechsStundenOhnePause_GibtWarnung()
     {
         // Vorbereitung: 7h Arbeit, keine Pause → Verstoß gegen 30min-Regelung
+        // (Compliance prüft die UNGERUNDETE Netto-Zeit, nicht ActualWorkMinutes)
         var db = ErstelleDbMock();
         var sut = new CalculationService(db);
         var arbeitstag = new WorkDay
@@ -405,6 +423,7 @@ public class CalculationServiceTests
             Id = 1,
             Date = new DateTime(2026, 1, 13),
             ActualWorkMinutes = 420, // 7h
+            UnroundedWorkMinutes = 420,
             ManualPauseMinutes = 0,
             AutoPauseMinutes = 0
         };

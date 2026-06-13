@@ -24,10 +24,10 @@ public class Quote
     public List<QuoteItem> Items { get; set; } = [];
 
     /// <summary>Mehrwertsteuer in %</summary>
-    public double VatPercent { get; set; } = 19.0;
+    public decimal VatPercent { get; set; } = 19.0m;
 
     /// <summary>Marge/Aufschlag in %</summary>
-    public double MarginPercent { get; set; } = 15.0;
+    public decimal MarginPercent { get; set; } = 15.0m;
 
     /// <summary>Erstellungsdatum</summary>
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
@@ -38,12 +38,12 @@ public class Quote
     /// <summary>Status des Angebots</summary>
     public QuoteStatus Status { get; set; } = QuoteStatus.Draft;
 
-    // Berechnete Properties
-    public double SubtotalNet => Items.Sum(i => i.Total);
-    public double MarginAmount => SubtotalNet * MarginPercent / 100;
-    public double TotalNet => SubtotalNet + MarginAmount;
-    public double VatAmount => TotalNet * VatPercent / 100;
-    public double TotalGross => TotalNet + VatAmount;
+    // Berechnete Properties — Geldbeträge in decimal, Endbeträge definiert kaufmännisch gerundet
+    public decimal SubtotalNet => Math.Round(Items.Sum(i => i.Total), 2, MidpointRounding.AwayFromZero);
+    public decimal MarginAmount => Math.Round(SubtotalNet * MarginPercent / 100m, 2, MidpointRounding.AwayFromZero);
+    public decimal TotalNet => SubtotalNet + MarginAmount;
+    public decimal VatAmount => Math.Round(TotalNet * VatPercent / 100m, 2, MidpointRounding.AwayFromZero);
+    public decimal TotalGross => TotalNet + VatAmount;
 
     /// <summary>Formatierte Anzeige für UI</summary>
     public string DisplayTitle => string.IsNullOrEmpty(CustomerName)
@@ -66,10 +66,10 @@ public class QuoteItem
     public double Quantity { get; set; }
 
     /// <summary>Einzelpreis</summary>
-    public double UnitPrice { get; set; }
+    public decimal UnitPrice { get; set; }
 
-    /// <summary>Gesamtpreis (Menge × Einzelpreis)</summary>
-    public double Total => Quantity * UnitPrice;
+    /// <summary>Gesamtpreis (Menge × Einzelpreis), kaufmännisch auf 2 Nachkommastellen gerundet</summary>
+    public decimal Total => Math.Round((decimal)Quantity * UnitPrice, 2, MidpointRounding.AwayFromZero);
 
     /// <summary>Art der Position</summary>
     public QuoteItemType ItemType { get; set; } = QuoteItemType.Material;

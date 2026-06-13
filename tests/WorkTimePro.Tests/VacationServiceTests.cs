@@ -190,7 +190,10 @@ public class VacationServiceTests
     [Fact]
     public async Task GetQuotaAsync_BestehenderQuota_GibtExistierendenZurueck()
     {
-        // Vorbereitung: Quota mit 25 Tagen in DB
+        // Vorbereitung: Quota mit 25 Tagen in DB. Verfall deaktiviert, damit der Test
+        // unabhängig vom heutigen Datum ist (Stichtag-Logik hat eigene Tests unten).
+        var settings = ErstelleStandardSettings();
+        settings.VacationCarryOverExpires = false;
         var bestehendeQuota = new VacationQuota
         {
             Id = 1,
@@ -198,7 +201,7 @@ public class VacationServiceTests
             TotalDays = 25,
             CarryOverDays = 3
         };
-        var (_, _, sut) = ErstelleSetup(quota: bestehendeQuota);
+        var (_, _, sut) = ErstelleSetup(settings: settings, quota: bestehendeQuota);
 
         // Ausführung
         var quota = await sut.GetQuotaAsync(2026);
@@ -206,6 +209,132 @@ public class VacationServiceTests
         // Prüfung
         quota.TotalDays.Should().Be(25);
         quota.CarryOverDays.Should().Be(3);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Resturlaub-Verfall zum Stichtag (BUrlG 31.03.)
+    // ═══════════════════════════════════════════════════════════════════
+    // Die Tests nutzen ein VERGANGENES Jahr (2024) — der Stichtag 31.03.2024
+    // liegt damit garantiert vor "heute" (deterministisch, kein Clock-Mock nötig).
+
+    [Fact]
+    public async Task GetQuotaAsync_KeinUrlaubBisStichtag_UebertragVerfaelltKomplett()
+    {
+        // Vorbereitung: 5 Tage Übertrag, Urlaub erst NACH dem Stichtag (August)
+        // → Übertrag muss komplett verfallen (Urlaub im August stammt aus dem
+        // regulären Jahresanspruch, nicht aus dem Übertrag).
+        var bestehendeQuota = new VacationQuota
+        {
+            Id = 1,
+            Year = 2024,
+            TotalDays = 30,
+            CarryOverDays = 5
+        };
+        var eintraege = new List<VacationEntry>
+        {
+            new()
+            {
+                Id = 1,
+                Type = DayStatus.Vacation,
+                StartDate = new DateTime(2024, 8, 5),  // Montag
+                EndDate = new DateTime(2024, 8, 16),   // Freitag der Folgewoche
+                Days = 10
+            }
+        };
+        var (_, _, sut) = ErstelleSetup(quota: bestehendeQuota, eintraege: eintraege);
+
+        // Ausführung
+        var quota = await sut.GetQuotaAsync(2024);
+
+        // Prüfung: Trotz 10 genommener Tage im Jahr verfällt der volle Übertrag
+        quota.CarryOverDays.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetQuotaAsync_UrlaubVorStichtag_UebertragBleibtTeilweiseErhalten()
+    {
+        // Vorbereitung: 5 Tage Übertrag, 2 Werktage Urlaub im Februar (vor Stichtag)
+        // → nur die 2 bis zum Stichtag genutzten Tage bleiben erhalten.
+        var bestehendeQuota = new VacationQuota
+        {
+            Id = 1,
+            Year = 2024,
+            TotalDays = 30,
+            CarryOverDays = 5
+        };
+        var eintraege = new List<VacationEntry>
+        {
+            new()
+            {
+                Id = 1,
+                Type = DayStatus.Vacation,
+                StartDate = new DateTime(2024, 2, 5),  // Montag
+                EndDate = new DateTime(2024, 2, 6),    // Dienstag
+                Days = 2
+            }
+        };
+        var (_, _, sut) = ErstelleSetup(quota: bestehendeQuota, eintraege: eintraege);
+
+        // Ausführung
+        var quota = await sut.GetQuotaAsync(2024);
+
+        // Prüfung
+        quota.CarryOverDays.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetQuotaAsync_UrlaubUeberStichtag_NurTageBisStichtagZaehlen()
+    {
+        // Vorbereitung: 5 Tage Übertrag, Urlaub Do 28.03. bis Do 04.04.2024 (über den
+        // Stichtag 31.03.) → nur Do 28.03. + Fr 29.03. (2 Werktage, Karfreitag ignoriert,
+        // da Mock keine Feiertage liefert) zählen für den Übertrag-Erhalt.
+        var bestehendeQuota = new VacationQuota
+        {
+            Id = 1,
+            Year = 2024,
+            TotalDays = 30,
+            CarryOverDays = 5
+        };
+        var eintraege = new List<VacationEntry>
+        {
+            new()
+            {
+                Id = 1,
+                Type = DayStatus.Vacation,
+                StartDate = new DateTime(2024, 3, 28), // Donnerstag
+                EndDate = new DateTime(2024, 4, 4),    // Donnerstag der Folgewoche
+                Days = 6
+            }
+        };
+        var (_, _, sut) = ErstelleSetup(quota: bestehendeQuota, eintraege: eintraege);
+
+        // Ausführung
+        var quota = await sut.GetQuotaAsync(2024);
+
+        // Prüfung: Do 28.03. + Fr 29.03. = 2 Werktage bis Stichtag (30./31.03. = Wochenende)
+        quota.CarryOverDays.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetQuotaAsync_VerfallDeaktiviert_UebertragBleibtVollErhalten()
+    {
+        // Vorbereitung: Verfall aus → Übertrag bleibt auch ohne genommenen Urlaub stehen
+        var settings = ErstelleStandardSettings();
+        settings.VacationCarryOverExpires = false;
+        var bestehendeQuota = new VacationQuota
+        {
+            Id = 1,
+            Year = 2024,
+            TotalDays = 30,
+            CarryOverDays = 5
+        };
+        var (_, _, sut) = ErstelleSetup(settings: settings, quota: bestehendeQuota);
+
+        // Ausführung
+        var quota = await sut.GetQuotaAsync(2024);
+
+        // Prüfung
+        quota.CarryOverDays.Should().Be(5);
     }
 
     [Fact]

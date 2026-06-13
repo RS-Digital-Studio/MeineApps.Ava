@@ -20,10 +20,10 @@ public sealed partial class HistoryViewModel : ViewModelBase
 
     [ObservableProperty] private ObservableCollection<CalculationHistoryGroup> _groups = new();
     [ObservableProperty] private bool _isEmpty = true;
-    [ObservableProperty] private string _emptyText = "No calculations yet";
+    [ObservableProperty] private string _emptyText = string.Empty;
 
-    // Lokalisierte Texte
-    [ObservableProperty] private string _headerText = "History";
+    // Lokalisierte Texte (Initialwerte werden im Ctor via UpdateLocalizedTexts gesetzt)
+    [ObservableProperty] private string _headerText = string.Empty;
 
     public HistoryViewModel(
         ICalculationHistoryService historyService,

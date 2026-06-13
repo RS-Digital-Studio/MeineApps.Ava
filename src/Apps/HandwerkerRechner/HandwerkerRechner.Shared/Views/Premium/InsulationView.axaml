@@ -21,7 +21,7 @@
             AutomationProperties.AutomationId="Insulation_HeaderBorder">
       <Grid ColumnDefinitions="Auto,*">
         <Button Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0"
@@ -30,13 +30,13 @@
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
                     Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
             <mi:MaterialIcon Kind="Snowflake" Width="22" Height="22"
                              Foreground="White"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="{loc:Translate CalcInsulation}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                      VerticalAlignment="Center"
                      AutomationProperties.AutomationId="Insulation_TxtTitle" />
         </StackPanel>
@@ -53,14 +53,14 @@
                 AutomationProperties.AutomationId="Insulation_CardInput">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate InsulationArea}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        AutomationProperties.AutomationId="Insulation_TxtInputHeader" />
 
             <!-- Fläche -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate InsulationArea}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding Area}"
                        PlaceholderText="m&#178;"
@@ -70,7 +70,7 @@
             <!-- Ist-U-Wert -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate CurrentUValue}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding CurrentUValue}"
                        PlaceholderText="W/(m&#178;&#183;K)"
@@ -80,7 +80,7 @@
             <!-- Soll-U-Wert -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate TargetUValue}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding TargetUValue}"
                        PlaceholderText="W/(m&#178;&#183;K)"
@@ -90,7 +90,7 @@
             <!-- Dämmstoff-Typ (ComboBox) -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate InsulationType}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <ComboBox SelectedIndex="{Binding SelectedInsulationType}"
                         HorizontalAlignment="Stretch"
@@ -105,10 +105,10 @@
             <!-- Preis pro m² (optional) -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate PricePerSqm}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding PricePerSqm}"
-                       PlaceholderText="EUR"
+                       PlaceholderText="{loc:Translate CurrencySymbol}"
                        AutomationProperties.AutomationId="Insulation_TxtBoxPricePerSqm" />
             </StackPanel>
           </StackPanel>
@@ -128,24 +128,19 @@
                 AutomationProperties.AutomationId="Insulation_CardResult">
           <StackPanel Spacing="10">
             <TextBlock Text="{loc:Translate Result}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource PrimaryBrush}"
                        AutomationProperties.AutomationId="Insulation_TxtResultHeader" />
 
             <!-- Hero-Value: Dämmdicke -->
             <Border CornerRadius="12" Padding="16,12"
-                    Margin="0,4,0,8">
-              <Border.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="#14B8A6" Offset="0" />
-                  <GradientStop Color="#0D9488" Offset="1" />
-                </LinearGradientBrush>
-              </Border.Background>
+                    Margin="0,4,0,8"
+                    Background="{DynamicResource TileGradientInsulationBrush}">
               <StackPanel>
-                <TextBlock Text="{loc:Translate InsulationThickness}" FontSize="12"
-                           Foreground="#CCFFFFFF" />
+                <TextBlock Text="{loc:Translate InsulationThickness}" FontSize="{StaticResource FontSizeLabelMd}"
+                           Foreground="{DynamicResource OnGradientSubtextBrush}" />
                 <TextBlock AutomationProperties.AutomationId="Insulation_TxtThickness"
-                           Text="{Binding ThicknessDisplay}" FontSize="28" FontWeight="Bold"
+                           Text="{Binding ThicknessDisplay}" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                            Foreground="White">
                   <i:Interaction.Behaviors>
                     <behaviors:CountUpBehavior TargetValue="{Binding Result.ThicknessCm}" Format="F0" Suffix=" cm" Duration="500" />
@@ -157,10 +152,10 @@
             <!-- Fläche -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate InsulationArea}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding AreaDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Insulation_TxtArea" />
             </Grid>
@@ -168,10 +163,10 @@
             <!-- Wärmeleitfähigkeit Lambda -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate InsulationLambda}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding LambdaDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Insulation_TxtLambda" />
             </Grid>
@@ -179,10 +174,10 @@
             <!-- Dämmstoff-Typ -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate InsulationType}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding InsulationTypeDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Insulation_TxtInsulationType" />
             </Grid>
@@ -190,10 +185,10 @@
             <!-- Stückzahl Platten -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate UnitPieces}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding PiecesDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Insulation_TxtPieces" />
             </Grid>
@@ -202,16 +197,16 @@
             <Grid ColumnDefinitions="*,Auto"
                   IsVisible="{Binding ShowCost}">
               <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalCostDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource PrimaryBrush}"
                          AutomationProperties.AutomationId="Insulation_TxtTotalCost" />
             </Grid>
 
             <!-- Aktions-Buttons: Share + PDF Export -->
-            <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+            <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
               <Button Grid.Column="0"
                       Command="{Binding ShareResultCommand}"
                       Classes="Outlined"
@@ -222,7 +217,7 @@
                   <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
                   <TextBlock Text="{loc:Translate ShareResult}"
-                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
@@ -237,14 +232,15 @@
                   <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
                   <TextBlock Text="{loc:Translate ExportMaterialList}"
-                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
-                      <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                        <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                         Foreground="{DynamicResource AccentBrush}" />
-                      </Button>
+              <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                      AutomationProperties.AutomationId="Insulation_BtnExportCsv">
+                <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                 Foreground="{DynamicResource AccentBrush}" />
+              </Button>
             </Grid>
           </StackPanel>
         </Border>
@@ -266,7 +262,7 @@
             <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{loc:Translate Reset}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -279,7 +275,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Calculate}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -293,7 +289,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Save}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -303,7 +299,7 @@
     <!-- Save Project Dialog Overlay -->
     <Border Grid.Row="0" Grid.RowSpan="3"
             ZIndex="100"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowSaveDialog}"
             AutomationProperties.AutomationId="Insulation_SaveDialogOverlay">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -315,7 +311,7 @@
               AutomationProperties.AutomationId="Insulation_SaveDialogCard">
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Translate SaveProject}"
-                     FontSize="18" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Insulation_TxtSaveDialogTitle" />

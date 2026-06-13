@@ -3,6 +3,8 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
+using MeineApps.Core.Ava.Async;
+using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
@@ -19,7 +21,7 @@ namespace WorkTimePro.ViewModels;
 /// ViewModel für die Statistik-Seite. Stellt Daten-Arrays für SkiaSharp-Renderer bereit.
 /// Phase 7: LiveCharts durch SkiaSharp-Visualisierungen ersetzt.
 /// </summary>
-public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
+public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource, IDisposable
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;
@@ -30,6 +32,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
     private readonly ITrialService _trialService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPreferencesService _preferences;
+    private readonly ILocalizationService _localization;
 
     private const string ExtendedStatsExpiryKey = "ExtendedStatsExpiry";
 
@@ -58,7 +61,8 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
         IPurchaseService purchaseService,
         ITrialService trialService,
         IRewardedAdService rewardedAdService,
-        IPreferencesService preferences)
+        IPreferencesService preferences,
+        ILocalizationService localization)
     {
         _database = database;
         _calculation = calculation;
@@ -69,6 +73,23 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
         _trialService = trialService;
         _rewardedAdService = rewardedAdService;
         _preferences = preferences;
+        _localization = localization;
+
+        // VM-komponierte Chart-/Perioden-Labels (PeriodDisplay, WeekdayLabels, …) werden
+        // nur in LoadDataAsync gesetzt — bei Sprachwechsel neu laden, sonst frieren sie ein.
+        _localization.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            LoadDataAsync().Forget(ex =>
+                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message))));
+    }
+
+    public void Dispose()
+    {
+        _localization.LanguageChanged -= OnLanguageChanged;
     }
 
     // === Properties ===
@@ -193,8 +214,6 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // Tabellen-Ansicht (Standard: Tabelle anzeigen)
     [ObservableProperty]
@@ -250,9 +269,6 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
                 CreateWeekdayChartData(workDays),
                 CreatePauseChartData(workDays)
             );
-
-            // Premium-Status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
 
             OnPropertyChanged(nameof(HasPauseChartData));
             OnPropertyChanged(nameof(HasOvertimeData));
@@ -482,14 +498,16 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
     {
         var weeklyTarget = settings.WeeklyHours;
 
+        // Nach (ISO-Jahr, ISO-Woche) gruppieren — nur die Wochennummer würde am
+        // Jahreswechsel Tage aus KW 52/53 des Vorjahres mit gleichnamigen KW mischen
         var weeks = workDays
             .Where(w => w.ActualWorkMinutes > 0)
-            .GroupBy(w => _calculation.GetIsoWeekNumber(w.Date))
-            .OrderBy(g => g.Key)
+            .GroupBy(w => (Year: ISOWeek.GetYear(w.Date), Week: _calculation.GetIsoWeekNumber(w.Date)))
+            .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Week)
             .Take(12)
             .ToList();
 
-        WeeklyLabels = weeks.Select(g => string.Format(AppStrings.WeekNumberShort ?? "CW {0}", g.Key)).ToArray();
+        WeeklyLabels = weeks.Select(g => string.Format(AppStrings.WeekNumberShort ?? "CW {0}", g.Key.Week)).ToArray();
         WeeklyHoursData = weeks.Select(g => (float)(g.Sum(w => w.ActualWorkMinutes) / 60.0)).ToArray();
         WeeklyTargetHours = (float)weeklyTarget;
 
@@ -512,7 +530,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
         }
 
         OvertimeDailyBalance = orderedDays.Select(w => (float)(w.BalanceMinutes / 60.0)).ToArray();
-        OvertimeDateLabels = orderedDays.Select(w => w.Date.ToString("dd.MM")).ToArray();
+        OvertimeDateLabels = orderedDays.Select(w => TimeFormatter.FormatDayMonth(w.Date)).ToArray();
 
         // Kumulativ berechnen
         var cumulative = new float[orderedDays.Count];
@@ -697,7 +715,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IMessageSource
             .Select(w => new WorkDayTableItem
             {
                 Date = w.Date,
-                DateDisplay = w.Date.ToString("ddd, dd.MM"),
+                DateDisplay = $"{w.Date:ddd}, {TimeFormatter.FormatDayMonth(w.Date)}",
                 Status = w.Status,
                 StatusIconKind = GetStatusIconKind(w.Status),
                 StatusName = TimeFormatter.GetStatusName(w.Status),

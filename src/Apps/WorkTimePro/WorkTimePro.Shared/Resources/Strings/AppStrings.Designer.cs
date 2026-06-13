@@ -70,15 +70,6 @@ namespace WorkTimePro.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die WorkTime Pro ähnelt.
-        /// </summary>
-        internal static string AppName {
-            get {
-                return ResourceManager.GetString("AppName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Auto break ähnelt.
         /// </summary>
         internal static string AutoPause {
@@ -124,38 +115,11 @@ namespace WorkTimePro.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Auto break enabled ähnelt.
-        /// </summary>
-        internal static string AutoPauseEnabled {
-            get {
-                return ResourceManager.GetString("AutoPauseEnabled", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Automatically added (legal requirement) ähnelt.
         /// </summary>
         internal static string AutoPauseLegal {
             get {
                 return ResourceManager.GetString("AutoPauseLegal", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Auto break ähnelt.
-        /// </summary>
-        internal static string AutoPauseSettings {
-            get {
-                return ResourceManager.GetString("AutoPauseSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Average per day ähnelt.
-        /// </summary>
-        internal static string AveragePerDay {
-            get {
-                return ResourceManager.GetString("AveragePerDay", resourceCulture);
             }
         }
         
@@ -232,15 +196,6 @@ namespace WorkTimePro.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Close ähnelt.
-        /// </summary>
-        internal static string Close {
-            get {
-                return ResourceManager.GetString("Close", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Close month ähnelt.
         /// </summary>
         internal static string CloseMonth {
@@ -282,15 +237,6 @@ namespace WorkTimePro.Resources.Strings {
         internal static string DayDetails {
             get {
                 return ResourceManager.GetString("DayDetails", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Day progress ähnelt.
-        /// </summary>
-        internal static string DayProgress {
-            get {
-                return ResourceManager.GetString("DayProgress", resourceCulture);
             }
         }
         
@@ -367,47 +313,11 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Open ähnelt.
-        /// </summary>
-        internal static string MonthOpen {
-            get {
-                return ResourceManager.GetString("MonthOpen", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Delete ähnelt.
-        /// </summary>
-        internal static string Delete {
-            get {
-                return ResourceManager.GetString("Delete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Delete entry ähnelt.
-        /// </summary>
-        internal static string DeleteEntry {
-            get {
-                return ResourceManager.GetString("DeleteEntry", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Do you want to delete the entry at {0}? ähnelt.
         /// </summary>
         internal static string DeleteEntryConfirm {
             get {
                 return ResourceManager.GetString("DeleteEntryConfirm", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Delete break ähnelt.
-        /// </summary>
-        internal static string DeletePause {
-            get {
-                return ResourceManager.GetString("DeletePause", resourceCulture);
             }
         }
         
@@ -556,15 +466,6 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Work time law notices ähnelt.
-        /// </summary>
-        internal static string LegalWarnings {
-            get {
-                return ResourceManager.GetString("LegalWarnings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Legend ähnelt.
         /// </summary>
         internal static string Legend {
@@ -579,33 +480,6 @@ namespace WorkTimePro.Resources.Strings {
         internal static string ManualPause {
             get {
                 return ResourceManager.GetString("ManualPause", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Daily work time over {0}h (Work Time Act) ähnelt.
-        /// </summary>
-        internal static string MaxDailyHoursExceeded {
-            get {
-                return ResourceManager.GetString("MaxDailyHoursExceeded", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die At least {0} min break required for over {1}h work time ähnelt.
-        /// </summary>
-        internal static string MinBreakNotMet {
-            get {
-                return ResourceManager.GetString("MinBreakNotMet", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Rest time under {0}h between shifts ähnelt.
-        /// </summary>
-        internal static string MinRestNotMet {
-            get {
-                return ResourceManager.GetString("MinRestNotMet", resourceCulture);
             }
         }
         
@@ -646,15 +520,6 @@ namespace WorkTimePro.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Month closed ähnelt.
-        /// </summary>
-        internal static string MonthLocked {
-            get {
-                return ResourceManager.GetString("MonthLocked", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Month overview ähnelt.
         /// </summary>
         internal static string MonthOverview {
@@ -682,15 +547,6 @@ namespace WorkTimePro.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die No breaks recorded ähnelt.
-        /// </summary>
-        internal static string NoPauses {
-            get {
-                return ResourceManager.GetString("NoPauses", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die OK ähnelt.
         /// </summary>
         internal static string OK {
@@ -705,15 +561,6 @@ namespace WorkTimePro.Resources.Strings {
         internal static string Overtime {
             get {
                 return ResourceManager.GetString("Overtime", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Overtime trend ähnelt.
-        /// </summary>
-        internal static string OvertimeTrend {
-            get {
-                return ResourceManager.GetString("OvertimeTrend", resourceCulture);
             }
         }
         
@@ -754,24 +601,6 @@ namespace WorkTimePro.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Period ähnelt.
-        /// </summary>
-        internal static string Period {
-            get {
-                return ResourceManager.GetString("Period", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Premium ähnelt.
-        /// </summary>
-        internal static string Premium {
-            get {
-                return ResourceManager.GetString("Premium", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Premium active ähnelt.
         /// </summary>
         internal static string PremiumActive {
@@ -786,15 +615,6 @@ namespace WorkTimePro.Resources.Strings {
         internal static string PremiumStatus {
             get {
                 return ResourceManager.GetString("PremiumStatus", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Purchase failed ähnelt.
-        /// </summary>
-        internal static string PurchaseFailed {
-            get {
-                return ResourceManager.GetString("PurchaseFailed", resourceCulture);
             }
         }
         
@@ -835,15 +655,6 @@ namespace WorkTimePro.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Restore failed ähnelt.
-        /// </summary>
-        internal static string RestoreFailed {
-            get {
-                return ResourceManager.GetString("RestoreFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Restore purchases ähnelt.
         /// </summary>
         internal static string RestorePurchases {
@@ -880,15 +691,6 @@ namespace WorkTimePro.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Save settings ähnelt.
-        /// </summary>
-        internal static string SaveSettings {
-            get {
-                return ResourceManager.GetString("SaveSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Settings ähnelt.
         /// </summary>
         internal static string Settings {
@@ -903,15 +705,6 @@ namespace WorkTimePro.Resources.Strings {
         internal static string Start {
             get {
                 return ResourceManager.GetString("Start", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Start break ähnelt.
-        /// </summary>
-        internal static string StartPause {
-            get {
-                return ResourceManager.GetString("StartPause", resourceCulture);
             }
         }
         
@@ -983,15 +776,6 @@ namespace WorkTimePro.Resources.Strings {
         /// </summary>
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die This week ähnelt.
-        /// </summary>
-        internal static string ThisWeek {
-            get {
-                return ResourceManager.GetString("ThisWeek", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Thu ähnelt.
         /// </summary>
         internal static string Thu {
@@ -1028,15 +812,6 @@ namespace WorkTimePro.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Total work time ähnelt.
-        /// </summary>
-        internal static string TotalWorkTime {
-            get {
-                return ResourceManager.GetString("TotalWorkTime", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Trial: {0} days left ähnelt.
         /// </summary>
         internal static string TrialDaysLeft {
@@ -1046,38 +821,11 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Try Premium for free? ähnelt.
-        /// </summary>
-        internal static string TrialOfferTitle {
-            get {
-                return ResourceManager.GetString("TrialOfferTitle", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die 14 days free trial ähnelt.
         /// </summary>
         internal static string TrialOfferStart {
             get {
                 return ResourceManager.GetString("TrialOfferStart", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Buy now ähnelt.
-        /// </summary>
-        internal static string TrialOfferBuyNow {
-            get {
-                return ResourceManager.GetString("TrialOfferBuyNow", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Trial started! ähnelt.
-        /// </summary>
-        internal static string TrialStartedTitle {
-            get {
-                return ResourceManager.GetString("TrialStartedTitle", resourceCulture);
             }
         }
 
@@ -1208,24 +956,6 @@ namespace WorkTimePro.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Weekly work time ähnelt.
-        /// </summary>
-        internal static string WeeklyWorkTime {
-            get {
-                return ResourceManager.GetString("WeeklyWorkTime", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Week overview ähnelt.
-        /// </summary>
-        internal static string WeekOverview {
-            get {
-                return ResourceManager.GetString("WeekOverview", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Week progress ähnelt.
         /// </summary>
         internal static string WeekProgress {
@@ -1240,15 +970,6 @@ namespace WorkTimePro.Resources.Strings {
         internal static string WorkDays {
             get {
                 return ResourceManager.GetString("WorkDays", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Worked days ähnelt.
-        /// </summary>
-        internal static string WorkedDays {
-            get {
-                return ResourceManager.GetString("WorkedDays", resourceCulture);
             }
         }
         
@@ -1334,20 +1055,20 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Charts ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die dem Exact-Alarm-Permission-Hinweis ähnelt.
         /// </summary>
-        internal static string Charts {
+        internal static string ExactAlarmPermissionHint {
             get {
-                return ResourceManager.GetString("Charts", resourceCulture);
+                return ResourceManager.GetString("ExactAlarmPermissionHint", resourceCulture);
             }
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Table ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die dem Stempel-QR-Code-Titel ähnelt.
         /// </summary>
-        internal static string Table {
+        internal static string QrStampTitle {
             get {
-                return ResourceManager.GetString("Table", resourceCulture);
+                return ResourceManager.GetString("QrStampTitle", resourceCulture);
             }
         }
 
@@ -1469,33 +1190,6 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Select region ähnelt.
-        /// </summary>
-        internal static string SelectRegion {
-            get {
-                return ResourceManager.GetString("SelectRegion", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Saved ähnelt.
-        /// </summary>
-        internal static string Saved {
-            get {
-                return ResourceManager.GetString("Saved", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Settings saved successfully ähnelt.
-        /// </summary>
-        internal static string SettingsSaved {
-            get {
-                return ResourceManager.GetString("SettingsSaved", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Sick ähnelt.
         /// </summary>
         internal static string Sick {
@@ -1550,87 +1244,6 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Export ähnelt.
-        /// </summary>
-        internal static string Export {
-            get {
-                return ResourceManager.GetString("Export", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Export as... ähnelt.
-        /// </summary>
-        internal static string ExportAs {
-            get {
-                return ResourceManager.GetString("ExportAs", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Export successful ähnelt.
-        /// </summary>
-        internal static string ExportSuccess {
-            get {
-                return ResourceManager.GetString("ExportSuccess", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Export failed ähnelt.
-        /// </summary>
-        internal static string ExportFailed {
-            get {
-                return ResourceManager.GetString("ExportFailed", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Change status ähnelt.
-        /// </summary>
-        internal static string ChangeStatus {
-            get {
-                return ResourceManager.GetString("ChangeStatus", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Show details ähnelt.
-        /// </summary>
-        internal static string ShowDetails {
-            get {
-                return ResourceManager.GetString("ShowDetails", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Enter vacation ähnelt.
-        /// </summary>
-        internal static string EnterVacation {
-            get {
-                return ResourceManager.GetString("EnterVacation", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Vacation (multiple days) ähnelt.
-        /// </summary>
-        internal static string MultiDayVacation {
-            get {
-                return ResourceManager.GetString("MultiDayVacation", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Report sick ähnelt.
-        /// </summary>
-        internal static string ReportSick {
-            get {
-                return ResourceManager.GetString("ReportSick", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Reset status ähnelt.
         /// </summary>
         internal static string ResetStatus {
@@ -1640,101 +1253,11 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Enter time: ähnelt.
-        /// </summary>
-        internal static string EnterTime {
-            get {
-                return ResourceManager.GetString("EnterTime", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Invalid time format. ähnelt.
-        /// </summary>
-        internal static string InvalidTimeFormat {
-            get {
-                return ResourceManager.GetString("InvalidTimeFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Edit time ähnelt.
-        /// </summary>
-        internal static string EditTime {
-            get {
-                return ResourceManager.GetString("EditTime", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die New time for {0}: ähnelt.
-        /// </summary>
-        internal static string NewTimeFor {
-            get {
-                return ResourceManager.GetString("NewTimeFor", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Enter vacation ähnelt.
-        /// </summary>
-        internal static string EnterVacationTitle {
-            get {
-                return ResourceManager.GetString("EnterVacationTitle", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die How many days? ähnelt.
-        /// </summary>
-        internal static string HowManyDays {
-            get {
-                return ResourceManager.GetString("HowManyDays", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Number of days ähnelt.
-        /// </summary>
-        internal static string NumberOfDays {
-            get {
-                return ResourceManager.GetString("NumberOfDays", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Vacation entered ähnelt.
-        /// </summary>
-        internal static string VacationEntered {
-            get {
-                return ResourceManager.GetString("VacationEntered", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die {0} vacation days from {1} have been entered. ähnelt.
         /// </summary>
         internal static string VacationDaysEnteredFormat {
             get {
                 return ResourceManager.GetString("VacationDaysEnteredFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Home office ähnelt.
-        /// </summary>
-        internal static string HomeOfficeTitle {
-            get {
-                return ResourceManager.GetString("HomeOfficeTitle", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Optional note: ähnelt.
-        /// </summary>
-        internal static string OptionalNotePrompt {
-            get {
-                return ResourceManager.GetString("OptionalNotePrompt", resourceCulture);
             }
         }
 
@@ -1766,51 +1289,6 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Break start time: ähnelt.
-        /// </summary>
-        internal static string BreakStartTime {
-            get {
-                return ResourceManager.GetString("BreakStartTime", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Break end time: ähnelt.
-        /// </summary>
-        internal static string BreakEndTime {
-            get {
-                return ResourceManager.GetString("BreakEndTime", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Do you want to close {0}? ähnelt.
-        /// </summary>
-        internal static string CloseMonthConfirm {
-            get {
-                return ResourceManager.GetString("CloseMonthConfirm", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Do you want to unlock {0}? ähnelt.
-        /// </summary>
-        internal static string UnlockMonthConfirm {
-            get {
-                return ResourceManager.GetString("UnlockMonthConfirm", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Unlock ähnelt.
-        /// </summary>
-        internal static string Unlock {
-            get {
-                return ResourceManager.GetString("Unlock", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Overtime compensation ähnelt.
         /// </summary>
         internal static string OvertimeCompensation {
@@ -1838,24 +1316,6 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Premium feature ähnelt.
-        /// </summary>
-        internal static string PremiumFeature {
-            get {
-                return ResourceManager.GetString("PremiumFeature", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die This feature requires Premium. ähnelt.
-        /// </summary>
-        internal static string PremiumRequired {
-            get {
-                return ResourceManager.GetString("PremiumRequired", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Note ähnelt.
         /// </summary>
         internal static string Note {
@@ -1870,33 +1330,6 @@ namespace WorkTimePro.Resources.Strings {
         internal static string NoWorkDaysInPeriod {
             get {
                 return ResourceManager.GetString("NoWorkDaysInPeriod", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Delete vacation? ähnelt.
-        /// </summary>
-        internal static string DeleteVacationConfirm {
-            get {
-                return ResourceManager.GetString("DeleteVacationConfirm", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Do you really want to delete this vacation? ähnelt.
-        /// </summary>
-        internal static string DeleteVacationMessage {
-            get {
-                return ResourceManager.GetString("DeleteVacationMessage", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Vacation days for this year: ähnelt.
-        /// </summary>
-        internal static string VacationDaysInfo {
-            get {
-                return ResourceManager.GetString("VacationDaysInfo", resourceCulture);
             }
         }
 
@@ -1951,78 +1384,6 @@ namespace WorkTimePro.Resources.Strings {
         internal static string UnpaidLeave {
             get {
                 return ResourceManager.GetString("UnpaidLeave", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Actual Hours ähnelt.
-        /// </summary>
-        internal static string ChartActualHours {
-            get {
-                return ResourceManager.GetString("ChartActualHours", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Target ({0}h) ähnelt.
-        /// </summary>
-        internal static string ChartTargetFormat {
-            get {
-                return ResourceManager.GetString("ChartTargetFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Hours ähnelt.
-        /// </summary>
-        internal static string ChartHours {
-            get {
-                return ResourceManager.GetString("ChartHours", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Daily ähnelt.
-        /// </summary>
-        internal static string ChartDaily {
-            get {
-                return ResourceManager.GetString("ChartDaily", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Cumulative ähnelt.
-        /// </summary>
-        internal static string ChartCumulative {
-            get {
-                return ResourceManager.GetString("ChartCumulative", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Avg. Hours ähnelt.
-        /// </summary>
-        internal static string ChartAvgHours {
-            get {
-                return ResourceManager.GetString("ChartAvgHours", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Work hours ähnelt.
-        /// </summary>
-        internal static string ChartWorkHours {
-            get {
-                return ResourceManager.GetString("ChartWorkHours", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Cum. balance ähnelt.
-        /// </summary>
-        internal static string ChartCumulativeBalance {
-            get {
-                return ResourceManager.GetString("ChartCumulativeBalance", resourceCulture);
             }
         }
 
@@ -2116,12 +1477,6 @@ namespace WorkTimePro.Resources.Strings {
             }
         }
 
-        internal static string ErrorOpenUrl {
-            get {
-                return ResourceManager.GetString("ErrorOpenUrl", resourceCulture);
-            }
-        }
-
         internal static string DayStatus_Training {
             get {
                 return ResourceManager.GetString("DayStatus_Training", resourceCulture);
@@ -2146,21 +1501,9 @@ namespace WorkTimePro.Resources.Strings {
             }
         }
 
-        internal static string PdfExportPremium {
-            get {
-                return ResourceManager.GetString("PdfExportPremium", resourceCulture);
-            }
-        }
-
         internal static string ExportFailedMessage {
             get {
                 return ResourceManager.GetString("ExportFailedMessage", resourceCulture);
-            }
-        }
-
-        internal static string RemainingDays {
-            get {
-                return ResourceManager.GetString("RemainingDays", resourceCulture);
             }
         }
 
@@ -2198,24 +1541,6 @@ namespace WorkTimePro.Resources.Strings {
         internal static string WatchVideoOnce {
             get {
                 return ResourceManager.GetString("WatchVideoOnce", resourceCulture);
-            }
-        }
-
-        internal static string BuyPremiumUnlimited {
-            get {
-                return ResourceManager.GetString("BuyPremiumUnlimited", resourceCulture);
-            }
-        }
-
-        internal static string VideoRewardSuccess {
-            get {
-                return ResourceManager.GetString("VideoRewardSuccess", resourceCulture);
-            }
-        }
-
-        internal static string VideoAdFailed {
-            get {
-                return ResourceManager.GetString("VideoAdFailed", resourceCulture);
             }
         }
 
@@ -2421,24 +1746,6 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Check-in undone ähnelt.
-        /// </summary>
-        internal static string UndoCheckIn {
-            get {
-                return ResourceManager.GetString("UndoCheckIn", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Check-out undone ähnelt.
-        /// </summary>
-        internal static string UndoCheckOut {
-            get {
-                return ResourceManager.GetString("UndoCheckOut", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Time rounding ähnelt.
         /// </summary>
         internal static string TimeRounding {
@@ -2475,29 +1782,11 @@ namespace WorkTimePro.Resources.Strings {
         }
 
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Total earnings ähnelt.
-        /// </summary>
-        internal static string TotalEarnings {
-            get {
-                return ResourceManager.GetString("TotalEarnings", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die {0} min ähnelt.
         /// </summary>
         internal static string MinutesShortFormat {
             get {
                 return ResourceManager.GetString("MinutesShortFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Earnings ähnelt.
-        /// </summary>
-        internal static string Earnings {
-            get {
-                return ResourceManager.GetString("Earnings", resourceCulture);
             }
         }
 
@@ -2516,15 +1805,6 @@ namespace WorkTimePro.Resources.Strings {
         internal static string WeekGoalReached {
             get {
                 return ResourceManager.GetString("WeekGoalReached", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die per hour ähnelt.
-        /// </summary>
-        internal static string PerHour {
-            get {
-                return ResourceManager.GetString("PerHour", resourceCulture);
             }
         }
 

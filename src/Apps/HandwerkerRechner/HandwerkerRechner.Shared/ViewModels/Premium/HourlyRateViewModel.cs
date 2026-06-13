@@ -1,6 +1,7 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
@@ -15,6 +16,7 @@ namespace HandwerkerRechner.ViewModels.Premium;
 /// </summary>
 public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
+    private readonly CraftEngine _craftEngine;
     private readonly ILocalizationService _localization;
     private readonly IProjectService _projectService;
     private readonly ICalculationHistoryService _historyService;
@@ -86,12 +88,14 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
     #endregion
 
     public HourlyRateViewModel(
+        CraftEngine craftEngine,
         ILocalizationService localization,
         IProjectService projectService,
         ICalculationHistoryService historyService,
         IMaterialExportService exportService,
         IFileShareService fileShareService)
     {
+        _craftEngine = craftEngine;
         _localization = localization;
         _projectService = projectService;
         _historyService = historyService;
@@ -124,24 +128,16 @@ public sealed partial class HourlyRateViewModel : ViewModelBase, IDisposable, IC
                 return;
             }
 
-            // Effektive Arbeitszeit = (Stunden - Pause) × Mitarbeiter
-            var breakHours = BreakMinutes / 60.0;
-            NetWorkHours = Math.Max(0, (WorkHours - breakHours) * Workers);
+            // Berechnung in der Engine (Netto-Zeit → Lohnkosten → Aufschlag → Netto → MwSt → Brutto)
+            var result = _craftEngine.CalculateHourlyRate(
+                HourlyRate, WorkHours, BreakMinutes, OverheadPercent, VatPercent, Workers);
 
-            // Lohnkosten netto
-            NetLaborCost = NetWorkHours * HourlyRate;
-
-            // Aufschlag
-            OverheadAmount = NetLaborCost * OverheadPercent / 100.0;
-
-            // Gesamt netto
-            TotalNet = NetLaborCost + OverheadAmount;
-
-            // MwSt
-            VatAmount = TotalNet * VatPercent / 100.0;
-
-            // Gesamt brutto (Kundenpreis)
-            TotalGross = TotalNet + VatAmount;
+            NetWorkHours = result.NetWorkHours;
+            NetLaborCost = result.NetLaborCost;
+            OverheadAmount = result.OverheadAmount;
+            TotalNet = result.TotalNet;
+            VatAmount = result.VatAmount;
+            TotalGross = result.TotalGross;
 
             HasResult = true;
             CalculationPerformed?.Invoke();

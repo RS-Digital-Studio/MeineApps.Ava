@@ -22,7 +22,7 @@
             CornerRadius="0,0,24,24">
       <Grid ColumnDefinitions="Auto,*">
         <Button AutomationProperties.AutomationId="Flooring_BtnBack" Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0">
@@ -30,14 +30,14 @@
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
                     Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
             <mi:MaterialIcon Kind="TextureBox" Width="22" Height="22"
                              Foreground="White"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock AutomationProperties.AutomationId="Flooring_TxtTitle"
                      Text="{loc:Translate CalcFlooring}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                      VerticalAlignment="Center" />
         </StackPanel>
       </Grid>
@@ -53,13 +53,13 @@
         <Border AutomationProperties.AutomationId="Flooring_CardRoomDimensions" Classes="Card StatsCard">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate RoomDimensions}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <!-- Room Length -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate RoomLength}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxRoomLength"
                        Text="{Binding RoomLength}"
@@ -70,7 +70,7 @@
             <!-- Room Width -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate RoomWidth}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxRoomWidth"
                        Text="{Binding RoomWidth}"
@@ -84,13 +84,13 @@
         <Border AutomationProperties.AutomationId="Flooring_CardBoardDimensions" Classes="Card StatsCard">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate CalcFlooring}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <!-- Board Length -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate BoardLength}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxBoardLength"
                        Text="{Binding BoardLength}"
@@ -101,7 +101,7 @@
             <!-- Board Width -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate BoardWidth}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxBoardWidth"
                        Text="{Binding BoardWidth}"
@@ -115,13 +115,13 @@
         <Border AutomationProperties.AutomationId="Flooring_CardCost" Classes="Card StatsCard">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate CostCalculation}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <!-- Waste Percentage -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate Waste}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxWaste"
                        Text="{Binding WastePercentage}"
@@ -132,11 +132,11 @@
             <!-- Price Per Board (optional) -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate PricePerBoard}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxPrice"
                        Text="{Binding PricePerBoard}"
-                       PlaceholderText="EUR"
+                       PlaceholderText="{loc:Translate CurrencySymbol}"
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
@@ -154,17 +154,17 @@
                 IsVisible="{Binding HasResult}">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate Result}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryBrush}" />
 
             <!-- Hero-Value: Dielen inkl. Verschnitt -->
             <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
                     Margin="0,4,0,8">
               <StackPanel>
-                <TextBlock Text="{loc:Translate BoardsWithWaste}" FontSize="12"
-                           Foreground="#CCFFFFFF" />
+                <TextBlock Text="{loc:Translate BoardsWithWaste}" FontSize="{StaticResource FontSizeLabelMd}"
+                           Foreground="{DynamicResource OnGradientSubtextBrush}" />
                 <TextBlock AutomationProperties.AutomationId="Flooring_TxtBoardsWithWaste"
-                           Text="{Binding BoardsWithWasteDisplay}" FontSize="28" FontWeight="Bold"
+                           Text="{Binding BoardsWithWasteDisplay}" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                            Foreground="White">
                   <i:Interaction.Behaviors>
                     <behaviors:CountUpBehavior TargetValue="{Binding Result.BoardsWithWaste}" Format="F0" Duration="500" />
@@ -177,11 +177,11 @@
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0"
                          Text="{loc:Translate TotalArea}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Flooring_TxtArea" Grid.Column="1"
                          Text="{Binding AreaDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
@@ -189,11 +189,11 @@
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0"
                          Text="{loc:Translate BoardsNeeded}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Flooring_TxtBoardsNeeded" Grid.Column="1"
                          Text="{Binding BoardsNeededDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
@@ -202,15 +202,15 @@
                   IsVisible="{Binding ShowCost}">
               <TextBlock Grid.Column="0"
                          Text="{loc:Translate TotalCost}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeBodyMd}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Flooring_TxtTotalCost" Grid.Column="1"
                          Text="{Binding TotalCostDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource PrimaryBrush}" />
             </Grid>
             <!-- Aktions-Buttons: Share + PDF Export -->
-            <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+            <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
               <Button AutomationProperties.AutomationId="Flooring_BtnShare"
                       Grid.Column="0"
                       Command="{Binding ShareResultCommand}"
@@ -221,7 +221,7 @@
                   <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
                   <TextBlock Text="{loc:Translate ShareResult}"
-                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
@@ -236,14 +236,15 @@
                   <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
                   <TextBlock Text="{loc:Translate ExportMaterialList}"
-                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
-                      <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                        <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                         Foreground="{DynamicResource AccentBrush}" />
-                      </Button>
+              <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                      AutomationProperties.AutomationId="Flooring_BtnExportCsv">
+                <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                 Foreground="{DynamicResource AccentBrush}" />
+              </Button>
             </Grid>
           </StackPanel>
         </Border>
@@ -267,7 +268,7 @@
             <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{loc:Translate Reset}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -282,7 +283,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Calculate}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -298,7 +299,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Save}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -309,7 +310,7 @@
     <Border AutomationProperties.AutomationId="Flooring_SaveOverlay"
             Grid.Row="0" Grid.RowSpan="3"
             ZIndex="100"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowSaveDialog}">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16"
@@ -319,7 +320,7 @@
               VerticalAlignment="Center">
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Translate SaveProject}"
-                     FontSize="18" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
           <TextBox AutomationProperties.AutomationId="Flooring_TxtBoxProjectName"

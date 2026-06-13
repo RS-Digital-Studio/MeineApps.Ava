@@ -92,24 +92,24 @@
                     Background="{DynamicResource HeaderGradientBrush}">
               <StackPanel Spacing="8" HorizontalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
-                  <Border Width="36" Height="36" CornerRadius="18" Background="#33FFFFFF">
+                  <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource HeaderChipBrush}">
                     <mi:MaterialIcon Kind="RulerSquareCompass" Width="20" Height="20"
                                      Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <TextBlock AutomationProperties.AutomationId="Main_TxtAppTitle"
                              Text="{Binding AppTitle}"
-                             FontSize="20" FontWeight="Bold" Foreground="White"
+                             FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                              VerticalAlignment="Center" />
                 </StackPanel>
                 <TextBlock AutomationProperties.AutomationId="Main_TxtAppDescription"
                            Text="{Binding AppDescription}"
-                           FontSize="13" Foreground="#BBFFFFFF"
+                           FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource OnGradientSubtitleBrush}"
                            HorizontalAlignment="Center" TextAlignment="Center"
                            TextWrapping="Wrap" MaxWidth="300" />
                 <TextBlock AutomationProperties.AutomationId="Main_TxtCalculatorCount"
                            Text="{Binding CalculatorCountText}"
-                           FontSize="12" Foreground="#99FFFFFF"
+                           FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource OnGradientMutedBrush}"
                            HorizontalAlignment="Center" />
               </StackPanel>
             </Border>
@@ -120,7 +120,7 @@
               <!-- ========== Favoriten Schnellzugriff ========== -->
               <Border IsVisible="{Binding HasFavorites}" Padding="0,4,0,0">
                 <StackPanel Spacing="8">
-                  <TextBlock Text="{Binding FavoritesTitleText}" FontSize="14" FontWeight="Bold"
+                  <TextBlock Text="{Binding FavoritesTitleText}" FontSize="{StaticResource FontSizeBodyMd}" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                   <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                     <ItemsControl ItemsSource="{Binding FavoriteCalculators}">
@@ -128,8 +128,9 @@
                         <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
                       </ItemsControl.ItemsPanel>
                       <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                          <Button Background="Transparent" Padding="0"
+                        <DataTemplate x:DataType="vm:FavoriteItem">
+                          <Button AutomationProperties.AutomationId="Main_BtnFavoriteItem"
+                                  Background="Transparent" Padding="0"
                                   Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).OpenFavoriteCommand}"
                                   CommandParameter="{Binding Route}">
                             <Border CornerRadius="12" Padding="12,8" MinWidth="90">
@@ -143,7 +144,7 @@
                                 <mi:MaterialIcon Kind="Star" Width="20" Height="20"
                                                  Foreground="{DynamicResource AccentBrush}"
                                                  HorizontalAlignment="Center" />
-                                <TextBlock Text="{Binding Label}" FontSize="11" TextAlignment="Center"
+                                <TextBlock Text="{Binding Label}" FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center"
                                            MaxWidth="80" TextTrimming="CharacterEllipsis"
                                            Foreground="{DynamicResource TextPrimaryBrush}" />
                               </StackPanel>
@@ -175,7 +176,7 @@
                              Margin="0,0,-20,0" />
                     <Grid ColumnDefinitions="Auto,*,Auto">
                       <Border Grid.Column="0" Width="44" Height="44"
-                              CornerRadius="22" Background="#33FFFFFF"
+                              CornerRadius="22" Background="{DynamicResource HeaderChipBrush}"
                               Classes="GoldGlow"
                               Margin="0,0,14,0">
                         <mi:MaterialIcon Kind="Star" Width="24" Height="24"
@@ -185,14 +186,14 @@
                       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                         <TextBlock AutomationProperties.AutomationId="Main_TxtGetPremium"
                                    Text="{Binding GetPremiumText}"
-                                   FontSize="15" FontWeight="Bold" Foreground="White" />
+                                   FontSize="{StaticResource FontSizeLabelXl}" FontWeight="Bold" Foreground="White" />
                         <TextBlock AutomationProperties.AutomationId="Main_TxtPremiumPrice"
                                    Text="{Binding PremiumPriceText}"
-                                   FontSize="12" Foreground="#CCFFFFFF" />
+                                   FontSize="{StaticResource FontSizeLabelMd}" Foreground="{DynamicResource OnGradientSubtextBrush}" />
                       </StackPanel>
                       <mi:MaterialIcon Grid.Column="2"
                                        Kind="ChevronRight" Width="20" Height="20"
-                                       Foreground="#AAFFFFFF" VerticalAlignment="Center" />
+                                       Foreground="{DynamicResource OnGradientIconBrush}" VerticalAlignment="Center" />
                     </Grid>
                   </Panel>
                 </Border>
@@ -201,12 +202,12 @@
               <!-- ========== Section: Boden & Wand ========== -->
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Border Background="#F59E0B" CornerRadius="6" Padding="8,4">
-                    <TextBlock AutomationProperties.AutomationId="Main_TxtSectionFloorWall" Text="{Binding SectionFloorWallText}" FontSize="11" FontWeight="Bold" Foreground="White" />
+                  <Border Background="{DynamicResource SecondaryBrush}" CornerRadius="6" Padding="8,4">
+                    <TextBlock AutomationProperties.AutomationId="Main_TxtSectionFloorWall" Text="{Binding SectionFloorWallText}" FontSize="{StaticResource FontSizeCaption}" FontWeight="Bold" Foreground="White" />
                   </Border>
                   <TextBlock AutomationProperties.AutomationId="Main_TxtCategoryFloorWall"
                              Text="{Binding CategoryFloorWallLabel}"
-                             FontSize="18" FontWeight="Bold"
+                             FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              VerticalAlignment="Center" />
                 </StackPanel>
@@ -230,32 +231,28 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#F59E0B" Offset="0" />
-                              <GradientStop Color="#D97706" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientTileBrush}">
                           <mi:MaterialIcon Kind="ViewGrid" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtTilesLabel"
                                    Text="{Binding CalcTilesLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcTilesDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <!-- Favoriten-Stern: gefüllt (Gold) wenn Favorit, Outline sonst -->
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="TileCalculatorPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="TileCalculatorPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavTile">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavTileCalculator}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -283,31 +280,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#8B5CF6" Offset="0" />
-                              <GradientStop Color="#7C3AED" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientWallpaperBrush}">
                           <mi:MaterialIcon Kind="Wallpaper" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtWallpaperLabel"
                                    Text="{Binding CalcWallpaperLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcWallpaperDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="WallpaperCalculatorPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="WallpaperCalculatorPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavWallpaper">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavWallpaper}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -335,31 +328,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#22C55E" Offset="0" />
-                              <GradientStop Color="#16A34A" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientPaintBrush}">
                           <mi:MaterialIcon Kind="FormatPaint" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtPaintLabel"
                                    Text="{Binding CalcPaintLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcPaintDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="PaintCalculatorPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="PaintCalculatorPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavPaint">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavPaint}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -387,31 +376,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#3B82F6" Offset="0" />
-                              <GradientStop Color="#2563EB" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientFlooringBrush}">
                           <mi:MaterialIcon Kind="Layers" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtFlooringLabel"
                                    Text="{Binding CalcFlooringLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcFlooringDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="FlooringCalculatorPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="FlooringCalculatorPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavFlooring">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavFlooring}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -438,31 +423,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#78716C" Offset="0" />
-                              <GradientStop Color="#57534E" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientConcreteBrush}">
                           <mi:MaterialIcon Kind="CubeOutline" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtConcreteLabel"
                                    Text="{Binding CalcConcreteLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcConcreteDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="ConcretePage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="ConcretePage"
+                              AutomationProperties.AutomationId="Main_ToggleFavConcrete">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavConcrete}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -478,11 +459,11 @@
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <Border Background="{DynamicResource AccentBrush}" CornerRadius="6" Padding="8,4">
-                    <TextBlock AutomationProperties.AutomationId="Main_TxtSectionPremiumTools" Text="{Binding SectionPremiumToolsText}" FontSize="11" FontWeight="Bold" Foreground="White" />
+                    <TextBlock AutomationProperties.AutomationId="Main_TxtSectionPremiumTools" Text="{Binding SectionPremiumToolsText}" FontSize="{StaticResource FontSizeCaption}" FontWeight="Bold" Foreground="White" />
                   </Border>
                   <TextBlock AutomationProperties.AutomationId="Main_TxtMoreCategories"
                              Text="{Binding MoreCategoriesLabel}"
-                             FontSize="18" FontWeight="Bold"
+                             FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              VerticalAlignment="Center" />
                 </StackPanel>
@@ -506,32 +487,28 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#EF4444" Offset="0" />
-                              <GradientStop Color="#DC2626" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientDrywallBrush}">
                           <mi:MaterialIcon Kind="Wall" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtDrywallLabel"
                                    Text="{Binding CategoryDrywallLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CategoryDrywallDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <!-- Favoriten-Stern: gefüllt (Gold) wenn Favorit, Outline sonst -->
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="DrywallPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="DrywallPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavDrywall">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavDrywall}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -559,31 +536,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#F97316" Offset="0" />
-                              <GradientStop Color="#EA580C" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientElectricalBrush}">
                           <mi:MaterialIcon Kind="Flash" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtElectricalLabel"
                                    Text="{Binding CategoryElectricalLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CategoryElectricalDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="ElectricalPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="ElectricalPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavElectrical">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavElectrical}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -611,31 +584,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#6B7280" Offset="0" />
-                              <GradientStop Color="#4B5563" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientMetalBrush}">
                           <mi:MaterialIcon Kind="Wrench" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtMetalLabel"
                                    Text="{Binding CategoryMetalLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CategoryMetalDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="MetalPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="MetalPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavMetal">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavMetal}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -663,31 +632,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#10B981" Offset="0" />
-                              <GradientStop Color="#059669" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientGardenBrush}">
                           <mi:MaterialIcon Kind="Flower" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtGardenLabel"
                                    Text="{Binding CategoryGardenLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CategoryGardenDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="GardenPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="GardenPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavGarden">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavGarden}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -715,31 +680,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#06B6D4" Offset="0" />
-                              <GradientStop Color="#0891B2" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientRoofSolarBrush}">
                           <mi:MaterialIcon Kind="SolarPanel" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtRoofSolarLabel"
                                    Text="{Binding CategoryRoofSolarLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CategoryRoofSolarDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="RoofSolarPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="RoofSolarPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavRoofSolar">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavRoofSolar}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -767,31 +728,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#A855F7" Offset="0" />
-                              <GradientStop Color="#9333EA" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientStairsBrush}">
                           <mi:MaterialIcon Kind="Stairs" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtStairsLabel"
                                    Text="{Binding CalcStairsLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcStairsDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="StairsPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="StairsPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavStairs">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavStairs}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -819,31 +776,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#F97316" Offset="0" />
-                              <GradientStop Color="#EA580C" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientPlasterBrush}">
                           <mi:MaterialIcon Kind="FormatPaint" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtPlasterLabel"
                                    Text="{Binding CalcPlasterLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcPlasterDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="PlasterPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="PlasterPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavPlaster">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavPlaster}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -871,31 +824,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#78716C" Offset="0" />
-                              <GradientStop Color="#57534E" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientScreedBrush}">
                           <mi:MaterialIcon Kind="Layers" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtScreedLabel"
                                    Text="{Binding CalcScreedLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcScreedDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="ScreedPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="ScreedPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavScreed">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavScreed}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -923,31 +872,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#14B8A6" Offset="0" />
-                              <GradientStop Color="#0D9488" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientInsulationBrush}">
                           <mi:MaterialIcon Kind="Snowflake" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtInsulationLabel"
                                    Text="{Binding CalcInsulationLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcInsulationDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="InsulationPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="InsulationPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavInsulation">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavInsulation}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -975,31 +920,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#F59E0B" Offset="0" />
-                              <GradientStop Color="#D97706" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientCableSizingBrush}">
                           <mi:MaterialIcon Kind="CableData" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtCableSizingLabel"
                                    Text="{Binding CalcCableSizingLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcCableSizingDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="CableSizingPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="CableSizingPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavCableSizing">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavCableSizing}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -1027,31 +968,27 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#EC4899" Offset="0" />
-                              <GradientStop Color="#DB2777" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientGroutBrush}">
                           <mi:MaterialIcon Kind="Texture" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock AutomationProperties.AutomationId="Main_TxtGroutLabel"
                                    Text="{Binding CalcGroutLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcGroutDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="GroutPage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="GroutPage"
+                              AutomationProperties.AutomationId="Main_ToggleFavGrout">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavGrout}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -1078,30 +1015,26 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#22C55E" Offset="0" />
-                              <GradientStop Color="#16A34A" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientHourlyRateBrush}">
                           <mi:MaterialIcon Kind="ClockOutline" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock Text="{Binding CalcHourlyRateLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcHourlyRateDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="HourlyRatePage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="HourlyRatePage"
+                              AutomationProperties.AutomationId="Main_ToggleFavHourlyRate">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavHourlyRate}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -1129,30 +1062,26 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#8B5CF6" Offset="0" />
-                              <GradientStop Color="#7C3AED" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientMaterialCompareBrush}">
                           <mi:MaterialIcon Kind="ScaleBalance" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock Text="{Binding CalcMaterialCompareLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcMaterialCompareDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="MaterialComparePage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="MaterialComparePage"
+                              AutomationProperties.AutomationId="Main_ToggleFavMaterialCompare">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavMaterialCompare}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -1180,30 +1109,26 @@
                     </Button.Background>
                     <Panel>
                       <StackPanel VerticalAlignment="Center" Spacing="4">
-                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                          <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                              <GradientStop Color="#3B82F6" Offset="0" />
-                              <GradientStop Color="#2563EB" Offset="1" />
-                            </LinearGradientBrush>
-                          </Border.Background>
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center"
+                                Background="{DynamicResource TileGradientAreaMeasureBrush}">
                           <mi:MaterialIcon Kind="RulerSquare" Width="24" Height="24"
                                            Foreground="White"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock Text="{Binding CalcAreaMeasureLabel}"
-                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding CalcAreaMeasureDescLabel}"
-                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   FontSize="{StaticResource FontSizeCaption}" TextAlignment="Center" MaxLines="2"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Button Classes="Text" Padding="0" MinWidth="44" MinHeight="44"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-4,0"
-                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="AreaMeasurePage">
+                              Command="{Binding ToggleFavoriteCommand}" CommandParameter="AreaMeasurePage"
+                              AutomationProperties.AutomationId="Main_ToggleFavAreaMeasure">
                         <Panel>
-                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="#F59E0B"
+                          <mi:MaterialIcon Kind="Star" Width="16" Height="16" Foreground="{DynamicResource SecondaryBrush}"
                                            IsVisible="{Binding IsFavAreaMeasure}" />
                           <mi:MaterialIcon Kind="StarOutline" Width="16" Height="16"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -1219,13 +1144,14 @@
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <Border Background="#10B981" CornerRadius="6" Padding="8,4">
-                    <TextBlock Text="{Binding SectionBusinessText}" FontSize="11" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="{Binding SectionBusinessText}" FontSize="{StaticResource FontSizeCaption}" FontWeight="Bold" Foreground="White" />
                   </Border>
                 </StackPanel>
 
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                   <!-- Vorlagen -->
-                  <Button Grid.Column="0" CornerRadius="12" Height="100" Padding="8"
+                  <Button AutomationProperties.AutomationId="Main_BtnTemplates"
+                          Grid.Column="0" CornerRadius="12" Height="100" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToTemplatesCommand}">
                     <i:Interaction.Behaviors>
@@ -1239,23 +1165,19 @@
                       </LinearGradientBrush>
                     </Button.Background>
                     <StackPanel VerticalAlignment="Center" Spacing="4">
-                      <Border CornerRadius="10" Width="40" Height="40" HorizontalAlignment="Center">
-                        <Border.Background>
-                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                            <GradientStop Color="#10B981" Offset="0" />
-                            <GradientStop Color="#059669" Offset="1" />
-                          </LinearGradientBrush>
-                        </Border.Background>
+                      <Border CornerRadius="10" Width="40" Height="40" HorizontalAlignment="Center"
+                              Background="{DynamicResource TileGradientTemplatesBrush}">
                         <mi:MaterialIcon Kind="FileDocumentMultipleOutline" Width="22" Height="22"
                                          Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                       </Border>
-                      <TextBlock Text="{Binding TemplatesLabel}" FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                      <TextBlock Text="{Binding TemplatesLabel}" FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
                     </StackPanel>
                   </Button>
 
                   <!-- Angebote -->
-                  <Button Grid.Column="1" CornerRadius="12" Height="100" Padding="8"
+                  <Button AutomationProperties.AutomationId="Main_BtnQuotes"
+                          Grid.Column="1" CornerRadius="12" Height="100" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToQuotesCommand}">
                     <i:Interaction.Behaviors>
@@ -1269,17 +1191,12 @@
                       </LinearGradientBrush>
                     </Button.Background>
                     <StackPanel VerticalAlignment="Center" Spacing="4">
-                      <Border CornerRadius="10" Width="40" Height="40" HorizontalAlignment="Center">
-                        <Border.Background>
-                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                            <GradientStop Color="#F59E0B" Offset="0" />
-                            <GradientStop Color="#D97706" Offset="1" />
-                          </LinearGradientBrush>
-                        </Border.Background>
+                      <Border CornerRadius="10" Width="40" Height="40" HorizontalAlignment="Center"
+                              Background="{DynamicResource TileGradientQuoteBrush}">
                         <mi:MaterialIcon Kind="FileDocumentEditOutline" Width="22" Height="22"
                                          Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                       </Border>
-                      <TextBlock Text="{Binding QuotesLabel}" FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                      <TextBlock Text="{Binding QuotesLabel}" FontSize="{StaticResource FontSizeBodySm}" FontWeight="Bold" TextAlignment="Center"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
                     </StackPanel>
                   </Button>
@@ -1369,12 +1286,12 @@
                                IsVisible="{Binding !IsHomeTab}" />
             </Panel>
             <Panel>
-              <TextBlock Text="{Binding TabHomeText}" FontSize="11"
+              <TextBlock Text="{Binding TabHomeText}" FontSize="{StaticResource FontSizeCaption}"
                          HorizontalAlignment="Center"
                          Foreground="{DynamicResource PrimaryBrush}"
                          FontWeight="Medium"
                          IsVisible="{Binding IsHomeTab}" />
-              <TextBlock Text="{Binding TabHomeText}" FontSize="11"
+              <TextBlock Text="{Binding TabHomeText}" FontSize="{StaticResource FontSizeCaption}"
                          HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextMutedBrush}"
                          IsVisible="{Binding !IsHomeTab}" />
@@ -1406,12 +1323,12 @@
                                IsVisible="{Binding !IsProjectsTab}" />
             </Panel>
             <Panel>
-              <TextBlock Text="{Binding TabProjectsText}" FontSize="11"
+              <TextBlock Text="{Binding TabProjectsText}" FontSize="{StaticResource FontSizeCaption}"
                          HorizontalAlignment="Center"
                          Foreground="{DynamicResource PrimaryBrush}"
                          FontWeight="Medium"
                          IsVisible="{Binding IsProjectsTab}" />
-              <TextBlock Text="{Binding TabProjectsText}" FontSize="11"
+              <TextBlock Text="{Binding TabProjectsText}" FontSize="{StaticResource FontSizeCaption}"
                          HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextMutedBrush}"
                          IsVisible="{Binding !IsProjectsTab}" />
@@ -1443,12 +1360,12 @@
                                IsVisible="{Binding !IsHistoryTab}" />
             </Panel>
             <Panel>
-              <TextBlock Text="{Binding TabHistoryText}" FontSize="11"
+              <TextBlock Text="{Binding TabHistoryText}" FontSize="{StaticResource FontSizeCaption}"
                          HorizontalAlignment="Center"
                          Foreground="{DynamicResource PrimaryBrush}"
                          FontWeight="Medium"
                          IsVisible="{Binding IsHistoryTab}" />
-              <TextBlock Text="{Binding TabHistoryText}" FontSize="11"
+              <TextBlock Text="{Binding TabHistoryText}" FontSize="{StaticResource FontSizeCaption}"
                          HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextMutedBrush}"
                          IsVisible="{Binding !IsHistoryTab}" />
@@ -1480,12 +1397,12 @@
                                IsVisible="{Binding !IsSettingsTab}" />
             </Panel>
             <Panel>
-              <TextBlock Text="{Binding TabSettingsText}" FontSize="11"
+              <TextBlock Text="{Binding TabSettingsText}" FontSize="{StaticResource FontSizeCaption}"
                          HorizontalAlignment="Center"
                          Foreground="{DynamicResource PrimaryBrush}"
                          FontWeight="Medium"
                          IsVisible="{Binding IsSettingsTab}" />
-              <TextBlock Text="{Binding TabSettingsText}" FontSize="11"
+              <TextBlock Text="{Binding TabSettingsText}" FontSize="{StaticResource FontSizeCaption}"
                          HorizontalAlignment="Center"
                          Foreground="{DynamicResource TextMutedBrush}"
                          IsVisible="{Binding !IsSettingsTab}" />
@@ -1500,6 +1417,80 @@
                                   x:Name="FloatingTextCanvas"
                                   Grid.RowSpan="3" ZIndex="15"
                                   IsHitTestVisible="False" />
+
+    <!-- Ad-Opt-in Overlay (Video ansehen → Banner für 10 Berechnungen ausblenden) -->
+    <Border AutomationProperties.AutomationId="Main_AdOfferOverlay"
+            Grid.RowSpan="3" ZIndex="200"
+            Background="{DynamicResource OverlayBrush}"
+            IsVisible="{Binding ShowAdOfferDialog}">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="340"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock Text="{loc:Translate AdOfferTitle}"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     TextWrapping="Wrap" TextAlignment="Center"
+                     HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Translate AdOfferMessage}"
+                     FontSize="{StaticResource FontSizeBodyMd}"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap" TextAlignment="Center" />
+          <Grid ColumnDefinitions="*,12,*">
+            <Button AutomationProperties.AutomationId="MainAdOfferDeclineButton"
+                    Grid.Column="0"
+                    Classes="Outlined"
+                    Command="{Binding DeclineAdOfferCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate AdOfferDeclineButton}" />
+            <Button AutomationProperties.AutomationId="MainAdOfferWatchButton"
+                    Grid.Column="2"
+                    Classes="Primary"
+                    Command="{Binding WatchAdCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate AdOfferWatchButton}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- Message-Dialog Overlay (MessageRequested → Inline-Anzeige, kein Avalonia-Popup) -->
+    <Border AutomationProperties.AutomationId="Main_MessageOverlay"
+            Grid.RowSpan="3" ZIndex="210"
+            Background="{DynamicResource OverlayBrush}"
+            IsVisible="{Binding ShowMessageDialog}">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="340"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock AutomationProperties.AutomationId="MainMessageTitleText"
+                     Text="{Binding MessageDialogTitle}"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     TextWrapping="Wrap" TextAlignment="Center"
+                     HorizontalAlignment="Center" />
+          <TextBlock AutomationProperties.AutomationId="MainMessageBodyText"
+                     Text="{Binding MessageDialogText}"
+                     FontSize="{StaticResource FontSizeBodyMd}"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap" TextAlignment="Center" />
+          <Button AutomationProperties.AutomationId="MainMessageOkButton"
+                  Classes="Primary"
+                  Command="{Binding DismissMessageCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Content="{loc:Translate OK}" />
+        </StackPanel>
+      </Border>
+    </Border>
 
   </Grid>
 

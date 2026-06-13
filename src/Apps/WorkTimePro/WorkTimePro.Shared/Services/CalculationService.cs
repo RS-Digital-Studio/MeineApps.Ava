@@ -57,7 +57,9 @@ public sealed class CalculationService : ICalculationService
         // Zeitrundung anwenden (falls konfiguriert)
         if (settings.RoundingMinutes > 0)
         {
-            netMinutes = (int)(Math.Round((double)netMinutes / settings.RoundingMinutes) * settings.RoundingMinutes);
+            // Kaufmännisch runden (AwayFromZero) — Banker's Rounding (.5 → gerade) wäre
+            // bei Arbeitszeit-Abrechnung überraschend (30,5 min → 30 statt 31).
+            netMinutes = (int)(Math.Round((double)netMinutes / settings.RoundingMinutes, MidpointRounding.AwayFromZero) * settings.RoundingMinutes);
         }
 
         workDay.ActualWorkMinutes = netMinutes;
@@ -86,7 +88,7 @@ public sealed class CalculationService : ICalculationService
     {
         var manualMinutes = pauses
             .Where(p => !p.IsAutoPause && p.EndTime != null)
-            .Sum(p => (int)Math.Round(p.Duration.TotalMinutes));
+            .Sum(p => (int)Math.Round(p.Duration.TotalMinutes, MidpointRounding.AwayFromZero));
 
         workDay.ManualPauseMinutes = manualMinutes;
     }
@@ -119,7 +121,7 @@ public sealed class CalculationService : ICalculationService
         var lastCheckOut = entries.LastOrDefault(e => e.Type == EntryType.CheckOut);
         if (lastCheckIn != null && (lastCheckOut == null || lastCheckIn.Timestamp > lastCheckOut.Timestamp))
         {
-            bruttoMinutes += (int)Math.Round(DurationMath.RealElapsedMinutes(lastCheckIn.Timestamp, DateTime.Now));
+            bruttoMinutes += (int)Math.Round(DurationMath.RealElapsedMinutes(lastCheckIn.Timestamp, DateTime.Now), MidpointRounding.AwayFromZero);
         }
 
         // Gesetzlich vorgeschriebene Pause — §4 ArbZG bemisst die Pausenstaffel an der
@@ -451,31 +453,13 @@ public sealed class CalculationService : ICalculationService
         return warnings;
     }
 
-    public int GetIsoWeekNumber(DateTime date)
-    {
-        var cal = CultureInfo.InvariantCulture.Calendar;
-        var day = cal.GetDayOfWeek(date);
-
-        // ISO 8601: Week starts on Monday
-        if (day >= DayOfWeek.Monday && day <= DayOfWeek.Wednesday)
-        {
-            date = date.AddDays(3);
-        }
-
-        return cal.GetWeekOfYear(date, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
-    }
+    // ISO-8601-Wochenlogik über das BCL-eigene ISOWeek — die frühere Handrechnung
+    // (DayOfWeek.Monday - jan4.DayOfWeek) lieferte eine Woche zu spät, wenn der
+    // 4. Januar ein Sonntag ist (z.B. 2026: KW 1 beginnt am 29.12.2025, nicht 05.01.).
+    public int GetIsoWeekNumber(DateTime date) => ISOWeek.GetWeekOfYear(date);
 
     public DateTime GetFirstDayOfWeek(int year, int weekNumber)
-    {
-        // January 4th is always in week 1
-        var jan4 = new DateTime(year, 1, 4);
-        var daysOffset = DayOfWeek.Monday - jan4.DayOfWeek;
-
-        var firstMonday = jan4.AddDays(daysOffset);
-        var firstWeekDay = firstMonday.AddDays((weekNumber - 1) * 7);
-
-        return firstWeekDay;
-    }
+        => ISOWeek.ToDateTime(year, weekNumber, DayOfWeek.Monday);
 
     /// <summary>
     /// Berechnet Brutto-Arbeitsminuten aus CheckIn/CheckOut-Paaren.
@@ -499,7 +483,7 @@ public sealed class CalculationService : ICalculationService
             {
                 // DST-bewusst: tatsächlich verstrichene Zeit (korrigiert Sommer-/Winterzeit-Sprung
                 // bei über die Umstellung laufenden Schichten).
-                totalMinutes += (int)Math.Round(DurationMath.RealElapsedMinutes(lastCheckIn.Timestamp, entry.Timestamp));
+                totalMinutes += (int)Math.Round(DurationMath.RealElapsedMinutes(lastCheckIn.Timestamp, entry.Timestamp), MidpointRounding.AwayFromZero);
                 lastCheckOut = entry.Timestamp;
                 lastCheckIn = null;
             }

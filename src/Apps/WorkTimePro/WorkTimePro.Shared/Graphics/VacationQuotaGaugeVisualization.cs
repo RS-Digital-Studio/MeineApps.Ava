@@ -23,11 +23,11 @@ public static class VacationQuotaGaugeVisualization
     private static readonly SKMaskFilter _blur3 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
 
     // Verbrauchsstufen-Farben kommen aus SkiaThemeHelper (Success/Warning/Error) — siehe Render().
-
-    // Ring-Farben
-    private static readonly SKColor _usedColor = new(0x38, 0xBD, 0xF8);    // Blau (Genommen)
-    private static readonly SKColor _plannedColor = new(0xA7, 0x8B, 0xFA); // Violett (Geplant)
-    private static readonly SKColor _remainColor = new(0x22, 0xC5, 0x5E);  // Grün (Rest)
+    // Ring-Farben ebenfalls aus SkiaThemeHelper (Info/Secondary/Accent) — als Properties statt
+    // static readonly, weil SkiaThemeHelper erst nach RefreshColors() die Theme-Werte trägt.
+    private static SKColor UsedColor => SkiaThemeHelper.Info;        // Blau (Genommen)
+    private static SKColor PlannedColor => SkiaThemeHelper.Secondary; // Violett (Geplant)
+    private static SKColor RemainColor => SkiaThemeHelper.Accent;     // Grün (Rest)
 
     /// <summary>
     /// Rendert die Urlaubsquote als konzentrische Ringe.
@@ -72,13 +72,13 @@ public static class VacationQuotaGaugeVisualization
         float remainFrac = MathF.Min(remainingDays / totalDays, 1f);
 
         // === Äußerer Ring: Genommen ===
-        DrawRing(canvas, cx, cy, outerR, ringWidth, usedFrac, _usedColor);
+        DrawRing(canvas, cx, cy, outerR, ringWidth, usedFrac, UsedColor);
 
         // === Mittlerer Ring: Geplant ===
-        DrawRing(canvas, cx, cy, middleR, ringWidth, plannedFrac, _plannedColor);
+        DrawRing(canvas, cx, cy, middleR, ringWidth, plannedFrac, PlannedColor);
 
         // === Innerer Ring: Rest ===
-        DrawRing(canvas, cx, cy, innerR, ringWidth, remainFrac, _remainColor);
+        DrawRing(canvas, cx, cy, innerR, ringWidth, remainFrac, RemainColor);
 
         // === Zentraler Text ===
         float usedPercent = (usedDays / totalDays) * 100f;
@@ -105,9 +105,9 @@ public static class VacationQuotaGaugeVisualization
         float legendSpacing = bounds.Width / 3f;
         float legendStartX = bounds.Left + legendSpacing / 2f;
 
-        DrawLegendItem(canvas, legendStartX, legendY, _usedColor, usedLabel, $"{usedDays:F0}");
-        DrawLegendItem(canvas, legendStartX + legendSpacing, legendY, _plannedColor, plannedLabel, $"{plannedDays:F0}");
-        DrawLegendItem(canvas, legendStartX + legendSpacing * 2, legendY, _remainColor, remainLabel, $"{remainingDays:F0}");
+        DrawLegendItem(canvas, legendStartX, legendY, UsedColor, usedLabel, $"{usedDays:F0}");
+        DrawLegendItem(canvas, legendStartX + legendSpacing, legendY, PlannedColor, plannedLabel, $"{plannedDays:F0}");
+        DrawLegendItem(canvas, legendStartX + legendSpacing * 2, legendY, RemainColor, remainLabel, $"{remainingDays:F0}");
     }
 
     /// <summary>

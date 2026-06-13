@@ -50,6 +50,13 @@ und `AndroidFileShareService.cs` werden per `<Compile Include="..." Link="..." /
 **Back-Button:** `OnBackPressed()` → `mainVm.HandleBackPressed()`; bei `false` →
 `MoveTaskToBack(true)` (App in Hintergrund, nicht beenden).
 
+**Stempel-QR-Deep-Link:** Intent-Filter `worktimepro://stamp` (muss zu
+`QrStampRenderer.StampUri` passen) + `LaunchMode.SingleTask` (laufende Instanz wird
+nach vorne geholt → `OnNewIntent`). `HandleStampIntent` (Kaltstart in `OnCreate`,
+Warm über `OnNewIntent`) ruft `MainViewModel.HandleStampScanAsync()` (= CheckIn/Out-
+Toggle inkl. Init-Wait + Undo) und nullt danach `Intent.Data` (kein Doppel-Stempeln
+bei Recreate).
+
 ## AndroidHapticService
 
 Liegt in `Services/AndroidHapticService.cs`. `IHapticService`-Impl über `Vibrator`:
@@ -64,8 +71,14 @@ werden erst innerhalb des Guards gelesen (`HapticKind`-Enum statt direkter Konst
 - `worktimepro_reminder` Channel mit `NotificationImportance.High`.
 - Notification-IDs per `StableHash(id)` (deterministisch zwischen Neustarts).
 - Exact-Alarm-Fallback: Fehlt `SCHEDULE_EXACT_ALARM`-Permission (Android 12+, vom Nutzer
-  entziehbar), fällt die Planung auf `SetAndAllowWhileIdle` zurück — Reminder feuert etwas
-  verzögert, aber feuert überhaupt (statt stumm abzubrechen).
+  entziehbar; **ab API 33 standardmäßig NICHT gewährt**), fällt die Planung auf
+  `SetAndAllowWhileIdle` zurück — Reminder feuert etwas verzögert, aber feuert überhaupt
+  (statt stumm abzubrechen). `RequestExactAlarmPermission()` öffnet die System-Einstellung
+  "Wecker und Erinnerungen" (`ACTION_REQUEST_SCHEDULE_EXACT_ALARM`) — wird vom
+  SettingsViewModel beim Aktivieren eines Reminders ausgelöst, wenn `CanScheduleExactAlarms()`
+  false liefert.
+- `MainActivity.OnRequestPermissionsResult`: Bei gewährter `POST_NOTIFICATIONS`-Permission
+  (RequestCode 100) werden die Reminder via `IReminderService.RescheduleAsync()` neu geplant.
 - `ReminderReceiver`: `[BroadcastReceiver(Exported = false)]` — reagiert auf AlarmManager-Intents,
   auch wenn App nicht läuft.
 - `BootReceiver`: `[BroadcastReceiver(Exported = true)]` für `BOOT_COMPLETED` +

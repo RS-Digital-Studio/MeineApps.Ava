@@ -76,7 +76,7 @@ public sealed partial class TileCalculatorViewModel : ViewModelBase, IDisposable
         _unitConverter.UnitSystemChanged += OnUnitSystemChanged;
 
         // Standard-Materialpreis laden
-        PricePerTile = _priceService.GetPrice("tile_standard")?.EffectivePrice ?? 0;
+        PricePerTile = (double)(_priceService.GetPrice("tile_standard")?.EffectivePrice ?? 0);
     }
 
     /// <summary>

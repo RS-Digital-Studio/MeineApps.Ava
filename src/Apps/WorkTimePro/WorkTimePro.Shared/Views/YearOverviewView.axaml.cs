@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using WorkTimePro.Graphics;
+using WorkTimePro.Resources.Strings;
 using WorkTimePro.ViewModels;
 
 namespace WorkTimePro.Views;
@@ -45,6 +47,17 @@ public partial class YearOverviewView : UserControl
         }
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        // Gegenstück zum Abo in OnDataContextChanged (Projektkonvention: Detach-Cleanup)
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+        base.OnDetachedFromVisualTree(e);
+    }
+
     // === PaintSurface Handler ===
 
     /// <summary>
@@ -54,7 +67,12 @@ public partial class YearOverviewView : UserControl
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear();
-        if (_vm?.MonthLabels == null || _vm.MonthLabels.Length == 0) return;
+        if (_vm?.MonthLabels == null || _vm.MonthLabels.Length == 0)
+        {
+            // Empty-State statt leerer Karte (konsistent zu StatisticsView)
+            ChartEmptyState.Draw(canvas, canvas.LocalClipBounds, AppStrings.NoData);
+            return;
+        }
 
         var bounds = canvas.LocalClipBounds;
         MonthlyBarChartVisualization.Render(canvas, bounds,
@@ -68,7 +86,12 @@ public partial class YearOverviewView : UserControl
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear();
-        if (_vm?.CumulativeBalanceData == null || _vm.CumulativeBalanceData.Length == 0) return;
+        if (_vm?.CumulativeBalanceData == null || _vm.CumulativeBalanceData.Length == 0)
+        {
+            // Empty-State statt leerer Karte (konsistent zu StatisticsView)
+            ChartEmptyState.Draw(canvas, canvas.LocalClipBounds, AppStrings.NoData);
+            return;
+        }
 
         var bounds = canvas.LocalClipBounds;
         // Balance-Chart: NUR die kumulative Saldo-Spline (keine Balken — die stehen

@@ -18,7 +18,17 @@ namespace WorkTimePro.Android;
     Icon = "@mipmap/appicon",
     MainLauncher = true,
     Exported = true,
+    // SingleTask: Der Stempel-QR-Deep-Link holt die laufende Instanz nach vorne
+    // (OnNewIntent) statt eine zweite Activity zu erzeugen (Avalonia = Single-Activity).
+    LaunchMode = LaunchMode.SingleTask,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
+// Stempel-QR-Deep-Link: worktimepro://stamp (siehe QrStampRenderer.StampUri).
+// Kamera-Scan öffnet die App und stempelt automatisch ein/aus.
+[IntentFilter(
+    [global::Android.Content.Intent.ActionView],
+    Categories = [global::Android.Content.Intent.CategoryDefault, global::Android.Content.Intent.CategoryBrowsable],
+    DataScheme = "worktimepro",
+    DataHost = "stamp")]
 public class MainActivity : AvaloniaMainActivity
 {
     private AdMobHelper? _adMobHelper;
@@ -68,6 +78,61 @@ public class MainActivity : AvaloniaMainActivity
             // GDPR Consent-Form anzeigen falls noetig (EU)
             AdMobHelper.RequestConsent(this);
         });
+
+        // Kaltstart über den Stempel-QR-Deep-Link (App war geschlossen)
+        HandleStampIntent(Intent);
+    }
+
+    protected override void OnNewIntent(global::Android.Content.Intent? intent)
+    {
+        base.OnNewIntent(intent);
+        // App lief bereits (SingleTask): Deep-Link kommt über OnNewIntent
+        Intent = intent;
+        HandleStampIntent(intent);
+    }
+
+    /// <summary>
+    /// Verarbeitet den Stempel-QR-Deep-Link (worktimepro://stamp): stempelt ein/aus.
+    /// Intent-Data wird danach genullt, damit Rotation/Recreate nicht erneut stempelt.
+    /// </summary>
+    private void HandleStampIntent(global::Android.Content.Intent? intent)
+    {
+        if (intent?.Data is not { Scheme: "worktimepro", Host: "stamp" })
+            return;
+
+        intent.SetData(null);
+
+        try
+        {
+            var mainVm = App.Services.GetRequiredService<WorkTimePro.ViewModels.MainViewModel>();
+            // Fire-and-forget: HandleStampScanAsync wartet intern auf die App-Initialisierung
+            _ = mainVm.HandleStampScanAsync();
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("MainActivity", $"Stempel-Deep-Link fehlgeschlagen: {ex.Message}");
+        }
+    }
+
+    public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)
+    {
+        base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        // POST_NOTIFICATIONS gewährt → Reminder neu planen (sie wurden ggf. vor der
+        // Permission geplant und wären sonst bis zur nächsten Settings-Änderung stumm).
+        if (requestCode == 100 && grantResults.Length > 0 && grantResults[0] == Permission.Granted)
+        {
+            try
+            {
+                var reminderService = App.Services.GetRequiredService<WorkTimePro.Services.IReminderService>();
+                _ = reminderService.RescheduleAsync();
+            }
+            catch
+            {
+                // App.Services ggf. noch nicht bereit — Reminder werden beim nächsten
+                // Settings-Save ohnehin neu geplant.
+            }
+        }
     }
 
     // === Zurück-Taste: Navigation oder Double-Back-to-Exit ===

@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using MeineApps.UI.SkiaSharp;
@@ -63,6 +64,17 @@ public partial class StatisticsView : UserControl
                 InvalidateAllCanvases();
                 break;
         }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        // Gegenstück zum Abo in OnDataContextChanged (Projektkonvention: Detach-Cleanup)
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+        base.OnDetachedFromVisualTree(e);
     }
 
     private void InvalidateAllCanvases()

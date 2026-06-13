@@ -20,22 +20,17 @@
     <Border Grid.Row="0"
             Padding="16,12,16,20"
             CornerRadius="0,0,24,24"
+            Background="{DynamicResource ProjectsHeaderGradientBrush}"
             AutomationProperties.AutomationId="Projects_HeaderBorder">
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="#10B981" Offset="0" />
-          <GradientStop Color="#0891B2" Offset="1" />
-        </LinearGradientBrush>
-      </Border.Background>
       <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-        <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+        <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
           <mi:MaterialIcon Kind="FolderMultiple" Width="22" Height="22"
                            Foreground="White"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
         <TextBlock AutomationProperties.AutomationId="Projects_TxtTitle"
                    Text="{loc:Translate MyProjects}"
-                   FontSize="20" FontWeight="Bold" Foreground="White"
+                   FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                    VerticalAlignment="Center" />
       </StackPanel>
     </Border>
@@ -75,7 +70,8 @@
                 <Grid ColumnDefinitions="*,Auto">
 
                   <!-- Project Info (Clickable) -->
-                  <Button Grid.Column="0"
+                  <Button AutomationProperties.AutomationId="Projects_BtnOpenProject"
+                          Grid.Column="0"
                           Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).LoadProjectCommand}"
                           CommandParameter="{Binding}"
                           Background="Transparent" BorderThickness="0"
@@ -84,13 +80,13 @@
                           Padding="16" CornerRadius="12">
                     <StackPanel Spacing="6">
                       <TextBlock Text="{Binding Name}"
-                                 FontSize="16" FontWeight="Bold"
+                                 FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
                       <TextBlock Text="{Binding DisplayName}"
-                                 FontSize="13"
+                                 FontSize="{StaticResource FontSizeBodySm}"
                                  Foreground="{DynamicResource PrimaryBrush}" />
                       <TextBlock Text="{Binding Description}"
-                                 FontSize="13"
+                                 FontSize="{StaticResource FontSizeBodySm}"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  TextTrimming="CharacterEllipsis"
                                  MaxLines="2" />
@@ -99,12 +95,12 @@
                                   IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                         <mi:MaterialIcon Kind="NoteTextOutline" Width="12" Height="12"
                                          Foreground="{DynamicResource AccentBrush}" />
-                        <TextBlock Text="{Binding Notes}" FontSize="11" MaxLines="1"
+                        <TextBlock Text="{Binding Notes}" FontSize="{StaticResource FontSizeCaption}" MaxLines="1"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource AccentBrush}" />
                       </StackPanel>
                       <TextBlock Text="{Binding LastModifiedDisplay}"
-                                 FontSize="11"
+                                 FontSize="{StaticResource FontSizeCaption}"
                                  Foreground="{DynamicResource TextMutedBrush}" />
                     </StackPanel>
                   </Button>
@@ -114,7 +110,8 @@
                               VerticalAlignment="Top"
                               Margin="0,4,4,0">
                     <!-- Notizen bearbeiten -->
-                    <Button Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).EditNotesCommand}"
+                    <Button AutomationProperties.AutomationId="Projects_BtnEditNotes"
+                            Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).EditNotesCommand}"
                             CommandParameter="{Binding}"
                             Classes="Text"
                             Padding="12">
@@ -122,7 +119,8 @@
                                        Foreground="{DynamicResource AccentBrush}" />
                     </Button>
                     <!-- Export als PDF -->
-                    <Button Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).ExportProjectCommand}"
+                    <Button AutomationProperties.AutomationId="Projects_BtnExportPdf"
+                            Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).ExportProjectCommand}"
                             CommandParameter="{Binding}"
                             Classes="Text"
                             Padding="12">
@@ -130,7 +128,8 @@
                                        Foreground="{DynamicResource AccentBrush}" />
                     </Button>
                     <!-- Loeschen -->
-                    <Button Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).DeleteProjectCommand}"
+                    <Button AutomationProperties.AutomationId="Projects_BtnDeleteProject"
+                            Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).DeleteProjectCommand}"
                             CommandParameter="{Binding}"
                             Classes="Text"
                             Padding="12">
@@ -153,7 +152,7 @@
     <!-- Delete Confirmation Dialog Overlay -->
     <!-- Kein ZIndex: Als letztes Panel-Kind liegt es automatisch oben (Android-kompatibel) -->
     <Border AutomationProperties.AutomationId="Projects_DeleteOverlay"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowDeleteConfirmation}">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16"
@@ -168,12 +167,12 @@
                            HorizontalAlignment="Center" />
           <TextBlock AutomationProperties.AutomationId="Projects_TxtDeleteTitle"
                      Text="{loc:Translate DeleteProjectTitle}"
-                     FontSize="18" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
           <TextBlock AutomationProperties.AutomationId="Projects_TxtDeleteMessage"
                      Text="{loc:Translate DeleteProjectMessage}"
-                     FontSize="14"
+                     FontSize="{StaticResource FontSizeBodyMd}"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      TextAlignment="Center"
                      TextWrapping="Wrap" />
@@ -199,7 +198,7 @@
 
     <!-- Notizen-Editor Overlay -->
     <!-- Kein ZIndex: Als letztes Panel-Kind liegt es automatisch oben (Android-kompatibel) -->
-    <Border Background="#80000000"
+    <Border Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowNotesEditor}">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16"
@@ -212,11 +211,12 @@
             <mi:MaterialIcon Kind="NoteEditOutline" Width="24" Height="24"
                              Foreground="{DynamicResource AccentBrush}" />
             <TextBlock Text="{loc:Translate ProjectNotes}"
-                       FontSize="18" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
 
-          <TextBox Text="{Binding EditingNotes, Mode=TwoWay}"
+          <TextBox AutomationProperties.AutomationId="Projects_TxtBoxNotes"
+                   Text="{Binding EditingNotes, Mode=TwoWay}"
                    PlaceholderText="{loc:Translate ProjectNotesPlaceholder}"
                    AcceptsReturn="True"
                    TextWrapping="Wrap"
@@ -224,7 +224,7 @@
 
           <!-- Foto-Galerie -->
           <TextBlock Text="{loc:Translate ProjectPhotos}"
-                     FontSize="13" FontWeight="SemiBold"
+                     FontSize="{StaticResource FontSizeBodySm}" FontWeight="SemiBold"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      Margin="0,8,0,4" />
           <ScrollViewer HorizontalScrollBarVisibility="Auto"
@@ -246,7 +246,8 @@
                         <Image Source="{Binding}" Stretch="UniformToFill"
                                Width="80" Height="80" />
                         <!-- Löschen-Button oben rechts -->
-                        <Button Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).DeletePhotoCommand}"
+                        <Button AutomationProperties.AutomationId="Projects_BtnDeletePhoto"
+                                Command="{Binding $parent[UserControl].((vm:ProjectsViewModel)DataContext).DeletePhotoCommand}"
                                 CommandParameter="{Binding}"
                                 Background="#AA000000" CornerRadius="0,8,0,8"
                                 Padding="4" MinWidth="36" MinHeight="36"
@@ -260,7 +261,8 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <!-- Foto hinzufügen (Plus-Button) -->
-              <Button Command="{Binding AddPhotoCommand}"
+              <Button AutomationProperties.AutomationId="Projects_BtnAddPhoto"
+                      Command="{Binding AddPhotoCommand}"
                       CommandParameter="{Binding NotesProject}"
                       Background="{DynamicResource CardBrush}"
                       CornerRadius="8"
@@ -275,13 +277,15 @@
           </ScrollViewer>
 
           <Grid ColumnDefinitions="*,12,*">
-            <Button Grid.Column="0"
+            <Button AutomationProperties.AutomationId="Projects_BtnCancelNotes"
+                    Grid.Column="0"
                     Classes="Outlined"
                     Command="{Binding CancelNotesEditCommand}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Content="{loc:Translate Cancel}" />
-            <Button Grid.Column="2"
+            <Button AutomationProperties.AutomationId="Projects_BtnSaveNotes"
+                    Grid.Column="2"
                     Classes="Primary"
                     Command="{Binding SaveNotesCommand}"
                     HorizontalAlignment="Stretch"

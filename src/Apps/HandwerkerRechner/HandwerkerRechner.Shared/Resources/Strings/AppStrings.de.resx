@@ -1102,6 +1102,21 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="PlaceholderThickness" xml:space="preserve">
     <value>z.B. 3</value>
   </data>
+  <data name="PlaceholderAutoZero" xml:space="preserve">
+    <value>0 = automatisch</value>
+  </data>
+  <data name="PlaceholderPricePerHour" xml:space="preserve">
+    <value>€/h</value>
+  </data>
+  <data name="PlaceholderPricePerKg" xml:space="preserve">
+    <value>€/kg</value>
+  </data>
+  <data name="PlaceholderPricePerKwh" xml:space="preserve">
+    <value>€/kWh</value>
+  </data>
+  <data name="PlaceholderPricePerSqm" xml:space="preserve">
+    <value>€/m²</value>
+  </data>
 
   <!-- Remove Ads (NEW Monetization Model) -->
   <data name="RemoveAds" xml:space="preserve">
@@ -1672,6 +1687,18 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="AdInterstitialButton" xml:space="preserve">
     <value>Video schauen → Weiter</value>
   </data>
+  <data name="AdOfferTitle" xml:space="preserve">
+    <value>Werbebanner ausblenden?</value>
+  </data>
+  <data name="AdOfferMessage" xml:space="preserve">
+    <value>Kurzes Werbevideo ansehen und den Werbebanner für die nächsten 10 Berechnungen ausblenden?</value>
+  </data>
+  <data name="AdOfferWatchButton" xml:space="preserve">
+    <value>Video ansehen</value>
+  </data>
+  <data name="AdOfferDeclineButton" xml:space="preserve">
+    <value>Nein, danke</value>
+  </data>
   <data name="AccessGranted" xml:space="preserve">
     <value>Zugang freigeschaltet!</value>
   </data>
@@ -1861,6 +1888,9 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   </data>
   <data name="StepsUnit" xml:space="preserve">
     <value>Stufen</value>
+  </data>
+  <data name="DinNormLabel" xml:space="preserve">
+    <value>DIN 18065</value>
   </data>
   <data name="DinCompliant" xml:space="preserve">
     <value>DIN 18065 ✓</value>
@@ -2452,6 +2482,21 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="CalcTypeAreaMeasure" xml:space="preserve">
     <value>Aufmaß-Rechner</value>
   </data>
+  <data name="CalcTypeConcreteSlab" xml:space="preserve">
+    <value>Bodenplatte</value>
+  </data>
+  <data name="CalcTypeConcreteStrip" xml:space="preserve">
+    <value>Streifenfundament</value>
+  </data>
+  <data name="CalcTypeConcreteColumn" xml:space="preserve">
+    <value>Betonsäule</value>
+  </data>
+  <data name="CalcTypeStairs" xml:space="preserve">
+    <value>Treppe</value>
+  </data>
+  <data name="CalculateFirst" xml:space="preserve">
+    <value>Bitte zuerst berechnen</value>
+  </data>
   <data name="CsvExportFailed" xml:space="preserve">
     <value>CSV-Export fehlgeschlagen</value>
   </data>
@@ -2532,5 +2577,34 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   </data>
   <data name="SaveFailedMessage" xml:space="preserve">
     <value>Speichern fehlgeschlagen. Bitte Speicherplatz prüfen und erneut versuchen.</value>
+  </data>
+
+  <!-- Accessibility (AutomationProperties.Name) -->
+  <data name="A11yCopyResult" xml:space="preserve">
+    <value>Ergebnis kopieren</value>
+  </data>
+  <data name="A11yDeleteAllAreas" xml:space="preserve">
+    <value>Alle Teilflächen löschen</value>
+  </data>
+  <data name="A11yDeleteQuote" xml:space="preserve">
+    <value>Angebot löschen</value>
+  </data>
+  <data name="A11yDeleteTemplate" xml:space="preserve">
+    <value>Vorlage löschen</value>
+  </data>
+  <data name="A11yExportPdf" xml:space="preserve">
+    <value>PDF exportieren</value>
+  </data>
+  <data name="A11yExportQuotePdf" xml:space="preserve">
+    <value>Angebot als PDF exportieren</value>
+  </data>
+  <data name="A11yRemoveArea" xml:space="preserve">
+    <value>Teilfläche entfernen</value>
+  </data>
+  <data name="A11yRemoveItem" xml:space="preserve">
+    <value>Position entfernen</value>
+  </data>
+  <data name="A11ySaveQuote" xml:space="preserve">
+    <value>Angebot speichern</value>
   </data>
 </root>

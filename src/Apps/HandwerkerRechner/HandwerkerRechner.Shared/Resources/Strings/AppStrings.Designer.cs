@@ -61,6 +61,303 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Copy result ähnelt.
+        /// </summary>
+        internal static string A11yCopyResult {
+            get {
+                return ResourceManager.GetString("A11yCopyResult", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Delete all area parts ähnelt.
+        /// </summary>
+        internal static string A11yDeleteAllAreas {
+            get {
+                return ResourceManager.GetString("A11yDeleteAllAreas", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Delete quote ähnelt.
+        /// </summary>
+        internal static string A11yDeleteQuote {
+            get {
+                return ResourceManager.GetString("A11yDeleteQuote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Delete template ähnelt.
+        /// </summary>
+        internal static string A11yDeleteTemplate {
+            get {
+                return ResourceManager.GetString("A11yDeleteTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Export PDF ähnelt.
+        /// </summary>
+        internal static string A11yExportPdf {
+            get {
+                return ResourceManager.GetString("A11yExportPdf", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Export quote as PDF ähnelt.
+        /// </summary>
+        internal static string A11yExportQuotePdf {
+            get {
+                return ResourceManager.GetString("A11yExportQuotePdf", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Remove area part ähnelt.
+        /// </summary>
+        internal static string A11yRemoveArea {
+            get {
+                return ResourceManager.GetString("A11yRemoveArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Remove item ähnelt.
+        /// </summary>
+        internal static string A11yRemoveItem {
+            get {
+                return ResourceManager.GetString("A11yRemoveItem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Save quote ähnelt.
+        /// </summary>
+        internal static string A11ySaveQuote {
+            get {
+                return ResourceManager.GetString("A11ySaveQuote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Access expires in {0} min ähnelt.
+        /// </summary>
+        internal static string AccessExpiresIn {
+            get {
+                return ResourceManager.GetString("AccessExpiresIn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Access granted! ähnelt.
+        /// </summary>
+        internal static string AccessGranted {
+            get {
+                return ResourceManager.GetString("AccessGranted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die ACTIVE ähnelt.
+        /// </summary>
+        internal static string Active {
+            get {
+                return ResourceManager.GetString("Active", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die AD-FREE ähnelt.
+        /// </summary>
+        internal static string AdFree {
+            get {
+                return ResourceManager.GetString("AdFree", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die You are enjoying the ad-free experience. Thank you! ähnelt.
+        /// </summary>
+        internal static string AdFreeConfirmation {
+            get {
+                return ResourceManager.GetString("AdFreeConfirmation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Thank you for your purchase! You are using the ad-free version. ähnelt.
+        /// </summary>
+        internal static string AdFreeThanks {
+            get {
+                return ResourceManager.GetString("AdFreeThanks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Ad-Free ähnelt.
+        /// </summary>
+        internal static string AdFreeTitle {
+            get {
+                return ResourceManager.GetString("AdFreeTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Watch Video → Continue ähnelt.
+        /// </summary>
+        internal static string AdInterstitialButton {
+            get {
+                return ResourceManager.GetString("AdInterstitialButton", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Watch a short video to continue. Or go ad-free with Premium. ähnelt.
+        /// </summary>
+        internal static string AdInterstitialDesc {
+            get {
+                return ResourceManager.GetString("AdInterstitialDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Short ad break ähnelt.
+        /// </summary>
+        internal static string AdInterstitialTitle {
+            get {
+                return ResourceManager.GetString("AdInterstitialTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No, thanks ähnelt.
+        /// </summary>
+        internal static string AdOfferDeclineButton {
+            get {
+                return ResourceManager.GetString("AdOfferDeclineButton", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Watch a short ad video and hide the banner for your next 10 calculations? ähnelt.
+        /// </summary>
+        internal static string AdOfferMessage {
+            get {
+                return ResourceManager.GetString("AdOfferMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Hide banner ads? ähnelt.
+        /// </summary>
+        internal static string AdOfferTitle {
+            get {
+                return ResourceManager.GetString("AdOfferTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Watch video ähnelt.
+        /// </summary>
+        internal static string AdOfferWatchButton {
+            get {
+                return ResourceManager.GetString("AdOfferWatchButton", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No ad video is currently available. Please try again later. ähnelt.
+        /// </summary>
+        internal static string AdVideoNotAvailableMessage {
+            get {
+                return ResourceManager.GetString("AdVideoNotAvailableMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No video available ähnelt.
+        /// </summary>
+        internal static string AdVideoNotAvailableTitle {
+            get {
+                return ResourceManager.GetString("AdVideoNotAvailableTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Add area part ähnelt.
+        /// </summary>
+        internal static string AddArea {
+            get {
+                return ResourceManager.GetString("AddArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Add item ähnelt.
+        /// </summary>
+        internal static string AddItem {
+            get {
+                return ResourceManager.GetString("AddItem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Your purchase has been restored. The app is now ad-free! ähnelt.
+        /// </summary>
+        internal static string AdsRemovedRestoredMessage {
+            get {
+                return ResourceManager.GetString("AdsRemovedRestoredMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Error ähnelt.
+        /// </summary>
+        internal static string AlertError {
+            get {
+                return ResourceManager.GetString("AlertError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Already ad-free ähnelt.
+        /// </summary>
+        internal static string AlreadyAdFree {
+            get {
+                return ResourceManager.GetString("AlreadyAdFree", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die You are already using the app without ads! ähnelt.
+        /// </summary>
+        internal static string AlreadyAdFreeMessage {
+            get {
+                return ResourceManager.GetString("AlreadyAdFreeMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Already unlocked ähnelt.
+        /// </summary>
+        internal static string AlreadyUnlocked {
+            get {
+                return ResourceManager.GetString("AlreadyUnlocked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die You have already unlocked all categories! ähnelt.
+        /// </summary>
+        internal static string AlreadyUnlockedMessage {
+            get {
+                return ResourceManager.GetString("AlreadyUnlockedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Material calculator for craftsmen and DIY ähnelt.
         /// </summary>
         internal static string AppDescription {
@@ -79,11 +376,47 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die HandwerkerRechner ähnelt.
+        /// </summary>
+        internal static string AppTitle {
+            get {
+                return ResourceManager.GetString("AppTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Apply template ähnelt.
+        /// </summary>
+        internal static string ApplyTemplate {
+            get {
+                return ResourceManager.GetString("ApplyTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Area (m²) ähnelt.
         /// </summary>
         internal static string Area {
             get {
                 return ResourceManager.GetString("Area", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Area parts ähnelt.
+        /// </summary>
+        internal static string AreaParts {
+            get {
+                return ResourceManager.GetString("AreaParts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter area in square meters ähnelt.
+        /// </summary>
+        internal static string AreaSemantic {
+            get {
+                return ResourceManager.GetString("AreaSemantic", resourceCulture);
             }
         }
         
@@ -106,6 +439,24 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Bag Weight (kg) ähnelt.
+        /// </summary>
+        internal static string BagWeight {
+            get {
+                return ResourceManager.GetString("BagWeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Side a (m) ähnelt.
+        /// </summary>
+        internal static string BaseA {
+            get {
+                return ResourceManager.GetString("BaseA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Board Dimensions ähnelt.
         /// </summary>
         internal static string BoardDimensions {
@@ -120,6 +471,33 @@ namespace HandwerkerRechner.Resources.Strings {
         internal static string BoardLength {
             get {
                 return ResourceManager.GetString("BoardLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter board length in centimeters ähnelt.
+        /// </summary>
+        internal static string BoardLengthSemantic {
+            get {
+                return ResourceManager.GetString("BoardLengthSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Board width (cm) ähnelt.
+        /// </summary>
+        internal static string BoardWidth {
+            get {
+                return ResourceManager.GetString("BoardWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter board width in centimeters ähnelt.
+        /// </summary>
+        internal static string BoardWidthSemantic {
+            get {
+                return ResourceManager.GetString("BoardWidthSemantic", resourceCulture);
             }
         }
         
@@ -142,11 +520,218 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Board width (cm) ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Break (min) ähnelt.
         /// </summary>
-        internal static string BoardWidth {
+        internal static string BreakMinutes {
             get {
-                return ResourceManager.GetString("BoardWidth", resourceCulture);
+                return ResourceManager.GetString("BreakMinutes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Could not open browser ähnelt.
+        /// </summary>
+        internal static string BrowserError {
+            get {
+                return ResourceManager.GetString("BrowserError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Built-in templates ähnelt.
+        /// </summary>
+        internal static string BuiltinTemplates {
+            get {
+                return ResourceManager.GetString("BuiltinTemplates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Buy ähnelt.
+        /// </summary>
+        internal static string Buy {
+            get {
+                return ResourceManager.GetString("Buy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Buy all (3.99 €) ähnelt.
+        /// </summary>
+        internal static string BuyAll {
+            get {
+                return ResourceManager.GetString("BuyAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die CW profiles (studs) ähnelt.
+        /// </summary>
+        internal static string CWProfilesStuds {
+            get {
+                return ResourceManager.GetString("CWProfilesStuds", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cable cost ähnelt.
+        /// </summary>
+        internal static string CableCostLabel {
+            get {
+                return ResourceManager.GetString("CableCostLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Current (A) ähnelt.
+        /// </summary>
+        internal static string CableCurrent {
+            get {
+                return ResourceManager.GetString("CableCurrent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cable length (m) ähnelt.
+        /// </summary>
+        internal static string CableLength {
+            get {
+                return ResourceManager.GetString("CableLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cable length ähnelt.
+        /// </summary>
+        internal static string CableLengthLabel {
+            get {
+                return ResourceManager.GetString("CableLengthLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter cable length in meters ähnelt.
+        /// </summary>
+        internal static string CableLengthSemantic {
+            get {
+                return ResourceManager.GetString("CableLengthSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Conductor material ähnelt.
+        /// </summary>
+        internal static string CableMaterial {
+            get {
+                return ResourceManager.GetString("CableMaterial", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Aluminum ähnelt.
+        /// </summary>
+        internal static string CableMaterialAluminum {
+            get {
+                return ResourceManager.GetString("CableMaterialAluminum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Copper ähnelt.
+        /// </summary>
+        internal static string CableMaterialCopper {
+            get {
+                return ResourceManager.GetString("CableMaterialCopper", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Voltage ähnelt.
+        /// </summary>
+        internal static string CableVoltage {
+            get {
+                return ResourceManager.GetString("CableVoltage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die 230 V (Single phase) ähnelt.
+        /// </summary>
+        internal static string CableVoltage230 {
+            get {
+                return ResourceManager.GetString("CableVoltage230", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die 400 V (Three phase) ähnelt.
+        /// </summary>
+        internal static string CableVoltage400 {
+            get {
+                return ResourceManager.GetString("CableVoltage400", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Area Measure ähnelt.
+        /// </summary>
+        internal static string CalcAreaMeasure {
+            get {
+                return ResourceManager.GetString("CalcAreaMeasure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die L-shape, trapezoid and more ähnelt.
+        /// </summary>
+        internal static string CalcAreaMeasureDesc {
+            get {
+                return ResourceManager.GetString("CalcAreaMeasureDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cable Sizing ähnelt.
+        /// </summary>
+        internal static string CalcCableSizing {
+            get {
+                return ResourceManager.GetString("CalcCableSizing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate cable cross-section ähnelt.
+        /// </summary>
+        internal static string CalcCableSizingDesc {
+            get {
+                return ResourceManager.GetString("CalcCableSizingDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Concrete ähnelt.
+        /// </summary>
+        internal static string CalcConcrete {
+            get {
+                return ResourceManager.GetString("CalcConcrete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Volume, bags &amp; mixing ratios ähnelt.
+        /// </summary>
+        internal static string CalcConcreteDesc {
+            get {
+                return ResourceManager.GetString("CalcConcreteDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Core drill for thread ähnelt.
+        /// </summary>
+        internal static string CalcCoreDrillForThread {
+            get {
+                return ResourceManager.GetString("CalcCoreDrillForThread", resourceCulture);
             }
         }
         
@@ -160,11 +745,218 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Laminate, parquet &amp; underlay ähnelt.
+        /// </summary>
+        internal static string CalcFlooringDesc {
+            get {
+                return ResourceManager.GetString("CalcFlooringDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Grout ähnelt.
+        /// </summary>
+        internal static string CalcGrout {
+            get {
+                return ResourceManager.GetString("CalcGrout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Joint width, depth → kg grout, buckets ähnelt.
+        /// </summary>
+        internal static string CalcGroutDesc {
+            get {
+                return ResourceManager.GetString("CalcGroutDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Hourly Rate ähnelt.
+        /// </summary>
+        internal static string CalcHourlyRate {
+            get {
+                return ResourceManager.GetString("CalcHourlyRate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Labor + overhead + VAT ähnelt.
+        /// </summary>
+        internal static string CalcHourlyRateDesc {
+            get {
+                return ResourceManager.GetString("CalcHourlyRateDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Insulation ähnelt.
+        /// </summary>
+        internal static string CalcInsulation {
+            get {
+                return ResourceManager.GetString("CalcInsulation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate insulation thickness ähnelt.
+        /// </summary>
+        internal static string CalcInsulationDesc {
+            get {
+                return ResourceManager.GetString("CalcInsulationDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Material Comparison ähnelt.
+        /// </summary>
+        internal static string CalcMaterialCompare {
+            get {
+                return ResourceManager.GetString("CalcMaterialCompare", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die A/B price comparison ähnelt.
+        /// </summary>
+        internal static string CalcMaterialCompareDesc {
+            get {
+                return ResourceManager.GetString("CalcMaterialCompareDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate metal weight ähnelt.
+        /// </summary>
+        internal static string CalcMetalWeight {
+            get {
+                return ResourceManager.GetString("CalcMetalWeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Paint ähnelt.
         /// </summary>
         internal static string CalcPaint {
             get {
                 return ResourceManager.GetString("CalcPaint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Paint quantity &amp; coverage ähnelt.
+        /// </summary>
+        internal static string CalcPaintDesc {
+            get {
+                return ResourceManager.GetString("CalcPaintDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate paving stones ähnelt.
+        /// </summary>
+        internal static string CalcPavingStones {
+            get {
+                return ResourceManager.GetString("CalcPavingStones", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Plaster Calculator ähnelt.
+        /// </summary>
+        internal static string CalcPlaster {
+            get {
+                return ResourceManager.GetString("CalcPlaster", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Wall area, thickness &amp; bags ähnelt.
+        /// </summary>
+        internal static string CalcPlasterDesc {
+            get {
+                return ResourceManager.GetString("CalcPlasterDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate pond liner ähnelt.
+        /// </summary>
+        internal static string CalcPondLiner {
+            get {
+                return ResourceManager.GetString("CalcPondLiner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate roof pitch ähnelt.
+        /// </summary>
+        internal static string CalcRoofPitch {
+            get {
+                return ResourceManager.GetString("CalcRoofPitch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate roof tiles ähnelt.
+        /// </summary>
+        internal static string CalcRoofTiles {
+            get {
+                return ResourceManager.GetString("CalcRoofTiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Screed Calculator ähnelt.
+        /// </summary>
+        internal static string CalcScreed {
+            get {
+                return ResourceManager.GetString("CalcScreed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Area, volume &amp; drying time ähnelt.
+        /// </summary>
+        internal static string CalcScreedDesc {
+            get {
+                return ResourceManager.GetString("CalcScreedDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate soil/mulch ähnelt.
+        /// </summary>
+        internal static string CalcSoilMulch {
+            get {
+                return ResourceManager.GetString("CalcSoilMulch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Estimate solar yield ähnelt.
+        /// </summary>
+        internal static string CalcSolarYield {
+            get {
+                return ResourceManager.GetString("CalcSolarYield", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Stair Calculator ähnelt.
+        /// </summary>
+        internal static string CalcStairs {
+            get {
+                return ResourceManager.GetString("CalcStairs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die DIN 18065 compliant stair design ähnelt.
+        /// </summary>
+        internal static string CalcStairsDesc {
+            get {
+                return ResourceManager.GetString("CalcStairsDesc", resourceCulture);
             }
         }
         
@@ -178,11 +970,272 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate tiles, grout &amp; adhesive ähnelt.
         /// </summary>
-        internal static string Calculate {
+        internal static string CalcTilesDesc {
             get {
-                return ResourceManager.GetString("Calculate", resourceCulture);
+                return ResourceManager.GetString("CalcTilesDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Area Measure ähnelt.
+        /// </summary>
+        internal static string CalcTypeAreaMeasure {
+            get {
+                return ResourceManager.GetString("CalcTypeAreaMeasure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Baseboard ähnelt.
+        /// </summary>
+        internal static string CalcTypeBaseboard {
+            get {
+                return ResourceManager.GetString("CalcTypeBaseboard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cable Sizing ähnelt.
+        /// </summary>
+        internal static string CalcTypeCableSizing {
+            get {
+                return ResourceManager.GetString("CalcTypeCableSizing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Concrete Column ähnelt.
+        /// </summary>
+        internal static string CalcTypeConcreteColumn {
+            get {
+                return ResourceManager.GetString("CalcTypeConcreteColumn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Concrete Slab ähnelt.
+        /// </summary>
+        internal static string CalcTypeConcreteSlab {
+            get {
+                return ResourceManager.GetString("CalcTypeConcreteSlab", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Strip Foundation ähnelt.
+        /// </summary>
+        internal static string CalcTypeConcreteStrip {
+            get {
+                return ResourceManager.GetString("CalcTypeConcreteStrip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Drywall ähnelt.
+        /// </summary>
+        internal static string CalcTypeDrywallFraming {
+            get {
+                return ResourceManager.GetString("CalcTypeDrywallFraming", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Flooring ähnelt.
+        /// </summary>
+        internal static string CalcTypeFlooring {
+            get {
+                return ResourceManager.GetString("CalcTypeFlooring", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Grout ähnelt.
+        /// </summary>
+        internal static string CalcTypeGrout {
+            get {
+                return ResourceManager.GetString("CalcTypeGrout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Hourly Rate ähnelt.
+        /// </summary>
+        internal static string CalcTypeHourlyRate {
+            get {
+                return ResourceManager.GetString("CalcTypeHourlyRate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Insulation ähnelt.
+        /// </summary>
+        internal static string CalcTypeInsulation {
+            get {
+                return ResourceManager.GetString("CalcTypeInsulation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Material Comparison ähnelt.
+        /// </summary>
+        internal static string CalcTypeMaterialCompare {
+            get {
+                return ResourceManager.GetString("CalcTypeMaterialCompare", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Metal Weight ähnelt.
+        /// </summary>
+        internal static string CalcTypeMetalWeight {
+            get {
+                return ResourceManager.GetString("CalcTypeMetalWeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Ohm's Law ähnelt.
+        /// </summary>
+        internal static string CalcTypeOhmsLaw {
+            get {
+                return ResourceManager.GetString("CalcTypeOhmsLaw", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Paint ähnelt.
+        /// </summary>
+        internal static string CalcTypePaint {
+            get {
+                return ResourceManager.GetString("CalcTypePaint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Paving ähnelt.
+        /// </summary>
+        internal static string CalcTypePaving {
+            get {
+                return ResourceManager.GetString("CalcTypePaving", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Plaster ähnelt.
+        /// </summary>
+        internal static string CalcTypePlaster {
+            get {
+                return ResourceManager.GetString("CalcTypePlaster", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Pond Liner ähnelt.
+        /// </summary>
+        internal static string CalcTypePondLiner {
+            get {
+                return ResourceManager.GetString("CalcTypePondLiner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Power Cost ähnelt.
+        /// </summary>
+        internal static string CalcTypePowerCost {
+            get {
+                return ResourceManager.GetString("CalcTypePowerCost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Roof Pitch ähnelt.
+        /// </summary>
+        internal static string CalcTypeRoofPitch {
+            get {
+                return ResourceManager.GetString("CalcTypeRoofPitch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Roof Tiles ähnelt.
+        /// </summary>
+        internal static string CalcTypeRoofTiles {
+            get {
+                return ResourceManager.GetString("CalcTypeRoofTiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Screed ähnelt.
+        /// </summary>
+        internal static string CalcTypeScreed {
+            get {
+                return ResourceManager.GetString("CalcTypeScreed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Soil/Mulch ähnelt.
+        /// </summary>
+        internal static string CalcTypeSoil {
+            get {
+                return ResourceManager.GetString("CalcTypeSoil", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Solar Yield ähnelt.
+        /// </summary>
+        internal static string CalcTypeSolarYield {
+            get {
+                return ResourceManager.GetString("CalcTypeSolarYield", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Stairs ähnelt.
+        /// </summary>
+        internal static string CalcTypeStairs {
+            get {
+                return ResourceManager.GetString("CalcTypeStairs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Thread/Drill ähnelt.
+        /// </summary>
+        internal static string CalcTypeThreadDrill {
+            get {
+                return ResourceManager.GetString("CalcTypeThreadDrill", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Tiles ähnelt.
+        /// </summary>
+        internal static string CalcTypeTiles {
+            get {
+                return ResourceManager.GetString("CalcTypeTiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Voltage Drop ähnelt.
+        /// </summary>
+        internal static string CalcTypeVoltageDrop {
+            get {
+                return ResourceManager.GetString("CalcTypeVoltageDrop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Wallpaper ähnelt.
+        /// </summary>
+        internal static string CalcTypeWallpaper {
+            get {
+                return ResourceManager.GetString("CalcTypeWallpaper", resourceCulture);
             }
         }
         
@@ -196,11 +1249,92 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Rolls, paste &amp; cutting waste ähnelt.
+        /// </summary>
+        internal static string CalcWallpaperDesc {
+            get {
+                return ResourceManager.GetString("CalcWallpaperDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate ähnelt.
+        /// </summary>
+        internal static string Calculate {
+            get {
+                return ResourceManager.GetString("Calculate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Start calculation ähnelt.
+        /// </summary>
+        internal static string CalculateButtonSemantic {
+            get {
+                return ResourceManager.GetString("CalculateButtonSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Please calculate first ähnelt.
+        /// </summary>
+        internal static string CalculateFirst {
+            get {
+                return ResourceManager.GetString("CalculateFirst", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die History ähnelt.
+        /// </summary>
+        internal static string CalculationHistory {
+            get {
+                return ResourceManager.GetString("CalculationHistory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die 19 Calculators ähnelt.
+        /// </summary>
+        internal static string CalculatorCount {
+            get {
+                return ResourceManager.GetString("CalculatorCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cancel ähnelt.
+        /// </summary>
+        internal static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Drywall ähnelt.
         /// </summary>
         internal static string CategoryDrywall {
             get {
                 return ResourceManager.GetString("CategoryDrywall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Boards, profiles &amp; screws ähnelt.
+        /// </summary>
+        internal static string CategoryDrywallDesc {
+            get {
+                return ResourceManager.GetString("CategoryDrywallDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open drywall category ähnelt.
+        /// </summary>
+        internal static string CategoryDrywallSemantic {
+            get {
+                return ResourceManager.GetString("CategoryDrywallSemantic", resourceCulture);
             }
         }
         
@@ -214,11 +1348,38 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cable, fuses &amp; costs ähnelt.
+        /// </summary>
+        internal static string CategoryElectricalDesc {
+            get {
+                return ResourceManager.GetString("CategoryElectricalDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open electrical category ähnelt.
+        /// </summary>
+        internal static string CategoryElectricalSemantic {
+            get {
+                return ResourceManager.GetString("CategoryElectricalSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Floor &amp; Wall ähnelt.
         /// </summary>
         internal static string CategoryFloorWall {
             get {
                 return ResourceManager.GetString("CategoryFloorWall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open flooring calculator ähnelt.
+        /// </summary>
+        internal static string CategoryFlooringSemantic {
+            get {
+                return ResourceManager.GetString("CategoryFlooringSemantic", resourceCulture);
             }
         }
         
@@ -232,11 +1393,110 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Soil, lawn &amp; fencing ähnelt.
+        /// </summary>
+        internal static string CategoryGardenDesc {
+            get {
+                return ResourceManager.GetString("CategoryGardenDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open garden category ähnelt.
+        /// </summary>
+        internal static string CategoryGardenSemantic {
+            get {
+                return ResourceManager.GetString("CategoryGardenSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Metal ähnelt.
         /// </summary>
         internal static string CategoryMetal {
             get {
                 return ResourceManager.GetString("CategoryMetal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Weight &amp; material calculator ähnelt.
+        /// </summary>
+        internal static string CategoryMetalDesc {
+            get {
+                return ResourceManager.GetString("CategoryMetalDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open metal category ähnelt.
+        /// </summary>
+        internal static string CategoryMetalSemantic {
+            get {
+                return ResourceManager.GetString("CategoryMetalSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Drywall ähnelt.
+        /// </summary>
+        internal static string CategoryNameDrywall {
+            get {
+                return ResourceManager.GetString("CategoryNameDrywall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Electrical ähnelt.
+        /// </summary>
+        internal static string CategoryNameElectrical {
+            get {
+                return ResourceManager.GetString("CategoryNameElectrical", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Floor &amp; Wall ähnelt.
+        /// </summary>
+        internal static string CategoryNameFloorWall {
+            get {
+                return ResourceManager.GetString("CategoryNameFloorWall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Garden ähnelt.
+        /// </summary>
+        internal static string CategoryNameGarden {
+            get {
+                return ResourceManager.GetString("CategoryNameGarden", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Metal ähnelt.
+        /// </summary>
+        internal static string CategoryNameMetal {
+            get {
+                return ResourceManager.GetString("CategoryNameMetal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Roof &amp; Solar ähnelt.
+        /// </summary>
+        internal static string CategoryNameRoofSolar {
+            get {
+                return ResourceManager.GetString("CategoryNameRoofSolar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open paint calculator ähnelt.
+        /// </summary>
+        internal static string CategoryPaintSemantic {
+            get {
+                return ResourceManager.GetString("CategoryPaintSemantic", resourceCulture);
             }
         }
         
@@ -250,11 +1510,272 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Roof tiles &amp; solar yield ähnelt.
+        /// </summary>
+        internal static string CategoryRoofSolarDesc {
+            get {
+                return ResourceManager.GetString("CategoryRoofSolarDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open roof and solar category ähnelt.
+        /// </summary>
+        internal static string CategoryRoofSolarSemantic {
+            get {
+                return ResourceManager.GetString("CategoryRoofSolarSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open tile calculator ähnelt.
+        /// </summary>
+        internal static string CategoryTilesSemantic {
+            get {
+                return ResourceManager.GetString("CategoryTilesSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open wallpaper calculator ähnelt.
+        /// </summary>
+        internal static string CategoryWallpaperSemantic {
+            get {
+                return ResourceManager.GetString("CategoryWallpaperSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cheaper option ähnelt.
+        /// </summary>
+        internal static string CheaperOption {
+            get {
+                return ResourceManager.GetString("CheaperOption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Clear History ähnelt.
+        /// </summary>
+        internal static string ClearHistory {
+            get {
+                return ResourceManager.GetString("ClearHistory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Clear history? ähnelt.
+        /// </summary>
+        internal static string ClearHistoryConfirm {
+            get {
+                return ResourceManager.GetString("ClearHistoryConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Do you really want to delete all saved calculations? ähnelt.
+        /// </summary>
+        internal static string ClearHistoryMessage {
+            get {
+                return ResourceManager.GetString("ClearHistoryMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Coats ähnelt.
         /// </summary>
         internal static string Coats {
             get {
                 return ResourceManager.GetString("Coats", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter number of coats ähnelt.
+        /// </summary>
+        internal static string CoatsSemantic {
+            get {
+                return ResourceManager.GetString("CoatsSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Diameter (cm) ähnelt.
+        /// </summary>
+        internal static string ColumnDiameter {
+            get {
+                return ResourceManager.GetString("ColumnDiameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Height (cm) ähnelt.
+        /// </summary>
+        internal static string ColumnHeight {
+            get {
+                return ResourceManager.GetString("ColumnHeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Comfort ähnelt.
+        /// </summary>
+        internal static string ComfortLevel {
+            get {
+                return ResourceManager.GetString("ComfortLevel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Comfortable ähnelt.
+        /// </summary>
+        internal static string ComfortableStairs {
+            get {
+                return ResourceManager.GetString("ComfortableStairs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Joint Compound ähnelt.
+        /// </summary>
+        internal static string Compound {
+            get {
+                return ResourceManager.GetString("Compound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Concrete Column ähnelt.
+        /// </summary>
+        internal static string ConcreteColumn {
+            get {
+                return ResourceManager.GetString("ConcreteColumn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Concrete Shape ähnelt.
+        /// </summary>
+        internal static string ConcreteShape {
+            get {
+                return ResourceManager.GetString("ConcreteShape", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Concrete Slab ähnelt.
+        /// </summary>
+        internal static string ConcreteSlab {
+            get {
+                return ResourceManager.GetString("ConcreteSlab", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Consumption/day ähnelt.
+        /// </summary>
+        internal static string ConsumptionPerDay {
+            get {
+                return ResourceManager.GetString("ConsumptionPerDay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Consumption per m² ähnelt.
+        /// </summary>
+        internal static string ConsumptionPerSqm {
+            get {
+                return ResourceManager.GetString("ConsumptionPerSqm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Copied! ähnelt.
+        /// </summary>
+        internal static string CopiedToClipboard {
+            get {
+                return ResourceManager.GetString("CopiedToClipboard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Copper cable ähnelt.
+        /// </summary>
+        internal static string CopperCable {
+            get {
+                return ResourceManager.GetString("CopperCable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Copy area ähnelt.
+        /// </summary>
+        internal static string CopyArea {
+            get {
+                return ResourceManager.GetString("CopyArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die COST ähnelt.
+        /// </summary>
+        internal static string Cost {
+            get {
+                return ResourceManager.GetString("Cost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Bag Cost ähnelt.
+        /// </summary>
+        internal static string CostBags {
+            get {
+                return ResourceManager.GetString("CostBags", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cost calculation (optional) ähnelt.
+        /// </summary>
+        internal static string CostCalculation {
+            get {
+                return ResourceManager.GetString("CostCalculation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cost per m³ ähnelt.
+        /// </summary>
+        internal static string CostCubicMeter {
+            get {
+                return ResourceManager.GetString("CostCubicMeter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cost/day ähnelt.
+        /// </summary>
+        internal static string CostPerDay {
+            get {
+                return ResourceManager.GetString("CostPerDay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cost/month ähnelt.
+        /// </summary>
+        internal static string CostPerMonth {
+            get {
+                return ResourceManager.GetString("CostPerMonth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cost/year ähnelt.
+        /// </summary>
+        internal static string CostPerYear {
+            get {
+                return ResourceManager.GetString("CostPerYear", resourceCulture);
             }
         }
         
@@ -268,6 +1789,519 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter paint coverage in square meters per liter ähnelt.
+        /// </summary>
+        internal static string CoverageSemantic {
+            get {
+                return ResourceManager.GetString("CoverageSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cross-section (mm²) ähnelt.
+        /// </summary>
+        internal static string CrossSection {
+            get {
+                return ResourceManager.GetString("CrossSection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter cable cross-section in square millimeters ähnelt.
+        /// </summary>
+        internal static string CrossSectionSemantic {
+            get {
+                return ResourceManager.GetString("CrossSectionSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die CSV export failed ähnelt.
+        /// </summary>
+        internal static string CsvExportFailed {
+            get {
+                return ResourceManager.GetString("CsvExportFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die CSV exported! ähnelt.
+        /// </summary>
+        internal static string CsvExportSuccess {
+            get {
+                return ResourceManager.GetString("CsvExportSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die € ähnelt.
+        /// </summary>
+        internal static string CurrencySymbol {
+            get {
+                return ResourceManager.GetString("CurrencySymbol", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Current (A) ähnelt.
+        /// </summary>
+        internal static string Current {
+            get {
+                return ResourceManager.GetString("Current", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Current area ähnelt.
+        /// </summary>
+        internal static string CurrentArea {
+            get {
+                return ResourceManager.GetString("CurrentArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Current I (A) ähnelt.
+        /// </summary>
+        internal static string CurrentI {
+            get {
+                return ResourceManager.GetString("CurrentI", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Current I ähnelt.
+        /// </summary>
+        internal static string CurrentILabel {
+            get {
+                return ResourceManager.GetString("CurrentILabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter current in amperes ähnelt.
+        /// </summary>
+        internal static string CurrentSemantic {
+            get {
+                return ResourceManager.GetString("CurrentSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Current U-Value ähnelt.
+        /// </summary>
+        internal static string CurrentUValue {
+            get {
+                return ResourceManager.GetString("CurrentUValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Custom Steps (0=auto) ähnelt.
+        /// </summary>
+        internal static string CustomStepCount {
+            get {
+                return ResourceManager.GetString("CustomStepCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Custom templates ähnelt.
+        /// </summary>
+        internal static string CustomTemplates {
+            get {
+                return ResourceManager.GetString("CustomTemplates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Address ähnelt.
+        /// </summary>
+        internal static string CustomerAddress {
+            get {
+                return ResourceManager.GetString("CustomerAddress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Customer name ähnelt.
+        /// </summary>
+        internal static string CustomerName {
+            get {
+                return ResourceManager.GetString("CustomerName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Date ähnelt.
+        /// </summary>
+        internal static string Date {
+            get {
+                return ResourceManager.GetString("Date", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Deducted area ähnelt.
+        /// </summary>
+        internal static string DeductedArea {
+            get {
+                return ResourceManager.GetString("DeductedArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Deductions (optional) ähnelt.
+        /// </summary>
+        internal static string DeductionsOptional {
+            get {
+                return ResourceManager.GetString("DeductionsOptional", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Product A ähnelt.
+        /// </summary>
+        internal static string DefaultProductA {
+            get {
+                return ResourceManager.GetString("DefaultProductA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Product B ähnelt.
+        /// </summary>
+        internal static string DefaultProductB {
+            get {
+                return ResourceManager.GetString("DefaultProductB", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Delete ähnelt.
+        /// </summary>
+        internal static string Delete {
+            get {
+                return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Delete project? ähnelt.
+        /// </summary>
+        internal static string DeleteProjectConfirm {
+            get {
+                return ResourceManager.GetString("DeleteProjectConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Do you really want to delete "{0}"? ähnelt.
+        /// </summary>
+        internal static string DeleteProjectMessage {
+            get {
+                return ResourceManager.GetString("DeleteProjectMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Delete project ähnelt.
+        /// </summary>
+        internal static string DeleteProjectSemantic {
+            get {
+                return ResourceManager.GetString("DeleteProjectSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Delete Project ähnelt.
+        /// </summary>
+        internal static string DeleteProjectTitle {
+            get {
+                return ResourceManager.GetString("DeleteProjectTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Diameter (m) ähnelt.
+        /// </summary>
+        internal static string Diameter {
+            get {
+                return ResourceManager.GetString("Diameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die DIN 18065 ✓ ähnelt.
+        /// </summary>
+        internal static string DinCompliant {
+            get {
+                return ResourceManager.GetString("DinCompliant", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die DIN 18065 ähnelt.
+        /// </summary>
+        internal static string DinNormLabel {
+            get {
+                return ResourceManager.GetString("DinNormLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Count ähnelt.
+        /// </summary>
+        internal static string DoorCount {
+            get {
+                return ResourceManager.GetString("DoorCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Height (m) ähnelt.
+        /// </summary>
+        internal static string DoorHeight {
+            get {
+                return ResourceManager.GetString("DoorHeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Width (m) ähnelt.
+        /// </summary>
+        internal static string DoorWidth {
+            get {
+                return ResourceManager.GetString("DoorWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Doors ähnelt.
+        /// </summary>
+        internal static string Doors {
+            get {
+                return ResourceManager.GetString("Doors", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Double layered ähnelt.
+        /// </summary>
+        internal static string DoublePlated {
+            get {
+                return ResourceManager.GetString("DoublePlated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Drying time ähnelt.
+        /// </summary>
+        internal static string DryingTime {
+            get {
+                return ResourceManager.GetString("DryingTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Drywall Calculator ähnelt.
+        /// </summary>
+        internal static string DrywallCalculator {
+            get {
+                return ResourceManager.GetString("DrywallCalculator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Drywall sheets ähnelt.
+        /// </summary>
+        internal static string DrywallSheets {
+            get {
+                return ResourceManager.GetString("DrywallSheets", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter at least 2 values ähnelt.
+        /// </summary>
+        internal static string EnterAtLeastTwoValues {
+            get {
+                return ResourceManager.GetString("EnterAtLeastTwoValues", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter the price per m² to calculate total cost. ähnelt.
+        /// </summary>
+        internal static string EnterPricePerSqm {
+            get {
+                return ResourceManager.GetString("EnterPricePerSqm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Error ähnelt.
+        /// </summary>
+        internal static string Error {
+            get {
+                return ResourceManager.GetString("Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Export as CSV ähnelt.
+        /// </summary>
+        internal static string ExportCsv {
+            get {
+                return ResourceManager.GetString("ExportCsv", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Date ähnelt.
+        /// </summary>
+        internal static string ExportDate {
+            get {
+                return ResourceManager.GetString("ExportDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Watch a video to export as PDF ähnelt.
+        /// </summary>
+        internal static string ExportMaterialDesc {
+            get {
+                return ResourceManager.GetString("ExportMaterialDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Export Material List ähnelt.
+        /// </summary>
+        internal static string ExportMaterialList {
+            get {
+                return ResourceManager.GetString("ExportMaterialList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Parameter ähnelt.
+        /// </summary>
+        internal static string ExportParameter {
+            get {
+                return ResourceManager.GetString("ExportParameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Export as PDF ähnelt.
+        /// </summary>
+        internal static string ExportPdf {
+            get {
+                return ResourceManager.GetString("ExportPdf", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Share Project ähnelt.
+        /// </summary>
+        internal static string ExportProject {
+            get {
+                return ResourceManager.GetString("ExportProject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Watch a video to share this project ähnelt.
+        /// </summary>
+        internal static string ExportProjectDesc {
+            get {
+                return ResourceManager.GetString("ExportProjectDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Export quote ähnelt.
+        /// </summary>
+        internal static string ExportQuote {
+            get {
+                return ResourceManager.GetString("ExportQuote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Result ähnelt.
+        /// </summary>
+        internal static string ExportResult {
+            get {
+                return ResourceManager.GetString("ExportResult", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Type ähnelt.
+        /// </summary>
+        internal static string ExportType {
+            get {
+                return ResourceManager.GetString("ExportType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Value ähnelt.
+        /// </summary>
+        internal static string ExportValue {
+            get {
+                return ResourceManager.GetString("ExportValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die All your calculations are saved here. ähnelt.
+        /// </summary>
+        internal static string ExtendedHistoryDesc {
+            get {
+                return ResourceManager.GetString("ExtendedHistoryDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die History ähnelt.
+        /// </summary>
+        internal static string ExtendedHistoryTitle {
+            get {
+                return ResourceManager.GetString("ExtendedHistoryTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Added to favorites ähnelt.
+        /// </summary>
+        internal static string FavoriteAdded {
+            get {
+                return ResourceManager.GetString("FavoriteAdded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Removed from favorites ähnelt.
+        /// </summary>
+        internal static string FavoriteRemoved {
+            get {
+                return ResourceManager.GetString("FavoriteRemoved", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Quick Access ähnelt.
+        /// </summary>
+        internal static string FavoritesTitle {
+            get {
+                return ResourceManager.GetString("FavoritesTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Send Feedback ähnelt.
         /// </summary>
         internal static string FeedbackButton {
@@ -277,11 +2311,1442 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Send feedback via email ähnelt.
+        /// </summary>
+        internal static string FeedbackButtonSemantic {
+            get {
+                return ResourceManager.GetString("FeedbackButtonSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Floor area (m²) ähnelt.
+        /// </summary>
+        internal static string FloorArea {
+            get {
+                return ResourceManager.GetString("FloorArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Floor Height (cm) ähnelt.
+        /// </summary>
+        internal static string FloorHeight {
+            get {
+                return ResourceManager.GetString("FloorHeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die FREE ähnelt.
+        /// </summary>
+        internal static string Free {
+            get {
+                return ResourceManager.GetString("Free", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Generated by HandwerkerRechner ähnelt.
+        /// </summary>
+        internal static string GeneratedBy {
+            get {
+                return ResourceManager.GetString("GeneratedBy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Go Ad-Free ähnelt.
+        /// </summary>
+        internal static string GetPremium {
+            get {
+                return ResourceManager.GetString("GetPremium", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Go back to previous page ähnelt.
+        /// </summary>
+        internal static string GoBackSemantic {
+            get {
+                return ResourceManager.GetString("GoBackSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Floor area (m²) ähnelt.
+        /// </summary>
+        internal static string GroutArea {
+            get {
+                return ResourceManager.GetString("GroutArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Consumption per m² ähnelt.
+        /// </summary>
+        internal static string GroutConsumption {
+            get {
+                return ResourceManager.GetString("GroutConsumption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Joint depth (mm) ähnelt.
+        /// </summary>
+        internal static string GroutDepth {
+            get {
+                return ResourceManager.GetString("GroutDepth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Inputs ähnelt.
+        /// </summary>
+        internal static string GroutInputs {
+            get {
+                return ResourceManager.GetString("GroutInputs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Grout mass ähnelt.
+        /// </summary>
+        internal static string GroutMass {
+            get {
+                return ResourceManager.GetString("GroutMass", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per kg (€) ähnelt.
+        /// </summary>
+        internal static string GroutPricePerKg {
+            get {
+                return ResourceManager.GetString("GroutPricePerKg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Tile length (cm) ähnelt.
+        /// </summary>
+        internal static string GroutTileLength {
+            get {
+                return ResourceManager.GetString("GroutTileLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Tile size ähnelt.
+        /// </summary>
+        internal static string GroutTileSize {
+            get {
+                return ResourceManager.GetString("GroutTileSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Tile width (cm) ähnelt.
+        /// </summary>
+        internal static string GroutTileWidth {
+            get {
+                return ResourceManager.GetString("GroutTileWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Total amount ähnelt.
+        /// </summary>
+        internal static string GroutTotal {
+            get {
+                return ResourceManager.GetString("GroutTotal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Total (incl. 10% reserve) ähnelt.
+        /// </summary>
+        internal static string GroutTotalWithReserve {
+            get {
+                return ResourceManager.GetString("GroutTotalWithReserve", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Grout width (mm) ähnelt.
+        /// </summary>
+        internal static string GroutWidth {
+            get {
+                return ResourceManager.GetString("GroutWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Height (m) ähnelt.
+        /// </summary>
+        internal static string HeightM {
+            get {
+                return ResourceManager.GetString("HeightM", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Height (m) ähnelt.
+        /// </summary>
+        internal static string HeightTriangle {
+            get {
+                return ResourceManager.GetString("HeightTriangle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Your last 10 calculations are saved automatically. ähnelt.
+        /// </summary>
+        internal static string HistoryDescription {
+            get {
+                return ResourceManager.GetString("HistoryDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die double layered ähnelt.
+        /// </summary>
+        internal static string HistoryDoubleLayered {
+            get {
+                return ResourceManager.GetString("HistoryDoubleLayered", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No calculations yet. Your calculations will appear here. ähnelt.
+        /// </summary>
+        internal static string HistoryEmpty {
+            get {
+                return ResourceManager.GetString("HistoryEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Your last 30 calculations are saved here. ähnelt.
+        /// </summary>
+        internal static string HistoryExtendedHint {
+            get {
+                return ResourceManager.GetString("HistoryExtendedHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die h/day ähnelt.
+        /// </summary>
+        internal static string HistoryHoursPerDay {
+            get {
+                return ResourceManager.GetString("HistoryHoursPerDay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die {0} m², {1}x coat ähnelt.
+        /// </summary>
+        internal static string HistoryPaintCoats {
+            get {
+                return ResourceManager.GetString("HistoryPaintCoats", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die roof area ähnelt.
+        /// </summary>
+        internal static string HistoryRoofArea {
+            get {
+                return ResourceManager.GetString("HistoryRoofArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Span {0}m, Height {1}m ähnelt.
+        /// </summary>
+        internal static string HistoryRoofPitch {
+            get {
+                return ResourceManager.GetString("HistoryRoofPitch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die {0} m², {1} cm deep ähnelt.
+        /// </summary>
+        internal static string HistorySoilDepth {
+            get {
+                return ResourceManager.GetString("HistorySoilDepth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Thread ähnelt.
+        /// </summary>
+        internal static string HistoryThreadSize {
+            get {
+                return ResourceManager.GetString("HistoryThreadSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die {0} m wall, {1} m height ähnelt.
+        /// </summary>
+        internal static string HistoryWallHeight {
+            get {
+                return ResourceManager.GetString("HistoryWallHeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die years ähnelt.
+        /// </summary>
+        internal static string HistoryYears {
+            get {
+                return ResourceManager.GetString("HistoryYears", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Hourly rate (€/h) ähnelt.
+        /// </summary>
+        internal static string HourlyRate {
+            get {
+                return ResourceManager.GetString("HourlyRate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die hrs/day ähnelt.
+        /// </summary>
+        internal static string HoursPerDay {
+            get {
+                return ResourceManager.GetString("HoursPerDay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter operating hours per day ähnelt.
+        /// </summary>
+        internal static string HoursPerDaySemantic {
+            get {
+                return ResourceManager.GetString("HoursPerDaySemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Coverage ähnelt.
+        /// </summary>
+        internal static string InfoCoverage {
+            get {
+                return ResourceManager.GetString("InfoCoverage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Coverage indicates how much area can be painted with 1 liter of paint.  Typical values: • Smooth wall paint: 6-8 m²/L • Textured wall paint: 4-6 m²/L • Emulsion paint: 7-10 m²/L • Latex paint: 5-7 m²/L  Coverage decreases on rough surfaces! ähnelt.
+        /// </summary>
+        internal static string InfoCoverageDescription {
+            get {
+                return ResourceManager.GetString("InfoCoverageDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cable Cross-Section ähnelt.
+        /// </summary>
+        internal static string InfoCrossSection {
+            get {
+                return ResourceManager.GetString("InfoCrossSection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die The cross-section indicates the thickness of the conductor in mm².  Typical values: • 1.5 mm²: Lighting (max. 16A) • 2.5 mm²: Outlets (max. 20A) • 4 mm²: Stove, water heater • 6 mm²: Heavy consumers  The longer the cable, the thicker the cross-section should be. ähnelt.
+        /// </summary>
+        internal static string InfoCrossSectionDescription {
+            get {
+                return ResourceManager.GetString("InfoCrossSectionDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Pattern Repeat ähnelt.
+        /// </summary>
+        internal static string InfoRapport {
+            get {
+                return ResourceManager.GetString("InfoRapport", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die The pattern repeat is the distance after which the wallpaper pattern repeats itself.  Example: • Repeat 0 cm = no pattern (solid color) • Repeat 32 cm = pattern repeats every 32 cm  The larger the repeat, the more waste occurs, as the strips must be cut to match. ähnelt.
+        /// </summary>
+        internal static string InfoRapportDescription {
+            get {
+                return ResourceManager.GetString("InfoRapportDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Voltage Drop ähnelt.
+        /// </summary>
+        internal static string InfoVoltageDrop {
+            get {
+                return ResourceManager.GetString("InfoVoltageDrop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Voltage drop is the voltage loss in a cable due to its electrical resistance.  Maximum allowed (per VDE 0100): • Lighting: 3% • Outlets: 3% • Motors: 5%  If the limit is exceeded, a thicker cross-section must be chosen. ähnelt.
+        /// </summary>
+        internal static string InfoVoltageDropDescription {
+            get {
+                return ResourceManager.GetString("InfoVoltageDropDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Waste ähnelt.
+        /// </summary>
+        internal static string InfoWaste {
+            get {
+                return ResourceManager.GetString("InfoWaste", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Waste is the additional material needed due to cutting and scrap.  Recommended values: • Tiles, panels: 5-10% • Laminate, boards: 10-15% • Patterned wallpaper: 15-20%  Plan for more waste in complex rooms (bay windows, niches). ähnelt.
+        /// </summary>
+        internal static string InfoWasteDescription {
+            get {
+                return ResourceManager.GetString("InfoWasteDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Area ähnelt.
+        /// </summary>
+        internal static string InsulationArea {
+            get {
+                return ResourceManager.GetString("InsulationArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Thermal conductivity ähnelt.
+        /// </summary>
+        internal static string InsulationLambda {
+            get {
+                return ResourceManager.GetString("InsulationLambda", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Insulation thickness ähnelt.
+        /// </summary>
+        internal static string InsulationThickness {
+            get {
+                return ResourceManager.GetString("InsulationThickness", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Insulation type ähnelt.
+        /// </summary>
+        internal static string InsulationType {
+            get {
+                return ResourceManager.GetString("InsulationType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die EPS (Polystyrene) ähnelt.
+        /// </summary>
+        internal static string InsulationTypeEPS {
+            get {
+                return ResourceManager.GetString("InsulationTypeEPS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Mineral wool ähnelt.
+        /// </summary>
+        internal static string InsulationTypeMineralWool {
+            get {
+                return ResourceManager.GetString("InsulationTypeMineralWool", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Wood fibre ähnelt.
+        /// </summary>
+        internal static string InsulationTypeWoodFiber {
+            get {
+                return ResourceManager.GetString("InsulationTypeWoodFiber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die XPS (Extruded) ähnelt.
+        /// </summary>
+        internal static string InsulationTypeXPS {
+            get {
+                return ResourceManager.GetString("InsulationTypeXPS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Invalid Input ähnelt.
+        /// </summary>
+        internal static string InvalidInputTitle {
+            get {
+                return ResourceManager.GetString("InvalidInputTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Description ähnelt.
+        /// </summary>
+        internal static string ItemDescription {
+            get {
+                return ResourceManager.GetString("ItemDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Quantity ähnelt.
+        /// </summary>
+        internal static string ItemQuantity {
+            get {
+                return ResourceManager.GetString("ItemQuantity", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Labor ähnelt.
+        /// </summary>
+        internal static string ItemTypeLabor {
+            get {
+                return ResourceManager.GetString("ItemTypeLabor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Material ähnelt.
+        /// </summary>
+        internal static string ItemTypeMaterial {
+            get {
+                return ResourceManager.GetString("ItemTypeMaterial", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Other ähnelt.
+        /// </summary>
+        internal static string ItemTypeOther {
+            get {
+                return ResourceManager.GetString("ItemTypeOther", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Unit ähnelt.
+        /// </summary>
+        internal static string ItemUnit {
+            get {
+                return ResourceManager.GetString("ItemUnit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Unit price (€) ähnelt.
+        /// </summary>
+        internal static string ItemUnitPrice {
+            get {
+                return ResourceManager.GetString("ItemUnitPrice", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Area (m²) ähnelt.
+        /// </summary>
+        internal static string LabelAreaSqm {
+            get {
+                return ResourceManager.GetString("LabelAreaSqm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die ↕ Depth ähnelt.
+        /// </summary>
+        internal static string LabelArrowDepth {
+            get {
+                return ResourceManager.GetString("LabelArrowDepth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Bag (L) ähnelt.
+        /// </summary>
+        internal static string LabelBagLiters {
+            get {
+                return ResourceManager.GetString("LabelBagLiters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Base length (m) ähnelt.
+        /// </summary>
+        internal static string LabelBaseLengthM {
+            get {
+                return ResourceManager.GetString("LabelBaseLengthM", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Battens ähnelt.
+        /// </summary>
+        internal static string LabelBattens {
+            get {
+                return ResourceManager.GetString("LabelBattens", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Compost ähnelt.
+        /// </summary>
+        internal static string LabelCompost {
+            get {
+                return ResourceManager.GetString("LabelCompost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Depth (cm) ähnelt.
+        /// </summary>
+        internal static string LabelDepthCm {
+            get {
+                return ResourceManager.GetString("LabelDepthCm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Depth (m) ähnelt.
+        /// </summary>
+        internal static string LabelDepthM {
+            get {
+                return ResourceManager.GetString("LabelDepthM", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Dimension 1 (mm) ähnelt.
+        /// </summary>
+        internal static string LabelDimension1Mm {
+            get {
+                return ResourceManager.GetString("LabelDimension1Mm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Dimension 2 (mm) ähnelt.
+        /// </summary>
+        internal static string LabelDimension2Mm {
+            get {
+                return ResourceManager.GetString("LabelDimension2Mm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Efficiency (%) ähnelt.
+        /// </summary>
+        internal static string LabelEfficiencyPercent {
+            get {
+                return ResourceManager.GetString("LabelEfficiencyPercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die 5% Reserve ähnelt.
+        /// </summary>
+        internal static string LabelFivePercentReserve {
+            get {
+                return ResourceManager.GetString("LabelFivePercentReserve", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Height ähnelt.
+        /// </summary>
+        internal static string LabelHeight {
+            get {
+                return ResourceManager.GetString("LabelHeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Joint width (mm) ähnelt.
+        /// </summary>
+        internal static string LabelJointWidthMm {
+            get {
+                return ResourceManager.GetString("LabelJointWidthMm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Joints ähnelt.
+        /// </summary>
+        internal static string LabelJoints {
+            get {
+                return ResourceManager.GetString("LabelJoints", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die kWh/year ähnelt.
+        /// </summary>
+        internal static string LabelKwhPerYear {
+            get {
+                return ResourceManager.GetString("LabelKwhPerYear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die kWp ähnelt.
+        /// </summary>
+        internal static string LabelKwp {
+            get {
+                return ResourceManager.GetString("LabelKwp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Length ähnelt.
+        /// </summary>
+        internal static string LabelLength {
+            get {
+                return ResourceManager.GetString("LabelLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Length (m) ähnelt.
+        /// </summary>
+        internal static string LabelLengthM {
+            get {
+                return ResourceManager.GetString("LabelLengthM", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Liner ähnelt.
+        /// </summary>
+        internal static string LabelLiner {
+            get {
+                return ResourceManager.GetString("LabelLiner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Metal ähnelt.
+        /// </summary>
+        internal static string LabelMetal {
+            get {
+                return ResourceManager.GetString("LabelMetal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Mulch ähnelt.
+        /// </summary>
+        internal static string LabelMulch {
+            get {
+                return ResourceManager.GetString("LabelMulch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Orientation ähnelt.
+        /// </summary>
+        internal static string LabelOrientation {
+            get {
+                return ResourceManager.GetString("LabelOrientation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Overlap ähnelt.
+        /// </summary>
+        internal static string LabelOverlap {
+            get {
+                return ResourceManager.GetString("LabelOverlap", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Overlap (m) ähnelt.
+        /// </summary>
+        internal static string LabelOverlapM {
+            get {
+                return ResourceManager.GetString("LabelOverlapM", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per bag (€) ähnelt.
+        /// </summary>
+        internal static string LabelPricePerBag {
+            get {
+                return ResourceManager.GetString("LabelPricePerBag", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per kg (€) ähnelt.
+        /// </summary>
+        internal static string LabelPricePerKg {
+            get {
+                return ResourceManager.GetString("LabelPricePerKg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Electricity price (€/kWh) ähnelt.
+        /// </summary>
+        internal static string LabelPricePerKwh {
+            get {
+                return ResourceManager.GetString("LabelPricePerKwh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per m² (€) ähnelt.
+        /// </summary>
+        internal static string LabelPricePerSqmEur {
+            get {
+                return ResourceManager.GetString("LabelPricePerSqmEur", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per stone (€) ähnelt.
+        /// </summary>
+        internal static string LabelPricePerStone {
+            get {
+                return ResourceManager.GetString("LabelPricePerStone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per tile (€) ähnelt.
+        /// </summary>
+        internal static string LabelPricePerTileEur {
+            get {
+                return ResourceManager.GetString("LabelPricePerTileEur", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Profile ähnelt.
+        /// </summary>
+        internal static string LabelProfile {
+            get {
+                return ResourceManager.GetString("LabelProfile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Rise (m) ähnelt.
+        /// </summary>
+        internal static string LabelRiseM {
+            get {
+                return ResourceManager.GetString("LabelRiseM", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Roof area (m²) ähnelt.
+        /// </summary>
+        internal static string LabelRoofAreaSqm {
+            get {
+                return ResourceManager.GetString("LabelRoofAreaSqm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Soil ähnelt.
+        /// </summary>
+        internal static string LabelSoilWord {
+            get {
+                return ResourceManager.GetString("LabelSoilWord", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Stone length (cm) ähnelt.
+        /// </summary>
+        internal static string LabelStoneLengthCm {
+            get {
+                return ResourceManager.GetString("LabelStoneLengthCm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Stone width (cm) ähnelt.
+        /// </summary>
+        internal static string LabelStoneWidthCm {
+            get {
+                return ResourceManager.GetString("LabelStoneWidthCm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die System cost (€) ähnelt.
+        /// </summary>
+        internal static string LabelSystemCostEur {
+            get {
+                return ResourceManager.GetString("LabelSystemCostEur", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Thread size ähnelt.
+        /// </summary>
+        internal static string LabelThreadSize {
+            get {
+                return ResourceManager.GetString("LabelThreadSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Tiles per m² ähnelt.
+        /// </summary>
+        internal static string LabelTilesPerSqm {
+            get {
+                return ResourceManager.GetString("LabelTilesPerSqm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Tilt (°) ähnelt.
+        /// </summary>
+        internal static string LabelTiltDegrees {
+            get {
+                return ResourceManager.GetString("LabelTiltDegrees", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Wall thickness (mm) - for pipes/angles ähnelt.
+        /// </summary>
+        internal static string LabelWallThicknessHint {
+            get {
+                return ResourceManager.GetString("LabelWallThicknessHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Water ähnelt.
+        /// </summary>
+        internal static string LabelWater {
+            get {
+                return ResourceManager.GetString("LabelWater", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die WEIGHT ähnelt.
+        /// </summary>
+        internal static string LabelWeightUpper {
+            get {
+                return ResourceManager.GetString("LabelWeightUpper", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Width (m) ähnelt.
+        /// </summary>
+        internal static string LabelWidthM {
+            get {
+                return ResourceManager.GetString("LabelWidthM", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Length (m) ähnelt.
+        /// </summary>
+        internal static string LengthM {
+            get {
+                return ResourceManager.GetString("LengthM", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Liters needed ähnelt.
         /// </summary>
         internal static string LitersNeeded {
             get {
                 return ResourceManager.GetString("LitersNeeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Load Calculation ähnelt.
+        /// </summary>
+        internal static string LoadCalculation {
+            get {
+                return ResourceManager.GetString("LoadCalculation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open project ähnelt.
+        /// </summary>
+        internal static string LoadProjectSemantic {
+            get {
+                return ResourceManager.GetString("LoadProjectSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Loading database... ähnelt.
+        /// </summary>
+        internal static string LoadingDatabase {
+            get {
+                return ResourceManager.GetString("LoadingDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Loading history... ähnelt.
+        /// </summary>
+        internal static string LoadingHistory {
+            get {
+                return ResourceManager.GetString("LoadingHistory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Loading projects... ähnelt.
+        /// </summary>
+        internal static string LoadingProjects {
+            get {
+                return ResourceManager.GetString("LoadingProjects", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Preparing graphics engine... ähnelt.
+        /// </summary>
+        internal static string LoadingShaders {
+            get {
+                return ResourceManager.GetString("LoadingShaders", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Margin (%) ähnelt.
+        /// </summary>
+        internal static string MarginPercent {
+            get {
+                return ResourceManager.GetString("MarginPercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Material List ähnelt.
+        /// </summary>
+        internal static string MaterialList {
+            get {
+                return ResourceManager.GetString("MaterialList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Material List ähnelt.
+        /// </summary>
+        internal static string MaterialListPdf {
+            get {
+                return ResourceManager.GetString("MaterialListPdf", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Maximum 5 photos per project ähnelt.
+        /// </summary>
+        internal static string MaxPhotosReached {
+            get {
+                return ResourceManager.GetString("MaxPhotosReached", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Max. voltage drop (%) ähnelt.
+        /// </summary>
+        internal static string MaxVoltageDrop {
+            get {
+                return ResourceManager.GetString("MaxVoltageDrop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Aluminum ähnelt.
+        /// </summary>
+        internal static string MetalAluminum {
+            get {
+                return ResourceManager.GetString("MetalAluminum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Brass ähnelt.
+        /// </summary>
+        internal static string MetalBrass {
+            get {
+                return ResourceManager.GetString("MetalBrass", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Bronze ähnelt.
+        /// </summary>
+        internal static string MetalBronze {
+            get {
+                return ResourceManager.GetString("MetalBronze", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Copper ähnelt.
+        /// </summary>
+        internal static string MetalCopper {
+            get {
+                return ResourceManager.GetString("MetalCopper", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Stainless Steel ähnelt.
+        /// </summary>
+        internal static string MetalStainlessSteel {
+            get {
+                return ResourceManager.GetString("MetalStainlessSteel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Steel ähnelt.
+        /// </summary>
+        internal static string MetalSteel {
+            get {
+                return ResourceManager.GetString("MetalSteel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Metal Weight ähnelt.
+        /// </summary>
+        internal static string MetalWeight {
+            get {
+                return ResourceManager.GetString("MetalWeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Minimum cross-section ähnelt.
+        /// </summary>
+        internal static string MinCrossSection {
+            get {
+                return ResourceManager.GetString("MinCrossSection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die More Categories ähnelt.
+        /// </summary>
+        internal static string MoreCategories {
+            get {
+                return ResourceManager.GetString("MoreCategories", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die My Projects ähnelt.
+        /// </summary>
+        internal static string MyProjects {
+            get {
+                return ResourceManager.GetString("MyProjects", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Net labor cost ähnelt.
+        /// </summary>
+        internal static string NetLaborCost {
+            get {
+                return ResourceManager.GetString("NetLaborCost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Effective work hours ähnelt.
+        /// </summary>
+        internal static string NetWorkHours {
+            get {
+                return ResourceManager.GetString("NetWorkHours", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die New quote ähnelt.
+        /// </summary>
+        internal static string NewQuote {
+            get {
+                return ResourceManager.GetString("NewQuote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No ähnelt.
+        /// </summary>
+        internal static string No {
+            get {
+                return ResourceManager.GetString("No", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No custom templates yet ähnelt.
+        /// </summary>
+        internal static string NoCustomTemplates {
+            get {
+                return ResourceManager.GetString("NoCustomTemplates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No calculations yet ähnelt.
+        /// </summary>
+        internal static string NoHistoryYet {
+            get {
+                return ResourceManager.GetString("NoHistoryYet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No projects saved ähnelt.
+        /// </summary>
+        internal static string NoProjectsSaved {
+            get {
+                return ResourceManager.GetString("NoProjectsSaved", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No purchases found ähnelt.
+        /// </summary>
+        internal static string NoPurchasesFound {
+            get {
+                return ResourceManager.GetString("NoPurchasesFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No previous purchases were found. ähnelt.
+        /// </summary>
+        internal static string NoPurchasesFoundMessage {
+            get {
+                return ResourceManager.GetString("NoPurchasesFoundMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No purchases to restore ähnelt.
+        /// </summary>
+        internal static string NoPurchasesToRestore {
+            get {
+                return ResourceManager.GetString("NoPurchasesToRestore", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Not DIN Compliant ähnelt.
+        /// </summary>
+        internal static string NotDinCompliant {
+            get {
+                return ResourceManager.GetString("NotDinCompliant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die OK ähnelt.
+        /// </summary>
+        internal static string OK {
+            get {
+                return ResourceManager.GetString("OK", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Ohm's Law ähnelt.
+        /// </summary>
+        internal static string OhmsLaw {
+            get {
+                return ResourceManager.GetString("OhmsLaw", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Ohm's Law ähnelt.
+        /// </summary>
+        internal static string OhmsLawCalculator {
+            get {
+                return ResourceManager.GetString("OhmsLawCalculator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Ohm's Law: Relationship between voltage (U), current (I), resistance (R) and power (P) ähnelt.
+        /// </summary>
+        internal static string OhmsLawDescription {
+            get {
+                return ResourceManager.GetString("OhmsLawDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter at least 2 values ähnelt.
+        /// </summary>
+        internal static string OhmsLawMinValues {
+            get {
+                return ResourceManager.GetString("OhmsLawMinValues", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die One-time payment • No more ads! ähnelt.
+        /// </summary>
+        internal static string OneTimePayment {
+            get {
+                return ResourceManager.GetString("OneTimePayment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open saved projects ähnelt.
+        /// </summary>
+        internal static string OpenProjectsSemantic {
+            get {
+                return ResourceManager.GetString("OpenProjectsSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open settings ähnelt.
+        /// </summary>
+        internal static string OpenSettingsSemantic {
+            get {
+                return ResourceManager.GetString("OpenSettingsSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Or unlock individual categories for 0.99 € each: ähnelt.
+        /// </summary>
+        internal static string OrUnlockIndividual {
+            get {
+                return ResourceManager.GetString("OrUnlockIndividual", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die East ähnelt.
+        /// </summary>
+        internal static string OrientationEast {
+            get {
+                return ResourceManager.GetString("OrientationEast", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die North ähnelt.
+        /// </summary>
+        internal static string OrientationNorth {
+            get {
+                return ResourceManager.GetString("OrientationNorth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Northeast ähnelt.
+        /// </summary>
+        internal static string OrientationNorthEast {
+            get {
+                return ResourceManager.GetString("OrientationNorthEast", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Northwest ähnelt.
+        /// </summary>
+        internal static string OrientationNorthWest {
+            get {
+                return ResourceManager.GetString("OrientationNorthWest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die South ähnelt.
+        /// </summary>
+        internal static string OrientationSouth {
+            get {
+                return ResourceManager.GetString("OrientationSouth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Southeast ähnelt.
+        /// </summary>
+        internal static string OrientationSouthEast {
+            get {
+                return ResourceManager.GetString("OrientationSouthEast", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Southwest ähnelt.
+        /// </summary>
+        internal static string OrientationSouthWest {
+            get {
+                return ResourceManager.GetString("OrientationSouthWest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die West ähnelt.
+        /// </summary>
+        internal static string OrientationWest {
+            get {
+                return ResourceManager.GetString("OrientationWest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Overhead amount ähnelt.
+        /// </summary>
+        internal static string OverheadAmount {
+            get {
+                return ResourceManager.GetString("OverheadAmount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Overhead (%) ähnelt.
+        /// </summary>
+        internal static string OverheadPercent {
+            get {
+                return ResourceManager.GetString("OverheadPercent", resourceCulture);
             }
         }
         
@@ -304,11 +3769,605 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter pattern repeat in centimeters ähnelt.
+        /// </summary>
+        internal static string PatternRepeatSemantic {
+            get {
+                return ResourceManager.GetString("PatternRepeatSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Paving Stones ähnelt.
+        /// </summary>
+        internal static string Paving {
+            get {
+                return ResourceManager.GetString("Paving", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die PDF export failed. ähnelt.
+        /// </summary>
+        internal static string PdfExportFailed {
+            get {
+                return ResourceManager.GetString("PdfExportFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die PDF exported successfully! ähnelt.
+        /// </summary>
+        internal static string PdfExportSuccess {
+            get {
+                return ResourceManager.GetString("PdfExportSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Percentage ähnelt.
+        /// </summary>
+        internal static string Percentage {
+            get {
+                return ResourceManager.GetString("Percentage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 16 ähnelt.
+        /// </summary>
+        internal static string PlaceholderAmpere {
+            get {
+                return ResourceManager.GetString("PlaceholderAmpere", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 80 ähnelt.
+        /// </summary>
+        internal static string PlaceholderArea {
+            get {
+                return ResourceManager.GetString("PlaceholderArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die 0 = auto ähnelt.
+        /// </summary>
+        internal static string PlaceholderAutoZero {
+            get {
+                return ResourceManager.GetString("PlaceholderAutoZero", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 32 ähnelt.
+        /// </summary>
+        internal static string PlaceholderCentimeters {
+            get {
+                return ResourceManager.GetString("PlaceholderCentimeters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 12 ähnelt.
+        /// </summary>
+        internal static string PlaceholderCount {
+            get {
+                return ResourceManager.GetString("PlaceholderCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 2.5 ähnelt.
+        /// </summary>
+        internal static string PlaceholderCrossSection {
+            get {
+                return ResourceManager.GetString("PlaceholderCrossSection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 4.5 ähnelt.
+        /// </summary>
+        internal static string PlaceholderDecimal {
+            get {
+                return ResourceManager.GetString("PlaceholderDecimal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 10.5 ähnelt.
+        /// </summary>
+        internal static string PlaceholderDecimalLarge {
+            get {
+                return ResourceManager.GetString("PlaceholderDecimalLarge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 2.5 ähnelt.
+        /// </summary>
+        internal static string PlaceholderDecimalSmall {
+            get {
+                return ResourceManager.GetString("PlaceholderDecimalSmall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 30 ähnelt.
+        /// </summary>
+        internal static string PlaceholderDegrees {
+            get {
+                return ResourceManager.GetString("PlaceholderDegrees", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 1.5 ähnelt.
+        /// </summary>
+        internal static string PlaceholderDepth {
+            get {
+                return ResourceManager.GetString("PlaceholderDepth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 50 ähnelt.
+        /// </summary>
+        internal static string PlaceholderDimension {
+            get {
+                return ResourceManager.GetString("PlaceholderDimension", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 20 ähnelt.
+        /// </summary>
+        internal static string PlaceholderEfficiency {
+            get {
+                return ResourceManager.GetString("PlaceholderEfficiency", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 4 ähnelt.
+        /// </summary>
+        internal static string PlaceholderHours {
+            get {
+                return ResourceManager.GetString("PlaceholderHours", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 230 ähnelt.
+        /// </summary>
+        internal static string PlaceholderLarge {
+            get {
+                return ResourceManager.GetString("PlaceholderLarge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 3.5 ähnelt.
+        /// </summary>
+        internal static string PlaceholderLength {
+            get {
+                return ResourceManager.GetString("PlaceholderLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 40 ähnelt.
+        /// </summary>
+        internal static string PlaceholderLiters {
+            get {
+                return ResourceManager.GetString("PlaceholderLiters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 50 ähnelt.
+        /// </summary>
+        internal static string PlaceholderMedium {
+            get {
+                return ResourceManager.GetString("PlaceholderMedium", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 5 ähnelt.
+        /// </summary>
+        internal static string PlaceholderMillimeters {
+            get {
+                return ResourceManager.GetString("PlaceholderMillimeters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 0.5 ähnelt.
+        /// </summary>
+        internal static string PlaceholderOverlap {
+            get {
+                return ResourceManager.GetString("PlaceholderOverlap", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 10 ähnelt.
+        /// </summary>
+        internal static string PlaceholderPercent {
+            get {
+                return ResourceManager.GetString("PlaceholderPercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 20 ähnelt.
+        /// </summary>
+        internal static string PlaceholderPercentLarge {
+            get {
+                return ResourceManager.GetString("PlaceholderPercentLarge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 100 ähnelt.
+        /// </summary>
+        internal static string PlaceholderPower {
+            get {
+                return ResourceManager.GetString("PlaceholderPower", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 2.50 ähnelt.
+        /// </summary>
+        internal static string PlaceholderPrice {
+            get {
+                return ResourceManager.GetString("PlaceholderPrice", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 0.30 ähnelt.
+        /// </summary>
+        internal static string PlaceholderPrice030 {
+            get {
+                return ResourceManager.GetString("PlaceholderPrice030", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 0.85 ähnelt.
+        /// </summary>
+        internal static string PlaceholderPrice085 {
+            get {
+                return ResourceManager.GetString("PlaceholderPrice085", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 4.99 ähnelt.
+        /// </summary>
+        internal static string PlaceholderPrice499 {
+            get {
+                return ResourceManager.GetString("PlaceholderPrice499", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 12.50 ähnelt.
+        /// </summary>
+        internal static string PlaceholderPriceLarge {
+            get {
+                return ResourceManager.GetString("PlaceholderPriceLarge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 8.50 ähnelt.
+        /// </summary>
+        internal static string PlaceholderPriceMedium {
+            get {
+                return ResourceManager.GetString("PlaceholderPriceMedium", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die €/h ähnelt.
+        /// </summary>
+        internal static string PlaceholderPricePerHour {
+            get {
+                return ResourceManager.GetString("PlaceholderPricePerHour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die €/kg ähnelt.
+        /// </summary>
+        internal static string PlaceholderPricePerKg {
+            get {
+                return ResourceManager.GetString("PlaceholderPricePerKg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die €/kWh ähnelt.
+        /// </summary>
+        internal static string PlaceholderPricePerKwh {
+            get {
+                return ResourceManager.GetString("PlaceholderPricePerKwh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die €/m² ähnelt.
+        /// </summary>
+        internal static string PlaceholderPricePerSqm {
+            get {
+                return ResourceManager.GetString("PlaceholderPricePerSqm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 15 ähnelt.
+        /// </summary>
+        internal static string PlaceholderSmall {
+            get {
+                return ResourceManager.GetString("PlaceholderSmall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 3 ähnelt.
+        /// </summary>
+        internal static string PlaceholderThickness {
+            get {
+                return ResourceManager.GetString("PlaceholderThickness", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 4 ähnelt.
+        /// </summary>
+        internal static string PlaceholderTiny {
+            get {
+                return ResourceManager.GetString("PlaceholderTiny", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 12000 ähnelt.
+        /// </summary>
+        internal static string PlaceholderVeryLarge {
+            get {
+                return ResourceManager.GetString("PlaceholderVeryLarge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 230 ähnelt.
+        /// </summary>
+        internal static string PlaceholderVoltage {
+            get {
+                return ResourceManager.GetString("PlaceholderVoltage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 30 ähnelt.
+        /// </summary>
+        internal static string PlaceholderWhole {
+            get {
+                return ResourceManager.GetString("PlaceholderWhole", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 100 ähnelt.
+        /// </summary>
+        internal static string PlaceholderWholeLarge {
+            get {
+                return ResourceManager.GetString("PlaceholderWholeLarge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 10 ähnelt.
+        /// </summary>
+        internal static string PlaceholderWholeSmall {
+            get {
+                return ResourceManager.GetString("PlaceholderWholeSmall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die e.g. 0.53 ähnelt.
+        /// </summary>
+        internal static string PlaceholderWidth {
+            get {
+                return ResourceManager.GetString("PlaceholderWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Plaster amount ähnelt.
+        /// </summary>
+        internal static string PlasterAmount {
+            get {
+                return ResourceManager.GetString("PlasterAmount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Plaster thickness (mm) ähnelt.
+        /// </summary>
+        internal static string PlasterThickness {
+            get {
+                return ResourceManager.GetString("PlasterThickness", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Plaster type ähnelt.
+        /// </summary>
+        internal static string PlasterType {
+            get {
+                return ResourceManager.GetString("PlasterType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Exterior plaster ähnelt.
+        /// </summary>
+        internal static string PlasterTypeExterior {
+            get {
+                return ResourceManager.GetString("PlasterTypeExterior", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Gypsum plaster ähnelt.
+        /// </summary>
+        internal static string PlasterTypeGypsum {
+            get {
+                return ResourceManager.GetString("PlasterTypeGypsum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Interior plaster ähnelt.
+        /// </summary>
+        internal static string PlasterTypeInterior {
+            get {
+                return ResourceManager.GetString("PlasterTypeInterior", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Lime plaster ähnelt.
+        /// </summary>
+        internal static string PlasterTypeLime {
+            get {
+                return ResourceManager.GetString("PlasterTypeLime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Drywall Panels ähnelt.
+        /// </summary>
+        internal static string Plates {
+            get {
+                return ResourceManager.GetString("Plates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Panels: 250×125 cm standard ähnelt.
+        /// </summary>
+        internal static string PlatesSize {
+            get {
+                return ResourceManager.GetString("PlatesSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Pond Liner ähnelt.
+        /// </summary>
+        internal static string PondLiner {
+            get {
+                return ResourceManager.GetString("PondLiner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Power (W) ähnelt.
+        /// </summary>
+        internal static string Power {
+            get {
+                return ResourceManager.GetString("Power", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Power consumption and running costs per day/month/year ähnelt.
+        /// </summary>
+        internal static string PowerConsumptionAndCosts {
+            get {
+                return ResourceManager.GetString("PowerConsumptionAndCosts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Power Cost ähnelt.
+        /// </summary>
+        internal static string PowerCost {
+            get {
+                return ResourceManager.GetString("PowerCost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate power cost ähnelt.
+        /// </summary>
+        internal static string PowerCostCalculator {
+            get {
+                return ResourceManager.GetString("PowerCostCalculator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die POWER METER ähnelt.
+        /// </summary>
+        internal static string PowerMeter {
+            get {
+                return ResourceManager.GetString("PowerMeter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Power P (W) ähnelt.
+        /// </summary>
+        internal static string PowerP {
+            get {
+                return ResourceManager.GetString("PowerP", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Power P ähnelt.
+        /// </summary>
+        internal static string PowerPLabel {
+            get {
+                return ResourceManager.GetString("PowerPLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter power in watts ähnelt.
+        /// </summary>
+        internal static string PowerSemantic {
+            get {
+                return ResourceManager.GetString("PowerSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Premium ähnelt.
         /// </summary>
         internal static string Premium {
             get {
                 return ResourceManager.GetString("Premium", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Unlock Premium Calculators ähnelt.
+        /// </summary>
+        internal static string PremiumCalculatorsLocked {
+            get {
+                return ResourceManager.GetString("PremiumCalculatorsLocked", resourceCulture);
             }
         }
         
@@ -322,11 +4381,416 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Premium Feature ähnelt.
+        /// </summary>
+        internal static string PremiumFeature {
+            get {
+                return ResourceManager.GetString("PremiumFeature", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No video ads • No banner • Unlimited history • Direct export ähnelt.
+        /// </summary>
+        internal static string PremiumFeatures {
+            get {
+                return ResourceManager.GetString("PremiumFeatures", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die PREMIUM ähnelt.
+        /// </summary>
+        internal static string PremiumLabel {
+            get {
+                return ResourceManager.GetString("PremiumLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die 3.99 € - one-time ähnelt.
+        /// </summary>
+        internal static string PremiumPrice {
+            get {
+                return ResourceManager.GetString("PremiumPrice", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Premium required ähnelt.
         /// </summary>
         internal static string PremiumRequired {
             get {
                 return ResourceManager.GetString("PremiumRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Press back again to exit ähnelt.
+        /// </summary>
+        internal static string PressBackToExit {
+            get {
+                return ResourceManager.GetString("PressBackToExit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die 3.99 € ähnelt.
+        /// </summary>
+        internal static string PriceAllCategories {
+            get {
+                return ResourceManager.GetString("PriceAllCategories", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per Bag ähnelt.
+        /// </summary>
+        internal static string PricePerBag {
+            get {
+                return ResourceManager.GetString("PricePerBag", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per board (€) ähnelt.
+        /// </summary>
+        internal static string PricePerBoard {
+            get {
+                return ResourceManager.GetString("PricePerBoard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter price per board in euros ähnelt.
+        /// </summary>
+        internal static string PricePerBoardSemantic {
+            get {
+                return ResourceManager.GetString("PricePerBoardSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per m³ ähnelt.
+        /// </summary>
+        internal static string PricePerCubicMeter {
+            get {
+                return ResourceManager.GetString("PricePerCubicMeter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die €/kWh ähnelt.
+        /// </summary>
+        internal static string PricePerKwh {
+            get {
+                return ResourceManager.GetString("PricePerKwh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter electricity price per kilowatt hour in euros ähnelt.
+        /// </summary>
+        internal static string PricePerKwhSemantic {
+            get {
+                return ResourceManager.GetString("PricePerKwhSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per liter (€) ähnelt.
+        /// </summary>
+        internal static string PricePerLiter {
+            get {
+                return ResourceManager.GetString("PricePerLiter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter price per liter of paint in euros ähnelt.
+        /// </summary>
+        internal static string PricePerLiterSemantic {
+            get {
+                return ResourceManager.GetString("PricePerLiterSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per roll (€) ähnelt.
+        /// </summary>
+        internal static string PricePerRoll {
+            get {
+                return ResourceManager.GetString("PricePerRoll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter price per wallpaper roll in euros ähnelt.
+        /// </summary>
+        internal static string PricePerRollSemantic {
+            get {
+                return ResourceManager.GetString("PricePerRollSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per m² (€) ähnelt.
+        /// </summary>
+        internal static string PricePerSqm {
+            get {
+                return ResourceManager.GetString("PricePerSqm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter price per square meter in euros ähnelt.
+        /// </summary>
+        internal static string PricePerSqmSemantic {
+            get {
+                return ResourceManager.GetString("PricePerSqmSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per Step ähnelt.
+        /// </summary>
+        internal static string PricePerStep {
+            get {
+                return ResourceManager.GetString("PricePerStep", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per tile (€) ähnelt.
+        /// </summary>
+        internal static string PricePerTile {
+            get {
+                return ResourceManager.GetString("PricePerTile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter the price per tile to calculate total cost. ähnelt.
+        /// </summary>
+        internal static string PricePerTileHint {
+            get {
+                return ResourceManager.GetString("PricePerTileHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter price per tile in euros ähnelt.
+        /// </summary>
+        internal static string PricePerTileSemantic {
+            get {
+                return ResourceManager.GetString("PricePerTileSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Price per unit (€) ähnelt.
+        /// </summary>
+        internal static string PricePerUnit {
+            get {
+                return ResourceManager.GetString("PricePerUnit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Privacy Policy ähnelt.
+        /// </summary>
+        internal static string PrivacyPolicy {
+            get {
+                return ResourceManager.GetString("PrivacyPolicy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Product A ähnelt.
+        /// </summary>
+        internal static string ProductA {
+            get {
+                return ResourceManager.GetString("ProductA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Product B ähnelt.
+        /// </summary>
+        internal static string ProductB {
+            get {
+                return ResourceManager.GetString("ProductB", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Name ähnelt.
+        /// </summary>
+        internal static string ProductName {
+            get {
+                return ResourceManager.GetString("ProductName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Professional Categories ähnelt.
+        /// </summary>
+        internal static string ProfessionalCategories {
+            get {
+                return ResourceManager.GetString("ProfessionalCategories", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Angle ähnelt.
+        /// </summary>
+        internal static string ProfileAngle {
+            get {
+                return ResourceManager.GetString("ProfileAngle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Flat Bar ähnelt.
+        /// </summary>
+        internal static string ProfileFlatBar {
+            get {
+                return ResourceManager.GetString("ProfileFlatBar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Round Bar ähnelt.
+        /// </summary>
+        internal static string ProfileRoundBar {
+            get {
+                return ResourceManager.GetString("ProfileRoundBar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Round Tube ähnelt.
+        /// </summary>
+        internal static string ProfileRoundTube {
+            get {
+                return ResourceManager.GetString("ProfileRoundTube", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Square Bar ähnelt.
+        /// </summary>
+        internal static string ProfileSquareBar {
+            get {
+                return ResourceManager.GetString("ProfileSquareBar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Square Tube ähnelt.
+        /// </summary>
+        internal static string ProfileSquareTube {
+            get {
+                return ResourceManager.GetString("ProfileSquareTube", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Failed to delete project. ähnelt.
+        /// </summary>
+        internal static string ProjectDeleteFailed {
+            get {
+                return ResourceManager.GetString("ProjectDeleteFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Project description ähnelt.
+        /// </summary>
+        internal static string ProjectDescription {
+            get {
+                return ResourceManager.GetString("ProjectDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Project could not be loaded. ähnelt.
+        /// </summary>
+        internal static string ProjectLoadFailed {
+            get {
+                return ResourceManager.GetString("ProjectLoadFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Project name: ähnelt.
+        /// </summary>
+        internal static string ProjectName {
+            get {
+                return ResourceManager.GetString("ProjectName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Project Photos ähnelt.
+        /// </summary>
+        internal static string ProjectPhotos {
+            get {
+                return ResourceManager.GetString("ProjectPhotos", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Project Report ähnelt.
+        /// </summary>
+        internal static string ProjectReport {
+            get {
+                return ResourceManager.GetString("ProjectReport", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Project could not be saved. ähnelt.
+        /// </summary>
+        internal static string ProjectSaveFailed {
+            get {
+                return ResourceManager.GetString("ProjectSaveFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Project saved! ähnelt.
+        /// </summary>
+        internal static string ProjectSaved {
+            get {
+                return ResourceManager.GetString("ProjectSaved", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Project storage requires premium. For only €0.99 you can save and load unlimited projects. ähnelt.
+        /// </summary>
+        internal static string ProjectStorageRequiresPremium {
+            get {
+                return ResourceManager.GetString("ProjectStorageRequiresPremium", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Templates ähnelt.
+        /// </summary>
+        internal static string ProjectTemplates {
+            get {
+                return ResourceManager.GetString("ProjectTemplates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Purchase all categories for 3.99 euros ähnelt.
+        /// </summary>
+        internal static string PurchaseAllCategoriesSemantic {
+            get {
+                return ResourceManager.GetString("PurchaseAllCategoriesSemantic", resourceCulture);
             }
         }
         
@@ -340,11 +4804,245 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Purchase premium version ähnelt.
+        /// </summary>
+        internal static string PurchasePremiumSemantic {
+            get {
+                return ResourceManager.GetString("PurchasePremiumSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Purchase successful! ähnelt.
+        /// </summary>
+        internal static string PurchaseSuccessful {
+            get {
+                return ResourceManager.GetString("PurchaseSuccessful", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die All categories have been unlocked. Thank you for your purchase! ähnelt.
+        /// </summary>
+        internal static string PurchaseSuccessfulMessage {
+            get {
+                return ResourceManager.GetString("PurchaseSuccessfulMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Purchases restored ähnelt.
+        /// </summary>
+        internal static string PurchasesRestored {
+            get {
+                return ResourceManager.GetString("PurchasesRestored", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Quote deleted ähnelt.
+        /// </summary>
+        internal static string QuoteDeleted {
+            get {
+                return ResourceManager.GetString("QuoteDeleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Quote exported! ähnelt.
+        /// </summary>
+        internal static string QuoteExported {
+            get {
+                return ResourceManager.GetString("QuoteExported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Line items ähnelt.
+        /// </summary>
+        internal static string QuoteItems {
+            get {
+                return ResourceManager.GetString("QuoteItems", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Quote number ähnelt.
+        /// </summary>
+        internal static string QuoteNumber {
+            get {
+                return ResourceManager.GetString("QuoteNumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Quote saved! ähnelt.
+        /// </summary>
+        internal static string QuoteSaved {
+            get {
+                return ResourceManager.GetString("QuoteSaved", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Quotes ähnelt.
+        /// </summary>
+        internal static string Quotes {
+            get {
+                return ResourceManager.GetString("Quotes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Recent Calculations ähnelt.
+        /// </summary>
+        internal static string RecentCalculations {
+            get {
+                return ResourceManager.GetString("RecentCalculations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Recommended cross-section ähnelt.
+        /// </summary>
+        internal static string RecommendedCrossSection {
+            get {
+                return ResourceManager.GetString("RecommendedCrossSection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Remove Ads ähnelt.
+        /// </summary>
+        internal static string RemoveAds {
+            get {
+                return ResourceManager.GetString("RemoveAds", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Remove Ads (€3.99) ähnelt.
+        /// </summary>
+        internal static string RemoveAdsButton {
+            get {
+                return ResourceManager.GetString("RemoveAdsButton", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die For €3.99 you can permanently remove all ads.  ✓ All 18 calculators free to use ✓ No more ad banners ✓ One-time payment - no subscriptions! ähnelt.
+        /// </summary>
+        internal static string RemoveAdsConfirmMessage {
+            get {
+                return ResourceManager.GetString("RemoveAdsConfirmMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Remove Ads? ähnelt.
+        /// </summary>
+        internal static string RemoveAdsConfirmTitle {
+            get {
+                return ResourceManager.GetString("RemoveAdsConfirmTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die One-time payment • Ad-free forever ähnelt.
+        /// </summary>
+        internal static string RemoveAdsDescription {
+            get {
+                return ResourceManager.GetString("RemoveAdsDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Remove all ads and enjoy the full experience ähnelt.
+        /// </summary>
+        internal static string RemoveAdsFullDesc {
+            get {
+                return ResourceManager.GetString("RemoveAdsFullDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die €3.99 ähnelt.
+        /// </summary>
+        internal static string RemoveAdsPrice {
+            get {
+                return ResourceManager.GetString("RemoveAdsPrice", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Ads have been removed. Thank you for your purchase! ähnelt.
+        /// </summary>
+        internal static string RemoveAdsPurchaseSuccessMessage {
+            get {
+                return ResourceManager.GetString("RemoveAdsPurchaseSuccessMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Remove ads permanently for 3.99 euros ähnelt.
+        /// </summary>
+        internal static string RemoveAdsSemantic {
+            get {
+                return ResourceManager.GetString("RemoveAdsSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Remove all ads from the app ähnelt.
+        /// </summary>
+        internal static string RemoveAdsSettingsDescription {
+            get {
+                return ResourceManager.GetString("RemoveAdsSettingsDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Reset ähnelt.
         /// </summary>
         internal static string Reset {
             get {
                 return ResourceManager.GetString("Reset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Reset inputs ähnelt.
+        /// </summary>
+        internal static string ResetButtonSemantic {
+            get {
+                return ResourceManager.GetString("ResetButtonSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die RESISTANCE ähnelt.
+        /// </summary>
+        internal static string Resistance {
+            get {
+                return ResourceManager.GetString("Resistance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Resistance R (Ω) ähnelt.
+        /// </summary>
+        internal static string ResistanceR {
+            get {
+                return ResourceManager.GetString("ResistanceR", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Resistance R ähnelt.
+        /// </summary>
+        internal static string ResistanceRLabel {
+            get {
+                return ResourceManager.GetString("ResistanceRLabel", resourceCulture);
             }
         }
         
@@ -358,11 +5056,371 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Restore previous purchases ähnelt.
+        /// </summary>
+        internal static string RestorePurchasesSemantic {
+            get {
+                return ResourceManager.GetString("RestorePurchasesSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Restore purchases ähnelt.
+        /// </summary>
+        internal static string RestorePurchasesShort {
+            get {
+                return ResourceManager.GetString("RestorePurchasesShort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die The following categories have been restored: {0}  Advertising has been disabled. ähnelt.
+        /// </summary>
+        internal static string RestoredCategoriesFullMessage {
+            get {
+                return ResourceManager.GetString("RestoredCategoriesFullMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die The following categories have been restored: ähnelt.
+        /// </summary>
+        internal static string RestoredCategoriesMessage {
+            get {
+                return ResourceManager.GetString("RestoredCategoriesMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Result ähnelt.
         /// </summary>
         internal static string Result {
             get {
                 return ResourceManager.GetString("Result", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Acceptable ähnelt.
+        /// </summary>
+        internal static string ResultAcceptable {
+            get {
+                return ResourceManager.GetString("ResultAcceptable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Pitch Angle ähnelt.
+        /// </summary>
+        internal static string ResultAngle {
+            get {
+                return ResourceManager.GetString("ResultAngle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Annual yield (approx.) ähnelt.
+        /// </summary>
+        internal static string ResultAnnualYield {
+            get {
+                return ResourceManager.GetString("ResultAnnualYield", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Ready-Mix Bags ähnelt.
+        /// </summary>
+        internal static string ResultBags {
+            get {
+                return ResourceManager.GetString("ResultBags", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Bags needed ähnelt.
+        /// </summary>
+        internal static string ResultBagsNeeded {
+            get {
+                return ResourceManager.GetString("ResultBagsNeeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cement ähnelt.
+        /// </summary>
+        internal static string ResultCite {
+            get {
+                return ResourceManager.GetString("ResultCite", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Core drill ähnelt.
+        /// </summary>
+        internal static string ResultCoreDrill {
+            get {
+                return ResourceManager.GetString("ResultCoreDrill", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cost ähnelt.
+        /// </summary>
+        internal static string ResultCost {
+            get {
+                return ResourceManager.GetString("ResultCost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Gravel ähnelt.
+        /// </summary>
+        internal static string ResultGravel {
+            get {
+                return ResourceManager.GetString("ResultGravel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Liner area ähnelt.
+        /// </summary>
+        internal static string ResultLinerArea {
+            get {
+                return ResourceManager.GetString("ResultLinerArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Liner length ähnelt.
+        /// </summary>
+        internal static string ResultLinerLength {
+            get {
+                return ResourceManager.GetString("ResultLinerLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Liner width ähnelt.
+        /// </summary>
+        internal static string ResultLinerWidth {
+            get {
+                return ResourceManager.GetString("ResultLinerWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Material cost ähnelt.
+        /// </summary>
+        internal static string ResultMaterialCost {
+            get {
+                return ResourceManager.GetString("ResultMaterialCost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Payback time ähnelt.
+        /// </summary>
+        internal static string ResultPaybackTime {
+            get {
+                return ResourceManager.GetString("ResultPaybackTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Peak power ähnelt.
+        /// </summary>
+        internal static string ResultPeakPower {
+            get {
+                return ResourceManager.GetString("ResultPeakPower", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Voltage drop ähnelt.
+        /// </summary>
+        internal static string ResultPercentDrop {
+            get {
+                return ResourceManager.GetString("ResultPercentDrop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Pitch in degrees ähnelt.
+        /// </summary>
+        internal static string ResultPitchDegrees {
+            get {
+                return ResourceManager.GetString("ResultPitchDegrees", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Pitch in percent ähnelt.
+        /// </summary>
+        internal static string ResultPitchPercent {
+            get {
+                return ResourceManager.GetString("ResultPitchPercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Run Length ähnelt.
+        /// </summary>
+        internal static string ResultRunLength {
+            get {
+                return ResourceManager.GetString("ResultRunLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Sand ähnelt.
+        /// </summary>
+        internal static string ResultSand {
+            get {
+                return ResourceManager.GetString("ResultSand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Stair Length ähnelt.
+        /// </summary>
+        internal static string ResultStairLength {
+            get {
+                return ResourceManager.GetString("ResultStairLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Steps ähnelt.
+        /// </summary>
+        internal static string ResultStepCount {
+            get {
+                return ResourceManager.GetString("ResultStepCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Step Height ähnelt.
+        /// </summary>
+        internal static string ResultStepHeight {
+            get {
+                return ResourceManager.GetString("ResultStepHeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Step Measure (2h+g) ähnelt.
+        /// </summary>
+        internal static string ResultStepMeasure {
+            get {
+                return ResourceManager.GetString("ResultStepMeasure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Stones needed ähnelt.
+        /// </summary>
+        internal static string ResultStonesNeeded {
+            get {
+                return ResourceManager.GetString("ResultStonesNeeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die System cost ähnelt.
+        /// </summary>
+        internal static string ResultSystemCost {
+            get {
+                return ResourceManager.GetString("ResultSystemCost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Thread ähnelt.
+        /// </summary>
+        internal static string ResultThread {
+            get {
+                return ResourceManager.GetString("ResultThread", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Tiles needed ähnelt.
+        /// </summary>
+        internal static string ResultTilesNeeded {
+            get {
+                return ResourceManager.GetString("ResultTilesNeeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die With reserve ähnelt.
+        /// </summary>
+        internal static string ResultTilesWithReserve {
+            get {
+                return ResourceManager.GetString("ResultTilesWithReserve", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Tread Depth ähnelt.
+        /// </summary>
+        internal static string ResultTreadDepth {
+            get {
+                return ResourceManager.GetString("ResultTreadDepth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Usable area ähnelt.
+        /// </summary>
+        internal static string ResultUsableArea {
+            get {
+                return ResourceManager.GetString("ResultUsableArea", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Volume ähnelt.
+        /// </summary>
+        internal static string ResultVolume {
+            get {
+                return ResourceManager.GetString("ResultVolume", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Volume needed ähnelt.
+        /// </summary>
+        internal static string ResultVolumeNeeded {
+            get {
+                return ResourceManager.GetString("ResultVolumeNeeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Water ähnelt.
+        /// </summary>
+        internal static string ResultWater {
+            get {
+                return ResourceManager.GetString("ResultWater", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Weight ähnelt.
+        /// </summary>
+        internal static string ResultWeight {
+            get {
+                return ResourceManager.GetString("ResultWeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die With reserve (+5%) ähnelt.
+        /// </summary>
+        internal static string ResultWithReserveFivePercent {
+            get {
+                return ResourceManager.GetString("ResultWithReserveFivePercent", resourceCulture);
             }
         }
         
@@ -385,6 +5443,33 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter roll length in meters ähnelt.
+        /// </summary>
+        internal static string RollLengthSemantic {
+            get {
+                return ResourceManager.GetString("RollLengthSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Roll width (cm) ähnelt.
+        /// </summary>
+        internal static string RollWidth {
+            get {
+                return ResourceManager.GetString("RollWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter roll width in centimeters ähnelt.
+        /// </summary>
+        internal static string RollWidthSemantic {
+            get {
+                return ResourceManager.GetString("RollWidthSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Rolls needed ähnelt.
         /// </summary>
         internal static string RollsNeeded {
@@ -392,22 +5477,22 @@ namespace HandwerkerRechner.Resources.Strings {
                 return ResourceManager.GetString("RollsNeeded", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Strips needed ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Roof Pitch ähnelt.
         /// </summary>
-        internal static string StripsNeeded {
+        internal static string RoofPitch {
             get {
-                return ResourceManager.GetString("StripsNeeded", resourceCulture);
+                return ResourceManager.GetString("RoofPitch", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Roll width (cm) ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Roof Tiles ähnelt.
         /// </summary>
-        internal static string RollWidth {
+        internal static string RoofTiles {
             get {
-                return ResourceManager.GetString("RollWidth", resourceCulture);
+                return ResourceManager.GetString("RoofTiles", resourceCulture);
             }
         }
         
@@ -430,6 +5515,15 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter room height in meters ähnelt.
+        /// </summary>
+        internal static string RoomHeightSemantic {
+            get {
+                return ResourceManager.GetString("RoomHeightSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Room length (m) ähnelt.
         /// </summary>
         internal static string RoomLength {
@@ -439,11 +5533,290 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter room length in meters ähnelt.
+        /// </summary>
+        internal static string RoomLengthSemantic {
+            get {
+                return ResourceManager.GetString("RoomLengthSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Room perimeter (m) ähnelt.
+        /// </summary>
+        internal static string RoomPerimeter {
+            get {
+                return ResourceManager.GetString("RoomPerimeter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Room width (m) ähnelt.
         /// </summary>
         internal static string RoomWidth {
             get {
                 return ResourceManager.GetString("RoomWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter room width in meters ähnelt.
+        /// </summary>
+        internal static string RoomWidthSemantic {
+            get {
+                return ResourceManager.GetString("RoomWidthSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Save ähnelt.
+        /// </summary>
+        internal static string Save {
+            get {
+                return ResourceManager.GetString("Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Saving failed. Please check available storage and try again. ähnelt.
+        /// </summary>
+        internal static string SaveFailedMessage {
+            get {
+                return ResourceManager.GetString("SaveFailedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Save project ähnelt.
+        /// </summary>
+        internal static string SaveProject {
+            get {
+                return ResourceManager.GetString("SaveProject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Save as project ähnelt.
+        /// </summary>
+        internal static string SaveProjectButton {
+            get {
+                return ResourceManager.GetString("SaveProjectButton", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Save calculation as project ähnelt.
+        /// </summary>
+        internal static string SaveProjectButtonSemantic {
+            get {
+                return ResourceManager.GetString("SaveProjectButtonSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Save your calculations as projects to reuse them later. ähnelt.
+        /// </summary>
+        internal static string SaveProjectsDescription {
+            get {
+                return ResourceManager.GetString("SaveProjectsDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Savings ähnelt.
+        /// </summary>
+        internal static string Savings {
+            get {
+                return ResourceManager.GetString("Savings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Thickness (cm) ähnelt.
+        /// </summary>
+        internal static string ScreedThickness {
+            get {
+                return ResourceManager.GetString("ScreedThickness", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Screed type ähnelt.
+        /// </summary>
+        internal static string ScreedType {
+            get {
+                return ResourceManager.GetString("ScreedType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Anhydrite screed ähnelt.
+        /// </summary>
+        internal static string ScreedTypeAnhydrit {
+            get {
+                return ResourceManager.GetString("ScreedTypeAnhydrit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Self-leveling screed ähnelt.
+        /// </summary>
+        internal static string ScreedTypeFlow {
+            get {
+                return ResourceManager.GetString("ScreedTypeFlow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cement screed ähnelt.
+        /// </summary>
+        internal static string ScreedTypeZement {
+            get {
+                return ResourceManager.GetString("ScreedTypeZement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Volume ähnelt.
+        /// </summary>
+        internal static string ScreedVolume {
+            get {
+                return ResourceManager.GetString("ScreedVolume", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Weight ähnelt.
+        /// </summary>
+        internal static string ScreedWeight {
+            get {
+                return ResourceManager.GetString("ScreedWeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Drywall screws ähnelt.
+        /// </summary>
+        internal static string Screws {
+            get {
+                return ResourceManager.GetString("Screws", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Business ähnelt.
+        /// </summary>
+        internal static string SectionBusiness {
+            get {
+                return ResourceManager.GetString("SectionBusiness", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Floor &amp; Wall ähnelt.
+        /// </summary>
+        internal static string SectionFloorWall {
+            get {
+                return ResourceManager.GetString("SectionFloorWall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Pro Tools ähnelt.
+        /// </summary>
+        internal static string SectionPremiumTools {
+            get {
+                return ResourceManager.GetString("SectionPremiumTools", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Select imperial unit system ähnelt.
+        /// </summary>
+        internal static string SelectImperialSemantic {
+            get {
+                return ResourceManager.GetString("SelectImperialSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Switch language to English ähnelt.
+        /// </summary>
+        internal static string SelectLanguageEnglishSemantic {
+            get {
+                return ResourceManager.GetString("SelectLanguageEnglishSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Switch language to French ähnelt.
+        /// </summary>
+        internal static string SelectLanguageFrenchSemantic {
+            get {
+                return ResourceManager.GetString("SelectLanguageFrenchSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Switch language to German ähnelt.
+        /// </summary>
+        internal static string SelectLanguageGermanSemantic {
+            get {
+                return ResourceManager.GetString("SelectLanguageGermanSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Switch language to Italian ähnelt.
+        /// </summary>
+        internal static string SelectLanguageItalianSemantic {
+            get {
+                return ResourceManager.GetString("SelectLanguageItalianSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Switch language to Portuguese ähnelt.
+        /// </summary>
+        internal static string SelectLanguagePortugueseSemantic {
+            get {
+                return ResourceManager.GetString("SelectLanguagePortugueseSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Switch language to Spanish ähnelt.
+        /// </summary>
+        internal static string SelectLanguageSpanishSemantic {
+            get {
+                return ResourceManager.GetString("SelectLanguageSpanishSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Select metric unit system ähnelt.
+        /// </summary>
+        internal static string SelectMetricSemantic {
+            get {
+                return ResourceManager.GetString("SelectMetricSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Self-Mixing ähnelt.
+        /// </summary>
+        internal static string SelfMixing {
+            get {
+                return ResourceManager.GetString("SelfMixing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die About ähnelt.
+        /// </summary>
+        internal static string SettingsAbout {
+            get {
+                return ResourceManager.GetString("SettingsAbout", resourceCulture);
             }
         }
         
@@ -466,15 +5839,20 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Choose Design ähnelt.
-        /// </summary>
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Language ähnelt.
         /// </summary>
         internal static string SettingsLanguage {
             get {
                 return ResourceManager.GetString("SettingsLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Premium ähnelt.
+        /// </summary>
+        internal static string SettingsPremium {
+            get {
+                return ResourceManager.GetString("SettingsPremium", resourceCulture);
             }
         }
         
@@ -488,36 +5866,463 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Classic ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Unit System ähnelt.
         /// </summary>
+        internal static string SettingsUnitSystem {
+            get {
+                return ResourceManager.GetString("SettingsUnitSystem", resourceCulture);
+            }
+        }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Clean &amp; Clear ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Shape ähnelt.
         /// </summary>
+        internal static string Shape {
+            get {
+                return ResourceManager.GetString("Shape", resourceCulture);
+            }
+        }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Glass Dark ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Circle ähnelt.
         /// </summary>
+        internal static string ShapeCircle {
+            get {
+                return ResourceManager.GetString("ShapeCircle", resourceCulture);
+            }
+        }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Elegant &amp; Dark ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die L-shape ähnelt.
         /// </summary>
+        internal static string ShapeLShape {
+            get {
+                return ResourceManager.GetString("ShapeLShape", resourceCulture);
+            }
+        }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Soft Light ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Rectangle ähnelt.
         /// </summary>
+        internal static string ShapeRectangle {
+            get {
+                return ResourceManager.GetString("ShapeRectangle", resourceCulture);
+            }
+        }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Soft &amp; Light ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die T-shape ähnelt.
         /// </summary>
+        internal static string ShapeTShape {
+            get {
+                return ResourceManager.GetString("ShapeTShape", resourceCulture);
+            }
+        }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Vivid ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Trapezoid ähnelt.
         /// </summary>
+        internal static string ShapeTrapezoid {
+            get {
+                return ResourceManager.GetString("ShapeTrapezoid", resourceCulture);
+            }
+        }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Modern &amp; Vibrant ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Triangle ähnelt.
         /// </summary>
+        internal static string ShapeTriangle {
+            get {
+                return ResourceManager.GetString("ShapeTriangle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Share Material List ähnelt.
+        /// </summary>
+        internal static string ShareMaterialList {
+            get {
+                return ResourceManager.GetString("ShareMaterialList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Copy ähnelt.
+        /// </summary>
+        internal static string ShareResult {
+            get {
+                return ResourceManager.GetString("ShareResult", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Slab Thickness (cm) ähnelt.
+        /// </summary>
+        internal static string SlabHeight {
+            get {
+                return ResourceManager.GetString("SlabHeight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Slab Length (m) ähnelt.
+        /// </summary>
+        internal static string SlabLength {
+            get {
+                return ResourceManager.GetString("SlabLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Slab Width (m) ähnelt.
+        /// </summary>
+        internal static string SlabWidth {
+            get {
+                return ResourceManager.GetString("SlabWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Soil/Mulch ähnelt.
+        /// </summary>
+        internal static string Soil {
+            get {
+                return ResourceManager.GetString("Soil", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Solar Yield ähnelt.
+        /// </summary>
+        internal static string SolarYield {
+            get {
+                return ResourceManager.GetString("SolarYield", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Loading graphics ähnelt.
+        /// </summary>
+        internal static string SplashStep_Graphics {
+            get {
+                return ResourceManager.GetString("SplashStep_Graphics", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Starting app ähnelt.
+        /// </summary>
+        internal static string SplashStep_Starting {
+            get {
+                return ResourceManager.GetString("SplashStep_Starting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Stair Width (cm) ähnelt.
+        /// </summary>
+        internal static string StairWidth {
+            get {
+                return ResourceManager.GetString("StairWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Stair Dimensions ähnelt.
+        /// </summary>
+        internal static string StairsDimensions {
+            get {
+                return ResourceManager.GetString("StairsDimensions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Status (max. 3%) ähnelt.
+        /// </summary>
+        internal static string StatusMaxThreePercent {
+            get {
+                return ResourceManager.GetString("StatusMaxThreePercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Steps ähnelt.
+        /// </summary>
+        internal static string StepsUnit {
+            get {
+                return ResourceManager.GetString("StepsUnit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Depth (cm) ähnelt.
+        /// </summary>
+        internal static string StripDepth {
+            get {
+                return ResourceManager.GetString("StripDepth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Strip Foundation ähnelt.
+        /// </summary>
+        internal static string StripFoundation {
+            get {
+                return ResourceManager.GetString("StripFoundation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Total Length (m) ähnelt.
+        /// </summary>
+        internal static string StripLength {
+            get {
+                return ResourceManager.GetString("StripLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Width (cm) ähnelt.
+        /// </summary>
+        internal static string StripWidth {
+            get {
+                return ResourceManager.GetString("StripWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Strips needed ähnelt.
+        /// </summary>
+        internal static string StripsNeeded {
+            get {
+                return ResourceManager.GetString("StripsNeeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Studs ähnelt.
+        /// </summary>
+        internal static string Studs {
+            get {
+                return ResourceManager.GetString("Studs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Framing: CW profiles (vertical, 62.5cm spacing) with UW profiles (top/bottom) + drywall sheet + screws ähnelt.
+        /// </summary>
+        internal static string StudsDescription {
+            get {
+                return ResourceManager.GetString("StudsDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Subtotal net ähnelt.
+        /// </summary>
+        internal static string SubtotalNet {
+            get {
+                return ResourceManager.GetString("SubtotalNet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Success ähnelt.
+        /// </summary>
+        internal static string Success {
+            get {
+                return ResourceManager.GetString("Success", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die History ähnelt.
+        /// </summary>
+        internal static string TabHistory {
+            get {
+                return ResourceManager.GetString("TabHistory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Home ähnelt.
+        /// </summary>
+        internal static string TabHome {
+            get {
+                return ResourceManager.GetString("TabHome", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Projects ähnelt.
+        /// </summary>
+        internal static string TabProjects {
+            get {
+                return ResourceManager.GetString("TabProjects", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Settings ähnelt.
+        /// </summary>
+        internal static string TabSettings {
+            get {
+                return ResourceManager.GetString("TabSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Target U-Value ähnelt.
+        /// </summary>
+        internal static string TargetUValue {
+            get {
+                return ResourceManager.GetString("TargetUValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Target U-Value must be less than current U-Value ähnelt.
+        /// </summary>
+        internal static string TargetUValueMustBeLess {
+            get {
+                return ResourceManager.GetString("TargetUValueMustBeLess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Template applied! ähnelt.
+        /// </summary>
+        internal static string TemplateApplied {
+            get {
+                return ResourceManager.GetString("TemplateApplied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Bathroom tiling ähnelt.
+        /// </summary>
+        internal static string TemplateBathroom {
+            get {
+                return ResourceManager.GetString("TemplateBathroom", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Tiles + grout for a standard bathroom ähnelt.
+        /// </summary>
+        internal static string TemplateBathroomDesc {
+            get {
+                return ResourceManager.GetString("TemplateBathroomDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Template deleted ähnelt.
+        /// </summary>
+        internal static string TemplateDeleted {
+            get {
+                return ResourceManager.GetString("TemplateDeleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Drywall partition ähnelt.
+        /// </summary>
+        internal static string TemplateDrywall {
+            get {
+                return ResourceManager.GetString("TemplateDrywall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Double-sided with CW75 profiles ähnelt.
+        /// </summary>
+        internal static string TemplateDrywallDesc {
+            get {
+                return ResourceManager.GetString("TemplateDrywallDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Template contains no calculators ähnelt.
+        /// </summary>
+        internal static string TemplateEmpty {
+            get {
+                return ResourceManager.GetString("TemplateEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Floor renovation ähnelt.
+        /// </summary>
+        internal static string TemplateFlooring {
+            get {
+                return ResourceManager.GetString("TemplateFlooring", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Laminate + screed calculation ähnelt.
+        /// </summary>
+        internal static string TemplateFlooringDesc {
+            get {
+                return ResourceManager.GetString("TemplateFlooringDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Garden paving ähnelt.
+        /// </summary>
+        internal static string TemplateGarden {
+            get {
+                return ResourceManager.GetString("TemplateGarden", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Paving stones for garden area ähnelt.
+        /// </summary>
+        internal static string TemplateGardenDesc {
+            get {
+                return ResourceManager.GetString("TemplateGardenDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Paint living room ähnelt.
+        /// </summary>
+        internal static string TemplateLivingRoom {
+            get {
+                return ResourceManager.GetString("TemplateLivingRoom", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Paint + wallpaper calculation ähnelt.
+        /// </summary>
+        internal static string TemplateLivingRoomDesc {
+            get {
+                return ResourceManager.GetString("TemplateLivingRoomDesc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Premium access active ähnelt.
+        /// </summary>
+        internal static string TemporaryAccessActive {
+            get {
+                return ResourceManager.GetString("TemporaryAccessActive", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Thread Drill ähnelt.
+        /// </summary>
+        internal static string ThreadDrill {
+            get {
+                return ResourceManager.GetString("ThreadDrill", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Tile Dimensions ähnelt.
@@ -534,6 +6339,33 @@ namespace HandwerkerRechner.Resources.Strings {
         internal static string TileLength {
             get {
                 return ResourceManager.GetString("TileLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter tile length in centimeters ähnelt.
+        /// </summary>
+        internal static string TileLengthSemantic {
+            get {
+                return ResourceManager.GetString("TileLengthSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Tile width (cm) ähnelt.
+        /// </summary>
+        internal static string TileWidth {
+            get {
+                return ResourceManager.GetString("TileWidth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter tile width in centimeters ähnelt.
+        /// </summary>
+        internal static string TileWidthSemantic {
+            get {
+                return ResourceManager.GetString("TileWidthSemantic", resourceCulture);
             }
         }
         
@@ -556,20 +6388,659 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Tile width (cm) ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Total area ähnelt.
         /// </summary>
-        internal static string TileWidth {
+        internal static string TotalArea {
             get {
-                return ResourceManager.GetString("TileWidth", resourceCulture);
+                return ResourceManager.GetString("TotalArea", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Total area (with coats) ähnelt.
         /// </summary>
-        internal static string TotalArea {
+        internal static string TotalAreaWithCoats {
             get {
-                return ResourceManager.GetString("TotalArea", resourceCulture);
+                return ResourceManager.GetString("TotalAreaWithCoats", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Total cost ähnelt.
+        /// </summary>
+        internal static string TotalCost {
+            get {
+                return ResourceManager.GetString("TotalCost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Total gross ähnelt.
+        /// </summary>
+        internal static string TotalGross {
+            get {
+                return ResourceManager.GetString("TotalGross", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Total net ähnelt.
+        /// </summary>
+        internal static string TotalNet {
+            get {
+                return ResourceManager.GetString("TotalNet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die UW profiles (top/bottom) ähnelt.
+        /// </summary>
+        internal static string UWProfilesTopBottom {
+            get {
+                return ResourceManager.GetString("UWProfilesTopBottom", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Uncomfortable ähnelt.
+        /// </summary>
+        internal static string UncomfortableStairs {
+            get {
+                return ResourceManager.GetString("UncomfortableStairs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die A ähnelt.
+        /// </summary>
+        internal static string UnitAmpere {
+            get {
+                return ResourceManager.GetString("UnitAmpere", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die bags ähnelt.
+        /// </summary>
+        internal static string UnitBags {
+            get {
+                return ResourceManager.GetString("UnitBags", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die boards ähnelt.
+        /// </summary>
+        internal static string UnitBoards {
+            get {
+                return ResourceManager.GetString("UnitBoards", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Buckets (5 kg) ähnelt.
+        /// </summary>
+        internal static string UnitBuckets {
+            get {
+                return ResourceManager.GetString("UnitBuckets", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die days ähnelt.
+        /// </summary>
+        internal static string UnitDays {
+            get {
+                return ResourceManager.GetString("UnitDays", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die ° ähnelt.
+        /// </summary>
+        internal static string UnitDegrees {
+            get {
+                return ResourceManager.GetString("UnitDegrees", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die kg ähnelt.
+        /// </summary>
+        internal static string UnitKilograms {
+            get {
+                return ResourceManager.GetString("UnitKilograms", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die liters ähnelt.
+        /// </summary>
+        internal static string UnitLiters {
+            get {
+                return ResourceManager.GetString("UnitLiters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die m ähnelt.
+        /// </summary>
+        internal static string UnitMeters {
+            get {
+                return ResourceManager.GetString("UnitMeters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Ω ähnelt.
+        /// </summary>
+        internal static string UnitOhms {
+            get {
+                return ResourceManager.GetString("UnitOhms", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die % ähnelt.
+        /// </summary>
+        internal static string UnitPercent {
+            get {
+                return ResourceManager.GetString("UnitPercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die pcs. ähnelt.
+        /// </summary>
+        internal static string UnitPieces {
+            get {
+                return ResourceManager.GetString("UnitPieces", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die plates ähnelt.
+        /// </summary>
+        internal static string UnitPlates {
+            get {
+                return ResourceManager.GetString("UnitPlates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die rolls ähnelt.
+        /// </summary>
+        internal static string UnitRolls {
+            get {
+                return ResourceManager.GetString("UnitRolls", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die m² ähnelt.
+        /// </summary>
+        internal static string UnitSquareMeters {
+            get {
+                return ResourceManager.GetString("UnitSquareMeters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Strips ähnelt.
+        /// </summary>
+        internal static string UnitStrips {
+            get {
+                return ResourceManager.GetString("UnitStrips", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Unit System ähnelt.
+        /// </summary>
+        internal static string UnitSystem {
+            get {
+                return ResourceManager.GetString("UnitSystem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Unit system changed ähnelt.
+        /// </summary>
+        internal static string UnitSystemChanged {
+            get {
+                return ResourceManager.GetString("UnitSystemChanged", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die All calculators now use {0}. ähnelt.
+        /// </summary>
+        internal static string UnitSystemChangedMessage {
+            get {
+                return ResourceManager.GetString("UnitSystemChangedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Imperial ähnelt.
+        /// </summary>
+        internal static string UnitSystemImperial {
+            get {
+                return ResourceManager.GetString("UnitSystemImperial", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Metric ähnelt.
+        /// </summary>
+        internal static string UnitSystemMetric {
+            get {
+                return ResourceManager.GetString("UnitSystemMetric", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die V ähnelt.
+        /// </summary>
+        internal static string UnitVolts {
+            get {
+                return ResourceManager.GetString("UnitVolts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die W ähnelt.
+        /// </summary>
+        internal static string UnitWatts {
+            get {
+                return ResourceManager.GetString("UnitWatts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Unlock all 5 categories ähnelt.
+        /// </summary>
+        internal static string UnlockAllCategories {
+            get {
+                return ResourceManager.GetString("UnlockAllCategories", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Unlock all 5 premium categories for only 3.99 €?  ✓ Drywall (Framework, Panels, Filler) ✓ Electrical (Voltage drop, Power costs, Ohm) ✓ Metal (Weight, Thread taps) ✓ Garden (Paving, Soil, Pond) ✓ Roof &amp; Solar (Pitch, Tiles, Yield)  ✓ Ads will be permanently removed!  Save 0.96 € compared to individual purchase! ähnelt.
+        /// </summary>
+        internal static string UnlockAllCategoriesMessage {
+            get {
+                return ResourceManager.GetString("UnlockAllCategoriesMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Unlock all categories ähnelt.
+        /// </summary>
+        internal static string UnlockAllCategoriesTitle {
+            get {
+                return ResourceManager.GetString("UnlockAllCategoriesTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Unlock category ähnelt.
+        /// </summary>
+        internal static string UnlockCategory {
+            get {
+                return ResourceManager.GetString("UnlockCategory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Would you like to unlock "{0}" for 0.99 €?  ✓ All calculators in this category ✓ Ads will be permanently removed! ähnelt.
+        /// </summary>
+        internal static string UnlockCategoryMessage {
+            get {
+                return ResourceManager.GetString("UnlockCategoryMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Valid until ähnelt.
+        /// </summary>
+        internal static string ValidUntil {
+            get {
+                return ResourceManager.GetString("ValidUntil", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Value must be greater than 0. ähnelt.
+        /// </summary>
+        internal static string ValueMustBePositive {
+            get {
+                return ResourceManager.GetString("ValueMustBePositive", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die VAT amount ähnelt.
+        /// </summary>
+        internal static string VatAmount {
+            get {
+                return ResourceManager.GetString("VatAmount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die VAT (%) ähnelt.
+        /// </summary>
+        internal static string VatPercent {
+            get {
+                return ResourceManager.GetString("VatPercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die VDE compliant ähnelt.
+        /// </summary>
+        internal static string VdeCompliant {
+            get {
+                return ResourceManager.GetString("VdeCompliant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Not VDE compliant ähnelt.
+        /// </summary>
+        internal static string VdeNotCompliant {
+            get {
+                return ResourceManager.GetString("VdeNotCompliant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Watch Video → Continue ähnelt.
+        /// </summary>
+        internal static string VideoFor30Min {
+            get {
+                return ResourceManager.GetString("VideoFor30Min", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Core drill for metric ISO thread (material: steel) ähnelt.
+        /// </summary>
+        internal static string VisCoreDrillDescription {
+            get {
+                return ResourceManager.GetString("VisCoreDrillDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Steel beam profile (I-beam) with density calculation for various metals ähnelt.
+        /// </summary>
+        internal static string VisMetalWeightDescription {
+            get {
+                return ResourceManager.GetString("VisMetalWeightDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Paving stones with joints laid (different shades for realism) ähnelt.
+        /// </summary>
+        internal static string VisPavingStonesDescription {
+            get {
+                return ResourceManager.GetString("VisPavingStonesDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Pond cross-section: Liner with overlap on all sides (L × W + 2× depth + 2× overlap) ähnelt.
+        /// </summary>
+        internal static string VisPondLinerDescription {
+            get {
+                return ResourceManager.GetString("VisPondLinerDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Roof pitch: Right triangle with height and base length to calculate degrees (°) and percent (%) ähnelt.
+        /// </summary>
+        internal static string VisRoofPitchDescription {
+            get {
+                return ResourceManager.GetString("VisRoofPitchDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Roof tiles (curved) laid on battens with staggered rows for water runoff ähnelt.
+        /// </summary>
+        internal static string VisRoofTilesDescription {
+            get {
+                return ResourceManager.GetString("VisRoofTilesDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Raised bed cross-section: Layers of mulch, compost and soil ähnelt.
+        /// </summary>
+        internal static string VisSoilMulchDescription {
+            get {
+                return ResourceManager.GetString("VisSoilMulchDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Solar system on pitched roof: Solar radiation is converted to electrical energy by PV modules (kWp = peak power) ähnelt.
+        /// </summary>
+        internal static string VisSolarYieldDescription {
+            get {
+                return ResourceManager.GetString("VisSolarYieldDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Visualization ähnelt.
+        /// </summary>
+        internal static string Visualization {
+            get {
+                return ResourceManager.GetString("Visualization", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Cement ähnelt.
+        /// </summary>
+        internal static string VizCement {
+            get {
+                return ResourceManager.GetString("VizCement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Consumption ähnelt.
+        /// </summary>
+        internal static string VizConsumption {
+            get {
+                return ResourceManager.GetString("VizConsumption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Day ähnelt.
+        /// </summary>
+        internal static string VizDay {
+            get {
+                return ResourceManager.GetString("VizDay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Borderline ähnelt.
+        /// </summary>
+        internal static string VizDinBorderline {
+            get {
+                return ResourceManager.GetString("VizDinBorderline", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Not DIN-compliant ähnelt.
+        /// </summary>
+        internal static string VizDinNotCompliant {
+            get {
+                return ResourceManager.GetString("VizDinNotCompliant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die DIN OK ähnelt.
+        /// </summary>
+        internal static string VizDinOk {
+            get {
+                return ResourceManager.GetString("VizDinOk", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Gravel ähnelt.
+        /// </summary>
+        internal static string VizGravel {
+            get {
+                return ResourceManager.GetString("VizGravel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die incl. 10% reserve ähnelt.
+        /// </summary>
+        internal static string VizIncludeReserve {
+            get {
+                return ResourceManager.GetString("VizIncludeReserve", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Material cost ähnelt.
+        /// </summary>
+        internal static string VizMaterialCost {
+            get {
+                return ResourceManager.GetString("VizMaterialCost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Month ähnelt.
+        /// </summary>
+        internal static string VizMonth {
+            get {
+                return ResourceManager.GetString("VizMonth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Sand ähnelt.
+        /// </summary>
+        internal static string VizSand {
+            get {
+                return ResourceManager.GetString("VizSand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Topsoil ähnelt.
+        /// </summary>
+        internal static string VizTopsoil {
+            get {
+                return ResourceManager.GetString("VizTopsoil", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Waste ähnelt.
+        /// </summary>
+        internal static string VizWaste {
+            get {
+                return ResourceManager.GetString("VizWaste", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Year ähnelt.
+        /// </summary>
+        internal static string VizYear {
+            get {
+                return ResourceManager.GetString("VizYear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Voltage (V) ähnelt.
+        /// </summary>
+        internal static string Voltage {
+            get {
+                return ResourceManager.GetString("Voltage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Voltage Drop ähnelt.
+        /// </summary>
+        internal static string VoltageDrop {
+            get {
+                return ResourceManager.GetString("VoltageDrop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Calculate voltage drop ähnelt.
+        /// </summary>
+        internal static string VoltageDropCalculator {
+            get {
+                return ResourceManager.GetString("VoltageDropCalculator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Voltage drop over cable run (max. 3% recommended) ähnelt.
+        /// </summary>
+        internal static string VoltageDropOverCable {
+            get {
+                return ResourceManager.GetString("VoltageDropOverCable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Voltage drop too high! ähnelt.
+        /// </summary>
+        internal static string VoltageDropTooHigh {
+            get {
+                return ResourceManager.GetString("VoltageDropTooHigh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter voltage in volts ähnelt.
+        /// </summary>
+        internal static string VoltageSemantic {
+            get {
+                return ResourceManager.GetString("VoltageSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Voltage U (V) ähnelt.
+        /// </summary>
+        internal static string VoltageU {
+            get {
+                return ResourceManager.GetString("VoltageU", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Voltage U ähnelt.
+        /// </summary>
+        internal static string VoltageULabel {
+            get {
+                return ResourceManager.GetString("VoltageULabel", resourceCulture);
             }
         }
         
@@ -583,11 +7054,47 @@ namespace HandwerkerRechner.Resources.Strings {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Wall Dimensions ähnelt.
+        /// </summary>
+        internal static string WallDimensions {
+            get {
+                return ResourceManager.GetString("WallDimensions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter wall height in meters ähnelt.
+        /// </summary>
+        internal static string WallHeightSemantic {
+            get {
+                return ResourceManager.GetString("WallHeightSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Wall length (m) ähnelt.
         /// </summary>
         internal static string WallLength {
             get {
                 return ResourceManager.GetString("WallLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter wall length in meters ähnelt.
+        /// </summary>
+        internal static string WallLengthSemantic {
+            get {
+                return ResourceManager.GetString("WallLengthSemantic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Wall thickness too large ähnelt.
+        /// </summary>
+        internal static string WallThicknessTooLarge {
+            get {
+                return ResourceManager.GetString("WallThicknessTooLarge", resourceCulture);
             }
         }
         
@@ -599,263 +7106,94 @@ namespace HandwerkerRechner.Resources.Strings {
                 return ResourceManager.GetString("Waste", resourceCulture);
             }
         }
-
-        internal static string Cancel {
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter waste in percent ähnelt.
+        /// </summary>
+        internal static string WasteSemantic {
             get {
-                return ResourceManager.GetString("Cancel", resourceCulture);
+                return ResourceManager.GetString("WasteSemantic", resourceCulture);
             }
         }
-
-        internal static string OK {
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Watch Video ähnelt.
+        /// </summary>
+        internal static string WatchAdForHistory {
             get {
-                return ResourceManager.GetString("OK", resourceCulture);
+                return ResourceManager.GetString("WatchAdForHistory", resourceCulture);
             }
         }
-
-        internal static string HistoryThreadSize {
-            get {
-                return ResourceManager.GetString("HistoryThreadSize", resourceCulture);
-            }
-        }
-
-        internal static string CableCostLabel {
-            get {
-                return ResourceManager.GetString("CableCostLabel", resourceCulture);
-            }
-        }
-
-        internal static string HistoryHoursPerDay {
-            get {
-                return ResourceManager.GetString("HistoryHoursPerDay", resourceCulture);
-            }
-        }
-
-        internal static string HistorySoilDepth {
-            get {
-                return ResourceManager.GetString("HistorySoilDepth", resourceCulture);
-            }
-        }
-
-        internal static string HistoryYears {
-            get {
-                return ResourceManager.GetString("HistoryYears", resourceCulture);
-            }
-        }
-
-        internal static string HistoryRoofPitch {
-            get {
-                return ResourceManager.GetString("HistoryRoofPitch", resourceCulture);
-            }
-        }
-
-        internal static string HistoryRoofArea {
-            get {
-                return ResourceManager.GetString("HistoryRoofArea", resourceCulture);
-            }
-        }
-
-        internal static string HistoryDoubleLayered {
-            get {
-                return ResourceManager.GetString("HistoryDoubleLayered", resourceCulture);
-            }
-        }
-
-        internal static string HistoryWallHeight {
-            get {
-                return ResourceManager.GetString("HistoryWallHeight", resourceCulture);
-            }
-        }
-
-        internal static string HistoryPaintCoats {
-            get {
-                return ResourceManager.GetString("HistoryPaintCoats", resourceCulture);
-            }
-        }
-
-        internal static string SectionFloorWall {
-            get {
-                return ResourceManager.GetString("SectionFloorWall", resourceCulture);
-            }
-        }
-
-        internal static string SectionPremiumTools {
-            get {
-                return ResourceManager.GetString("SectionPremiumTools", resourceCulture);
-            }
-        }
-
-        internal static string CalculatorCount {
-            get {
-                return ResourceManager.GetString("CalculatorCount", resourceCulture);
-            }
-        }
-
-        internal static string GetPremium {
-            get {
-                return ResourceManager.GetString("GetPremium", resourceCulture);
-            }
-        }
-
-        internal static string PremiumPrice {
-            get {
-                return ResourceManager.GetString("PremiumPrice", resourceCulture);
-            }
-        }
-
-        internal static string MoreCategories {
-            get {
-                return ResourceManager.GetString("MoreCategories", resourceCulture);
-            }
-        }
-
-        // Rewarded Ads
-        internal static string PremiumCalculatorsLocked {
-            get {
-                return ResourceManager.GetString("PremiumCalculatorsLocked", resourceCulture);
-            }
-        }
-
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Watch a short video to continue. ähnelt.
+        /// </summary>
         internal static string WatchVideoFor30Min {
             get {
                 return ResourceManager.GetString("WatchVideoFor30Min", resourceCulture);
             }
         }
-
-        internal static string AccessGranted {
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Count ähnelt.
+        /// </summary>
+        internal static string WindowCount {
             get {
-                return ResourceManager.GetString("AccessGranted", resourceCulture);
+                return ResourceManager.GetString("WindowCount", resourceCulture);
             }
         }
-
-        internal static string AccessExpiresIn {
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Height (m) ähnelt.
+        /// </summary>
+        internal static string WindowHeight {
             get {
-                return ResourceManager.GetString("AccessExpiresIn", resourceCulture);
+                return ResourceManager.GetString("WindowHeight", resourceCulture);
             }
         }
-
-        internal static string TemporaryAccessActive {
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Width (m) ähnelt.
+        /// </summary>
+        internal static string WindowWidth {
             get {
-                return ResourceManager.GetString("TemporaryAccessActive", resourceCulture);
+                return ResourceManager.GetString("WindowWidth", resourceCulture);
             }
         }
-
-        internal static string VideoFor30Min {
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Windows ähnelt.
+        /// </summary>
+        internal static string Windows {
             get {
-                return ResourceManager.GetString("VideoFor30Min", resourceCulture);
+                return ResourceManager.GetString("Windows", resourceCulture);
             }
         }
-
-        internal static string ExtendedHistoryTitle {
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Work hours (h) ähnelt.
+        /// </summary>
+        internal static string WorkHours {
             get {
-                return ResourceManager.GetString("ExtendedHistoryTitle", resourceCulture);
+                return ResourceManager.GetString("WorkHours", resourceCulture);
             }
         }
-
-        internal static string ExtendedHistoryDesc {
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Number of workers ähnelt.
+        /// </summary>
+        internal static string WorkerCount {
             get {
-                return ResourceManager.GetString("ExtendedHistoryDesc", resourceCulture);
+                return ResourceManager.GetString("WorkerCount", resourceCulture);
             }
         }
-
-        internal static string ExportMaterialList {
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Yes ähnelt.
+        /// </summary>
+        internal static string Yes {
             get {
-                return ResourceManager.GetString("ExportMaterialList", resourceCulture);
-            }
-        }
-
-        internal static string ExportMaterialDesc {
-            get {
-                return ResourceManager.GetString("ExportMaterialDesc", resourceCulture);
-            }
-        }
-
-        internal static string ExportProject {
-            get {
-                return ResourceManager.GetString("ExportProject", resourceCulture);
-            }
-        }
-
-        internal static string ExportProjectDesc {
-            get {
-                return ResourceManager.GetString("ExportProjectDesc", resourceCulture);
-            }
-        }
-
-        internal static string MaterialListPdf {
-            get {
-                return ResourceManager.GetString("MaterialListPdf", resourceCulture);
-            }
-        }
-
-        internal static string ProjectReport {
-            get {
-                return ResourceManager.GetString("ProjectReport", resourceCulture);
-            }
-        }
-
-        internal static string AdVideoNotAvailableTitle {
-            get {
-                return ResourceManager.GetString("AdVideoNotAvailableTitle", resourceCulture);
-            }
-        }
-
-        internal static string AdVideoNotAvailableMessage {
-            get {
-                return ResourceManager.GetString("AdVideoNotAvailableMessage", resourceCulture);
-            }
-        }
-
-        internal static string AlertError {
-            get {
-                return ResourceManager.GetString("AlertError", resourceCulture);
-            }
-        }
-
-        internal static string BrowserError {
-            get {
-                return ResourceManager.GetString("BrowserError", resourceCulture);
-            }
-        }
-
-        internal static string ResultAcceptable {
-            get {
-                return ResourceManager.GetString("ResultAcceptable", resourceCulture);
-            }
-        }
-
-        internal static string ResultCost {
-            get {
-                return ResourceManager.GetString("ResultCost", resourceCulture);
-            }
-        }
-
-        internal static string ResultPercentDrop {
-            get {
-                return ResourceManager.GetString("ResultPercentDrop", resourceCulture);
-            }
-        }
-
-        internal static string UnitStrips {
-            get {
-                return ResourceManager.GetString("UnitStrips", resourceCulture);
-            }
-        }
-
-        internal static string WallThicknessTooLarge {
-            get {
-                return ResourceManager.GetString("WallThicknessTooLarge", resourceCulture);
-            }
-        }
-
-        internal static string SplashStep_Graphics {
-            get {
-                return ResourceManager.GetString("SplashStep_Graphics", resourceCulture);
-            }
-        }
-
-        internal static string SplashStep_Starting {
-            get {
-                return ResourceManager.GetString("SplashStep_Starting", resourceCulture);
+                return ResourceManager.GetString("Yes", resourceCulture);
             }
         }
     }

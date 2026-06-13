@@ -70,8 +70,6 @@ public sealed partial class CalendarViewModel : ViewModelBase, IMessageSource
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // === Status Overlay ===
 
@@ -175,8 +173,6 @@ public sealed partial class CalendarViewModel : ViewModelBase, IMessageSource
             // Kalender-Tage mit DB-Daten generieren (ein Aufruf reicht, da CalculateMonth die DB bereits geladen hat)
             await GenerateCalendarDaysAsync();
 
-            // Premium status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
         }
         catch (Exception ex)
         {
@@ -341,11 +337,11 @@ public sealed partial class CalendarViewModel : ViewModelBase, IMessageSource
             }
 
             workDay.Status = DayStatus.Vacation;
-            workDay.Note = $"{AppStrings.Vacation} ({startDate:dd.MM} - {startDate.AddDays(days - 1):dd.MM})";
+            workDay.Note = $"{AppStrings.Vacation} ({TimeFormatter.FormatDayMonth(startDate)} - {TimeFormatter.FormatDayMonth(startDate.AddDays(days - 1))})";
             await _database.SaveWorkDayAsync(workDay);
         }
 
-        var msg = string.Format(AppStrings.VacationDaysEnteredFormat, days, startDate.ToString("dd.MM.yyyy"));
+        var msg = string.Format(AppStrings.VacationDaysEnteredFormat, days, startDate.ToString("d"));
         if (skipped > 0)
             msg += " " + string.Format(AppStrings.VacationSkippedWorkedDays ?? "({0} Tage mit erfasster Arbeitszeit übersprungen)", skipped);
         if (capped)

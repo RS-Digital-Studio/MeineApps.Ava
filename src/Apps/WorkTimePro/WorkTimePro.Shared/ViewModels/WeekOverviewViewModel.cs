@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.Async;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
@@ -14,7 +15,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for week overview
 /// </summary>
-public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSource, IMessageSource
+public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSource, IMessageSource, IDisposable
 {
     private readonly ICalculationService _calculation;
     private readonly IDatabaseService _database;
@@ -37,6 +38,22 @@ public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSo
         _purchaseService = purchaseService;
         _trialService = trialService;
         _localization = localization;
+
+        // VM-komponierte Texte (WeekDisplay, PredictiveInsightText, …) werden nur in
+        // LoadDataAsync gesetzt — bei Sprachwechsel neu laden, sonst frieren sie ein.
+        _localization.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            LoadDataAsync().Forget(ex =>
+                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message))));
+    }
+
+    public void Dispose()
+    {
+        _localization.LanguageChanged -= OnLanguageChanged;
     }
 
     // === Properties ===
@@ -89,8 +106,6 @@ public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSo
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private bool _showAds = true;
 
     // === Predictive Insights ===
 
@@ -116,13 +131,14 @@ public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSo
         {
             IsLoading = true;
 
-            // Fallback-Werte VOR DB-Zugriff setzen (damit bei Exception zumindest Titel sichtbar ist)
-            var culture = System.Globalization.CultureInfo.CurrentCulture;
-            var cal = culture.Calendar;
-            var weekNum = cal.GetWeekOfYear(SelectedDate, System.Globalization.CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+            // Fallback-Werte VOR DB-Zugriff setzen (damit bei Exception zumindest Titel sichtbar ist).
+            // ISO-Wochennummer + ISO-Jahr wie die Datenseite (CalculateWeekAsync) —
+            // GetWeekOfYear weicht am Jahreswechsel von ISO 8601 ab und zeigte dann
+            // eine andere KW als tatsächlich geladen wurde.
+            var weekNum = _calculation.GetIsoWeekNumber(SelectedDate);
             WeekDisplay = string.Format(
                 AppStrings.WeekNumberFormat ?? "CW {0} / {1}",
-                weekNum, SelectedDate.Year);
+                weekNum, System.Globalization.ISOWeek.GetYear(SelectedDate));
 
             // Montag bis Sonntag der aktuellen Woche
             var dayOfWeek = ((int)SelectedDate.DayOfWeek + 6) % 7;
@@ -155,8 +171,6 @@ public sealed partial class WeekOverviewViewModel : ViewModelBase, INavigationSo
             // Predictive Insights berechnen
             await UpdatePredictiveInsightAsync();
 
-            // Premium status
-            ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
         }
         catch (Exception ex)
         {

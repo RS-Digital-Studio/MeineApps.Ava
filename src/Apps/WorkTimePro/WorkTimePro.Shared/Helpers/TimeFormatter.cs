@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using WorkTimePro.Models;
 using WorkTimePro.Resources.Strings;
 
@@ -8,6 +10,29 @@ namespace WorkTimePro.Helpers;
 /// </summary>
 public static class TimeFormatter
 {
+    private static CultureInfo? _dayMonthCulture;
+    private static string _dayMonthPattern = "dd.MM";
+
+    /// <summary>
+    /// Kulturbasiertes Kurzformat "Tag und Monat" ohne Jahr (de: "13.06", en-US: "6/13").
+    /// Abgeleitet aus dem ShortDatePattern der aktuellen Kultur (Jahr-Anteil entfernt) —
+    /// hartkodiertes "dd.MM." würde EN/ES/FR-Nutzern ein deutsches Format zeigen.
+    /// </summary>
+    public static string FormatDayMonth(DateTime date)
+    {
+        var culture = CultureInfo.CurrentCulture;
+        if (!Equals(culture, _dayMonthCulture))
+        {
+            var p = Regex.Replace(culture.DateTimeFormat.ShortDatePattern, "y+", "");
+            p = p.Trim('/', '-', '.', ',', ' ');
+            p = Regex.Replace(p, @"([./\-, ])\1+", "$1"); // doppelte Trenner (Jahr stand mittig)
+            _dayMonthPattern = p.Length > 0 ? p : "dd.MM";
+            _dayMonthCulture = culture;
+        }
+
+        return date.ToString(_dayMonthPattern, culture);
+    }
+
     /// <summary>
     /// Formatiert Minuten als "H:MM" mit korrektem Vorzeichen
     /// </summary>

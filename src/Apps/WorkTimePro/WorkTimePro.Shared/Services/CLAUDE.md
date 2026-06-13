@@ -51,6 +51,12 @@ Mitternachts-Übergang: `LoadStatusAsync` prüft auch den gestrigen WorkDay (Nac
 - **Saldo** = Netto − Soll (aus `WorkSettings.GetHoursForDay()` — gecachtes JSON-Dictionary).
 - **§3 ArbZG**: 6-Monats-Durchschnitt ≤ 8h/Tag über Mo–Sa (Sonntage ausgeschlossen),
   Vacation/Sick zählen als 0h, Mindest-Schwelle 60 Werktage.
+- **Rundungs-Konvention (bewusste Entscheidung):** Der kumulative Saldo
+  (`GetCumulativeBalanceAsync` → Summe `BalanceMinutes`) läuft auf der **gerundeten
+  Abrechnungsbasis** (`ActualWorkMinutes` nach `RoundingMinutes`) — das ist die Zahl,
+  die der Nutzer pro Tag sieht und abrechnet. NUR die gesetzlichen Prüfungen (§3/§4 ArbZG)
+  nutzen `UnroundedWorkMinutes`. Zeitwerte runden kaufmännisch
+  (`MidpointRounding.AwayFromZero`), nicht Banker's Rounding.
 
 ## HolidayCalculator — reine Feiertagsberechnung
 
@@ -82,6 +88,18 @@ Android-Share via `IFileShareService` (FileProvider `com.meineapps.worktimepro.f
 5. **Wochenzusammenfassung** (Montag Morgen)
 
 Subscribed auf `ITimeTrackingService.StatusChanged`. `RescheduleAsync()` bei Settings-Änderungen.
+
+**Prozessbindung (bewusste Design-Wahl):** Morgen/Abend/Weekly laufen über `AlarmManager`
+(überleben Prozess-Tod und Reboot via BootReceiver). **Pausen- und Überstunden-Reminder**
+laufen dagegen über In-Memory-Timer (`Task.Delay`) — sie feuern nur, solange der Prozess
+lebt ("best effort"). Bei App-Kill durch das System entfallen sie bis zum nächsten Start.
+
+**Exact-Alarm-Permission (Android 13+):** `SCHEDULE_EXACT_ALARM` wird ab API 33 nicht mehr
+automatisch gewährt → ohne Nutzer-Aktion läuft die Planung im inexakten Fallback
+(`SetAndAllowWhileIdle`, Verzögerung im Doze möglich). Beim Aktivieren eines Reminders prüft
+`SettingsViewModel.WarnIfNotificationsDisabled` daher `CanScheduleExactAlarms()` und führt
+den Nutzer per `RequestExactAlarmPermission()` (Settings-Intent
+`ACTION_REQUEST_SCHEDULE_EXACT_ALARM`) zur System-Einstellung "Wecker und Erinnerungen".
 
 ## DesktopNotificationService
 

@@ -1,6 +1,7 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HandwerkerRechner.Models;
 using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
@@ -15,6 +16,7 @@ namespace HandwerkerRechner.ViewModels.Premium;
 /// </summary>
 public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposable, ICalculatorViewModel
 {
+    private readonly CraftEngine _craftEngine;
     private readonly ILocalizationService _localization;
     private readonly IProjectService _projectService;
     private readonly ICalculationHistoryService _historyService;
@@ -78,13 +80,13 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
     #region Lokalisierte Texte
 
     public string PageTitle => _localization.GetString("CalcMaterialCompare") ?? "Material-Vergleich";
-    public string AreaLabel => _localization.GetString("AreaSqm") ?? "Fläche (m²)";
+    public string AreaLabel => _localization.GetString("LabelAreaSqm") ?? "Fläche (m²)";
     public string ProductALabel => _localization.GetString("ProductA") ?? "Produkt A";
     public string ProductBLabel => _localization.GetString("ProductB") ?? "Produkt B";
     public string ProductNameLabel => _localization.GetString("ProductName") ?? "Bezeichnung";
     public string PricePerUnitLabel => _localization.GetString("PricePerUnit") ?? "Preis je Einheit (€)";
     public string ConsumptionLabel => _localization.GetString("ConsumptionPerSqm") ?? "Verbrauch je m²";
-    public string WasteLabel => _localization.GetString("WastePercent") ?? "Verschnitt (%)";
+    public string WasteLabel => _localization.GetString("Waste") ?? "Verschnitt (%)";
     public string TotalCostLabel => _localization.GetString("TotalCost") ?? "Gesamtkosten";
     public string SavingsLabel => _localization.GetString("Savings") ?? "Ersparnis";
     public string CheaperOptionLabel => _localization.GetString("CheaperOption") ?? "Günstigere Option";
@@ -101,12 +103,14 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
     #endregion
 
     public MaterialCompareViewModel(
+        CraftEngine craftEngine,
         ILocalizationService localization,
         IProjectService projectService,
         ICalculationHistoryService historyService,
         IMaterialExportService exportService,
         IFileShareService fileShareService)
     {
+        _craftEngine = craftEngine;
         _localization = localization;
         _projectService = projectService;
         _historyService = historyService;
@@ -143,15 +147,15 @@ public sealed partial class MaterialCompareViewModel : ViewModelBase, IDisposabl
                 return;
             }
 
-            // Gesamtkosten = Fläche x Verbrauch/m² x (1 + Verschnitt%) x Preis
-            TotalCostA = Area * ConsumptionA * (1 + WasteA / 100) * PriceA;
-            TotalCostB = Area * ConsumptionB * (1 + WasteB / 100) * PriceB;
+            // Kostenvergleich in der Engine; Gewinner-Name (lokalisiert) bleibt UI-Logik
+            var result = _craftEngine.CompareMaterialCosts(
+                Area, PriceA, ConsumptionA, WasteA, PriceB, ConsumptionB, WasteB);
 
-            SavingsAmount = Math.Abs(TotalCostA - TotalCostB);
-            var expensive = Math.Max(TotalCostA, TotalCostB);
-            SavingsPercent = expensive > 0 ? (SavingsAmount / expensive) * 100 : 0;
-
-            IsAcheaper = TotalCostA <= TotalCostB;
+            TotalCostA = result.TotalCostA;
+            TotalCostB = result.TotalCostB;
+            SavingsAmount = result.SavingsAmount;
+            SavingsPercent = result.SavingsPercent;
+            IsAcheaper = result.IsACheaper;
             CheaperProduct = IsAcheaper ? ProductAName : ProductBName;
 
             HasResult = true;

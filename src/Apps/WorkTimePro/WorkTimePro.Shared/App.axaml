@@ -29,6 +29,22 @@
     <StyleInclude Source="avares://MeineApps.UI/Controls/Card.axaml" />
     <StyleInclude Source="avares://MeineApps.UI/Controls/FloatingActionButton.axaml" />
     <StyleInclude Source="avares://MeineApps.UI/Styles/ModernCardStyles.axaml" />
+
+    <!-- Dezenter Fade-in für Modal-Overlays (Backdrop + Karte gemeinsam, 180 ms).
+         Nutzung: Classes="ModalOverlay" plus Classes.open an das IstOffen-Flag binden,
+         auf dem Overlay-Root-Border (IsVisible bleibt zusätzlich gebunden). Beim Schließen
+         wird sofort ausgeblendet (IsVisible=false) — bewusst nur Einblend-Animation. -->
+    <Style Selector="Border.ModalOverlay">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.ModalOverlay.open">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
   </Application.Styles>
 
 </Application>

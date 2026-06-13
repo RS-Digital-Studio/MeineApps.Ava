@@ -24,12 +24,24 @@ public sealed class ProjectTemplateService : IProjectTemplateService
         _templatesFilePath = Path.Combine(appDataPath, "templates.json");
     }
 
+    /// <summary>Wird ausgelöst, wenn das Speichern fehlschlägt (z.B. Speicher voll/Schreibschutz).</summary>
+    public event Action? SaveFailed;
+
     public async Task<List<ProjectTemplate>> GetAllTemplatesAsync()
     {
-        var all = new List<ProjectTemplate>(GetBuiltinTemplates());
-        var custom = await LoadCustomTemplatesAsync();
-        all.AddRange(custom);
-        return all;
+        await EnsureLoadedAsync();
+
+        await _semaphore.WaitAsync();
+        try
+        {
+            // Kopie herausgeben — Aufrufer dürfen nie die gecachte Liste enumerieren
+            // (parallele Mutation in SaveCustomTemplateAsync/DeleteCustomTemplateAsync).
+            return [.. GetBuiltinTemplates(), .. _customTemplates!];
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     // WICHTIG: Die Default-Value-Keys MÜSSEN exakt zu den Property-Namen passen, die
@@ -218,32 +230,49 @@ public sealed class ProjectTemplateService : IProjectTemplateService
     public async Task SaveCustomTemplateAsync(ProjectTemplate template)
     {
         template.IsCustom = true;
-        var templates = await LoadCustomTemplatesAsync();
-
-        var existing = templates.FindIndex(t => t.Id == template.Id);
-        if (existing >= 0)
-            templates[existing] = template;
-        else
-            templates.Add(template);
-
-        await SaveCustomTemplatesAsync(templates);
-    }
-
-    public async Task DeleteCustomTemplateAsync(string templateId)
-    {
-        var templates = await LoadCustomTemplatesAsync();
-        templates.RemoveAll(t => t.Id == templateId);
-        await SaveCustomTemplatesAsync(templates);
-    }
-
-    private async Task<List<ProjectTemplate>> LoadCustomTemplatesAsync()
-    {
-        if (_customTemplates != null) return _customTemplates;
+        await EnsureLoadedAsync();
 
         await _semaphore.WaitAsync();
         try
         {
-            if (_customTemplates != null) return _customTemplates;
+            var existing = _customTemplates!.FindIndex(t => t.Id == template.Id);
+            if (existing >= 0)
+                _customTemplates[existing] = template;
+            else
+                _customTemplates.Add(template);
+
+            await SaveToFileInternalAsync();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task DeleteCustomTemplateAsync(string templateId)
+    {
+        await EnsureLoadedAsync();
+
+        await _semaphore.WaitAsync();
+        try
+        {
+            _customTemplates!.RemoveAll(t => t.Id == templateId);
+            await SaveToFileInternalAsync();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    private async Task EnsureLoadedAsync()
+    {
+        if (_customTemplates != null) return;
+
+        await _semaphore.WaitAsync();
+        try
+        {
+            if (_customTemplates != null) return;
 
             if (File.Exists(_templatesFilePath))
             {
@@ -254,6 +283,8 @@ public sealed class ProjectTemplateService : IProjectTemplateService
                 }
                 catch
                 {
+                    // Korrupte Datei sichern statt beim nächsten Save endgültig zu überschreiben
+                    TryBackupCorruptFile(_templatesFilePath);
                     _customTemplates = [];
                 }
             }
@@ -261,8 +292,6 @@ public sealed class ProjectTemplateService : IProjectTemplateService
             {
                 _customTemplates = [];
             }
-
-            return _customTemplates;
         }
         finally
         {
@@ -270,22 +299,31 @@ public sealed class ProjectTemplateService : IProjectTemplateService
         }
     }
 
-    private async Task SaveCustomTemplatesAsync(List<ProjectTemplate> templates)
+    /// <summary>Interner File-Write — MUSS innerhalb des Semaphore-Locks aufgerufen werden.</summary>
+    private async Task SaveToFileInternalAsync()
     {
-        await _semaphore.WaitAsync();
         try
         {
-            _customTemplates = templates;
-            var json = JsonSerializer.Serialize(templates, JsonOptions);
+            var json = JsonSerializer.Serialize(_customTemplates, JsonOptions);
             await File.WriteAllTextAsync(_templatesFilePath, json);
         }
         catch
         {
-            // Fehler beim Speichern - Daten bleiben im Cache
+            // Speichern fehlgeschlagen — Daten bleiben im Cache; UI benachrichtigen statt stillem Verlust
+            SaveFailed?.Invoke();
         }
-        finally
+    }
+
+    /// <summary>Best-Effort-Backup einer korrupten JSON-Datei nach "&lt;name&gt;.bak".</summary>
+    private static void TryBackupCorruptFile(string filePath)
+    {
+        try
         {
-            _semaphore.Release();
+            File.Copy(filePath, filePath + ".bak", overwrite: true);
+        }
+        catch
+        {
+            // Best Effort — Backup darf das Laden nie blockieren
         }
     }
 }

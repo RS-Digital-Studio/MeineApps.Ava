@@ -8,6 +8,12 @@ public interface INotificationService
     bool CanScheduleExactAlarms();
 
     /// <summary>
+    /// Öffnet die System-Einstellung, in der der Nutzer exakte Alarme für die App
+    /// erlauben kann (Android 12+: "Wecker und Erinnerungen"). Desktop: No-Op.
+    /// </summary>
+    void RequestExactAlarmPermission();
+
+    /// <summary>
     /// Sind System-Benachrichtigungen für die App aktiviert?
     /// (Android: POST_NOTIFICATIONS / NotificationManagerCompat; Desktop: immer true.)
     /// </summary>

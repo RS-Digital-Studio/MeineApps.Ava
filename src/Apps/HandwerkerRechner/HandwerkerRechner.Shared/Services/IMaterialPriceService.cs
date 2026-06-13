@@ -8,6 +8,9 @@ namespace HandwerkerRechner.Services;
 /// </summary>
 public interface IMaterialPriceService
 {
+    /// <summary>Wird ausgelöst, wenn das Speichern fehlschlägt (z.B. Speicher voll/Schreibschutz).</summary>
+    event Action? SaveFailed;
+
     /// <summary>Einzelnen Preis nach Key abrufen</summary>
     MaterialPrice? GetPrice(string key);
 
@@ -18,7 +21,7 @@ public interface IMaterialPriceService
     List<MaterialPrice> GetPricesByCategory(string category);
 
     /// <summary>Benutzerdefinierten Preis setzen</summary>
-    Task SetCustomPriceAsync(string key, double price);
+    Task SetCustomPriceAsync(string key, decimal price);
 
     /// <summary>Einzelnen Preis auf Standard zurücksetzen</summary>
     Task ResetToDefaultAsync(string key);

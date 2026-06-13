@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:WorkTimePro.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
@@ -61,7 +61,7 @@
 
     <ScrollViewer Grid.Row="1" AutomationProperties.AutomationId="Year_ScrollViewer"
                   IsHitTestVisible="{Binding !IsAnyOverlayVisible}">
-      <StackPanel Spacing="16" Margin="{StaticResource ThicknessLg}">
+      <StackPanel Spacing="12" Margin="{StaticResource ThicknessLg}">
 
         <!-- ==================== Year Summary Card ==================== -->
         <Border Classes="CardElevated StatsCard" AutomationProperties.AutomationId="Year_SummaryCard">
@@ -248,6 +248,7 @@
 
     <!-- ==================== Rewarded Ad Overlay ==================== -->
     <Border IsVisible="{Binding ShowRewardedAdOverlay}"
+            Classes="ModalOverlay" Classes.open="{Binding ShowRewardedAdOverlay}"
             AutomationProperties.AutomationId="Year_AdOverlay"
             Background="{DynamicResource ModalBackdropBrush}"
             ZIndex="100"
@@ -279,7 +280,7 @@
                      HorizontalAlignment="Center"
                      TextWrapping="Wrap" TextAlignment="Center" />
           <StackPanel Spacing="8">
-            <Button Classes="Filled"
+            <Button Classes="Primary"
                     AutomationProperties.AutomationId="Year_BtnWatchAd"
                     Command="{Binding WatchAdCommand}"
                     HorizontalAlignment="Stretch"

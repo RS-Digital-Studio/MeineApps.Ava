@@ -1,8 +1,8 @@
 # WorkTimePro — Arbeitszeiterfassung & Export
 
-Vollständige Arbeitszeiterfassung mit Check-in/out, Pausen, Urlaub, Schichtplanung,
-Feiertagen (DE/AT/CH), Statistiken (11 eigene + 3 geteilte SkiaSharp-Visualisierungen)
-und Export (PDF/Excel/CSV/ICS).
+Vollständige Arbeitszeiterfassung mit Check-in/out (auch per Stempel-QR-Code-Scan,
+Deep-Link `worktimepro://stamp`), Pausen, Urlaub, Schichtplanung, Feiertagen (DE/AT/CH),
+Statistiken (8 eigene + 3 geteilte SkiaSharp-Visualisierungen) und Export (PDF/Excel/CSV/ICS).
 
 > Build-Befehle, Conventions, Architektur → [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
@@ -28,8 +28,9 @@ WorkTimePro.Desktop ┘                       ├─> MeineApps.Core.Premium.Ava
 Composition-Flow: Host (`AndroidApp` / `Program.cs`) → `WorkTimePro.Shared/App.axaml.cs`
 (DI + Loading-Pipeline + Splash) → `MainViewModel` (5 Tabs + 5 Sub-Pages) → `ViewLocator` löst Views.
 
-**Premium:** 3,99 EUR/Monat oder 19,99 EUR Lifetime. 7 Tage Trial. Rewarded Ads als Gate
-für Export und erweiterte Statistiken.
+**Premium:** 3,99 EUR/Monat oder 19,99 EUR Lifetime. 14 Tage Trial (werbefrei, einmalig,
+über das Kauf-Optionen-Overlay in den Settings). Rewarded Ads als Gate für Export und
+erweiterte Statistiken.
 
 ---
 
@@ -44,7 +45,7 @@ für Export und erweiterte Statistiken.
 | Views (AXAML, Overlays) | 12 Views, Overlay-Pattern, Keyboard-Shortcuts, Compiled Bindings | [Shared/Views](WorkTimePro.Shared/Views/CLAUDE.md) |
 | Services (13 Interfaces) | DB, Zeiterfassung, Export, Backup, Reminder, Notification, ... | [Shared/Services](WorkTimePro.Shared/Services/CLAUDE.md) |
 | Models & Enums | SQLite-Entitäten, Enums, AppColors, DateTime-Konvention | [Shared/Models](WorkTimePro.Shared/Models/CLAUDE.md) |
-| SkiaSharp-Renderer (11 Visualisierungen) | Timeline, Bars, Gauges, Splash, Background | [Shared/Graphics](WorkTimePro.Shared/Graphics/CLAUDE.md) |
+| SkiaSharp-Renderer (8 Visualisierungen) | Timeline, Bars, Gauges, Splash, Background | [Shared/Graphics](WorkTimePro.Shared/Graphics/CLAUDE.md) |
 | Converter | `InvertBool`, `IntToBool`, `RoundingDisplay`, ... | [Shared/Converters](WorkTimePro.Shared/Converters/CLAUDE.md) |
 | Helpers | `TimeFormatter`, `DurationMath` (DST-bewusste Dauer) | [Shared/Helpers](WorkTimePro.Shared/Helpers/CLAUDE.md) |
 | Startup-Pipeline | `WorkTimeProLoadingPipeline` (2 Schritte, Parallel-Init) | [Shared/Loading](WorkTimePro.Shared/Loading/CLAUDE.md) |

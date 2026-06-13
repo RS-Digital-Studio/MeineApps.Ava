@@ -123,6 +123,82 @@ public class CalendarExportServiceTests
     }
 
     [Fact]
+    public async Task ExportRangeToIcsAsync_MehrereSessionsProTag_ErzeugtEinEventProSession()
+    {
+        // Zwei Arbeitsblöcke (08-12 und 13-17): Die Mittagslücke darf NICHT als ein
+        // durchgehendes 08-17-Event exportiert werden — pro Session ein VEVENT.
+        var arbeitstag = new WorkDay
+        {
+            Id = 1, Date = new DateTime(2026, 3, 10),
+            Status = DayStatus.WorkDay,
+            ActualWorkMinutes = 480, TargetWorkMinutes = 480,
+            BalanceMinutes = 0
+        };
+        var eintraege = new Dictionary<int, List<TimeEntry>>
+        {
+            [1] = [
+                new() { Type = EntryType.CheckIn,  Timestamp = new DateTime(2026, 3, 10, 8, 0, 0) },
+                new() { Type = EntryType.CheckOut, Timestamp = new DateTime(2026, 3, 10, 12, 0, 0) },
+                new() { Type = EntryType.CheckIn,  Timestamp = new DateTime(2026, 3, 10, 13, 0, 0) },
+                new() { Type = EntryType.CheckOut, Timestamp = new DateTime(2026, 3, 10, 17, 0, 0) }
+            ]
+        };
+        var db = ErstelleDbMock(arbeitstage: [arbeitstag], eintraegeProTag: eintraege);
+        var fs = ErstelleFileShareMock();
+        var sut = new CalendarExportService(db, fs);
+
+        var pfad = await sut.ExportRangeToIcsAsync(
+            new DateTime(2026, 3, 1), new DateTime(2026, 3, 31));
+
+        var inhalt = await File.ReadAllTextAsync(pfad);
+
+        // Session 1: 08:00-12:00
+        inhalt.Should().Contain("DTSTART:20260310T080000");
+        inhalt.Should().Contain("DTEND:20260310T120000");
+        // Session 2: 13:00-17:00
+        inhalt.Should().Contain("DTSTART:20260310T130000");
+        inhalt.Should().Contain("DTEND:20260310T170000");
+        // Genau zwei Events (kein durchgehendes 08-17-Event zusätzlich/stattdessen)
+        inhalt.Split("BEGIN:VEVENT").Length.Should().Be(3); // 2 Events → 3 Teile
+        // Eindeutige UIDs pro Session
+        inhalt.Should().Contain("UID:worktimepro-day-20260310-1@meineapps");
+        inhalt.Should().Contain("UID:worktimepro-day-20260310-2@meineapps");
+
+        File.Delete(pfad);
+    }
+
+    [Fact]
+    public async Task ExportRangeToIcsAsync_EineSession_UidOhneSuffix()
+    {
+        // Bei genau einer Session bleibt die UID rückwärtskompatibel ohne Index-Suffix
+        var arbeitstag = new WorkDay
+        {
+            Id = 1, Date = new DateTime(2026, 3, 11),
+            Status = DayStatus.WorkDay,
+            ActualWorkMinutes = 480, TargetWorkMinutes = 480
+        };
+        var eintraege = new Dictionary<int, List<TimeEntry>>
+        {
+            [1] = [
+                new() { Type = EntryType.CheckIn,  Timestamp = new DateTime(2026, 3, 11, 8, 0, 0) },
+                new() { Type = EntryType.CheckOut, Timestamp = new DateTime(2026, 3, 11, 16, 30, 0) }
+            ]
+        };
+        var db = ErstelleDbMock(arbeitstage: [arbeitstag], eintraegeProTag: eintraege);
+        var fs = ErstelleFileShareMock();
+        var sut = new CalendarExportService(db, fs);
+
+        var pfad = await sut.ExportRangeToIcsAsync(
+            new DateTime(2026, 3, 1), new DateTime(2026, 3, 31));
+
+        var inhalt = await File.ReadAllTextAsync(pfad);
+        inhalt.Should().Contain("UID:worktimepro-day-20260311@meineapps");
+        inhalt.Should().NotContain("UID:worktimepro-day-20260311-1@meineapps");
+
+        File.Delete(pfad);
+    }
+
+    [Fact]
     public async Task ExportRangeToIcsAsync_ArbeitstageOhneMinuten_WirdUebersprungen()
     {
         // Arbeitstag mit 0 Minuten und Status WorkDay = überspringen

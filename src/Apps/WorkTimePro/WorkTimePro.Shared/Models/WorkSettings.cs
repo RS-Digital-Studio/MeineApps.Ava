@@ -266,13 +266,13 @@ public class WorkSettings
     /// Tägliche Soll-Zeit in Minuten
     /// </summary>
     [Ignore]
-    public int DailyMinutes => (int)Math.Round(DailyHours * 60);
+    public int DailyMinutes => (int)Math.Round(DailyHours * 60, MidpointRounding.AwayFromZero);
 
     /// <summary>
     /// Wöchentliche Soll-Zeit in Minuten
     /// </summary>
     [Ignore]
-    public int WeeklyMinutes => (int)Math.Round(WeeklyHours * 60);
+    public int WeeklyMinutes => (int)Math.Round(WeeklyHours * 60, MidpointRounding.AwayFromZero);
 
     // Cache für WorkDaysArray (wird bei jedem set/get von WorkDays invalidiert)
     private int[]? _cachedWorkDaysArray;
@@ -337,7 +337,7 @@ public class WorkSettings
         // Math.Round (nicht (int)-Truncation) — symmetrisch zur gerundeten Ist-Seite
         // (CalculateBruttoMinutes nutzt Math.Round), sonst driftet das Soll bei krummen
         // Stundeneingaben (z.B. 8,2h → 491,99 → ohne Round 491 statt 492) nach unten.
-        return (int)Math.Round(GetHoursForDay(ourDay) * 60);
+        return (int)Math.Round(GetHoursForDay(ourDay) * 60, MidpointRounding.AwayFromZero);
     }
 
     /// <summary>
@@ -404,14 +404,16 @@ public class WorkSettings
 
         var workHours = workMinutes / 60.0;
 
-        // Über 9 Stunden: 45 Minuten
-        if (workHours > 9)
+        // Unter der konfigurierten Schwelle greift NIE eine Auto-Pause — auch die
+        // 9h-Stufe nicht (sonst würde z.B. AutoPauseAfterHours=10 bei 9,5h übergangen).
+        if (workHours <= AutoPauseAfterHours)
+            return 0;
+
+        // Über 9 Stunden (bzw. über der höheren konfigurierten Schwelle): 45 Minuten
+        if (workHours > Math.Max(9.0, AutoPauseAfterHours))
             return AutoPauseMinutesOver9Hours;
 
-        // Über 6 Stunden: 30 Minuten
-        if (workHours > AutoPauseAfterHours)
-            return AutoPauseMinutes;
-
-        return 0;
+        // Über der Schwelle (Standard 6h): 30 Minuten
+        return AutoPauseMinutes;
     }
 }

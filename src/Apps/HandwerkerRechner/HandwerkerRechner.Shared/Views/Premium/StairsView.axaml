@@ -21,7 +21,7 @@
             AutomationProperties.AutomationId="Stairs_HeaderBorder">
       <Grid ColumnDefinitions="Auto,*">
         <Button Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0"
@@ -30,13 +30,13 @@
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
                     Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
             <mi:MaterialIcon Kind="Stairs" Width="22" Height="22"
                              Foreground="White"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="{loc:Translate StairsCalculator}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                      VerticalAlignment="Center"
                      AutomationProperties.AutomationId="Stairs_TxtTitle" />
         </StackPanel>
@@ -53,24 +53,24 @@
                 AutomationProperties.AutomationId="Stairs_CardDimensionsInput">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate StairsDimensions}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate FloorHeight}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding FloorHeight}" PlaceholderText="cm" Classes="Outlined"
                        AutomationProperties.AutomationId="Stairs_TxtBoxFloorHeight" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate StairWidth}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding StairWidth}" PlaceholderText="cm" Classes="Outlined"
                        AutomationProperties.AutomationId="Stairs_TxtBoxStairWidth" />
             </StackPanel>
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate CustomStepCount}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding CustomStepCount}" PlaceholderText="0 = auto" Classes="Outlined"
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding CustomStepCount}" PlaceholderText="{loc:Translate PlaceholderAutoZero}" Classes="Outlined"
                        AutomationProperties.AutomationId="Stairs_TxtBoxCustomStepCount" />
             </StackPanel>
           </StackPanel>
@@ -81,12 +81,12 @@
                 AutomationProperties.AutomationId="Stairs_CardCostInput">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate CostCalculation}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate PricePerStep}"
-                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding PricePerStep}" PlaceholderText="EUR" Classes="Outlined"
+                         FontSize="{StaticResource FontSizeBodySm}" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding PricePerStep}" PlaceholderText="{loc:Translate CurrencySymbol}" Classes="Outlined"
                        AutomationProperties.AutomationId="Stairs_TxtBoxPricePerStep" />
             </StackPanel>
           </StackPanel>
@@ -106,7 +106,7 @@
                 AutomationProperties.AutomationId="Stairs_CardResult">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate Result}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryBrush}"
                        AutomationProperties.AutomationId="Stairs_TxtResultHeader" />
 
@@ -114,10 +114,10 @@
             <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
                     Margin="0,4,0,8">
               <StackPanel>
-                <TextBlock Text="{loc:Translate ResultStepCount}" FontSize="12"
-                           Foreground="#CCFFFFFF" />
+                <TextBlock Text="{loc:Translate ResultStepCount}" FontSize="{StaticResource FontSizeLabelMd}"
+                           Foreground="{DynamicResource OnGradientSubtextBrush}" />
                 <TextBlock AutomationProperties.AutomationId="Stairs_TxtStepCount"
-                           Text="{Binding StepCountDisplay}" FontSize="28" FontWeight="Bold"
+                           Text="{Binding StepCountDisplay}" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                            Foreground="White">
                   <i:Interaction.Behaviors>
                     <behaviors:CountUpBehavior TargetValue="{Binding StairsResult.StepCount}" Format="F0" Duration="500" />
@@ -129,9 +129,9 @@
             <!-- Stufenhöhe -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ResultStepHeight}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeLabelLg}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding StepHeightDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Stairs_TxtStepHeight" />
             </Grid>
@@ -139,9 +139,9 @@
             <!-- Auftrittstiefe -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ResultTreadDepth}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeLabelLg}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding TreadDepthDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Stairs_TxtTreadDepth" />
             </Grid>
@@ -149,9 +149,9 @@
             <!-- Lauflänge -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ResultRunLength}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeLabelLg}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding RunLengthDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Stairs_TxtRunLength" />
             </Grid>
@@ -159,9 +159,9 @@
             <!-- Steigungswinkel -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ResultAngle}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeLabelLg}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding AngleDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Stairs_TxtAngle" />
             </Grid>
@@ -169,9 +169,9 @@
             <!-- Schrittmaß -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ResultStepMeasure}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeLabelLg}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding StepMeasureDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Stairs_TxtStepMeasure" />
             </Grid>
@@ -179,9 +179,9 @@
             <!-- Treppenlänge -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ResultStairLength}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeLabelLg}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding StairLengthDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Stairs_TxtStairLength" />
             </Grid>
@@ -191,10 +191,10 @@
 
             <!-- DIN-Status -->
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Text="DIN 18065"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="0" Text="{loc:Translate DinNormLabel}"
+                         FontSize="{StaticResource FontSizeLabelLg}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding DinStatusDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Stairs_TxtDinStatus" />
             </Grid>
@@ -202,9 +202,9 @@
             <!-- Komfort-Status -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate ComfortLevel}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeLabelLg}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding ComfortStatusDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Stairs_TxtComfortStatus" />
             </Grid>
@@ -213,15 +213,15 @@
             <Grid ColumnDefinitions="*,Auto"
                   IsVisible="{Binding ShowCost}">
               <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+                         FontSize="{StaticResource FontSizeLabelLg}" Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalCostDisplay}"
-                         FontSize="16" FontWeight="Bold"
+                         FontSize="{StaticResource FontSizeBodyLg}" FontWeight="Bold"
                          Foreground="{DynamicResource PrimaryBrush}"
                          AutomationProperties.AutomationId="Stairs_TxtTotalCost" />
             </Grid>
 
             <!-- Aktions-Buttons: Share + PDF Export -->
-            <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+            <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
               <Button Grid.Column="0"
                       Command="{Binding ShareResultCommand}"
                       Classes="Outlined"
@@ -249,10 +249,11 @@
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
-                      <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                        <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                         Foreground="{DynamicResource AccentBrush}" />
-                      </Button>
+              <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                      AutomationProperties.AutomationId="Stairs_BtnExportCsv">
+                <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                 Foreground="{DynamicResource AccentBrush}" />
+              </Button>
             </Grid>
           </StackPanel>
         </Border>
@@ -305,7 +306,7 @@
     <!-- Save Dialog Overlay -->
     <Border Grid.Row="0" Grid.RowSpan="3"
             ZIndex="100"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowSaveDialog}"
             AutomationProperties.AutomationId="Stairs_SaveDialogOverlay">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -317,7 +318,7 @@
               AutomationProperties.AutomationId="Stairs_SaveDialogCard">
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Translate SaveProject}"
-                     FontSize="18" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Stairs_TxtSaveDialogTitle" />

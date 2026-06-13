@@ -97,10 +97,11 @@ public partial class App : Application
 
     private static SkiaLoadingSplash CreateSplash()
     {
+        // Gleiche Versions-Quelle wie SettingsViewModel.AppVersion (Assembly-Version)
         return new SkiaLoadingSplash
         {
             AppName = "HandwerkerRechner",
-            AppVersion = "v2.0.7",
+            AppVersion = $"v{System.Reflection.Assembly.GetExecutingAssembly()?.GetName()?.Version?.ToString(3) ?? "2.0.0"}",
             Renderer = new HandwerkerRechnerSplashRenderer()
         };
     }
@@ -140,10 +141,45 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-#if DEBUG
             Debug.WriteLine($"[HandwerkerRechner] Loading-Pipeline fehlgeschlagen: {ex}");
-#endif
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
+
+            // Best-effort-Recovery: MainViewModel direkt auf dem UI-Thread auflösen und setzen,
+            // sonst bleibt die MainView ohne DataContext = tote leere UI (im Release still).
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    var mainVm = Services.GetRequiredService<MainViewModel>();
+
+                    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                        && desktop.MainWindow != null)
+                        desktop.MainWindow.DataContext = mainVm;
+                    else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform
+                             && singleViewPlatform.MainView != null)
+                        singleViewPlatform.MainView.DataContext = mainVm;
+                }
+                catch (Exception fallbackEx)
+                {
+                    Debug.WriteLine($"[HandwerkerRechner] MainViewModel-Fallback fehlgeschlagen: {fallbackEx}");
+
+                    // Letzter Ausweg: Fehlertext statt leerer UI anzeigen
+                    if (splash.Parent is Panel panel)
+                    {
+                        panel.Children.Add(new TextBlock
+                        {
+                            Text = $"HandwerkerRechner could not be started.\n{fallbackEx.Message}",
+                            Foreground = Brushes.White,
+                            TextWrapping = TextWrapping.Wrap,
+                            TextAlignment = TextAlignment.Center,
+                            Margin = new Thickness(24),
+                            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+                        });
+                    }
+                }
+
+                splash.FadeOut();
+            });
         }
     }
 

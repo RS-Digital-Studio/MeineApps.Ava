@@ -90,7 +90,8 @@ public sealed class QuoteService : IQuoteService
     public async Task<string> GenerateQuoteNumberAsync()
     {
         await EnsureLoadedAsync();
-        var year = DateTime.UtcNow.Year;
+        // Nutzersichtbares Geschäftsdokument → lokales Jahr (bewusste Ausnahme vom UtcNow-Pattern)
+        var year = DateTime.Now.Year;
         var prefix = $"A-{year}-";
 
         await _semaphore.WaitAsync();
@@ -129,6 +130,8 @@ public sealed class QuoteService : IQuoteService
                 }
                 catch
                 {
+                    // Korrupte Datei sichern statt beim nächsten Save endgültig zu überschreiben
+                    TryBackupCorruptFile(_quotesFilePath);
                     _cachedQuotes = [];
                 }
             }
@@ -157,6 +160,19 @@ public sealed class QuoteService : IQuoteService
         {
             // Speichern fehlgeschlagen — Daten bleiben im Cache; UI benachrichtigen statt stillem Verlust
             SaveFailed?.Invoke();
+        }
+    }
+
+    /// <summary>Best-Effort-Backup einer korrupten JSON-Datei nach "&lt;name&gt;.bak".</summary>
+    private static void TryBackupCorruptFile(string filePath)
+    {
+        try
+        {
+            File.Copy(filePath, filePath + ".bak", overwrite: true);
+        }
+        catch
+        {
+            // Best Effort — Backup darf das Laden nie blockieren
         }
     }
 }

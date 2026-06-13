@@ -21,7 +21,7 @@
             AutomationProperties.AutomationId="Plaster_HeaderBorder">
       <Grid ColumnDefinitions="Auto,*">
         <Button Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
+                Background="{DynamicResource HeaderChipBrush}"
                 CornerRadius="20"
                 Width="40" Height="40"
                 Padding="0"
@@ -30,13 +30,13 @@
         </Button>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
                     Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+          <Border Background="{DynamicResource HeaderChipBrush}" CornerRadius="12" Width="40" Height="40">
             <mi:MaterialIcon Kind="FormatPaint" Width="22" Height="22"
                              Foreground="White"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="{loc:Translate CalcPlaster}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     FontSize="{StaticResource FontSizeHeadlineSm}" FontWeight="Bold" Foreground="White"
                      VerticalAlignment="Center"
                      AutomationProperties.AutomationId="Plaster_TxtTitle" />
         </StackPanel>
@@ -53,14 +53,14 @@
                 AutomationProperties.AutomationId="Plaster_CardInput">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate WallArea}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        AutomationProperties.AutomationId="Plaster_TxtWallAreaLabel" />
 
             <!-- Wandfläche -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate WallArea}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding WallArea}"
                        PlaceholderText="m²"
@@ -70,7 +70,7 @@
             <!-- Putzdicke -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate PlasterThickness}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding ThicknessMm}"
                        PlaceholderText="mm"
@@ -80,7 +80,7 @@
             <!-- Putzart (ComboBox) -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate PlasterType}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <ComboBox SelectedIndex="{Binding SelectedPlasterType}"
                         HorizontalAlignment="Stretch"
@@ -95,10 +95,10 @@
             <!-- Preis pro Sack (optional) -->
             <StackPanel Spacing="4">
               <TextBlock Text="{loc:Translate PricePerBag}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBox Text="{Binding PricePerBag}"
-                       PlaceholderText="EUR"
+                       PlaceholderText="{loc:Translate CurrencySymbol}"
                        AutomationProperties.AutomationId="Plaster_TxtBoxPricePerBag" />
             </StackPanel>
           </StackPanel>
@@ -118,24 +118,18 @@
                 AutomationProperties.AutomationId="Plaster_CardResult">
           <StackPanel Spacing="10">
             <TextBlock Text="{loc:Translate Result}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="{StaticResource FontSizeTitleMd}" FontWeight="SemiBold"
                        Foreground="{DynamicResource PrimaryBrush}"
                        AutomationProperties.AutomationId="Plaster_TxtResultHeader" />
 
             <!-- Hero-Value: Säcke benötigt -->
-            <Border CornerRadius="12" Padding="16,12"
+            <Border Background="{DynamicResource TileGradientPlasterBrush}" CornerRadius="12" Padding="16,12"
                     Margin="0,4,0,8">
-              <Border.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="#F97316" Offset="0" />
-                  <GradientStop Color="#EA580C" Offset="1" />
-                </LinearGradientBrush>
-              </Border.Background>
               <StackPanel>
-                <TextBlock Text="{loc:Translate ResultBagsNeeded}" FontSize="12"
-                           Foreground="#CCFFFFFF" />
+                <TextBlock Text="{loc:Translate ResultBagsNeeded}" FontSize="{StaticResource FontSizeLabelMd}"
+                           Foreground="{DynamicResource OnGradientSubtextBrush}" />
                 <TextBlock AutomationProperties.AutomationId="Plaster_TxtBagsNeeded"
-                           Text="{Binding BagsNeededDisplay}" FontSize="28" FontWeight="Bold"
+                           Text="{Binding BagsNeededDisplay}" FontSize="{StaticResource FontSizeHeadlineMd}" FontWeight="Bold"
                            Foreground="White">
                   <i:Interaction.Behaviors>
                     <behaviors:CountUpBehavior TargetValue="{Binding Result.BagsNeeded}" Format="F0" Duration="500" />
@@ -147,10 +141,10 @@
             <!-- Fläche -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate WallArea}"
-                         FontSize="13"
+                         FontSize="{StaticResource FontSizeBodySm}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding AreaDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Plaster_TxtArea" />
             </Grid>
@@ -158,10 +152,10 @@
             <!-- Putzdicke -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate PlasterThickness}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeLabelLg}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding ThicknessDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Plaster_TxtThickness" />
             </Grid>
@@ -169,10 +163,10 @@
             <!-- Putzart -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate PlasterType}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeLabelLg}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding PlasterTypeDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Plaster_TxtPlasterType" />
             </Grid>
@@ -180,10 +174,10 @@
             <!-- Gesamtmenge kg -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate PlasterAmount}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeLabelLg}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding PlasterKgDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Plaster_TxtPlasterKg" />
             </Grid>
@@ -192,16 +186,16 @@
             <Grid ColumnDefinitions="*,Auto"
                   IsVisible="{Binding ShowCost}">
               <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                         FontSize="14"
+                         FontSize="{StaticResource FontSizeLabelLg}"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalCostDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
+                         FontSize="{StaticResource FontSizeBodyMd}" FontWeight="SemiBold"
                          Foreground="{DynamicResource PrimaryBrush}"
                          AutomationProperties.AutomationId="Plaster_TxtTotalCost" />
             </Grid>
 
             <!-- Aktions-Buttons: Share + PDF Export -->
-            <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+            <Grid ColumnDefinitions="*,8,*,8,Auto" Margin="0,4,0,0">
               <Button Grid.Column="0"
                       Command="{Binding ShareResultCommand}"
                       Classes="Outlined"
@@ -212,7 +206,7 @@
                   <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
                   <TextBlock Text="{loc:Translate ShareResult}"
-                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
@@ -227,14 +221,15 @@
                   <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
                   <TextBlock Text="{loc:Translate ExportMaterialList}"
-                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
-                      <Button Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8">
-                        <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
-                                         Foreground="{DynamicResource AccentBrush}" />
-                      </Button>
+              <Button Grid.Column="4" Command="{Binding ExportCsvCommand}" Classes="Text" Padding="8"
+                      AutomationProperties.AutomationId="Plaster_BtnExportCsv">
+                <mi:MaterialIcon Kind="FileDelimited" Width="20" Height="20"
+                                 Foreground="{DynamicResource AccentBrush}" />
+              </Button>
             </Grid>
           </StackPanel>
         </Border>
@@ -256,7 +251,7 @@
             <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{loc:Translate Reset}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -269,7 +264,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Calculate}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -283,7 +278,7 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
             <TextBlock Text="{loc:Translate Save}"
-                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSizeLabelMd}" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -293,7 +288,7 @@
     <!-- Save Project Dialog Overlay -->
     <Border Grid.Row="0" Grid.RowSpan="3"
             ZIndex="100"
-            Background="#80000000"
+            Background="{DynamicResource OverlayBrush}"
             IsVisible="{Binding ShowSaveDialog}"
             AutomationProperties.AutomationId="Plaster_SaveDialogOverlay">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -305,7 +300,7 @@
               AutomationProperties.AutomationId="Plaster_SaveDialogCard">
         <StackPanel Spacing="16">
           <TextBlock Text="{loc:Translate SaveProject}"
-                     FontSize="18" FontWeight="Bold"
+                     FontSize="{StaticResource FontSizeTitleSm}" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="Plaster_TxtSaveDialogTitle" />

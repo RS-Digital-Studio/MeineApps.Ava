@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Threading;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -67,7 +66,7 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
         _priceService = priceService;
 
         // Standard-Materialpreis laden
-        CablePrice = _priceService.GetPrice("cable_2_5mm")?.EffectivePrice ?? 0;
+        CablePrice = (double)(_priceService.GetPrice("cable_2_5mm")?.EffectivePrice ?? 0);
     }
 
     /// <summary>
@@ -109,41 +108,7 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
         _localization.GetString("OhmsLaw")
     ];
 
-    // Live-Berechnung: Debounce bei Eingabe-Änderungen
-    partial void OnVoltageChanged(double value) => ScheduleAutoCalculate();
-    partial void OnCurrentChanged(double value) => ScheduleAutoCalculate();
-    partial void OnCrossSectionChanged(double value) => ScheduleAutoCalculate();
-    partial void OnIsCopperChanged(bool value) => ScheduleAutoCalculate();
-    partial void OnWattsChanged(double value) => ScheduleAutoCalculate();
-    partial void OnHoursPerDayChanged(double value) => ScheduleAutoCalculate();
-    partial void OnPricePerKwhChanged(double value) => ScheduleAutoCalculate();
-    partial void OnOhmsVoltageChanged(string value) => ScheduleAutoCalculate();
-    partial void OnOhmsCurrentChanged(string value) => ScheduleAutoCalculate();
-    partial void OnOhmsResistanceChanged(string value) => ScheduleAutoCalculate();
-    partial void OnOhmsPowerChanged(string value) => ScheduleAutoCalculate();
-
-    // Voltage Drop Inputs
-    [ObservableProperty] private double _voltage = Defaults.Voltage;
-    [ObservableProperty] private double _current = Defaults.Current;
-    [ObservableProperty] private double _cableLength = Defaults.CableLength;
-    [ObservableProperty] private double _crossSection = Defaults.CrossSection;
-    [ObservableProperty] private bool _isCopper = true;
-
-    // Power Cost Inputs
-    [ObservableProperty] private double _watts = Defaults.Power;
-    [ObservableProperty] private double _hoursPerDay = Defaults.HoursPerDay;
-    [ObservableProperty] private double _pricePerKwh = Defaults.PricePerKwh;
-
-    // Ohms Law Inputs
-    [ObservableProperty] private string _ohmsVoltage = "";
-    [ObservableProperty] private string _ohmsCurrent = "";
-    [ObservableProperty] private string _ohmsResistance = "";
-    [ObservableProperty] private string _ohmsPower = "";
-
-    // Results
-    [ObservableProperty] private VoltageDropResult? _voltageDropResult;
-    [ObservableProperty] private PowerCostResult? _powerCostResult;
-    [ObservableProperty] private OhmsLawResult? _ohmsLawResult;
+    // Results (geteilt)
     [ObservableProperty] private bool _hasResult;
 
     [ObservableProperty]
@@ -151,38 +116,6 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
 
     [ObservableProperty]
     private bool _isExporting;
-
-    #region Cost Calculation
-
-    // Spannungsabfall: Kabelkosten
-    [ObservableProperty]
-    private double _cablePrice = 0;
-
-    [ObservableProperty]
-    private bool _showCableCost = false;
-
-    public string CableCostDisplay => (ShowCableCost && CablePrice > 0 && CableLength > 0)
-        ? $"{_localization.GetString("CableCostLabel")}: {(CableLength * CablePrice):F2} {_localization.GetString("CurrencySymbol")}"
-        : "";
-
-    partial void OnCablePriceChanged(double value)
-    {
-        ShowCableCost = value > 0;
-        OnPropertyChanged(nameof(CableCostDisplay));
-        ScheduleAutoCalculate();
-    }
-
-    partial void OnCableLengthChanged(double value)
-    {
-        OnPropertyChanged(nameof(CableCostDisplay));
-        ScheduleAutoCalculate();
-    }
-
-    // Stromkosten: (bereits in der Berechnung enthalten, nur Anzeige verbessern)
-
-    // Ohm: Keine Kostenberechnung nötig (theoretischer Rechner)
-
-    #endregion
 
     /// <summary>
     /// Debounce: Berechnung 300ms nach letzter Eingabe-Änderung auslösen
@@ -279,19 +212,6 @@ public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable, IC
         {
             IsCalculating = false;
         }
-    }
-
-    /// <summary>
-    /// Parst eine freie Zahleneingabe kulturunabhängig: akzeptiert sowohl '.' als auch ','
-    /// als Dezimaltrennzeichen (InvariantCulture zuerst, dann CurrentCulture als Fallback).
-    /// Verhindert, dass z.B. "2.5" auf DE-Geräten als ungültig verworfen wird.
-    /// </summary>
-    private static double? ParseDecimal(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return null;
-        if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var inv)) return inv;
-        if (double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out var cur)) return cur;
-        return null;
     }
 
     private async Task SaveToHistoryAsync()

@@ -1,6 +1,6 @@
 # Graphics — SkiaSharp-Visualisierungen
 
-9 App-eigene SkiaSharp-Visualisierungen + Splash + animierter Hintergrund + Empty-State-Helper
+8 App-eigene SkiaSharp-Visualisierungen + Splash + animierter Hintergrund + Empty-State-Helper
 ("Professional Dashboard"-Charakter). Nutzen `SkiaThemeHelper` + Helpers aus
 [MeineApps.UI](../../../../UI/MeineApps.UI/CLAUDE.md).
 SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → dort dokumentiert.
@@ -15,9 +15,9 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → dort do
 | `WeekdayRadialVisualization.cs` | Radiales Balkendiagramm Mo–So, gestrichelte Soll-Linie. |
 | `WeeklyWorkChartVisualization.cs` | Wöchentliche Arbeitsstunden + Soll-Linie. |
 | `MonthlyBarChartVisualization.cs` | Monatsbalken + kumulative Saldo-Kurve. |
-| `VacationQuotaGaugeVisualization.cs` | 3 konzentrische Ringe: Urlaub/Übertrag/Krank. Farbe grün→gelb→rot nach Verbrauch. |
-| `StatsSummaryGaugeVisualization.cs` | 4 Halbkreis-Gauges: Arbeitszeit/Überstunden/Schnitt/Quote. |
+| `VacationQuotaGaugeVisualization.cs` | 3 konzentrische Ringe: Genommen/Geplant/Rest (Farben aus `SkiaThemeHelper.Info/Secondary/Accent`). Zentraltext-Farbe grün→gelb→rot nach Verbrauch. |
 | `MonthWeekProgressVisualization.cs` | Alle Wochen eines Monats als Gradient-Balken in einem Canvas. |
+| `QrStampRenderer.cs` | Stempel-QR-Code (Deep-Link `worktimepro://stamp`, Konstante `StampUri`): `Render()` für die Settings-Vorschau, `CreatePngBytes()` für Teilen/Drucken. Bewusst Schwarz/Weiß (Scanner-Kontrast), QR-Matrix gecacht (Inhalt konstant). Paket: `Net.Codecrete.QrCodeGenerator`. |
 | `WorkTimeProSplashRenderer.cs` | "Die Stechuhr": Stempelzyklus (3s) + 10 Business-Partikel. Erbt von `SplashRendererBase`. |
 | `WorkspaceBackgroundRenderer.cs` | "Professional Dashboard": 5-Layer animierter Hintergrund (~5fps, 0 GC/Frame). `sealed class`, implementiert `IDisposable`. |
 | `ChartEmptyState.cs` | Zentrierter "Keine Daten"-Platzhalter (`static class`). Verhindert, dass leere Karten kaputt wirken. Nutzt `SkiaThemeHelper.TextMuted`. |

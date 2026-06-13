@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:WorkTimePro.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
@@ -267,10 +267,11 @@
     <!-- ==================== Status Overlay ==================== -->
     <Border AutomationProperties.AutomationId="Calendar_StatusOverlay"
             IsVisible="{Binding IsOverlayVisible}"
+            Classes="ModalOverlay" Classes.open="{Binding IsOverlayVisible}"
             Background="{DynamicResource BackgroundBrush}"
             ZIndex="10">
       <ScrollViewer AutomationProperties.AutomationId="Calendar_OverlayScrollViewer">
-        <StackPanel Spacing="16" Margin="{StaticResource ThicknessLg}">
+        <StackPanel Spacing="12" Margin="{StaticResource ThicknessLg}">
 
           <!-- Header with close button -->
           <Grid ColumnDefinitions="Auto,*,Auto">

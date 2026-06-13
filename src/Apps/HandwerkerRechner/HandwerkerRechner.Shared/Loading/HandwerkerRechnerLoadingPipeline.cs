@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.UI.Loading;
@@ -25,10 +26,12 @@ public sealed class HandwerkerRechnerLoadingPipeline : LoadingPipelineBase
             ExecuteAsync = async () =>
             {
                 var shaderTask = Task.Run(() => ShaderPreloader.PreloadAll());
-                var vmTask = Task.Run(() => services.GetRequiredService<MainViewModel>());
                 // Käufe mit Google Play abgleichen (Geräte-/Datenwechsel → Premium-Status wiederherstellen)
                 var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();
-                await Task.WhenAll(shaderTask, vmTask, purchaseTask);
+                // VM-Graph auf dem UI-Thread instanziieren — ViewModels haben UI-Thread-Affinität
+                // (Brushes etc.), NIE auf einem Task.Run-Thread erzeugen (Workspace-Regel).
+                await Dispatcher.UIThread.InvokeAsync(() => services.GetRequiredService<MainViewModel>());
+                await Task.WhenAll(shaderTask, purchaseTask);
             }
         });
     }

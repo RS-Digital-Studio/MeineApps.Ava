@@ -72,7 +72,8 @@ public sealed class ProjectService : IProjectService
                 {
                     if (lastCheckIn.ProjectId.HasValue)
                     {
-                        var minutes = (e.Timestamp - lastCheckIn.Timestamp).TotalMinutes;
+                        // DST-bewusst wie alle anderen Dauer-Berechnungen
+                        var minutes = Helpers.DurationMath.RealElapsedMinutes(lastCheckIn.Timestamp, e.Timestamp);
                         if (minutes > 0)
                         {
                             var pid = lastCheckIn.ProjectId.Value;

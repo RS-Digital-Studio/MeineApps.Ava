@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:WorkTimePro.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
@@ -33,12 +33,14 @@
         <StackPanel Orientation="Horizontal" Spacing="2">
           <Panel>
             <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="10" Padding="8,4"
+                    AutomationProperties.AutomationId="Stats_ToggleChartActiveButton"
                     MinHeight="36" MinWidth="36"
                     IsVisible="{Binding !ShowTable}"
                     Command="{Binding ToggleViewCommand}">
               <mi:MaterialIcon Kind="ChartBar" Width="16" Height="16" Foreground="{DynamicResource PrimaryContrastBrush}" />
             </Button>
             <Button Background="Transparent" CornerRadius="10" Padding="8,4"
+                    AutomationProperties.AutomationId="Stats_ToggleChartButton"
                     MinHeight="36" MinWidth="36"
                     IsVisible="{Binding ShowTable}"
                     Command="{Binding ToggleViewCommand}">
@@ -48,12 +50,14 @@
           </Panel>
           <Panel>
             <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="10" Padding="8,4"
+                    AutomationProperties.AutomationId="Stats_ToggleTableActiveButton"
                     MinHeight="36" MinWidth="36"
                     IsVisible="{Binding ShowTable}"
                     Command="{Binding ToggleViewCommand}">
               <mi:MaterialIcon Kind="Table" Width="16" Height="16" Foreground="{DynamicResource PrimaryContrastBrush}" />
             </Button>
             <Button Background="Transparent" CornerRadius="10" Padding="8,4"
+                    AutomationProperties.AutomationId="Stats_ToggleTableButton"
                     MinHeight="36" MinWidth="36"
                     IsVisible="{Binding !ShowTable}"
                     Command="{Binding ToggleViewCommand}">
@@ -85,6 +89,7 @@
       <Grid ColumnDefinitions="*,*,*,*">
         <Panel Grid.Column="0" Margin="2">
           <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="{StaticResource RadiusXl}" Padding="10,6"
+                  AutomationProperties.AutomationId="Stats_PeriodWeekActiveButton"
                   IsVisible="{Binding IsWeekSelected}"
                   RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
                   Command="{Binding ChangePeriodCommand}" CommandParameter="Week"
@@ -92,6 +97,7 @@
             <TextBlock Text="{loc:Translate Week}" Foreground="{DynamicResource PrimaryContrastBrush}" FontSize="{StaticResource FontSizeLabelMd}" FontWeight="SemiBold" />
           </Button>
           <Button Background="Transparent" CornerRadius="{StaticResource RadiusXl}" Padding="10,6"
+                  AutomationProperties.AutomationId="Stats_PeriodWeekButton"
                   IsVisible="{Binding !IsWeekSelected}"
                   Command="{Binding ChangePeriodCommand}" CommandParameter="Week"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
@@ -101,6 +107,7 @@
 
         <Panel Grid.Column="1" Margin="2">
           <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="{StaticResource RadiusXl}" Padding="10,6"
+                  AutomationProperties.AutomationId="Stats_PeriodMonthActiveButton"
                   IsVisible="{Binding IsMonthSelected}"
                   RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
                   Command="{Binding ChangePeriodCommand}" CommandParameter="Month"
@@ -108,6 +115,7 @@
             <TextBlock Text="{loc:Translate Month}" Foreground="{DynamicResource PrimaryContrastBrush}" FontSize="{StaticResource FontSizeLabelMd}" FontWeight="SemiBold" />
           </Button>
           <Button Background="Transparent" CornerRadius="{StaticResource RadiusXl}" Padding="10,6"
+                  AutomationProperties.AutomationId="Stats_PeriodMonthButton"
                   IsVisible="{Binding !IsMonthSelected}"
                   Command="{Binding ChangePeriodCommand}" CommandParameter="Month"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
@@ -117,6 +125,7 @@
 
         <Panel Grid.Column="2" Margin="2">
           <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="{StaticResource RadiusXl}" Padding="10,6"
+                  AutomationProperties.AutomationId="Stats_PeriodQuarterActiveButton"
                   IsVisible="{Binding IsQuarterSelected}"
                   RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
                   Command="{Binding ChangePeriodCommand}" CommandParameter="Quarter"
@@ -124,6 +133,7 @@
             <TextBlock Text="{loc:Translate Quarter}" Foreground="{DynamicResource PrimaryContrastBrush}" FontSize="{StaticResource FontSizeLabelMd}" FontWeight="SemiBold" />
           </Button>
           <Button Background="Transparent" CornerRadius="{StaticResource RadiusXl}" Padding="10,6"
+                  AutomationProperties.AutomationId="Stats_PeriodQuarterButton"
                   IsVisible="{Binding !IsQuarterSelected}"
                   Command="{Binding ChangePeriodCommand}" CommandParameter="Quarter"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
@@ -133,6 +143,7 @@
 
         <Panel Grid.Column="3" Margin="2">
           <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="{StaticResource RadiusXl}" Padding="10,6"
+                  AutomationProperties.AutomationId="Stats_PeriodYearActiveButton"
                   IsVisible="{Binding IsYearSelected}"
                   RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
                   Command="{Binding ChangePeriodCommand}" CommandParameter="Year"
@@ -140,6 +151,7 @@
             <TextBlock Text="{loc:Translate Year}" Foreground="{DynamicResource PrimaryContrastBrush}" FontSize="{StaticResource FontSizeLabelMd}" FontWeight="SemiBold" />
           </Button>
           <Button Background="Transparent" CornerRadius="{StaticResource RadiusXl}" Padding="10,6"
+                  AutomationProperties.AutomationId="Stats_PeriodYearButton"
                   IsVisible="{Binding !IsYearSelected}"
                   Command="{Binding ChangePeriodCommand}" CommandParameter="Year"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
@@ -165,7 +177,8 @@
                                Foreground="{DynamicResource PrimaryBrush}" />
             </Border>
             <TextBlock Text="{loc:Translate WorkTime}" FontSize="{StaticResource FontSizeLabelSm}"
-                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
           </StackPanel>
           <TextBlock Text="{Binding TotalWorkDisplay}"
                      AutomationProperties.AutomationId="Stats_TxtWorkTime"
@@ -181,7 +194,8 @@
               <mi:MaterialIcon Kind="TrendingUp" Width="11" Height="11" Foreground="{DynamicResource StatsOrangeBrush}" />
             </Border>
             <TextBlock Text="{loc:Translate Overtime}" FontSize="{StaticResource FontSizeLabelSm}"
-                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
           </StackPanel>
           <TextBlock Text="{Binding TotalOvertimeDisplay}"
                      AutomationProperties.AutomationId="Stats_TxtOvertime"
@@ -197,7 +211,8 @@
               <mi:MaterialIcon Kind="ChartTimelineVariant" Width="11" Height="11" Foreground="{DynamicResource StatsGreenBrush}" />
             </Border>
             <TextBlock Text="{loc:Translate AvgPerDay}" FontSize="{StaticResource FontSizeLabelSm}"
-                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
           </StackPanel>
           <TextBlock Text="{Binding AverageDailyDisplay}"
                      AutomationProperties.AutomationId="Stats_TxtAvgDaily"
@@ -213,7 +228,8 @@
               <mi:MaterialIcon Kind="CalendarCheck" Width="11" Height="11" Foreground="{DynamicResource StatsPurpleBrush}" />
             </Border>
             <TextBlock Text="{loc:Translate WorkedDaysCount}" FontSize="{StaticResource FontSizeLabelSm}"
-                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
           </StackPanel>
           <TextBlock Text="{Binding WorkedDays}"
                      AutomationProperties.AutomationId="Stats_TxtWorkedDays"
@@ -477,6 +493,7 @@
     <Border Grid.RowSpan="4"
             AutomationProperties.AutomationId="Stats_AdOverlay"
             IsVisible="{Binding ShowRewardedAdOverlay}"
+            Classes="ModalOverlay" Classes.open="{Binding ShowRewardedAdOverlay}"
             Background="{DynamicResource ModalBackdropBrush}" ZIndex="100">
       <Border Background="{DynamicResource CardBrush}" CornerRadius="{StaticResource RadiusXl}" Padding="{StaticResource ThicknessXl}"
               AutomationProperties.AutomationId="Stats_AdOverlayCard"
@@ -492,7 +509,7 @@
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
           <StackPanel Spacing="8">
-            <Button Classes="Filled" AutomationProperties.AutomationId="Stats_BtnWatchAd" Command="{Binding WatchAdCommand}"
+            <Button Classes="Primary" AutomationProperties.AutomationId="Stats_BtnWatchAd" Command="{Binding WatchAdCommand}"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="16,12">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="Video" Width="20" Height="20" />
@@ -513,6 +530,7 @@
     <Border Grid.RowSpan="4"
             AutomationProperties.AutomationId="Stats_ExportFormatOverlay"
             IsVisible="{Binding ShowExportFormatOverlay}"
+            Classes="ModalOverlay" Classes.open="{Binding ShowExportFormatOverlay}"
             Background="{DynamicResource ModalBackdropBrush}" ZIndex="101">
       <Border Background="{DynamicResource CardBrush}" CornerRadius="{StaticResource RadiusXl}" Padding="{StaticResource ThicknessXl}"
               MaxWidth="340" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -522,6 +540,7 @@
 
           <!-- PDF -->
           <Button Classes="Outlined" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  AutomationProperties.AutomationId="Stats_ExportPdfButton"
                   Padding="16,14" CornerRadius="{StaticResource RadiusLg}"
                   Command="{Binding ExportWithFormatCommand}" CommandParameter="PDF">
             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -537,6 +556,7 @@
 
           <!-- Excel -->
           <Button Classes="Outlined" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  AutomationProperties.AutomationId="Stats_ExportExcelButton"
                   Padding="16,14" CornerRadius="{StaticResource RadiusLg}"
                   Command="{Binding ExportWithFormatCommand}" CommandParameter="Excel">
             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -552,6 +572,7 @@
 
           <!-- CSV -->
           <Button Classes="Outlined" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  AutomationProperties.AutomationId="Stats_ExportCsvButton"
                   Padding="16,14" CornerRadius="{StaticResource RadiusLg}"
                   Command="{Binding ExportWithFormatCommand}" CommandParameter="CSV">
             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -567,6 +588,7 @@
 
           <!-- ICS (Kalender) -->
           <Button Classes="Outlined" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  AutomationProperties.AutomationId="Stats_ExportIcsButton"
                   Padding="16,14" CornerRadius="{StaticResource RadiusLg}"
                   Command="{Binding ExportWithFormatCommand}" CommandParameter="ICS">
             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -582,6 +604,7 @@
 
           <!-- Abbrechen -->
           <Button Classes="Text" Command="{Binding CancelExportFormatCommand}"
+                  AutomationProperties.AutomationId="Stats_ExportCancelButton"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12,10">
             <TextBlock Text="{loc:Translate Cancel}" FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextSecondaryBrush}" />

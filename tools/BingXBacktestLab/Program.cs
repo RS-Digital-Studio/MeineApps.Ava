@@ -153,6 +153,8 @@ if (GetArg(argMap, "xsec", null) != null)
                 AtrStopMultiplier: decimal.Parse(s, CultureInfo.InvariantCulture),
                 LeverageCap: 2))
             .ToArray()
+        : GetArg(argMap, "xsec-grid", null) is "research"
+        ? XsecScreen.ResearchConfigs()
         : XsecScreen.DefaultConfigs();
     return await XsecScreen.RunAsync(configs, PhaseScreen.DefaultPhases(), symbols, navTf,
         botSettings, memData, symbolInfo, balance, parallelism, outDir, label);

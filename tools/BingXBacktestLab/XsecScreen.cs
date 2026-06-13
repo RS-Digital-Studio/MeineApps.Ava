@@ -44,6 +44,29 @@ internal static class XsecScreen
         new(LookbackCandles: 100, RebalanceEveryCandles: 105, LongK: 4, ShortK: 4, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1),
     ];
 
+    /// <summary>
+    /// Research-getriebenes Set (Literatur-Recherche 13.06.2026): Mehrere Paper (Cambridge JFQA
+    /// 2024, HSE, AUT) finden, dass Krypto-Cross-Sectional-Momentum nur auf KURZEN Horizonten
+    /// (2-4 Wochen Sort/Hold) profitabel ist und jenseits ~1 Monat in Reversal kippt; woechentliche
+    /// Rebalance schlaegt 2-woechentliche deutlich. Das Live-Profil (L120/R126 = 20d/21d) sitzt
+    /// genau an der Momentum→Reversal-Kippstelle. Dieses Set testet kuerzere Lookbacks/Rebalances
+    /// gegen den Live-Anker — H4: 6 Kerzen/Tag (42=7d, 60=10d, 84=14d, 120=20d, 126=21d). Alle
+    /// lev1 (Hebel ist reiner Multiplikator → Horizont-Ranking leverage-agnostisch) + radj
+    /// (risk-adjusted Ranking, von der Literatur gestuetzt).
+    /// </summary>
+    public static XsecParams[] ResearchConfigs() =>
+    [
+        new(LookbackCandles: 120, RebalanceEveryCandles: 126, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1), // Live-Anker 20d/21d
+        new(LookbackCandles: 120, RebalanceEveryCandles: 42,  LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1), // 20d Lookback, woechentlich
+        new(LookbackCandles: 84,  RebalanceEveryCandles: 84,  LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1), // 14d/14d (HSE 2/2)
+        new(LookbackCandles: 84,  RebalanceEveryCandles: 42,  LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1), // 14d/woechentlich
+        new(LookbackCandles: 60,  RebalanceEveryCandles: 42,  LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1), // 10d/woechentlich
+        new(LookbackCandles: 60,  RebalanceEveryCandles: 60,  LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1), // 10d/10d
+        new(LookbackCandles: 42,  RebalanceEveryCandles: 42,  LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1), // 7d/7d
+        new(LookbackCandles: 84,  RebalanceEveryCandles: 42,  LongK: 5, ShortK: 5, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1), // 14d/woechentlich, K=5
+        new(LookbackCandles: 84,  RebalanceEveryCandles: 42,  LongK: 3, ShortK: 0, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1), // Long-only (Claim: Short-Leg ist Schwaeche)
+    ];
+
     private static async Task<XsecCell> EvaluateAsync(
         XsecParams cfg, Phase phase, IReadOnlyList<string> symbols, TimeFrame navTf,
         BotSettings settings, decimal balance, IPublicMarketDataClient data,

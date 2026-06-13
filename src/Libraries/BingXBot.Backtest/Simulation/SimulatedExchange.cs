@@ -581,6 +581,30 @@ public class SimulatedExchange : IExchangeClient, IDisposable
         finally { _rwLock.ExitWriteLock(); }
     }
 
+    /// <summary>
+    /// Wendet PER-SYMBOL Funding-Raten an (fuer den Funding-Carry-Backtest mit echter historischer
+    /// Funding-Historie statt einer Konstante). Fehlt eine Rate fuer ein offenes Symbol, wird
+    /// <paramref name="fallback"/> verwendet (Default 0 = kein Funding). Vorzeichen-Konvention wie
+    /// <see cref="ApplyFundingRate(decimal)"/>: Long zahlt bei positiver Rate, Short erhaelt.
+    /// </summary>
+    public void ApplyFundingRatesPerSymbol(IReadOnlyDictionary<string, decimal> ratesBySymbol, decimal fallback = 0m)
+    {
+        _rwLock.EnterWriteLock();
+        try
+        {
+            foreach (var pos in _positions)
+            {
+                var rate = ratesBySymbol.TryGetValue(pos.Symbol, out var r) ? r : fallback;
+                if (rate == 0m) continue;
+                var positionValue = pos.Quantity * GetPriceLocked(pos.Symbol);
+                var fundingPayment = pos.Side == Side.Buy ? positionValue * rate : -(positionValue * rate);
+                _balance -= fundingPayment;
+            }
+            _positionsDirty = true;
+        }
+        finally { _rwLock.ExitWriteLock(); }
+    }
+
     public Task<IReadOnlyList<string>> GetAllSymbolsAsync()
     {
         IReadOnlyList<string> empty = [];

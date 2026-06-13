@@ -135,7 +135,7 @@ Wenn `ServerProfile` gesetzt ist, registriert die DI Remote-Service-Impls; sonst
 | Status | `/status`, `/account`, `/positions`, `/open-orders`, `/equity` |
 | Bot-Control | `/bot/start`, `/bot/stop`, `/bot/emergency-stop`, `/position/{symbol}/close` |
 | Admin | `/admin/backfill-trades` (POST, Trade-Backfill aus BingX-Income, Body `{ fromUtc, toUtc? }`) |
-| Settings | `/settings`, `/settings/risk`, `/settings/scanner`, `/settings/bot`, `/settings/backtest`, `/settings/history` |
+| Settings | `/settings`, `/settings/risk`, `/settings/scanner`, `/settings/bot`, `/settings/backtest`, `/settings/xsec`, `/settings/history` |
 | Trades & Logs | `/trades`, `/trades/summary`, `/scanner/results`, `/logs` |
 | Backtest | `/backtest/start`, `/backtest/{jobId}`, `/backtest/{jobId}/result`, `/backtest/{jobId}/cancel`, `/backtest/replay-trade/{tradeId}` |
 | Credentials | `/credentials/status`, `/credentials` (PUT) |
@@ -257,9 +257,27 @@ Top-50 — die Cross-Asset-Dispersion (Gold/Indizes/Forex) traegt den Edge. Betr
   Schutz beigemischt). Der Soll-Korb wird aus `RebalanceResult.Filled` gebaut (tatsaechlich
   gehalten/eroeffnet) — NICHT per erneutem `GetPositions` (frische Market-Orders erscheinen dort
   teils erst Sekunden spaeter, Race). `LastRebalanceUtc` bleibt beim Refill unveraendert.
-- **Heartbeat im Xsec-Tick**: `SaveLastHeartbeatAsync` pro Tick — sonst altert der Heartbeat
-  ueber den 21-Tage-Zyklus und der Income-Backfill rechnet nach jedem Reboot mit einem
-  riesigen Offline-Fenster.
+- **Heartbeat im Xsec-Tick**: `SaveLastHeartbeatAsync` ZUERST pro Tick (vor dem fehleranfaelligen
+  Account-Call) — sonst altert der Heartbeat ueber den 21-Tage-Zyklus und der Income-Backfill
+  rechnet nach jedem Reboot mit einem riesigen Offline-Fenster. Equity-Snapshot im Tick gekapselt
+  (transiente Balance-Antwort darf Rebalance/Drift nicht reissen).
+- **Xsec-Liveness fuer Watchdog**: `CrossSectionalTradingService.LastTickUtc` (pro Tick-Versuch).
+  Der `StaleEngineDetector` ueberspringt den Xsec-Modus NICHT mehr komplett, sondern prueft gegen
+  eine 90-min-Tick-Schwelle (3 verpasste 30-min-Intervalle) → Auto-Restart (engine-aware via
+  `LastEngineMode`). `metrics/internal` ist xsec-aware (`isRunning`/`mode`/`xsec.basketSize`/
+  `lastTickUtc` statt konstant `isRunning:false`/`risk:null` im Xsec-Modus).
+- **Live-Closes als CompletedTrade**: Der Rebalancer-Hook `onClosed` → `BookLiveClose` bucht jeden
+  verifizierten Korb-Close sofort als `CompletedTrade` (Stats/SignalR/FCM) statt erst nach bis zu
+  30 min als anonymen Income-Backfill. PnL/Fee sind Mark-to-Market-Naeherungen; der Income-Backfill
+  bleibt die exakte Dedup-Quelle.
+- **Korb-Tuning ohne Code-Deploy**: `GET/PUT /api/v1/settings/xsec` schreibt den
+  `CrossSectionalSettings`-DI-Singleton (den der Manager per Referenz haelt) → wirkt beim naechsten
+  Rebalance/Drift-Tick. Persistenz ueber `BotSettings.CrossSectional`; `ApplySettingsToSingletons`
+  mappt den Block beim Bootstrap. **GOTCHA (live 13.06.2026):** Ein alt-persistierter
+  `CrossSectional`-Block kann eine validierte Default-Aenderung ueberschreiben — das Bootstrap-Mapping
+  senkte den Live-Hebel still von 2x (User-Entscheidung) auf das stale persistierte 1x. Nach
+  Einfuehrung des Mappings IMMER `GET /settings/xsec` gegen den Soll-Wert pruefen und ggf. per PUT
+  korrigieren (LeverageCap 2 = validierter Live-Default).
 
 ```
 CrossSectionalManager (Lifecycle: Paper=SimulatedExchange / Live=BingXRestClient + zwingend Hedge)

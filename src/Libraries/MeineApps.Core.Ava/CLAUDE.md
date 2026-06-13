@@ -315,6 +315,14 @@ spezifisches → [MeineApps.UI](../../UI/MeineApps.UI/CLAUDE.md), Monetarisierun
   ersten Render (`The calling thread cannot access this object`). Fix:
   `Dispatcher.UIThread.InvokeAsync(() => GetRequiredService<MainViewModel>()).GetTask()`; schwere
   Background-Arbeit (Shader/Asset-Preload) bleibt auf `Task.Run`.
+- **`Dispatcher.UIThread.InvokeAsync` im Startup-Init-Pfad deadlockt (Self-Deadlock).** Läuft die
+  Loading-Pipeline-Init-Kette bereits auf dem UI-Thread (z.B. `MainViewModel`-Ctor startet
+  `_initTask = LoadDataAsync()`, Pipeline-Stage awaitet `WaitForInitializationAsync`) und ruft darin
+  `await Dispatcher.UIThread.InvokeAsync(...)` auf, wird der Job gequeued, aber die Dispatcher-Loop
+  pumpt ihn erst NACH Abschluss der synchron verketteten Startsequenz — die genau darauf wartet.
+  Folge: Avalonia kommt nie zur ersten Frame, App hängt dauerhaft im Android-System-Splash (kein
+  Crash, Prozess lebt). Fix: vor `InvokeAsync` `Dispatcher.UIThread.CheckAccess()` prüfen → direkt
+  ausführen (Init-Pfad), sonst dispatchen (Background-Thread wie `System.Timers.Timer`).
 - **Startup-Last bei vielen Child-VMs:** spät freigeschaltete VMs als `Lazy<T>` injizieren
   (`AddLazyResolution()`), in `EnsureXxxVm()` beim ersten Navigations-Ziel instanziieren +
   verdrahten. Public Property `XxxViewModel?` (`[ObservableProperty]`) feuert dann das Binding;

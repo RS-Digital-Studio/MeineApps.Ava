@@ -1032,7 +1032,25 @@ namespace HandwerkerImperium.Editor
         {
             var go = new GameObject("Game_Worker");
             AttachCharacter(go.transform, "worker", 1.6f); // läuft Station<->Tresen -> echter Walk-Cycle
-            go.AddComponent<WorkerNpc>();
+            var npc = go.AddComponent<WorkerNpc>();
+
+            // Sichtbare Karren-Logistik (Hencoop-Konzept): der Worker zieht den Handkarren hinter sich
+            // her — beladen auf dem Hin-Weg zum Tresen, leer zurück.
+            if (AssetDatabase.LoadMainAssetAtPath(ModelDir + "/handcart.glb") != null)
+            {
+                var cart = new GameObject("Cart");
+                cart.transform.SetParent(go.transform, false);
+                cart.transform.localPosition = new Vector3(0f, 0f, -0.8f); // hinter dem Worker
+                cart.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                AttachModel(cart.transform, ModelDir + "/handcart.glb", 0.9f);
+
+                var load = new GameObject("CartLoad");
+                load.transform.SetParent(cart.transform, false);
+                load.transform.localPosition = new Vector3(0f, 0.55f, 0f);
+                var ware = AttachModel(load.transform, ModelDir + "/stool.glb", 0.45f);
+                if (ware == null) load.SetActive(false);
+                SetRef(npc, "cartLoad", load);
+            }
             return SavePrefab(go, "Game_Worker");
         }
 

@@ -13,6 +13,8 @@ namespace HandwerkerImperium.Game
         [SerializeField] private Transform counterPoint;
         [SerializeField] private float speed = 3f;
         [SerializeField] private float pauseSeconds = 0.4f;
+        [Tooltip("Ware auf dem Karren — sichtbar auf dem Hin-Weg zum Tresen (beladen), leer zurück.")]
+        [SerializeField] private GameObject cartLoad;
 
         private bool _toCounter = true;
         private float _pause;
@@ -21,6 +23,7 @@ namespace HandwerkerImperium.Game
         {
             stationPoint = station;
             counterPoint = counter;
+            UpdateLoadVisual();
         }
 
         private void Update()
@@ -39,7 +42,14 @@ namespace HandwerkerImperium.Game
             {
                 _toCounter = !_toCounter;
                 _pause = pauseSeconds;
+                UpdateLoadVisual(); // an der Station beladen, am Tresen entladen
             }
+        }
+
+        /// <summary>Karren-Ware sichtbar, wenn der Worker beladen zum Tresen geht; leer auf dem Rückweg.</summary>
+        private void UpdateLoadVisual()
+        {
+            if (cartLoad != null) cartLoad.SetActive(_toCounter);
         }
     }
 }

@@ -377,6 +377,7 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     var scanner = sp.GetRequiredService<ScannerSettings>();
     var bot = sp.GetRequiredService<BotSettings>();
     var backtest = sp.GetRequiredService<BacktestSettings>();
+    var xsec = sp.GetRequiredService<CrossSectionalSettings>();
 
     // ============ Risk ============
     // Cap/Drawdown/Position-Konfiguration
@@ -512,8 +513,25 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     // v1.5.5 Phase 9 — Trade-Push Toggle
     bot.EnableTradePushNotifications = saved.EnableTradePushNotifications;
 
+    // ============ Cross-Sectional ============ (Korb-Tuning via PUT /settings/xsec persistiert
+    // in BotSettings.CrossSectional → hier auf den DI-Singleton mappen, sonst faellt jede getunte
+    // Korb-Config bei jedem Server-Restart auf die Code-Defaults zurueck).
+    xsec.LookbackCandles = saved.CrossSectional.LookbackCandles;
+    xsec.RebalanceDays = saved.CrossSectional.RebalanceDays;
+    xsec.LongK = saved.CrossSectional.LongK;
+    xsec.ShortK = saved.CrossSectional.ShortK;
+    xsec.RiskAdjusted = saved.CrossSectional.RiskAdjusted;
+    xsec.LeverageCap = saved.CrossSectional.LeverageCap;
+    xsec.MarginUtilization = saved.CrossSectional.MarginUtilization;
+    xsec.AtrStopMultiplier = saved.CrossSectional.AtrStopMultiplier;
+    xsec.UniverseTopN = saved.CrossSectional.UniverseTopN;
+    xsec.IncludeTradFi = saved.CrossSectional.IncludeTradFi;
+    xsec.NavTimeframe = saved.CrossSectional.NavTimeframe;
+    xsec.CheckIntervalMinutes = saved.CrossSectional.CheckIntervalMinutes;
+
     // Referenzen in BotSettings zeigen auf die DI-Singletons
     bot.Risk = risk;
     bot.Scanner = scanner;
     bot.Backtest = backtest;
+    bot.CrossSectional = xsec;
 }

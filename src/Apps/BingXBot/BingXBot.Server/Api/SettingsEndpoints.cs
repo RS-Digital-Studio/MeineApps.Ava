@@ -62,6 +62,40 @@ public static class SettingsEndpoints
             return Results.NoContent();
         }).RequireRateLimiting("settings");
 
+        // Cross-Sectional-Momentum-Parameter (Korb-Tuning ohne Code-Deploy). Bewusst NICHT in
+        // ISettingsService/FullSettingsDto/Client integriert (haelt den Multi-Client-Sync-Pfad
+        // schlank) — dedizierter GET/PUT auf den DI-Singleton, den der CrossSectionalManager per
+        // Referenz haelt. Aenderungen wirken beim naechsten Rebalance/Drift-Tick (ein laufender
+        // Tick liest die Properties am Anfang). Persistenz ueber BotSettings.CrossSectional.
+        app.MapGet(ApiRoutes.SettingsXsec, (CrossSectionalSettings xsec) => Results.Ok(xsec));
+
+        app.MapPut(ApiRoutes.SettingsXsec, async (
+            [FromBody] CrossSectionalSettings dto,
+            CrossSectionalSettings xsec,
+            BotSettings botSettings,
+            BingXBot.Trading.BotDatabaseService db,
+            CancellationToken ct) =>
+        {
+            if (!TryValidateXsec(dto, out var reason)) return Results.BadRequest(new ErrorResponse("invalid_xsec", reason));
+            // In den DI-Singleton kopieren (Referenz-Identitaet bewahren — der CrossSectionalManager
+            // haelt genau diese Instanz).
+            xsec.LookbackCandles = dto.LookbackCandles;
+            xsec.RebalanceDays = dto.RebalanceDays;
+            xsec.LongK = dto.LongK;
+            xsec.ShortK = dto.ShortK;
+            xsec.RiskAdjusted = dto.RiskAdjusted;
+            xsec.LeverageCap = dto.LeverageCap;
+            xsec.MarginUtilization = dto.MarginUtilization;
+            xsec.AtrStopMultiplier = dto.AtrStopMultiplier;
+            xsec.UniverseTopN = dto.UniverseTopN;
+            xsec.IncludeTradFi = dto.IncludeTradFi;
+            xsec.NavTimeframe = dto.NavTimeframe;
+            xsec.CheckIntervalMinutes = dto.CheckIntervalMinutes;
+            botSettings.CrossSectional = xsec;
+            await db.SaveSettingsAsync(botSettings).ConfigureAwait(false);
+            return Results.NoContent();
+        }).RequireRateLimiting("settings");
+
         // v1.6.3 Phase 14 — Settings-Audit-Trail-History.
         app.MapGet(ApiRoutes.SettingsHistory, async (
             BingXBot.Trading.BotDatabaseService db,
@@ -157,6 +191,23 @@ public static class SettingsEndpoints
     {
         reason = "";
         if (dto.InitialBalance < 0 || dto.InitialBalance > 10_000_000m) { reason = "InitialBalance muss 0..10M sein."; return false; }
+        return true;
+    }
+
+    private static bool TryValidateXsec(CrossSectionalSettings dto, out string reason)
+    {
+        reason = "";
+        if (dto.LookbackCandles < 2 || dto.LookbackCandles > 1000) { reason = "LookbackCandles muss 2..1000 sein."; return false; }
+        if (dto.RebalanceDays < 1 || dto.RebalanceDays > 365) { reason = "RebalanceDays muss 1..365 sein."; return false; }
+        if (dto.LongK < 0 || dto.LongK > 25) { reason = "LongK muss 0..25 sein."; return false; }
+        if (dto.ShortK < 0 || dto.ShortK > 25) { reason = "ShortK muss 0..25 sein."; return false; }
+        if (dto.LongK + dto.ShortK < 1) { reason = "LongK + ShortK muss mindestens 1 sein."; return false; }
+        if (dto.LeverageCap < 1 || dto.LeverageCap > 20) { reason = "LeverageCap muss 1..20 sein."; return false; }
+        if (dto.MarginUtilization <= 0m || dto.MarginUtilization > 1m) { reason = "MarginUtilization muss 0..1 sein."; return false; }
+        if (dto.AtrStopMultiplier < 0m || dto.AtrStopMultiplier > 20m) { reason = "AtrStopMultiplier muss 0..20 sein."; return false; }
+        if (dto.UniverseTopN < dto.LongK + dto.ShortK || dto.UniverseTopN > 500) { reason = "UniverseTopN muss (LongK+ShortK)..500 sein."; return false; }
+        if (dto.CheckIntervalMinutes < 1 || dto.CheckIntervalMinutes > 1440) { reason = "CheckIntervalMinutes muss 1..1440 sein."; return false; }
+        if (!Enum.TryParse<BingXBot.Core.Enums.TimeFrame>(dto.NavTimeframe, ignoreCase: true, out _)) { reason = "NavTimeframe ungueltig (z.B. H4, H1, D1)."; return false; }
         return true;
     }
 }

@@ -42,6 +42,8 @@ public static class ApiRoutes
     public const string SettingsScanner = ApiPrefix + "/settings/scanner";
     public const string SettingsBot = ApiPrefix + "/settings/bot";
     public const string SettingsBacktest = ApiPrefix + "/settings/backtest";
+    /// <summary>Cross-Sectional-Momentum-Parameter (Korb-Tuning ohne Code-Deploy). GET + PUT.</summary>
+    public const string SettingsXsec = ApiPrefix + "/settings/xsec";
 
     // Trades & Logs
     public const string Trades = ApiPrefix + "/trades";

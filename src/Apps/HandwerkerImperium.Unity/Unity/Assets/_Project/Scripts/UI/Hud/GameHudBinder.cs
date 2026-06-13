@@ -60,6 +60,14 @@ namespace HandwerkerImperium.UI.Hud
         private bool _workerPanelOpen;
         private Button _freeCashButton;
         private float _freeCashReadyTime;
+        // Onboarding (geführtes Intro, GDD §15.9) — einmalig via PlayerPrefs
+        private const string OnboardingDoneKey = "hwi_onboarding_done";
+        private VisualElement _onboardingBar;
+        private Label _onboardingHint;
+        private int _onboardStep;
+        private bool _onboardDone;
+        private float _onboardFinishTimer;
+        private AvatarController _avatar;
 
         private void OnEnable()
         {
@@ -124,6 +132,13 @@ namespace HandwerkerImperium.UI.Hud
                     audioHub?.Play(GameSfx.OfflineEarnings);
                 };
 
+            // Onboarding (einmalig)
+            _onboardingBar = root.Q<VisualElement>("onboarding-bar");
+            _onboardingHint = root.Q<Label>("onboarding-hint");
+            _onboardDone = UnityEngine.PlayerPrefs.GetInt(OnboardingDoneKey, 0) == 1;
+            var onboardSkip = root.Q<Button>("onboarding-skip");
+            if (onboardSkip != null) onboardSkip.clicked += FinishOnboarding;
+
             _prestigeButton = root.Q<Button>("prestige-button");
             _prestigeOverlay = root.Q<VisualElement>("prestige-overlay");
             _prestigeBonus = root.Q<Label>("prestige-bonus");
@@ -180,6 +195,7 @@ namespace HandwerkerImperium.UI.Hud
                 UpdateTasks(m);
                 if (_workerPanelOpen) RebuildWorkerList(); // Leistbarkeit folgt dem Geldstand
                 UpdateFreeCashButton();
+                if (!_onboardDone) UpdateOnboarding(m);
 
                 // Prestige-Button erscheint, sobald der Umzug möglich ist (5★, Limit nicht erreicht)
                 if (_prestigeButton != null)
@@ -344,6 +360,60 @@ namespace HandwerkerImperium.UI.Hud
 
                 _workerList.Add(row);
             }
+        }
+
+        /// <summary>
+        /// Geführtes Onboarding (GDD §15.9): meilenstein-gesteuerte Hinweise durch die ersten Minuten
+        /// (sammeln → verkaufen → Gewerk freischalten → Arbeiter anstellen). Liest den Spielzustand,
+        /// kein Skript-Zwang. Einmalig (PlayerPrefs), jederzeit überspringbar.
+        /// </summary>
+        private void UpdateOnboarding(HandwerkerImperium.Domain.Runtime.GameModel m)
+        {
+            if (_onboardingBar == null || _onboardingHint == null) return;
+            _onboardingBar.RemoveFromClassList("onboarding-bar--hidden");
+
+            // Abschluss-Glückwunsch ausklingen lassen
+            if (_onboardFinishTimer > 0f)
+            {
+                _onboardFinishTimer -= slowPollSeconds;
+                if (_onboardFinishTimer <= 0f) FinishOnboarding();
+                return;
+            }
+
+            if (_avatar == null) _avatar = Object.FindFirstObjectByType<AvatarController>();
+            bool anyUnlockedBeyondFirst = false, anyWorker = false;
+            for (int i = 0; i < m.Idle.Stations.Count; i++)
+            {
+                if (i > 0 && m.Idle.Stations[i].Unlocked) anyUnlockedBeyondFirst = true;
+                if (m.Idle.Stations[i].HasWorker) anyWorker = true;
+            }
+
+            // Schritt automatisch aus dem Zustand ableiten (robust auch bei Wiedereinstieg)
+            if (anyWorker) _onboardStep = 4;
+            else if (anyUnlockedBeyondFirst) _onboardStep = 3;
+            else if (m.Idle.Money > 0m) _onboardStep = 2;
+            else if (_avatar != null && _avatar.CarriedCount > 0) _onboardStep = 1;
+            else _onboardStep = 0;
+
+            switch (_onboardStep)
+            {
+                case 0: _onboardingHint.text = "Lauf zur Schreinerei und sammle die fertigen Waren ein."; break;
+                case 1: _onboardingHint.text = "Bring die Waren zum Verkaufs-Tresen in der Mitte."; break;
+                case 2: _onboardingHint.text = "Geschafft, erstes Geld! Schalte an einem Bauzaun ein neues Gewerk frei."; break;
+                case 3: _onboardingHint.text = "Öffne unten rechts „Arbeiter“ und stelle einen Arbeiter an."; break;
+                default:
+                    _onboardingHint.text = "Stark! Dein Imperium läuft jetzt von selbst — viel Erfolg, Meister!";
+                    _onboardFinishTimer = 4.5f;
+                    break;
+            }
+        }
+
+        private void FinishOnboarding()
+        {
+            _onboardDone = true;
+            UnityEngine.PlayerPrefs.SetInt(OnboardingDoneKey, 1);
+            UnityEngine.PlayerPrefs.Save();
+            _onboardingBar?.AddToClassList("onboarding-bar--hidden");
         }
 
         /// <summary>Gratis-Geld-Button: „bereit" oder Countdown (mm:ss), abgekühlt gedämpft.</summary>

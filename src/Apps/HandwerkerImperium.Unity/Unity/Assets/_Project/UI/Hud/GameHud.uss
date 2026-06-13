@@ -275,3 +275,36 @@
     color: rgba(214, 190, 160, 0.7);
     border-color: rgba(120, 96, 56, 0.7);
 }
+
+/* ── Onboarding-Leiste (geführtes Intro, unten mittig) ──────────────────── */
+.onboarding-bar {
+    position: absolute;
+    bottom: 90px; left: 0; right: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+.onboarding-bar--hidden { display: none; }
+.onboarding-hint {
+    background-color: rgba(38, 27, 17, 0.92);
+    color: rgb(255, 232, 180);
+    font-size: 20px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    border-radius: 14px;
+    border-width: 2px;
+    border-color: rgb(217, 119, 6);
+    padding: 12px 22px;
+    max-width: 70%;
+    white-space: normal;
+}
+.onboarding-skip {
+    background-color: rgba(38, 27, 17, 0.8);
+    color: rgba(214, 190, 160, 0.9);
+    font-size: 13px;
+    border-radius: 10px;
+    border-width: 0;
+    padding: 8px 14px;
+    margin-left: 8px;
+}
+.onboarding-skip:hover { background-color: rgba(60, 42, 24, 0.9); }

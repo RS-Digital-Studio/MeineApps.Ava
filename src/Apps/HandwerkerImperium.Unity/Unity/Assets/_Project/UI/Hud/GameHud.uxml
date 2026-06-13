@@ -26,6 +26,11 @@
             <ui:Label name="task-2" text="" class="task-row" picking-mode="Ignore"/>
         </ui:VisualElement>
         <ui:Label name="story-toast" text="" class="story-toast story-toast--hidden" picking-mode="Ignore"/>
+        <!-- Onboarding: geführter Hinweis (erste Minuten) + Überspringen -->
+        <ui:VisualElement name="onboarding-bar" class="onboarding-bar onboarding-bar--hidden">
+            <ui:Label name="onboarding-hint" text="" class="onboarding-hint" picking-mode="Ignore"/>
+            <ui:Button name="onboarding-skip" text="Überspringen" class="onboarding-skip"/>
+        </ui:VisualElement>
         <!-- Arbeiter-Verwaltung: Button (rechts unten) öffnet das Panel; Zeilen baut der Binder dynamisch.
              Ersetzt die früheren Hold-to-Pay-Boden-Platten (GDD §6.2, Nutzer-Entscheidung). -->
         <ui:Button name="worker-button" text="Arbeiter" class="worker-button"/>

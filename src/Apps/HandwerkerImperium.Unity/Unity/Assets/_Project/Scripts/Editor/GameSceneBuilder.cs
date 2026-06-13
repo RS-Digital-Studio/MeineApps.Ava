@@ -212,6 +212,8 @@ namespace HandwerkerImperium.Editor
             // Stationen: alle 10 Gewerke (GDD §6.1) im Hof-Layout, je eigenes Pipeline-Modell.
             // Nord-Reihe 0-4, Süd-Reihe 5-9, alle zur Hof-Mitte orientiert. Nur die Schreinerei startet offen;
             // gesperrte Plots zeigen Bodenplatte + Bauzaun (Hold-to-Pay), das Gebäude erscheint erst nach Unlock.
+            // UNSERE Hunyuan-Gebäude bleiben (Nutzer-Entscheidung 13.06.: von den Referenzen nur die
+            // Spiel-Logik, nicht den Flat-Stil). Je Gewerk ein Pipeline-Modell.
             string[] stationModels =
             {
                 ModelDir + "/workshop.glb",                    // 0 schreiner
@@ -263,12 +265,12 @@ namespace HandwerkerImperium.Editor
                 MakePath(stGo.transform.parent != null ? stGo.transform.parent : stGo.transform,
                     dir * 10.8f, Quaternion.LookRotation(dir), new Vector2(2.2f, 8.6f), new Vector2(1f, 4f));
 
-                // Gebäude-Modell (unlockedVisual — gesperrt ausgeblendet); Schornstein-Rauch lebt
-                // am Modell-Root und erscheint damit automatisch erst nach dem Unlock.
+                // Unser Hunyuan-Gebäude (unlockedVisual — gesperrt ausgeblendet); Schornstein-Rauch
+                // lebt am Modell-Root (erscheint erst nach Unlock).
                 var modelRoot = new GameObject("Model");
                 modelRoot.transform.SetParent(stGo.transform, false);
                 AttachModel(modelRoot.transform, stationModels[i], 3.4f);
-                MakeChimneySmoke(modelRoot.transform, new Vector3(0.7f, 3.3f, -0.4f));
+                MakeChimneySmoke(modelRoot.transform, new Vector3(0.9f, 3.0f, -0.7f));
 
                 // Pickup-Zone + Waren-Stapel vor der Station
                 var trig = MakeTriggerZone($"Station_{i}_Pickup", pos + toCenter * 2.9f + Vector3.up * 0.9f, new Vector3(2.6f, 2f, 2.6f));
@@ -477,42 +479,32 @@ namespace HandwerkerImperium.Editor
 
             var envRoot = new GameObject("Environment");
 
-            // Gras-Welt (trägt den CharacterController) — Pipeline-Tile (Casual-Stil, nahtlos verifiziert)
+            // FLAT-LOW-POLY-Boden (Synty-Look, Robert-Entscheidung 13.06.): ruhige Volltonflächen statt
+            // candy-/noisy-SDXL-Tiles. Gras-Welt trägt den CharacterController.
             var grass = GameObject.CreatePrimitive(PrimitiveType.Plane);
             grass.name = "Ground_Grass";
             grass.transform.SetParent(envRoot.transform, false);
             grass.transform.localScale = new Vector3(20f, 1f, 20f); // 200 m
-            grass.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeAssetTexturedMaterial("tex_grass", Color.white, new Vector2(50f, 50f), "Mat_Grass");
+            PaintFlat(grass, GrassColor);
 
-            // Marktplatz: warmes Casual-Pflaster (Pipeline-Tile). Gebäude stehen auf GRAS,
-            // nur die Lauffläche Tresen/Pads/Queue ist gepflastert.
+            // Marktplatz: warmer Stein-Vollton mit dezentem, sauberem Fugen-Raster (kein Rauschen).
             var yard = GameObject.CreatePrimitive(PrimitiveType.Cube);
             yard.name = "Ground_Yard";
             Object.DestroyImmediate(yard.GetComponent<Collider>()); // rein visuell, 4 cm — Gras-Plane trägt
             yard.transform.SetParent(envRoot.transform, false);
             yard.transform.localScale = new Vector3(22f, 0.04f, 14.5f);
             yard.transform.position = new Vector3(0f, 0.02f, -0.25f);
-            // Warm-entsättigter Tint beruhigt die (zu bunten) Pastell-Steine deutlich Richtung Sandstein.
             yard.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeAssetTexturedMaterial("tex_cobblestone", new Color(0.82f, 0.75f, 0.64f), new Vector2(5.2f, 3.4f), "Mat_Plaza");
+                FlatGridMaterial(PlazaColor, new Vector2(22f, 14.5f), "Mat_Plaza");
 
-            // Weicher Übergang Pflaster->Gras: zwei gestaffelte Rand-Ringe (gras-grün -> sandbeige),
-            // statt einer harten Kante. Bricht die Rechteck-Silhouette von oben (Schneeflocken-Look).
-            var yardTrimOuter = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            yardTrimOuter.name = "Ground_YardTrimOuter";
-            Object.DestroyImmediate(yardTrimOuter.GetComponent<Collider>());
-            yardTrimOuter.transform.SetParent(envRoot.transform, false);
-            yardTrimOuter.transform.localScale = new Vector3(23.8f, 0.03f, 16.3f);
-            yardTrimOuter.transform.position = new Vector3(0f, 0.012f, -0.25f);
-            PaintFlat(yardTrimOuter, new Color(0.46f, 0.62f, 0.33f)); // gras-grüner Saum (mäht die Kante weich)
+            // Heller, sandbeiger Rand rahmt den Platz sauber ein (Hencoop-Lesbarkeit) — eine klare Kante.
             var yardTrim = GameObject.CreatePrimitive(PrimitiveType.Cube);
             yardTrim.name = "Ground_YardTrim";
             Object.DestroyImmediate(yardTrim.GetComponent<Collider>());
             yardTrim.transform.SetParent(envRoot.transform, false);
-            yardTrim.transform.localScale = new Vector3(22.8f, 0.035f, 15.3f);
-            yardTrim.transform.position = new Vector3(0f, 0.016f, -0.25f);
-            PaintFlat(yardTrim, new Color(0.86f, 0.78f, 0.62f)); // sandbeiger Innen-Rand
+            yardTrim.transform.localScale = new Vector3(23f, 0.03f, 15.5f);
+            yardTrim.transform.position = new Vector3(0f, 0.014f, -0.25f);
+            PaintFlat(yardTrim, PlazaTrimColor);
 
             // Kundenweg zum Stadttor + radiale Wege zu allen Stationen (sandwarm, mit Einfassung)
             MakePath(envRoot.transform, new Vector3(0f, 0f, 11.5f), Quaternion.identity, new Vector2(4.5f, 9f), new Vector2(2f, 4f));
@@ -563,10 +555,8 @@ namespace HandwerkerImperium.Editor
             path.transform.position = center.WithY(0.024f);
             path.transform.rotation = rotation;
             path.transform.localScale = new Vector3(size.x, 0.035f, size.y);
-            // EIN gemeinsames Weg-Material (Cache) mit warm-sandigem Tint — beruhigt das rötliche Tile
-            // und vermeidet Material-Dubletten (Magenta-Ursache war geloest, Tint zentralisiert den Look).
-            path.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeAssetTexturedMaterial("tex_dirt_path", new Color(0.85f, 0.74f, 0.55f), tiling, "Mat_Path");
+            // Flat-Sandweg (Vollton) — passt zum Synty-Look, kein Tile-Rauschen.
+            PaintFlat(path, PathColor);
 
             var trim = GameObject.CreatePrimitive(PrimitiveType.Cube);
             trim.name = "Ground_PathTrim";
@@ -575,7 +565,7 @@ namespace HandwerkerImperium.Editor
             trim.transform.position = center.WithY(0.014f);
             trim.transform.rotation = rotation;
             trim.transform.localScale = new Vector3(size.x + 0.5f, 0.03f, size.y + 0.5f);
-            Paint(trim, new Color(0.96f, 0.90f, 0.74f));
+            PaintFlat(trim, PlazaTrimColor);
         }
 
         /// <summary>Gemütlicher Schornstein-Rauch (lebt am unlockedVisual — erscheint erst nach dem Unlock).</summary>
@@ -684,6 +674,12 @@ namespace HandwerkerImperium.Editor
             return tex;
         }
 
+        // ── Flat-Low-Poly-Palette (Synty/Hencoop-Look, einheitlich) ──
+        private static readonly Color GrassColor = new Color(0.46f, 0.64f, 0.34f);
+        private static readonly Color PlazaColor = new Color(0.80f, 0.73f, 0.60f);   // warmer Sandstein
+        private static readonly Color PlazaTrimColor = new Color(0.88f, 0.82f, 0.68f);
+        private static readonly Color PathColor = new Color(0.82f, 0.71f, 0.50f);    // Sandweg
+
         // Flat-Casual-Farbpalette (satte, matte Töne — Hencoop/Open-Shop-Look)
         private static readonly Color[] LeafTones =
         {
@@ -779,11 +775,48 @@ namespace HandwerkerImperium.Editor
         {
             var mr = go.GetComponent<MeshRenderer>();
             if (mr == null) return;
+            mr.sharedMaterial = FlatMaterial(color);
+        }
+
+        private static Material FlatMaterial(Color color)
+        {
             var mat = MakePipelineMaterial(color);
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0f);
             if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0f);
-            mr.sharedMaterial = mat;
+            return mat;
         }
+
+        /// <summary>
+        /// Flat-Boden-Material mit dezentem, sauberem Fugen-Raster (kein Rauschen): Vollton + dünne,
+        /// leicht dunklere Linien. <paramref name="worldSize"/> bestimmt die Kachelzahl (~1 Fuge/2 m).
+        /// </summary>
+        private static Material FlatGridMaterial(Color baseColor, Vector2 worldSize, string matName)
+        {
+            if (_envMatCache.TryGetValue(matName, out var cached) && cached != null) return cached;
+            const int size = 128;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, true);
+            var line = baseColor * 0.86f; line.a = 1f;
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    bool grout = x < 2 || y < 2;
+                    tex.SetPixel(x, y, grout ? line : baseColor);
+                }
+            tex.Apply();
+            tex.wrapMode = TextureWrapMode.Repeat;
+            SaveEnvAsset(tex, matName + "_Grid.asset");
+            var mat = FlatMaterial(Color.white);
+            mat.mainTexture = tex;
+            mat.mainTextureScale = new Vector2(worldSize.x / 2f, worldSize.y / 2f); // ~2 m je Stein
+            mat.color = Color.white;
+            SaveEnvAsset(mat, matName + ".mat");
+            _envMatCache[matName] = mat;
+            return mat;
+        }
+
+        // ── Flat-Low-Poly-Gebäude (Synty-Look) ──────────────────────────────
+
+        /// <summary>Material aus einer Pipeline-Textur unter <c>Art/Textures/</c> (Asset, ASTC via Import).</summary>
 
         /// <summary>Material aus einer Pipeline-Textur unter <c>Art/Textures/</c> (Asset, ASTC via Import).</summary>
         // Build-Cache: gleicher Material-Name -> DIESELBE Instanz. Ohne das löschte SaveEnvAsset

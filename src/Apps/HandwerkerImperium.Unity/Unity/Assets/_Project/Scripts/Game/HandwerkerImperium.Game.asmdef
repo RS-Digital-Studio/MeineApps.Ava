@@ -8,6 +8,8 @@
         "Unity.ResourceManager",
         "Unity.InputSystem",
         "Unity.Localization",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime",
         "Unity.Nuget.Newtonsoft-Json",
         "UniTask",
         "UniTask.Linq",

@@ -32,6 +32,14 @@ deren Loop bewiesen retention- und monetarisierungsstark ist. Gleiches Thema, gl
 New Input System, Cinemachine, C# 9 / netstandard2.1, asmdef-Hierarchie, DI-Regeln, Gotchas)
 gelten **unverändert weiter**. Geändert wird das **Spiel-Design**, nicht der technische Rahmen.
 
+**Umsetzungs-Stand (12.06.2026):** P0–P4-**Logik komplett** (Domain Unity-frei, 179 NUnit grün) +
+**spielbare 3D-Welt** gekoppelt an die Runtime: Avatar-Lauf/Gang (geschwindigkeitsgekoppelt), 10 Gewerke
+mit Plot-Unlock + Worker-Tempo-Stufen, Kunden-Schlange läuft physisch, Wahrzeichen-Sanierung, Premium-HUD,
+Sound, **Android-APK baut** (IL2CPP/ARM64, glTFast-Patch). **Aktuelle Runde:** Visual-/Spiel-Umbau auf den
+Hencoop/Open-Shop-Mix (§1) — Casual-Boden-Tiles, Pipeline-Vegetation + Wind, „Stadt heilt" (§6.8), Werkstatt-
+Ausbaustufen (§6.1), Worker-Verwaltungs-Panel statt Boden-Platten (§6.2), Karren-Logistik. **Offen (extern/gated):**
+Firebase/Ads/IAP-SDK, 6-Sprachen-Lokalisierung, APK-Größe (P4), Beta/Store/KPI/Cutover.
+
 ---
 
 ## 1. Vision & Genre-Einordnung
@@ -51,6 +59,16 @@ herumlaufen → Stationen bedienen → Bezahlung physisch einsammeln → Persona
 → neue Bereiche freischalten → expandieren. Vorbilder: **My Perfect Hotel** (der prägende Hit des
 Subgenres), **My Mini Mart**, **Idle Office Tycoon**, **Idle Construction 3D**. Restore-/Aufbau-Vorbilder
 für das Stadt-Ziel: **Township**-artige Wiederaufbau-Schleifen.
+
+**Visuelle + spielerische Leitreferenz (verbindlich, Nutzer-Entscheidung 12.06.2026):** Ein **Mix aus
+zwei GraphicRiver-Idle-Kits** —
+[Hencoop Idle Game](https://graphicriver.net/item/hencoop-idle-gam/47410249) liefert die **WELT** (satte
+flache Farben, niedliche aufgeräumte Mini-Welt, helle geschwungene Wege mit Einfassung) und die **sichtbare
+Logistik** (Worker ziehen Karren mit Waren); [Open Shop Idle Game](https://graphicriver.net/item/open-shop-idle-game/50285069)
+liefert den **GEBÄUDE-/SHOP-Charme** (Werkstätten als freundliche Läden mit klarer Front + sichtbaren
+Ausbau-Stufen). Stil-Doktrin: flach + satt + sauber, KEIN Textur-Rauschen/Realismus. Details + How-to →
+Memory `hwi-unity-visual-stilreferenz`. **Anti-Langeweile-Pflicht (Nutzer):** der Loop darf nie „nur
+hin-und-her-laufen" sein — laufend Entscheidungen, sichtbarer Ausbau, kurzfristige Ziele (§6.1/§6.2/§6.8).
 
 **Design-Säulen:**
 1. **Sofort verständlich** — kein Tutorial-Wall. In 10 Sekunden läuft der Spieler, sammelt Münzen, kauft Upgrade.
@@ -184,12 +202,24 @@ Generalunternehmer, Meisterschmied, Innovationslabor) bleiben als **distinkte St
 mit eigenem Modell, eigener Ware (Trag-Prop) und eigenem Tresen. Upgrade-Achsen pro Station: **Produktionstempo**,
 **Stapel-/Tresen-Kapazität**, **Verkaufswert**. Reihenfolge der Freischaltung folgt der Distrikt-/Stern-Progression.
 
-### 6.2 Arbeiter (NPC-Automatisierung)
+**Sichtbare Ausbau-Stufen (Open-Shop-Konzept, Nutzer-Entscheidung 12.06.):** Jede Werkstatt hat **3 kaufbare
+Ausbau-Stufen**, die das Gebäude *sichtbar* verändern (Anbau-Modul → Markise/Schild → Schornstein/Stockwerk) und
+je einen Produktions-/Wert-Bonus geben. Der Spieler SIEHT am Gebäude, wie weit es ist — das ist ein laufendes
+Fortschritts-Ziel pro Station (gegen „nur hin-und-her-laufen"). Ausgebaute Werkstätten zählen zusätzlich ins
+Stern-Rating (§7). Anbau-Module kommen aus der Asset-Pipeline; Domain: `StationBuildLevel` + geometrische Kosten + Save.
+
+### 6.2 Arbeiter (NPC-Automatisierung) + Verwaltung
 Der emotionale Kern bleibt, die Tiefe wird arcade-tauglich:
 - **Pro Station 1 anstellbarer Arbeiter** (NPC), der das Tragen/Bedienen übernimmt → Automatisierung.
-- **3–5 Stufen je Arbeiter** (Hold-to-Pay-Upgrade): schnelleres Laufen/Tragen, größerer Stapel.
-- **Light „Laune = Tempo"** optional: Arbeiter werden langsam „müde" → kurzer Ad-/Pausen-Boost stellt Tempo wieder her. **Kein** komplexes Mood/Fatigue/Training-Modell, **keine** Kündigungen. (Bewusste Kürzung ggü. Original.)
-- **Manager-Idee** (aus Original) → optional als „Vorarbeiter", der mehrere Stationen-Arbeiter gleichzeitig boostet.
+- **5 Leistungsstufen je Arbeiter** (Basis + 4 Tempo-Stufen, geometrische Kosten, +50 %/Stufe). Umgesetzt im Domain-Kern.
+- **Sichtbare Karren-Logistik (Hencoop-Konzept):** Der Worker zieht den **Handkarren** (Asset vorhanden) mit
+  sichtbar geladenen Waren Station → Tresen, statt nur zu laufen — die Lieferkette wird beobachtbar.
+- **Verwaltung statt Boden-Platten (Nutzer-Entscheidung 12.06.):** Anstellen + Stufen laufen über ein **HUD-
+  Verwaltungs-Panel** (Button → Liste aller 10 Gewerke: Status/Stufe/Kosten, direkt kaufen), jederzeit erreichbar.
+  Die früheren Hold-to-Pay-Boden-Platten für Hire/Boost/Gratis-Geld **entfallen** (zu unübersichtlich); in der
+  Welt sind als HUD-Elemente nur **Geld, Gems, Stern/Stufe** + das Verwaltungs-Panel sichtbar.
+- **Kein** komplexes Mood/Fatigue/Training-Modell, **keine** Kündigungen, **kein** Müdigkeits-Mikromanagement
+  (bewusste Kürzung ggü. Original, §15.6). **Manager-/Vorarbeiter-Idee** optional Post-MVP.
 
 ### 6.3 Aufträge & Kunden-Queue
 - **Standard:** Kunden erscheinen am Tresen und wollen Ware → bedienen = Geld. Dauerhafter Grund-Loop, keine Auswahl-UI.
@@ -213,6 +243,17 @@ Prestige) bleiben sinngemäß. Guter, günstiger „Sammel"-Anreiz mit sichtbare
 Statt 10 Pflicht-Mini-Games pro Auftrag (genre-fremd) bleiben **2–3 optionale Mikro-Interaktionen** als
 kurze **Tap-Timing-Boosts** — z. B. „Hau-den-Nagel" / „Säge-Schnitt" für einen kurzen 2x-Tempo-Buff an einer
 Station. Freiwillig, sekundenkurz, nie blockierend. Die übrigen Mini-Game-Konzepte entfallen im Front-Loop.
+**UI-Heimat (Nutzer-Entscheidung 12.06.):** Der Boost wird vom **Verwaltungs-Panel** (§6.2) je Gewerk gestartet
+(HUD-Overlay), **nicht** als Boden-Platte in der Welt. Domain-Buff (`StationState.BoostMultiplier`) ist umgesetzt.
+
+### 6.8 Lebendige, reagierende Welt (Innovations-Schicht)
+Gegen den „nach 5 Minuten langweilig"-Effekt lebt die Welt sichtbar mit dem Fortschritt (Nutzer-Anspruch
+„immer innovativ", Memory `feedback_innovativ_praesentation`):
+- **„Die Stadt heilt":** Der Sanierungs-Fortschritt der Wahrzeichen (§6.4) steuert die globale Farbsättigung
+  und schaltet bei 1/3, 2/3, 100 % zusätzliche Erblüh-Deko frei (Blumenbeete, Büsche). Umgesetzt: `WorldMoodController`.
+- **Atmosphäre:** Wind-Sway auf Vegetation (`CrownSway`), Schornstein-Rauch nur an freigeschalteten Werkstätten,
+  sanft treibende Blätter über dem Hof. Alles dezent, performant (keine Schatten-Punktlichter auf Mobile).
+- **Geplant weiter:** Lieferwagen-/Karren-Moment beim Offline-Einsammeln; kleine Statisten (Vögel) als Zukunft.
 
 ---
 

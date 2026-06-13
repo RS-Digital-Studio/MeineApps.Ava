@@ -154,7 +154,7 @@ namespace HandwerkerImperium.Editor
             cam.fieldOfView = 45f; // enger als der 60er-Default — weniger Verzerrung, Figuren größer
             camGo.AddComponent<AudioListener>();
             var follow = camGo.AddComponent<FollowCamera>();
-            BuildPostProcessing(cam);
+            var postVolume = BuildPostProcessing(cam);
 
             // Tresen: Marktstand-Modell der Pipeline (Fallback: brauner Block) + Trigger + Cash-Spawn
             GameObject counterGo;
@@ -256,20 +256,17 @@ namespace HandwerkerImperium.Editor
                 stGo.transform.position = pos;
                 stGo.transform.rotation = Quaternion.LookRotation(toCenter);
 
-                // Plot-Bodenplatte (immer sichtbar — markiert den Bauplatz)
-                var plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                plate.name = "PlotPlate";
-                UnityEngine.Object.DestroyImmediate(plate.GetComponent<Collider>());
-                plate.transform.SetParent(stGo.transform, false);
-                plate.transform.position = pos + new Vector3(0f, 0.025f, 0f);
-                plate.transform.rotation = stGo.transform.rotation;
-                plate.transform.localScale = new Vector3(5.6f, 0.05f, 5.6f);
-                Paint(plate, new Color(0.52f, 0.45f, 0.36f));
+                // Radialer Weg vom Marktplatz zum Plot (Hencoop-Lesbarkeit: Wege führen den Blick)
+                Vector3 dir = pos.WithY(0f).normalized;
+                MakePath(stGo.transform.parent != null ? stGo.transform.parent : stGo.transform,
+                    dir * 10.8f, Quaternion.LookRotation(dir), new Vector2(2.2f, 8.6f), new Vector2(1f, 4f));
 
-                // Gebäude-Modell (unlockedVisual — gesperrt ausgeblendet)
+                // Gebäude-Modell (unlockedVisual — gesperrt ausgeblendet); Schornstein-Rauch lebt
+                // am Modell-Root und erscheint damit automatisch erst nach dem Unlock.
                 var modelRoot = new GameObject("Model");
                 modelRoot.transform.SetParent(stGo.transform, false);
                 AttachModel(modelRoot.transform, stationModels[i], 3.4f);
+                MakeChimneySmoke(modelRoot.transform, new Vector3(0.7f, 3.3f, -0.4f));
 
                 // Pickup-Zone + Waren-Stapel vor der Station
                 var trig = MakeTriggerZone($"Station_{i}_Pickup", pos + toCenter * 2.9f + Vector3.up * 0.9f, new Vector3(2.6f, 2f, 2.6f));
@@ -290,7 +287,9 @@ namespace HandwerkerImperium.Editor
                 MakeSign(stationNames[i], pos + toCenter * 3.2f + Vector3.up * 2.2f, 0.36f,
                     new Color(0.99f, 0.96f, 0.90f), new Color(0.33f, 0.24f, 0.16f), post: true);
 
-                // Gesperrte Plots: Bauzaun (lockedVisual + fenceVisual) + Preis-Schild + Hold-to-Pay-Zone
+                // Gesperrte Plots: Bauzaun (lockedVisual + fenceVisual) + Preis-Schild + Hold-to-Pay-Zone.
+                // Die helle Bauplatz-Fläche hängt am Zaun und verschwindet mit dem Unlock —
+                // freigeschaltete Gebäude stehen direkt auf Gras (keine Dauer-Platte mehr).
                 if (i > 0)
                 {
                     GameObject fence;
@@ -319,6 +318,16 @@ namespace HandwerkerImperium.Editor
                         fence.transform.rotation = Quaternion.LookRotation(toCenter);
                         fence.transform.SetParent(stGo.transform, true);
                     }
+                    // Helle Bauplatz-Markierung (Casual-Stil) — Kind des Zauns, weg nach Unlock
+                    var sitePlate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    sitePlate.name = "BuildSite";
+                    Object.DestroyImmediate(sitePlate.GetComponent<Collider>());
+                    sitePlate.transform.position = pos + new Vector3(0f, 0.02f, 0f);
+                    sitePlate.transform.rotation = stGo.transform.rotation;
+                    sitePlate.transform.localScale = new Vector3(5.4f, 0.04f, 5.4f);
+                    Paint(sitePlate, new Color(0.95f, 0.88f, 0.70f));
+                    sitePlate.transform.SetParent(fence.transform, true);
+
                     SetRef(view, "lockedVisual", fence);
 
                     // Preis am Zaun (Kind des Zauns -> verschwindet mit dem Unlock)
@@ -381,6 +390,33 @@ namespace HandwerkerImperium.Editor
             TryPlaceProp("handcart", new Vector3(7.2f, 0f, 1.6f), 205f, 1.15f);
             TryPlaceProp("handcart", new Vector3(-14.5f, 0f, -4.5f), 130f, 1.15f);
 
+            // "Die Stadt heilt": Sanierungs-Fortschritt steuert Sättigung + drei Erblüh-Stufen
+            // (WorldMoodController). Die Stufen-Deko ist vorplatziert und startet inaktiv.
+            var bloom1 = new GameObject("Bloom_Stage1");
+            TryPlaceProp("flower_planter", new Vector3(2.9f, 0f, 9.2f), 12f, 0.55f)?.transform.SetParent(bloom1.transform, true);
+            TryPlaceProp("flower_planter", new Vector3(-2.9f, 0f, 9.2f), -12f, 0.55f)?.transform.SetParent(bloom1.transform, true);
+            TryPlaceProp("flower_planter", new Vector3(0f, 0f, -8.4f), 180f, 0.55f)?.transform.SetParent(bloom1.transform, true);
+            var bloom2 = new GameObject("Bloom_Stage2");
+            MakeBushInto(bloom2.transform, new Vector3(10.4f, 0f, 6.0f), 0.9f);
+            MakeBushInto(bloom2.transform, new Vector3(-10.4f, 0f, 6.0f), 0.9f);
+            MakeBushInto(bloom2.transform, new Vector3(10.4f, 0f, -6.6f), 0.85f);
+            MakeBushInto(bloom2.transform, new Vector3(-10.4f, 0f, -6.6f), 0.85f);
+            var bloom3 = new GameObject("Bloom_Stage3");
+            TryPlaceProp("flower_planter", new Vector3(6.4f, 0f, 7.2f), 40f, 0.6f)?.transform.SetParent(bloom3.transform, true);
+            TryPlaceProp("flower_planter", new Vector3(-6.4f, 0f, 7.2f), -40f, 0.6f)?.transform.SetParent(bloom3.transform, true);
+            MakeBushInto(bloom3.transform, new Vector3(2.2f, 0f, 14.2f), 0.8f);
+            MakeBushInto(bloom3.transform, new Vector3(-2.2f, 0f, 14.2f), 0.8f);
+            bloom1.SetActive(false);
+            bloom2.SetActive(false);
+            bloom3.SetActive(false);
+            var moodGo = new GameObject("WorldMood");
+            var mood = moodGo.AddComponent<WorldMoodController>();
+            SetRef(mood, "runtime", runtime);
+            SetRef(mood, "postVolume", postVolume);
+            SetRef(mood, "bloomStage1", bloom1);
+            SetRef(mood, "bloomStage2", bloom2);
+            SetRef(mood, "bloomStage3", bloom3);
+
             // Avatar-/Kamera-Verdrahtung. WICHTIG: Start-Position UND Start-Rotation setzen —
             // FollowCamera richtet erst im Play-Mode aus, sonst schaut die Edit-Game-View horizontal in den Himmel.
             SetRef(avatar, "controller", controller);
@@ -434,18 +470,16 @@ namespace HandwerkerImperium.Editor
 
             var envRoot = new GameObject("Environment");
 
-            // Gras-Welt (trägt den CharacterController)
+            // Gras-Welt (trägt den CharacterController) — Pipeline-Tile (Casual-Stil, nahtlos verifiziert)
             var grass = GameObject.CreatePrimitive(PrimitiveType.Plane);
             grass.name = "Ground_Grass";
             grass.transform.SetParent(envRoot.transform, false);
             grass.transform.localScale = new Vector3(20f, 1f, 20f); // 200 m
-            var grassMat = MakeTexturedMaterial(MakeGrassTexture(), Color.white, new Vector2(56f, 56f), "Mat_Grass");
-            grass.GetComponent<MeshRenderer>().sharedMaterial = grassMat;
+            grass.GetComponent<MeshRenderer>().sharedMaterial =
+                MakeAssetTexturedMaterial("tex_grass", Color.white, new Vector2(50f, 50f), "Mat_Grass");
 
-            // Pflaster als zentrale Marktgasse zwischen den Stationsreihen — die Gebäude-Modelle
-            // haben gras-/erdige Sockel und stehen deshalb AUF GRAS (kein Stilbruch), nur die
-            // Lauffläche Tresen/Pads/Queue ist gepflastert. Kein Plaza-Rondell: Zylinder-UVs
-            // verzerren das Kachel-Muster radial (sichtbarer Muster-Bruch zum Hof).
+            // Marktplatz: warmes Casual-Pflaster (Pipeline-Tile). Gebäude stehen auf GRAS,
+            // nur die Lauffläche Tresen/Pads/Queue ist gepflastert.
             var yard = GameObject.CreatePrimitive(PrimitiveType.Cube);
             yard.name = "Ground_Yard";
             Object.DestroyImmediate(yard.GetComponent<Collider>()); // rein visuell, 4 cm — Gras-Plane trägt
@@ -453,26 +487,37 @@ namespace HandwerkerImperium.Editor
             yard.transform.localScale = new Vector3(22f, 0.04f, 14.5f);
             yard.transform.position = new Vector3(0f, 0.02f, -0.25f);
             yard.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeTexturedMaterial(MakeCobbleTexture(), Color.white, new Vector2(7.3f, 4.8f), "Mat_Cobble_Yard");
+                MakeAssetTexturedMaterial("tex_cobblestone", Color.white, new Vector2(6.3f, 4.1f), "Mat_Plaza");
 
-            // Pflaster-Weg vom Stadttor zur Marktgasse (Kunden-Laufweg), gleiche Kachel-Dichte (~3 m)
-            var gatePath = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            gatePath.name = "Ground_GatePath";
-            Object.DestroyImmediate(gatePath.GetComponent<Collider>());
-            gatePath.transform.SetParent(envRoot.transform, false);
-            gatePath.transform.localScale = new Vector3(4.5f, 0.04f, 9f);
-            gatePath.transform.position = new Vector3(0f, 0.02f, 11.5f);
-            gatePath.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeTexturedMaterial(MakeCobbleTexture(), Color.white, new Vector2(1.5f, 3f), "Mat_Cobble_Path");
+            // Helle Platz-Einfassung (Hencoop-Lesbarkeit: Flächen sind klar eingefasst)
+            var yardTrim = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            yardTrim.name = "Ground_YardTrim";
+            Object.DestroyImmediate(yardTrim.GetComponent<Collider>());
+            yardTrim.transform.SetParent(envRoot.transform, false);
+            yardTrim.transform.localScale = new Vector3(22.8f, 0.035f, 15.3f);
+            yardTrim.transform.position = new Vector3(0f, 0.016f, -0.25f);
+            Paint(yardTrim, new Color(0.96f, 0.90f, 0.74f));
 
-            // Vegetation + Horizont (deterministisch — gleicher Build, gleiche Welt)
+            // Kundenweg zum Stadttor + radiale Wege zu allen Stationen (sandwarm, mit Einfassung)
+            MakePath(envRoot.transform, new Vector3(0f, 0f, 11.5f), Quaternion.identity, new Vector2(4.5f, 9f), new Vector2(2f, 4f));
+
+            // Vegetation + Horizont (deterministisch — gleicher Build, gleiche Welt).
+            // Bäume/Büsche kommen aus der Pipeline (Casual-Look) mit Wind-Sway; Felsen sind
+            // bewusst gestrichen (Hencoop-Welten leben von Grün + Blumen, nicht Geröll).
             Random.InitState(20260611);
-            for (int i = 0; i < 22; i++)
+            for (int i = 0; i < 24; i++)
             {
-                float angle = (i / 22f) * Mathf.PI * 2f + Random.Range(-0.10f, 0.10f);
-                float radius = Random.Range(30f, 46f);
+                float angle = (i / 24f) * Mathf.PI * 2f + Random.Range(-0.10f, 0.10f);
+                float radius = Random.Range(28f, 46f);
                 var pos = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
                 MakeTree(envRoot.transform, pos, Random.Range(0.85f, 1.45f));
+            }
+            for (int i = 0; i < 14; i++)
+            {
+                float angle = Random.Range(0f, Mathf.PI * 2f);
+                float radius = Random.Range(24f, 40f);
+                MakeBush(envRoot.transform, new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius),
+                    Random.Range(0.6f, 1.1f));
             }
             for (int i = 0; i < 10; i++)
             {
@@ -481,18 +526,142 @@ namespace HandwerkerImperium.Editor
                 MakeHill(envRoot.transform, new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius),
                     Random.Range(18f, 34f), Random.Range(6f, 12f));
             }
-            for (int i = 0; i < 12; i++)
-            {
-                float angle = Random.Range(0f, Mathf.PI * 2f);
-                float radius = Random.Range(27f, 42f);
-                MakeRock(envRoot.transform, new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius),
-                    Random.Range(0.35f, 0.9f));
-            }
+
+            // Sanft fallende Blätter über dem Spielbereich (Leben in der Luft, sehr dezent)
+            MakeFallingLeaves(envRoot.transform);
         }
 
-        /// <summary>Stilisierter Low-Poly-Baum: Stamm + 2-3 versetzte Kronen-Kugeln mit Grün-Variation.</summary>
+        /// <summary>
+        /// Wegband im Casual-Stil: sandwarmes Pipeline-Tile + hellere Einfassung knapp darunter
+        /// (Hencoop-Lesbarkeit). <paramref name="size"/> = (Breite, Länge) in Metern.
+        /// </summary>
+        private static void MakePath(Transform parent, Vector3 center, Quaternion rotation, Vector2 size, Vector2 tiling)
+        {
+            var path = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            path.name = "Ground_Path";
+            Object.DestroyImmediate(path.GetComponent<Collider>());
+            path.transform.SetParent(parent, false);
+            path.transform.position = center.WithY(0.024f);
+            path.transform.rotation = rotation;
+            path.transform.localScale = new Vector3(size.x, 0.035f, size.y);
+            path.GetComponent<MeshRenderer>().sharedMaterial =
+                MakeAssetTexturedMaterial("tex_dirt_path", Color.white, tiling, $"Mat_Path_{size.x:0_0}x{size.y:0_0}");
+
+            var trim = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            trim.name = "Ground_PathTrim";
+            Object.DestroyImmediate(trim.GetComponent<Collider>());
+            trim.transform.SetParent(parent, false);
+            trim.transform.position = center.WithY(0.014f);
+            trim.transform.rotation = rotation;
+            trim.transform.localScale = new Vector3(size.x + 0.5f, 0.03f, size.y + 0.5f);
+            Paint(trim, new Color(0.96f, 0.90f, 0.74f));
+        }
+
+        /// <summary>Pipeline-Busch mit Wind-Sway (leicht versenkt gegen Konzept-Grassaum). Fallback: nichts.</summary>
+        private static void MakeBush(Transform parent, Vector3 pos, float scale) => MakeBushInto(parent, pos, scale);
+
+        private static void MakeBushInto(Transform parent, Vector3 pos, float scale)
+        {
+            if (AssetDatabase.LoadMainAssetAtPath(ModelDir + "/bush_round.glb") == null) return;
+            var root = new GameObject("Bush");
+            root.transform.SetParent(parent, false);
+            root.transform.position = pos + new Vector3(0f, -0.05f, 0f);
+            root.transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+            var visual = AttachModel(root.transform, ModelDir + "/bush_round.glb", 0.9f * scale);
+            visual.AddComponent<CrownSway>();
+        }
+
+        /// <summary>Gemütlicher Schornstein-Rauch (lebt am unlockedVisual — erscheint erst nach dem Unlock).</summary>
+        private static void MakeChimneySmoke(Transform parent, Vector3 localPos)
+        {
+            var go = new GameObject("ChimneySmoke");
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            var ps = go.AddComponent<ParticleSystem>();
+            var main = ps.main;
+            main.startLifetime = 3.6f;
+            main.startSpeed = 0.55f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.3f, 0.55f);
+            main.startColor = new Color(0.95f, 0.95f, 0.97f, 0.4f);
+            main.maxParticles = 24;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            var emission = ps.emission;
+            emission.rateOverTime = 2.2f;
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 0.1f;
+            var col = ps.colorOverLifetime;
+            col.enabled = true;
+            var grad = new Gradient();
+            grad.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(0.4f, 0f), new GradientAlphaKey(0f, 1f) });
+            col.color = grad;
+            var size = ps.sizeOverLifetime;
+            size.enabled = true;
+            size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.6f, 1f, 1.8f));
+            ApplyParticleMaterial(ps);
+        }
+
+        /// <summary>Sehr dezentes Blätter-Treiben über dem Hof (Box-Emitter, Pipeline-Partikel-Material).</summary>
+        private static void MakeFallingLeaves(Transform parent)
+        {
+            var go = new GameObject("FallingLeaves");
+            go.transform.SetParent(parent, false);
+            go.transform.position = new Vector3(0f, 7.5f, 0f);
+            var ps = go.AddComponent<ParticleSystem>();
+            var main = ps.main;
+            main.startLifetime = 11f;
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.07f, 0.13f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.55f, 0.78f, 0.35f, 0.85f), new Color(0.85f, 0.72f, 0.35f, 0.85f));
+            main.startRotation3D = true;
+            main.maxParticles = 60;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.gravityModifier = 0.045f;
+            var emission = ps.emission;
+            emission.rateOverTime = 2.5f;
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.scale = new Vector3(34f, 0.5f, 26f);
+            var rot = ps.rotationOverLifetime;
+            rot.enabled = true;
+            rot.z = new ParticleSystem.MinMaxCurve(-1.2f, 1.2f);
+            var noise = ps.noise;
+            noise.enabled = true;
+            noise.strength = 0.35f;
+            noise.frequency = 0.25f;
+            ApplyParticleMaterial(ps);
+        }
+
+        /// <summary>Pipeline-Default-Partikel-Material (Shader.Find wäre im Editor-Batch magenta-riskant).</summary>
+        private static void ApplyParticleMaterial(ParticleSystem ps)
+        {
+            var pipeline = GraphicsSettings.currentRenderPipeline;
+            if (pipeline != null && pipeline.defaultParticleMaterial != null)
+                ps.GetComponent<ParticleSystemRenderer>().sharedMaterial = pipeline.defaultParticleMaterial;
+        }
+
+        /// <summary>
+        /// Pipeline-Baum (Casual-Look) mit Wind-Sway: 60/40-Mix aus rundem und hohem Baum, leicht
+        /// im Boden versenkt (Konzept-Sockel verschwindet). Fallback: Primitive-Baum (Stamm + Kugeln).
+        /// </summary>
         private static void MakeTree(Transform parent, Vector3 pos, float scale)
         {
+            string glb = Random.value < 0.6f ? "/tree_round.glb" : "/tree_tall.glb";
+            float height = glb.Contains("tall") ? 5.6f * scale : 4.4f * scale;
+            if (AssetDatabase.LoadMainAssetAtPath(ModelDir + glb) != null)
+            {
+                var glbRoot = new GameObject("Tree");
+                glbRoot.transform.SetParent(parent, false);
+                glbRoot.transform.position = pos + new Vector3(0f, -0.12f, 0f); // Sockel versenken
+                glbRoot.transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+                var visual = AttachModel(glbRoot.transform, ModelDir + glb, height);
+                visual.AddComponent<CrownSway>();
+                return;
+            }
+
+            // Fallback: Primitive-Baum (nur wenn die Pipeline-GLBs lokal fehlen)
             var root = new GameObject("Tree");
             root.transform.SetParent(parent, false);
             root.transform.position = pos;
@@ -536,21 +705,23 @@ namespace HandwerkerImperium.Editor
             Paint(hill, new Color(0.38f, 0.50f, 0.30f));
         }
 
-        /// <summary>Kleiner Deko-Felsen (gestauchte, gedrehte Kugel).</summary>
-        private static void MakeRock(Transform parent, Vector3 pos, float scale)
+        /// <summary>Material aus einer Pipeline-Textur unter <c>Art/Textures/</c> (Asset, ASTC via Import).</summary>
+        private static Material MakeAssetTexturedMaterial(string textureName, Color tint, Vector2 tiling, string matName)
         {
-            var rock = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            Object.DestroyImmediate(rock.GetComponent<Collider>());
-            rock.name = "Rock";
-            rock.transform.SetParent(parent, false);
-            rock.transform.position = pos + new Vector3(0f, scale * 0.25f, 0f);
-            rock.transform.localScale = new Vector3(scale * 1.4f, scale * 0.8f, scale);
-            rock.transform.rotation = Quaternion.Euler(Random.Range(-12f, 12f), Random.Range(0f, 360f), Random.Range(-12f, 12f));
-            Paint(rock, new Color(0.55f, 0.53f, 0.50f));
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/Textures/" + textureName + ".png");
+            var mat = MakePipelineMaterial(tint);
+            if (tex != null)
+            {
+                mat.mainTexture = tex;
+                mat.mainTextureScale = tiling;
+            }
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.1f); // matt — Casual-Look glänzt nicht
+            SaveEnvAsset(mat, matName + ".mat");
+            return mat;
         }
 
         /// <summary>URP-Post-Processing: Bloom + Vignette + ACES-Tonemapping + warme Farb-Justage (AAA-Look).</summary>
-        private static void BuildPostProcessing(Camera cam)
+        private static Volume BuildPostProcessing(Camera cam)
         {
             string path = SceneDir + "/Game_PostProfile.asset";
             AssetDatabase.DeleteAsset(path); // frisch erzeugen — Sub-Assets sauber halten
@@ -591,72 +762,7 @@ namespace HandwerkerImperium.Editor
             var camData = cam.GetUniversalAdditionalCameraData();
             camData.renderPostProcessing = true;
             camData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
-        }
-
-        /// <summary>Prozedurale Gras-Textur (Perlin-Mix zweier Grüntöne + feine Sprenkel, kachelbar genug bei niedrigem Kontrast).</summary>
-        private static Texture2D MakeGrassTexture()
-        {
-            const int size = 256;
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, true);
-            var dark = new Color(0.33f, 0.47f, 0.24f);
-            var light = new Color(0.43f, 0.57f, 0.30f);
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float n = Mathf.PerlinNoise(x * 0.045f, y * 0.045f);
-                    float speckle = (Mathf.PerlinNoise(x * 0.35f + 64f, y * 0.35f + 64f) - 0.5f) * 0.09f;
-                    var c = Color.Lerp(dark, light, n);
-                    tex.SetPixel(x, y, new Color(c.r + speckle, c.g + speckle, c.b + speckle * 0.5f));
-                }
-            }
-            tex.Apply();
-            tex.wrapMode = TextureWrapMode.Repeat;
-            return tex;
-        }
-
-        /// <summary>Prozedurale Pflaster-Textur: periodisches Stein-Raster (kachelt sauber), Fugen + Helligkeit je Stein.</summary>
-        private static Texture2D MakeCobbleTexture()
-        {
-            const int size = 256;
-            const int tiles = 5;           // Steine pro Kachel-Kante
-            const int tile = size / tiles; // Pixel pro Stein
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, true);
-            var grout = new Color(0.40f, 0.37f, 0.33f);
-            var stone = new Color(0.62f, 0.58f, 0.52f);
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    int row = y / tile;
-                    // Halber Versatz jeder zweiten Reihe (läufer-verband, bleibt periodisch)
-                    int xs = (x + (row % 2) * (tile / 2)) % size;
-                    int col = xs / tile;
-                    int lx = xs % tile, ly = y % tile;
-                    bool isGrout = lx < 2 || ly < 2 || lx > tile - 3 || ly > tile - 3;
-                    if (isGrout) { tex.SetPixel(x, y, grout); continue; }
-                    // Pseudo-zufällige Stein-Helligkeit (deterministisch aus Zelle)
-                    float h = (((col * 73856093) ^ (row * 19349663)) & 0xFFFF) / 65535f;
-                    float shade = 0.92f + h * 0.16f;
-                    float wear = (Mathf.PerlinNoise(x * 0.18f, y * 0.18f) - 0.5f) * 0.06f;
-                    tex.SetPixel(x, y, new Color(stone.r * shade + wear, stone.g * shade + wear, stone.b * shade + wear));
-                }
-            }
-            tex.Apply();
-            tex.wrapMode = TextureWrapMode.Repeat;
-            return tex;
-        }
-
-        /// <summary>Material der aktiven Pipeline mit generierter Textur; Textur + Material werden als Assets persistiert.</summary>
-        private static Material MakeTexturedMaterial(Texture2D tex, Color tint, Vector2 tiling, string assetName)
-        {
-            SaveEnvAsset(tex, assetName + "_Tex.asset");
-            var mat = MakePipelineMaterial(tint);
-            mat.mainTexture = tex;
-            mat.mainTextureScale = tiling;
-            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.12f); // matt — Boden soll nicht glänzen
-            SaveEnvAsset(mat, assetName + ".mat");
-            return mat;
+            return vol;
         }
 
         private static void SaveEnvAsset(Object obj, string fileName)

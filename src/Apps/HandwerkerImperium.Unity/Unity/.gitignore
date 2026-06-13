@@ -28,3 +28,6 @@ Assets/_Project/Audio/
 
 # Lokale Player-Builds (Durchstich/Beta — Artefakte, nicht versionierbar)
 Builds/
+
+# Pipeline-Boden-Texturen (regenerierbar: nature_assets_concepts.py + make_seamless.py)
+Assets/_Project/Art/Textures/*.png

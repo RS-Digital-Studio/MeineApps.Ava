@@ -30,6 +30,7 @@ namespace HandwerkerImperium.Editor
         [MenuItem("HandwerkerImperium/Runtime/Build Game Scene (3D)")]
         public static void Build()
         {
+            _envMatCache.Clear(); // Material-Cache je Build frisch (sonst Referenzen auf alte Instanzen)
             EnsureFolder(SceneDir);
             EnsureFolder(PrefabDir);
 
@@ -711,8 +712,15 @@ namespace HandwerkerImperium.Editor
         }
 
         /// <summary>Material aus einer Pipeline-Textur unter <c>Art/Textures/</c> (Asset, ASTC via Import).</summary>
+        // Build-Cache: gleicher Material-Name -> DIESELBE Instanz. Ohne das löschte SaveEnvAsset
+        // bei wiederholtem Namen (z. B. mehrere radiale Wege) das Asset, das frühere Renderer noch
+        // referenzieren -> magenta. Wird zu Beginn von Build() geleert.
+        private static System.Collections.Generic.Dictionary<string, Material> _envMatCache
+            = new System.Collections.Generic.Dictionary<string, Material>();
+
         private static Material MakeAssetTexturedMaterial(string textureName, Color tint, Vector2 tiling, string matName)
         {
+            if (_envMatCache.TryGetValue(matName, out var cached) && cached != null) return cached;
             var tex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/Textures/" + textureName + ".png");
             var mat = MakePipelineMaterial(tint);
             if (tex != null)
@@ -722,6 +730,7 @@ namespace HandwerkerImperium.Editor
             }
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.1f); // matt — Casual-Look glänzt nicht
             SaveEnvAsset(mat, matName + ".mat");
+            _envMatCache[matName] = mat;
             return mat;
         }
 

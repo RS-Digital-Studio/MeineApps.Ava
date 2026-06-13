@@ -86,6 +86,16 @@ namespace HandwerkerImperium.Domain.Idle
         /// <summary>Maximal kaufbare Worker-Stufen (4 = insgesamt 5 Leistungsstufen inkl. Basis).</summary>
         public int WorkerMaxLevel = 4;
 
+        // ── Werkstatt-Ausbaustufen (GDD §6.1, Open-Shop): sichtbarer Ausbau + Verkaufswert-Bonus ──
+        /// <summary>Basis-Kosten der ersten Ausbaustufe (relativ zum Stations-Verkaufswert teurer skaliert über UnlockCost-Bogen).</summary>
+        public decimal StationBuildCostBase = 400m;
+        /// <summary>Geometrischer Wachstumsfaktor je Ausbaustufe.</summary>
+        public double StationBuildCostGrowth = 2.6;
+        /// <summary>Verkaufswert-Bonus je Ausbaustufe (0.5 = +50 % pro Stufe).</summary>
+        public double StationBuildStep = 0.5;
+        /// <summary>Maximale Ausbaustufen je Werkstatt (3 sichtbare Stufen).</summary>
+        public int StationBuildMaxLevel = 3;
+
         // ── Plot-Unlock-Fallback (greift nur, wenn StationBalance.UnlockCost = 0) ──
         public decimal PlotUnlockCost = 500m;
 

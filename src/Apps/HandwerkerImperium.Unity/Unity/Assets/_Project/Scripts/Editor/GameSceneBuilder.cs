@@ -42,6 +42,7 @@ namespace HandwerkerImperium.Editor
             var warePrefab = MakeWarePrefab();
             var coinPrefab = MakeCoinPrefab();
             var workerPrefab = MakeWorkerPrefab();
+            var pennantPrefab = MakePennantPrefab();
 
             // Trag-Ware je Gewerk (GDD §6.1: jede Station eigene Ware). Fehlt ein GLB (lokal
             // regenerierbar), greift der generische Holz-Würfel.
@@ -271,6 +272,17 @@ namespace HandwerkerImperium.Editor
                 modelRoot.transform.SetParent(stGo.transform, false);
                 AttachModel(modelRoot.transform, stationModels[i], 3.4f);
                 MakeChimneySmoke(modelRoot.transform, new Vector3(0.9f, 3.0f, -0.7f));
+
+                // Sichtbarer Werkstatt-Ausbau (GDD §6.1): Gebäude wächst je Stufe + Wimpel auf dem Dach
+                var pennantAnchor = new GameObject("PennantAnchor").transform;
+                pennantAnchor.SetParent(modelRoot.transform, false);
+                pennantAnchor.localPosition = new Vector3(0f, 3.5f, 0f);
+                var buildView = stGo.AddComponent<StationBuildView>();
+                SetRef(buildView, "runtime", runtime);
+                SetInt(buildView, "stationIndex", i);
+                SetRef(buildView, "modelRoot", modelRoot.transform);
+                SetRef(buildView, "pennantAnchor", pennantAnchor);
+                SetRef(buildView, "pennantPrefab", pennantPrefab);
 
                 // Pickup-Zone + Waren-Stapel vor der Station
                 var trig = MakeTriggerZone($"Station_{i}_Pickup", pos + toCenter * 2.9f + Vector3.up * 0.9f, new Vector3(2.6f, 2f, 2.6f));
@@ -1026,6 +1038,27 @@ namespace HandwerkerImperium.Editor
             col.isTrigger = true; // blockiert den CharacterController nicht
             go.AddComponent<CashCube>();
             return SavePrefab(go, "Game_Coin");
+        }
+
+        /// <summary>Kleiner Ausbau-Wimpel (Pfahne) für die sichtbare Werkstatt-Ausbaustufe (StationBuildView).</summary>
+        private static GameObject MakePennantPrefab()
+        {
+            var go = new GameObject("Game_Pennant");
+            var pole = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            Object.DestroyImmediate(pole.GetComponent<Collider>());
+            pole.name = "Pole";
+            pole.transform.SetParent(go.transform, false);
+            pole.transform.localScale = new Vector3(0.04f, 0.35f, 0.04f);
+            pole.transform.localPosition = new Vector3(0f, 0.35f, 0f);
+            PaintAsset(pole, new Color(0.45f, 0.34f, 0.22f), "Mat_Pennant_Pole");
+            var flag = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Object.DestroyImmediate(flag.GetComponent<Collider>());
+            flag.name = "Flag";
+            flag.transform.SetParent(go.transform, false);
+            flag.transform.localScale = new Vector3(0.28f, 0.18f, 0.02f);
+            flag.transform.localPosition = new Vector3(0.16f, 0.6f, 0f);
+            PaintAsset(flag, new Color(1.0f, 0.82f, 0.20f), "Mat_Pennant_Flag");
+            return SavePrefab(go, "Game_Pennant");
         }
 
         private static GameObject MakeWorkerPrefab()

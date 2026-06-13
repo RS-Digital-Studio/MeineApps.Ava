@@ -167,6 +167,7 @@ namespace HandwerkerImperium.Game
         {
             var st = _model.Idle.Stations[i];
             int max = _idleBal.WorkerMaxLevel;
+            int buildMax = _idleBal.StationBuildMaxLevel;
             return new WorkerRowInfo
             {
                 Unlocked = st.Unlocked,
@@ -175,7 +176,11 @@ namespace HandwerkerImperium.Game
                 MaxLevel = max,
                 HireCost = _idleBal.WorkerHireCost,
                 UpgradeCost = GreyboxSimulation.WorkerUpgradeCostFor(_model.Idle, _idleBal, i),
-                AtMax = st.HasWorker && st.WorkerLevel >= max
+                AtMax = st.HasWorker && st.WorkerLevel >= max,
+                BuildLevel = st.BuildLevel,
+                BuildMaxLevel = buildMax,
+                BuildCost = GreyboxSimulation.StationBuildCostFor(_model.Idle, _idleBal, i),
+                BuildAtMax = st.BuildLevel >= buildMax
             };
         }
 
@@ -183,6 +188,14 @@ namespace HandwerkerImperium.Game
 
         /// <summary>Kauft die nächste Worker-Tempo-Stufe (HUD-Panel). Liefert true bei Erfolg.</summary>
         public bool UpgradeWorker(int i) => GreyboxSimulation.UpgradeWorker(_model.Idle, _idleBal, i);
+
+        // ── Werkstatt-Ausbaustufen (GDD §6.1, Open-Shop) ──
+        public int StationBuildLevel(int i) =>
+            i >= 0 && i < _model.Idle.Stations.Count ? _model.Idle.Stations[i].BuildLevel : 0;
+        public int StationBuildMaxLevel => _idleBal.StationBuildMaxLevel;
+        public decimal StationBuildCost(int i) => GreyboxSimulation.StationBuildCostFor(_model.Idle, _idleBal, i);
+        /// <summary>Baut die Werkstatt eine sichtbare Stufe aus (HUD-Panel). Liefert true bei Erfolg.</summary>
+        public bool UpgradeStationBuild(int i) => GreyboxSimulation.UpgradeStationBuild(_model.Idle, _idleBal, i);
 
         /// <summary>Aktueller Geldstand (für Affordability-Checks im Panel).</summary>
         public decimal Money => _model != null ? _model.Idle.Money : 0m;

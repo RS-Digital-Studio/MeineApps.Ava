@@ -278,6 +278,29 @@ namespace HandwerkerImperium.UI.Hud
                 status.AddToClassList("worker-row__status");
                 row.Add(status);
 
+                // Ausbau-Aktion (Werkstatt-Bau, GDD §6.1) — nur für freigeschaltete Gewerke
+                if (info.Unlocked)
+                {
+                    var build = new Button();
+                    build.AddToClassList("worker-row__action");
+                    if (info.BuildAtMax)
+                    {
+                        build.text = "Ausbau MAX";
+                        build.AddToClassList("worker-row__action--disabled");
+                        build.SetEnabled(false);
+                    }
+                    else
+                    {
+                        build.text = "Ausbau " + (info.BuildLevel + 1) + "  " + MoneyFormat.Short(info.BuildCost);
+                        SetActionState(build, controller.Money >= info.BuildCost);
+                        build.clicked += () =>
+                        {
+                            if (controller.UpgradeStationBuild(idx)) { audioHub?.Play(GameSfx.UpgradePaid); RebuildWorkerList(); }
+                        };
+                    }
+                    row.Add(build);
+                }
+
                 var action = new Button();
                 action.AddToClassList("worker-row__action");
                 row.Add(action);

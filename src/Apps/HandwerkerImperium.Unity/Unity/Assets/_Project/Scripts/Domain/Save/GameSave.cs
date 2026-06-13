@@ -56,6 +56,8 @@ namespace HandwerkerImperium.Domain.Save
         public string Id = "";
         public bool Unlocked;
         public int Stock;
+        /// <summary>Sichtbare Werkstatt-Ausbaustufe (GDD §6.1).</summary>
+        public int BuildLevel;
     }
 
     /// <summary>Arbeiter-Automatisierung (getrennt von der Stations-Produktion, vgl. WorkerAutomationService).</summary>

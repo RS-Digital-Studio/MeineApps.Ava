@@ -58,6 +58,11 @@ namespace HandwerkerImperium.Game
         public float workerUpgradeCostGrowth = 2.2f;
         public float workerUpgradeStep = 0.5f;
         public int workerMaxLevel = 4;
+        [Tooltip("Werkstatt-Ausbaustufen (GDD §6.1): Kosten-Basis, Wachstum, Wert-Bonus/Stufe, Max.")]
+        public float stationBuildCostBase = 400f;
+        public float stationBuildCostGrowth = 2.6f;
+        public float stationBuildStep = 0.5f;
+        public int stationBuildMaxLevel = 3;
 
         [Header("Plot-Unlock-Fallback (greift nur bei unlockCost = 0)")]
         public float plotUnlockCost = 500f;
@@ -83,6 +88,10 @@ namespace HandwerkerImperium.Game
                 WorkerUpgradeCostGrowth = workerUpgradeCostGrowth,
                 WorkerUpgradeStep = workerUpgradeStep,
                 WorkerMaxLevel = workerMaxLevel,
+                StationBuildCostBase = (decimal)stationBuildCostBase,
+                StationBuildCostGrowth = stationBuildCostGrowth,
+                StationBuildStep = stationBuildStep,
+                StationBuildMaxLevel = stationBuildMaxLevel,
                 PlotUnlockCost = (decimal)plotUnlockCost,
                 OfflineCapSeconds = offlineCapSeconds,
                 OfflineRatePerWorker = (decimal)offlineRatePerWorker,

@@ -182,6 +182,35 @@ namespace HandwerkerImperium.Domain.Tests.Idle
         }
 
         [Test]
+        public void StationBuild_GeometricCost_SellValueBonus_AndMaxLevel()
+        {
+            var bal = Bal();
+            var st = GreyboxSimState.CreateNew(bal);
+            // Station 0 (schreiner): SellValue 5, Build-Step 0.5 -> Stufe 1 = 7.5, Stufe 2 = 10
+            Assert.That(GreyboxSimulation.EffectiveSellValue(st, bal, 0), Is.EqualTo(5m));
+            Assert.That(GreyboxSimulation.StationBuildCostFor(st, bal, 0), Is.EqualTo(400m));
+            st.Money = 399m;
+            Assert.That(GreyboxSimulation.UpgradeStationBuild(st, bal, 0), Is.False, "zu arm");
+            st.Money = 400m;
+            Assert.That(GreyboxSimulation.UpgradeStationBuild(st, bal, 0), Is.True);
+            Assert.That(st.Stations[0].BuildLevel, Is.EqualTo(1));
+            Assert.That(GreyboxSimulation.EffectiveSellValue(st, bal, 0), Is.EqualTo(7.5m));
+            Assert.That(GreyboxSimulation.StationBuildCostFor(st, bal, 0), Is.EqualTo(1040m)); // round(400*2.6)
+
+            // Verkauf nutzt den Bonus: 2 Waren × 7.5 = 15
+            decimal earned = GreyboxSimulation.SellCarried(st, bal, 0, 2);
+            Assert.That(earned, Is.EqualTo(15m));
+
+            // gesperrte Station nicht ausbaubar
+            Assert.That(GreyboxSimulation.UpgradeStationBuild(st, bal, 3), Is.False);
+
+            // Max-Deckel
+            st.Money = 100000000m;
+            while (GreyboxSimulation.UpgradeStationBuild(st, bal, 0)) { }
+            Assert.That(st.Stations[0].BuildLevel, Is.EqualTo(bal.StationBuildMaxLevel));
+        }
+
+        [Test]
         public void Boost_SpeedsUpProduction_AndExpires()
         {
             var bal = Bal();

@@ -29,6 +29,7 @@ namespace HandwerkerImperium.Game.Tests
                 m.Idle.Stations[0].Stock = 4;
                 m.Idle.Stations[0].HasWorker = true;
                 m.Idle.Stations[0].WorkerLevel = 3; // Worker-Tempo-Stufen ueberleben den Roundtrip
+                m.Idle.Stations[0].BuildLevel = 2;  // Werkstatt-Ausbaustufe ueberlebt den Roundtrip
                 RuntimeSave.Save(m, Key, Slot);
 
                 var loaded = RuntimeSave.Load(Key, idleBal, Slot);
@@ -40,6 +41,7 @@ namespace HandwerkerImperium.Game.Tests
                 Assert.That(loaded.Idle.Stations[0].Stock, Is.EqualTo(4));
                 Assert.That(loaded.Idle.Stations[0].HasWorker, Is.True);
                 Assert.That(loaded.Idle.Stations[0].WorkerLevel, Is.EqualTo(3));
+                Assert.That(loaded.Idle.Stations[0].BuildLevel, Is.EqualTo(2));
             }
             finally { RuntimeSave.Clear(Slot); }
         }

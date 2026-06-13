@@ -31,7 +31,7 @@ namespace HandwerkerImperium.Domain.Runtime
             s.Stations.CarryCapacityLevel = m.Idle.CarryCapacityLevel;
             foreach (var st in m.Idle.Stations)
             {
-                s.Stations.Stations.Add(new StationSaveData { Id = st.Id, Unlocked = st.Unlocked, Stock = st.Stock });
+                s.Stations.Stations.Add(new StationSaveData { Id = st.Id, Unlocked = st.Unlocked, Stock = st.Stock, BuildLevel = st.BuildLevel });
                 if (st.HasWorker)
                     s.Workers.Workers.Add(new WorkerSaveData { StationId = st.Id, Hired = true, Level = st.WorkerLevel });
             }
@@ -90,7 +90,7 @@ namespace HandwerkerImperium.Domain.Runtime
             foreach (var sd in s.Stations.Stations)
             {
                 var st = FindStation(m.Idle, sd.Id);
-                if (st != null) { st.Unlocked = sd.Unlocked; st.Stock = sd.Stock; }
+                if (st != null) { st.Unlocked = sd.Unlocked; st.Stock = sd.Stock; st.BuildLevel = sd.BuildLevel; }
             }
             foreach (var w in s.Workers.Workers)
             {

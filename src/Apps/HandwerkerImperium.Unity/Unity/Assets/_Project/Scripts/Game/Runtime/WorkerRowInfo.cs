@@ -13,5 +13,10 @@ namespace HandwerkerImperium.Game
         public decimal HireCost;
         public decimal UpgradeCost;
         public bool AtMax;
+        // Werkstatt-Ausbau (GDD §6.1, Open-Shop)
+        public int BuildLevel;
+        public int BuildMaxLevel;
+        public decimal BuildCost;
+        public bool BuildAtMax;
     }
 }

@@ -61,6 +61,38 @@ namespace HandwerkerImperium.Domain.Idle
         public static double EffectiveWorkerCarrySpeed(IdleBalancing balancing, int workerLevel) =>
             Math.Max(0, balancing.WorkerCarrySpeed) * (1.0 + Math.Max(0, workerLevel) * balancing.WorkerUpgradeStep);
 
+        /// <summary>Effektiver Verkaufswert je Ware nach Werkstatt-Ausbaustufe (GDD §6.1, Open-Shop).</summary>
+        public static decimal EffectiveSellValue(GreyboxSimState state, IdleBalancing balancing, int stationIndex)
+        {
+            decimal baseValue = balancing.Stations[stationIndex].SellValue;
+            int lvl = (stationIndex >= 0 && stationIndex < state.Stations.Count) ? state.Stations[stationIndex].BuildLevel : 0;
+            return baseValue * (decimal)(1.0 + Math.Max(0, lvl) * balancing.StationBuildStep);
+        }
+
+        /// <summary>Kosten der naechsten Werkstatt-Ausbaustufe (geometrisch).</summary>
+        public static decimal StationBuildCostFor(GreyboxSimState state, IdleBalancing balancing, int stationIndex)
+        {
+            if (stationIndex < 0 || stationIndex >= state.Stations.Count) return 0m;
+            int level = state.Stations[stationIndex].BuildLevel;
+            return Math.Round(balancing.StationBuildCostBase * (decimal)Math.Pow(balancing.StationBuildCostGrowth, level));
+        }
+
+        /// <summary>
+        /// Baut die Werkstatt eine sichtbare Stufe aus (erfordert freigeschaltet, unter Max, genug Geld).
+        /// Liefert true bei Erfolg.
+        /// </summary>
+        public static bool UpgradeStationBuild(GreyboxSimState state, IdleBalancing balancing, int stationIndex)
+        {
+            if (stationIndex < 0 || stationIndex >= state.Stations.Count) return false;
+            var st = state.Stations[stationIndex];
+            if (!st.Unlocked || st.BuildLevel >= balancing.StationBuildMaxLevel) return false;
+            decimal cost = StationBuildCostFor(state, balancing, stationIndex);
+            if (state.Money < cost) return false;
+            state.Money -= cost;
+            st.BuildLevel++;
+            return true;
+        }
+
         /// <summary>Kosten der naechsten Worker-Tempo-Stufe einer Station (geometrisch).</summary>
         public static decimal WorkerUpgradeCostFor(GreyboxSimState state, IdleBalancing balancing, int stationIndex)
         {
@@ -118,7 +150,7 @@ namespace HandwerkerImperium.Domain.Idle
                 {
                     st.Stock -= take;
                     st.WorkerProgress -= take;
-                    earned += take * sb.SellValue;
+                    earned += take * EffectiveSellValue(state, balancing, i);
                 }
                 // Kein Stock -> Worker laeuft leer; Akkumulator deckeln (kein „aufgesparter" Burst).
                 if (st.Stock == 0 && st.WorkerProgress > 0.9999)
@@ -138,12 +170,11 @@ namespace HandwerkerImperium.Domain.Idle
             if (stationIndex < 0 || stationIndex >= state.Stations.Count) return 0m;
             var st = state.Stations[stationIndex];
             if (!st.Unlocked || requestedCount <= 0) return 0m;
-            var sb = balancing.Stations[stationIndex];
 
             int count = Math.Min(requestedCount, st.Stock);
             if (count <= 0) return 0m;
             st.Stock -= count;
-            decimal earned = count * sb.SellValue;
+            decimal earned = count * EffectiveSellValue(state, balancing, stationIndex);
             state.Money += earned;
             return earned;
         }
@@ -171,7 +202,7 @@ namespace HandwerkerImperium.Domain.Idle
         public static decimal SellCarried(GreyboxSimState state, IdleBalancing balancing, int stationIndex, int count)
         {
             if (stationIndex < 0 || stationIndex >= balancing.Stations.Count || count <= 0) return 0m;
-            decimal earned = count * balancing.Stations[stationIndex].SellValue;
+            decimal earned = count * EffectiveSellValue(state, balancing, stationIndex);
             state.Money += earned;
             return earned;
         }
@@ -247,7 +278,7 @@ namespace HandwerkerImperium.Domain.Idle
                 var sb = balancing.Stations[i];
                 double interval = IdleEconomyFormulas.EffectiveProduceInterval(sb.ProduceInterval, state.StationSpeedLevel, balancing.UpgradeStep);
                 double throughput = IdleEconomyFormulas.WorkerThroughputPerSecond(interval, EffectiveWorkerCarrySpeed(balancing, st.WorkerLevel));
-                sum += IdleEconomyFormulas.AutomatedIncomePerSecond(sb.SellValue, throughput);
+                sum += IdleEconomyFormulas.AutomatedIncomePerSecond(EffectiveSellValue(state, balancing, i), throughput);
             }
             return sum;
         }

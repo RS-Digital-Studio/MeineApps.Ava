@@ -171,6 +171,24 @@ Zwei Schlüssel: (1) **Leverage ist der Killer** — lev1 Bear +10%, lev5 Bear �
 ≥1000 USDT entfernt Min-Order-Fragmentierung. `XsecParams`: Lookback/Rebalance/LongK/ShortK/RiskAdjusted/AtrStop/
 LeverageCap. **Caveat:** Survivorship-Bias (Top-N = heutiges Top-N, rückwirkend) → Zahlen optimistisch verzerrt.
 
+**Fein-Optimierung (13.06.2026, `--xsec-grid fine`/`final`):** Der eigentliche Optimum ist NICHT L120/R126,
+sondern **`L60/R54/3L-3S` (10-Tage-Lookback, 9-Tage-Rebalance)** — robust (4/4) über Top-50 UND Top-80, über
+K=2/3/4 UND lev1/lev2 (Plateau, kein Peak). Bei lev2: min +34.9%/+8.9% (vs Live L120/R126 = 2/4, min −40%/−68%).
+Deckt sich mit der Literatur (10–14d Lookback, ~weekly Rebalance; survivorship-bias-freie AUT-Studie: 14d/7d).
+**Portfolio-Vol-Targeting** (`XsecParams.VolTargetAnnualPct`, zeitvariable Gesamt-Exposure nach realisierter
+Equity-Vol — NICHT zu verwechseln mit `InverseVolWeight` = within-basket): `vt30` macht L60/R54 über beide
+Universen identisch robust (min +30.1% beide), dämpft die Universums-Varianz (Lit.: conditional Sharpe-Gewinn).
+
+**Weitere Strategie-Klassen getestet (`--xsec-grid strategies`, `--pairs`, `--funding-carry`):** Reversal,
+Low-Vol-market-neutral, Inverse-Vol-Gewichtung, Skip-Period, Pairs-Trading (Distance/Gatev), Funding-Harvest —
+**alle NEGATIV/nicht-robust**. Long-only-Momentum/LowVol + Momentum+Carry-Combo-long-only robust, aber
+survivorship-bias-verdächtig (Bear-Phase aufgebläht). Funding-Carry-Faktor (long high/short low) standalone
+nicht robust. **Fazit: reines Cross-Sectional-Momentum L60/R54/3L-3S bleibt die beste bias-robuste Wahl.**
+
+**Engines:** `CrossSectionalMomentumEngine` (XsecMode Momentum/Reversal/LowVol, InverseVolWeight, SkipCandles,
+VolTargetAnnualPct), `PairsTradingEngine` (Distance/z-Score), `FundingCarryEngine` (Carry-Faktor + Momentum-Combo,
+echte Funding-Historie via `FundingHistoryProvider`). Screens: `XsecScreen`, `PairsScreen`, `FundingScreen`.
+
 ## Parameter-Sweep & Walk-Forward (`--sweep` / `--full` / `--compare` / `--axis`)
 
 Vier Modi finden datengetrieben bessere Parameter (statt manuell `settings.json` zu variieren). Alle nutzen

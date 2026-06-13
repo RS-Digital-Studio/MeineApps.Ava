@@ -26,19 +26,35 @@ public static class MetricsEndpoints
             BotDatabaseService dbService,
             FcmDeviceStore fcmStore,
             AuthTokenStore tokens,
-            LiveTradingManager liveManager) =>
+            LiveTradingManager liveManager,
+            BingXBot.Trading.CrossSectional.CrossSectionalManager xsecManager) =>
         {
             // Aggregierte Snapshot-Daten — schnelle In-Memory-Reads, kein DB-Query.
+            // Cross-Sectional laeuft NICHT ueber den LiveTradingManager → frueher meldete dieser
+            // Endpoint im Xsec-Modus konstant isRunning=false/mode=Idle/risk=null (live 12.06.2026
+            // diagnostiziert: externes Monitoring sah den Bot faelschlich als "down"). Beide Engines
+            // pruefen.
             var rm = liveManager.Service?.RiskManager;
+            var xsecRunning = xsecManager.IsRunning;
+            var mode = liveManager.IsRunning ? "Live (Scalper)"
+                : xsecRunning ? "Live (Cross-Sectional)"
+                : "Idle";
             var snapshot = new
             {
                 generatedAtUtc = DateTime.UtcNow,
                 bot = new
                 {
-                    isRunning = liveManager.IsRunning,
-                    isConnected = liveManager.IsConnected,
-                    mode = liveManager.IsRunning ? "Live" : "Idle"
+                    isRunning = liveManager.IsRunning || xsecRunning,
+                    isConnected = liveManager.IsConnected || xsecManager.IsConnected,
+                    mode
                 },
+                // Cross-Sectional hat keinen RiskManager (market-neutraler Korb statt per-Trade-Risk) —
+                // stattdessen Korb-Health + Tick-Liveness melden.
+                xsec = xsecRunning ? new
+                {
+                    basketSize = xsecManager.CurrentBasket?.Count ?? 0,
+                    lastTickUtc = xsecManager.LastTickUtc
+                } : null,
                 risk = rm == null ? null : new
                 {
                     dailyPnl = rm.DailyPnl,

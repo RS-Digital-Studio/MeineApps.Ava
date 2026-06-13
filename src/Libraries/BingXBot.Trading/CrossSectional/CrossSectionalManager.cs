@@ -36,6 +36,8 @@ public sealed class CrossSectionalManager : IDisposable
 
     public bool IsRunning => _service?.IsRunning ?? false;
     public bool IsConnected => _restClient != null;
+    /// <summary>Letzter Tick-Versuch des Xsec-Loops (Liveness-Proxy fuer StaleEngineDetector/Metrics).</summary>
+    public DateTime? LastTickUtc => _service?.LastTickUtc;
     public SimulatedExchange? PaperExchange => _paperExchange;
     public BingXRestClient? RestClient => _restClient;
     public IReadOnlyDictionary<string, Side>? CurrentBasket => _service?.CurrentBasket;

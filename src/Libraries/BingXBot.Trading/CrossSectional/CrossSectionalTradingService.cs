@@ -50,14 +50,25 @@ public sealed class CrossSectionalTradingService : IDisposable
     // Der Drift-Refill eroeffnet sie NICHT erneut (User-Entscheidung respektieren) — erst der
     // naechste volle Rebalance darf sie wieder ranken. Persistiert im State (Crash-Recovery).
     private HashSet<string> _excludedUntilRebalance = new();
-    // Zwei-Tick-Bestaetigung fuer den Drift-Check: Ein Symbol gilt erst als extern geschlossen,
-    // wenn seine Position in ZWEI aufeinanderfolgenden Ticks fehlt. Schuetzt vor einem transienten
-    // API-Glitch (leere/unvollstaendige Positions-Antwort), der sonst den ganzen Korb sperren und
-    // parallel neu aufbauen wuerde (doppelte Exposure mit echtem Geld).
-    private HashSet<string> _pendingDriftConfirm = new();
+    // Mehrfach-Tick-Bestaetigung fuer den Drift-Check: Zaehler pro Symbol — fehlt die Position
+    // in einem Tick → +1, ist sie wieder da → Reset. Erst ab DriftConfirmTicks aufeinanderfolgenden
+    // Fehl-Ticks gilt das Symbol als extern geschlossen. Schuetzt vor transienten API-Glitches
+    // (leere/unvollstaendige Positions-Antwort → sonst Korb-Doppelaufbau mit echtem Geld) und ist
+    // — anders als ein einfaches Vorgaenger-Set — robust gegen alternierende Teil-Glitches
+    // ANDERER Symbole (die Bestaetigung eines echt geschlossenen Symbols wird nicht verschleppt).
+    private const int DriftConfirmTicks = 2;
+    private Dictionary<string, int> _driftMissCounter = new();
 
     public bool IsRunning { get; private set; }
     public IReadOnlyDictionary<string, Side> CurrentBasket => _currentBasket;
+
+    /// <summary>
+    /// Zeitpunkt des letzten abgeschlossenen Tick-Versuchs (Success ODER Failure — Liveness des
+    /// Loops, nicht Erfolg). Der Xsec-Loop hat keinen Scanner und feuert kein ScanCycleCompleted;
+    /// ohne diesen Indikator waere ein stillschweigend toter Tick-Loop fuer den
+    /// StaleEngineDetector unsichtbar (Watchdog-Blindheit, live diagnostiziert 12.06.2026).
+    /// </summary>
+    public DateTime? LastTickUtc { get; private set; }
 
     public CrossSectionalTradingService(
         IExchangeClient execution,
@@ -86,7 +97,7 @@ public sealed class CrossSectionalTradingService : IDisposable
         if (IsRunning) return;
         // Drift-Tracking zuruecksetzen (Service-Instanz kann ueber Stop/Start wiederverwendet werden);
         // RestoreOrAdoptStateAsync laedt die persistierte Sperrliste danach ggf. wieder.
-        _pendingDriftConfirm = new();
+        _driftMissCounter = new();
         _excludedUntilRebalance = new();
         await RestoreOrAdoptStateAsync().ConfigureAwait(false);
 
@@ -131,6 +142,8 @@ public sealed class CrossSectionalTradingService : IDisposable
             try { await TickAsync(ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { break; }
             catch (Exception ex) { Log(LogLevel.Error, "Engine", $"Cross-Sectional-Tick-Fehler: {ex.Message}"); }
+            // Liveness-Marker NACH dem Tick-Versuch (Success oder Failure) — der Loop lebt.
+            LastTickUtc = DateTime.UtcNow;
 
             try { await Task.Delay(TimeSpan.FromMinutes(Math.Max(1, _cfg.CheckIntervalMinutes)), ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { break; }
@@ -139,21 +152,28 @@ public sealed class CrossSectionalTradingService : IDisposable
 
     private async Task TickAsync(CancellationToken ct)
     {
-        // 1. Paper: Mark-to-Market der offenen Positionen + Funding alle 8h (Live managt das selbst).
-        await RefreshPaperPricingAsync(ct).ConfigureAwait(false);
-
-        // 2. Equity-Snapshot fuer Chart/Stats.
-        var acc = await _execution.GetAccountInfoAsync().ConfigureAwait(false);
-        _eventBus.PublishEquity(new EquityPoint(DateTime.UtcNow, acc.Balance + acc.UnrealizedPnl));
-
-        // 3. Heartbeat persistieren — sonst altert LastHeartbeatUtc waehrend des 21-Tage-Zyklus
-        //    tagelang und der Income-Backfill nach einem Reboot rechnet mit einem riesigen
-        //    Offline-Fenster (Dedup faengt das, aber unnoetig viele API-Calls + Log-Rauschen).
+        // 1. Heartbeat ZUERST persistieren — er ist der Liveness-Proxy fuer Watchdog/Backfill
+        //    und darf nicht hinter einem fehleranfaelligen API-Call (Account/Equity) haengen.
+        //    Sonst altert LastHeartbeatUtc waehrend des 21-Tage-Zyklus und der Income-Backfill
+        //    rechnet nach einem Reboot mit einem riesigen Offline-Fenster.
         if (_dbService != null)
         {
             try { await _dbService.SaveLastHeartbeatAsync(DateTime.UtcNow).ConfigureAwait(false); }
             catch { /* Heartbeat ist Best-Effort — DB-Hickup darf den Tick nicht reissen. */ }
         }
+
+        // 2. Paper: Mark-to-Market der offenen Positionen + Funding alle 8h (Live managt das selbst).
+        await RefreshPaperPricingAsync(ct).ConfigureAwait(false);
+
+        // 3. Equity-Snapshot fuer Chart/Stats — gekapselt: eine transiente Balance-Antwort
+        //    (z.B. v2-Form-Glitch, live 12.06.2026) darf Rebalance/Drift-Refill nicht reissen.
+        try
+        {
+            var acc = await _execution.GetAccountInfoAsync().ConfigureAwait(false);
+            _eventBus.PublishEquity(new EquityPoint(DateTime.UtcNow, acc.Balance + acc.UnrealizedPnl));
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { Log(LogLevel.Warning, "Engine", $"Equity-Snapshot im Tick fehlgeschlagen ({ex.Message}) — Tick laeuft weiter."); }
 
         // 4. Rebalance faellig? (Wall-Clock — robust gegen Downtime.) Sonst: Korb-Drift pruefen.
         if (DateTime.UtcNow >= _lastRebalanceUtc + TimeSpan.FromDays(Math.Max(1, _cfg.RebalanceDays)))
@@ -245,7 +265,8 @@ public sealed class CrossSectionalTradingService : IDisposable
         // Reconciliation (Close-vor-Open, Safety) — geteilt mit Paper/Live.
         var result = await CrossSectionalRebalancer.ReconcileAsync(
             _execution, basket, data.Prices, data.Categories, _cfg, _risk,
-            msg => Log(LogLevel.Info, "Exit", msg), ct).ConfigureAwait(false);
+            msg => Log(LogLevel.Info, "Exit", msg), ct,
+            onClosed: pos => BookLiveClose(pos, "Xsec-Rebalance")).ConfigureAwait(false);
 
         // State persistieren + Trades publishen. Exclusion-Set leeren: der volle Rebalance darf
         // extern geschlossene Symbole wieder ranken (neuer 21-Tage-Zyklus = neue Entscheidung).
@@ -255,7 +276,7 @@ public sealed class CrossSectionalTradingService : IDisposable
             .Where(kv => result.Filled.Contains(kv.Key))
             .ToDictionary(kv => kv.Key, kv => kv.Value);
         _excludedUntilRebalance.Clear();
-        _pendingDriftConfirm.Clear();
+        _driftMissCounter.Clear();
         _lastRebalanceUtc = DateTime.UtcNow;
         SaveState();
         DrainPaperTrades();
@@ -281,16 +302,23 @@ public sealed class CrossSectionalTradingService : IDisposable
         if (_currentBasket.Count == 0) return;
 
         // 1. Extern geschlossene Korb-Positionen erkennen (billig: 1 API-Call pro Tick).
-        //    Zwei-Tick-Bestaetigung: erst handeln, wenn dieselbe Position in zwei
-        //    aufeinanderfolgenden Ticks fehlt (Schutz vor transienten API-Glitches).
+        //    Mehrfach-Tick-Bestaetigung per Zaehler: erst handeln, wenn dieselbe Position in
+        //    DriftConfirmTicks aufeinanderfolgenden Ticks fehlt (Schutz vor API-Glitches).
         var positions = await _execution.GetPositionsAsync(ct).ConfigureAwait(false);
         var openKeys = positions.Select(p => $"{p.Symbol}_{p.Side}").ToHashSet();
         var missingNow = _currentBasket
             .Where(kv => !openKeys.Contains($"{kv.Key}_{kv.Value}"))
             .Select(kv => kv.Key)
             .ToHashSet();
-        var closedExternally = missingNow.Where(_pendingDriftConfirm.Contains).ToList();
-        _pendingDriftConfirm = missingNow;
+        foreach (var symbol in missingNow)
+            _driftMissCounter[symbol] = _driftMissCounter.TryGetValue(symbol, out var n) ? n + 1 : 1;
+        foreach (var present in _driftMissCounter.Keys.Where(k => !missingNow.Contains(k)).ToList())
+            _driftMissCounter.Remove(present);
+        var closedExternally = _driftMissCounter
+            .Where(kv => kv.Value >= DriftConfirmTicks)
+            .Select(kv => kv.Key)
+            .ToList();
+        foreach (var symbol in closedExternally) _driftMissCounter.Remove(symbol);
 
         if (closedExternally.Count > 0)
         {
@@ -340,7 +368,8 @@ public sealed class CrossSectionalTradingService : IDisposable
 
         var result = await CrossSectionalRebalancer.ReconcileAsync(
             _execution, target, data.Prices, data.Categories, _cfg, _risk,
-            msg => Log(LogLevel.Info, "Exit", msg), ct).ConfigureAwait(false);
+            msg => Log(LogLevel.Info, "Exit", msg), ct,
+            onClosed: pos => BookLiveClose(pos, "Xsec-Drift-Refill")).ConfigureAwait(false);
 
         // 5. Nur den Korb (ohne Fremd-Schutz-Eintraege) persistieren — aufgenommen werden
         //    ausschliesslich tatsaechlich gefuellte Refill-Symbole (Min-Order-Skips/Rejects
@@ -356,6 +385,35 @@ public sealed class CrossSectionalTradingService : IDisposable
         Log(LogLevel.Trade, "Engine",
             $"Drift-Refill fertig: {result.Opened} eroeffnet, {result.SkippedMinOrder} Min-Order-Skip. "
             + $"Korb ({_currentBasket.Count}): {DescribeBasket(_currentBasket)}.");
+    }
+
+    // Taker-Fee-Schaetzung fuer die Live-Close-Buchung (Standard-VIP0-Rate; die echte Rate
+    // weicht hoechstens minimal ab und der Income-Backfill bleibt die exakte Quelle).
+    private const decimal TakerFeeEstimate = 0.0005m;
+
+    /// <summary>
+    /// Bucht einen verifizierten Live-Close des Rebalancers sofort als <see cref="CompletedTrade"/>
+    /// (Event fuer Stats/SignalR/FCM + DB-Persistenz). Ohne diese Buchung erschienen Xsec-Closes
+    /// erst nach bis zu 30 min als anonymer Income-Backfill ("Backfilled (Income)") — ohne
+    /// Entry-Preis, Holding-Time und Strategie-Reason. PnL/Fees sind Mark-to-Market-Naeherungen
+    /// (ClosePositionAsync liefert keine Fill-Daten); der Income-Backfill dedupliziert dagegen.
+    /// </summary>
+    private void BookLiveClose(Position pos, string reason)
+    {
+        if (_paper != null) return;   // Paper bucht ueber die SimulatedExchange (DrainPaperTrades).
+        var fee = pos.Quantity * (pos.EntryPrice + pos.MarkPrice) * TakerFeeEstimate;
+        var trade = new CompletedTrade(
+            pos.Symbol, pos.Side, pos.EntryPrice, pos.MarkPrice, pos.Quantity,
+            pos.UnrealizedPnl - fee, fee, pos.OpenTime, DateTime.UtcNow, reason, TradingMode.Live);
+        _eventBus.PublishTrade(trade);
+        if (_dbService != null)
+        {
+            _ = Task.Run(async () =>
+            {
+                try { await _dbService.SaveTradeAsync(trade).ConfigureAwait(false); }
+                catch (Exception ex) { Log(LogLevel.Error, "Trade", $"Xsec-Close-Persist fehlgeschlagen ({pos.Symbol}): {ex.Message}"); }
+            });
+        }
     }
 
     private void DrainPaperTrades()

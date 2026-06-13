@@ -42,20 +42,25 @@ public static class CrossSectionalRebalancer
         CrossSectionalSettings cfg,
         RiskSettings risk,
         Action<string>? log = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        Action<Position>? onClosed = null)
     {
         log ??= _ => { };
         var slots = Math.Min(cfg.LongK + cfg.ShortK, risk.MaxOpenPositions);
 
         // 1. Close-vor-Open: Positionen schliessen, die nicht (mehr) zum Ziel passen (Symbol raus ODER Seite gedreht).
+        //    Geschlossene Positionen (Pre-Close-Snapshot) merken — nach der Verifikation meldet
+        //    onClosed sie dem Aufrufer (Live: CompletedTrade-Buchung, sonst nur Income-Backfill nach 30 min).
         var positions = await ex.GetPositionsAsync(ct).ConfigureAwait(false);
         var closed = 0;
+        var closeAttempts = new List<Position>();
         foreach (var pos in positions)
         {
             ct.ThrowIfCancellationRequested();
             if (!target.TryGetValue(pos.Symbol, out var want) || want != pos.Side)
             {
                 await ex.ClosePositionAsync(pos.Symbol, pos.Side).ConfigureAwait(false);
+                closeAttempts.Add(pos);
                 closed++;
             }
         }
@@ -76,6 +81,17 @@ public static class CrossSectionalRebalancer
             {
                 failedClose++;
                 log($"Rebalance: Close fehlgeschlagen — {pos.Symbol} {pos.Side} noch offen. Slot bleibt belegt, naechster Rebalance versucht erneut.");
+            }
+        }
+
+        // Verifizierte Closes melden (Position im after-Snapshot verschwunden = Close hat gegriffen).
+        if (onClosed != null)
+        {
+            var stillOpen = after.Select(p => $"{p.Symbol}_{p.Side}").ToHashSet();
+            foreach (var pos in closeAttempts.Where(p => !stillOpen.Contains($"{p.Symbol}_{p.Side}")))
+            {
+                try { onClosed(pos); }
+                catch (Exception exn) { log($"Rebalance: onClosed-Hook fehlgeschlagen ({pos.Symbol}): {exn.Message}"); }
             }
         }
 

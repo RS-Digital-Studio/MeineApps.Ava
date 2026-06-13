@@ -223,4 +223,72 @@ public sealed class CrossSectionalDriftRefillTests : IDisposable
 
         ex2.PlaceOrderCalls.Select(p => p.Symbol).Should().NotContain("AAA-USDT");
     }
+
+    [Fact]
+    public async Task Drift_AlternierenderGlitch_WirdNichtFaelschlichAlsClosedGewertet()
+    {
+        // AAA flackert (fehlt Tick1, da Tick2, fehlt Tick3): der Zaehler resettet bei Anwesenheit,
+        // erreicht also nie DriftConfirmTicks → kein faelschlicher Refill. BBB bleibt durchgehend offen.
+        var md = new FakeMarketData
+        {
+            Klines = { ["AAA-USDT"] = Trend(100m, 1m), ["BBB-USDT"] = Trend(100m, -1m), ["CCC-USDT"] = Trend(50m, 2m) },
+        };
+        var fx = new FakeExchangeClient().WithPosition("BBB-USDT", Side.Sell, 1m, 100m);
+        var svc = await CreateServiceAsync(fx, md, new() { ["AAA-USDT"] = Side.Buy, ["BBB-USDT"] = Side.Sell });
+
+        // Tick1: AAA fehlt (nur BBB offen) → Zaehler AAA=1
+        await svc.RefillBasketDriftAsync(CancellationToken.None);
+        // Tick2: AAA wieder da → Zaehler AAA=0
+        fx.WithPosition("AAA-USDT", Side.Buy, 1m, 100m);
+        await svc.RefillBasketDriftAsync(CancellationToken.None);
+        // Tick3: AAA fehlt erneut → Zaehler AAA=1 (NICHT >= DriftConfirmTicks)
+        fx.ClearPositions();
+        fx.WithPosition("BBB-USDT", Side.Sell, 1m, 100m);
+        await svc.RefillBasketDriftAsync(CancellationToken.None);
+
+        fx.PlaceOrderCalls.Should().BeEmpty();
+        svc.CurrentBasket.Should().ContainKey("AAA-USDT");
+    }
+
+    [Fact]
+    public async Task Rebalancer_OnClosed_FeuertNurFuerVerifizierteCloses()
+    {
+        // AAA (im Ziel, bleibt) + BBB (raus → wird geschlossen) + CCC (FailClose simuliert? nein:
+        // hier nur erfolgreicher Close von BBB → onClosed genau 1×).
+        var ex = new FakeExchangeClient()
+            .WithPosition("AAA-USDT", Side.Buy, 1m, 100m)
+            .WithPosition("BBB-USDT", Side.Buy, 1m, 100m);
+        var target = new Dictionary<string, Side> { ["AAA-USDT"] = Side.Buy };
+        var prices = new Dictionary<string, decimal> { ["AAA-USDT"] = 100m, ["BBB-USDT"] = 100m };
+        var cats = new[] { "AAA-USDT", "BBB-USDT" }.ToDictionary(s => s, _ => MarketCategory.Crypto);
+        var closedSymbols = new List<string>();
+
+        await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, cats,
+            new CrossSectionalSettings { LongK = 1, ShortK = 1, LeverageCap = 1, MarginUtilization = 0.75m },
+            new RiskSettings { MaxOpenPositions = 10 },
+            onClosed: pos => closedSymbols.Add(pos.Symbol));
+
+        closedSymbols.Should().ContainSingle().Which.Should().Be("BBB-USDT");
+    }
+
+    [Fact]
+    public async Task Rebalancer_OnClosed_FeuertNICHTBeiFehlgeschlagenemClose()
+    {
+        // FailCloses=true → BBB bleibt offen → onClosed darf NICHT feuern (kein realer Close).
+        var ex = new FakeExchangeClient { FailCloses = true }
+            .WithPosition("BBB-USDT", Side.Buy, 1m, 100m);
+        var target = new Dictionary<string, Side> { ["AAA-USDT"] = Side.Buy };
+        var prices = new Dictionary<string, decimal> { ["AAA-USDT"] = 100m, ["BBB-USDT"] = 100m };
+        var cats = new[] { "AAA-USDT", "BBB-USDT" }.ToDictionary(s => s, _ => MarketCategory.Crypto);
+        var closedSymbols = new List<string>();
+
+        await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, cats,
+            new CrossSectionalSettings { LongK = 1, ShortK = 1, LeverageCap = 1, MarginUtilization = 0.75m },
+            new RiskSettings { MaxOpenPositions = 10 },
+            onClosed: pos => closedSymbols.Add(pos.Symbol));
+
+        closedSymbols.Should().BeEmpty();
+    }
 }

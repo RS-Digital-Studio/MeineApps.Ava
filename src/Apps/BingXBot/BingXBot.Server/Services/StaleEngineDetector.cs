@@ -44,6 +44,8 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
     private readonly BingXBot.Trading.CrossSectional.CrossSectionalManager? _xsecManager;
 
     private readonly TimeSpan _staleAfter = TimeSpan.FromHours(6);
+    // Xsec-Tick laeuft alle 30 min — 90 min ohne Tick (3 verpasste Intervalle) = Loop tot.
+    private readonly TimeSpan _xsecStaleAfter = TimeSpan.FromMinutes(90);
     private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(10);
     private readonly TimeSpan _minTimeBetweenPushes = TimeSpan.FromHours(12);
 
@@ -157,9 +159,28 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
         }
 
         if (state != BotState.Running) return;
-        // Cross-Sectional hat per Design keine Scanner-Aktivitaet (Rebalance ~monatlich) —
-        // der Stale-Check gilt nur fuer den Scalper-Scan-Loop.
-        if (_xsecManager?.IsRunning == true) return;
+        // Cross-Sectional hat per Design keine Scanner-Aktivitaet (Rebalance ~monatlich), aber
+        // einen eigenen Liveness-Proxy: LastTickUtc (gesetzt pro Tick-Versuch, 30-min-Intervall).
+        // Frueher wurde der Xsec-Modus hier KOMPLETT uebersprungen — ein toter Xsec-Tick-Loop
+        // war damit fuer jeden Watchdog unsichtbar (live diagnostiziert 12.06.2026).
+        if (_xsecManager?.IsRunning == true)
+        {
+            var lastTick = _xsecManager.LastTickUtc;
+            // Vor dem ersten Tick zaehlt der Engine-Start (idle aus _lastActivityUtc) als Referenz.
+            var tickIdle = lastTick.HasValue ? DateTime.UtcNow - lastTick.Value : idle;
+            if (tickIdle < _xsecStaleAfter) return;
+            if (!canPush) return;
+
+            _logger.LogWarning(
+                "[FCM-Stub] Stale-Xsec-Alert (#{Count}): Cross-Sectional-Tick-Loop seit {Hours:F1} h ohne Tick " +
+                "(Intervall 30 min, Schwelle {Threshold:F1} h). LastTick={LastTick}. " +
+                "Moegliche Ursachen: Tick-Loop-Hang (HTTP ohne Timeout), Task-Deadlock. {DeviceCount} Ziel-Geraete.",
+                alertsBefore + 1, tickIdle.TotalHours, _xsecStaleAfter.TotalHours,
+                lastTick?.ToString("O") ?? "NIE", _store.AllDevices.Count);
+
+            EscalateStaleAlert();
+            return;
+        }
         if (idle < _staleAfter) return;
         if (!canPush) return;
 
@@ -176,6 +197,16 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
             "{DeviceCount} Ziel-Geraete.",
             alertsBefore + 1, idle.TotalHours, cycleInfo, errorInfo, _store.AllDevices.Count);
 
+        EscalateStaleAlert();
+    }
+
+    /// <summary>
+    /// Gemeinsame Eskalation fuer Scalper- und Xsec-Stale-Alert: Push-Timestamp + Alert-Counter
+    /// hochzaehlen und ab Schwelle den Auto-Restart anstossen. Muss NACH dem Alert-Log aufgerufen
+    /// werden (der Counter+1 ist dort bereits im Log-Text vorweggenommen).
+    /// </summary>
+    private void EscalateStaleAlert()
+    {
         int alertsNow;
         lock (_gate)
         {
@@ -184,8 +215,8 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
             alertsNow = _consecutiveAlertsWithoutRecovery;
         }
 
-        // Auto-Recovery: nach N aufeinanderfolgenden Alerts ohne ScanCycle-Activity wird die Engine
-        // hart neu gestartet (Stop + Start). Setting kann das deaktivieren (z.B. fuer Debugging).
+        // Auto-Recovery: nach N aufeinanderfolgenden Alerts ohne Activity wird die Engine hart
+        // neu gestartet (Stop + Start). Setting kann das deaktivieren (z.B. fuer Debugging).
         var threshold = Math.Max(1, _botSettings.AutoRestartAfterStaleAlertCount);
         if (_botSettings.EnableAutoRestartOnStale && alertsNow >= threshold)
         {

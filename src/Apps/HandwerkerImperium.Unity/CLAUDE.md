@@ -41,7 +41,8 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > EIN HMAC-Save; `CounterView`-Verkäufe bedienen die Runtime-Kunden-Queue (`NotifyPhysicalSale`), Prestige-Rebind inklusive.
 > `GameSceneBuilder` (Menü `…/Build Game Scene (3D)`) baut `Game.unity` lokal: **alle 10 Gewerke-Stationen**
 > (GDD §6.1, Start nur Schreinerei, Plot-Kosten-Progression 500→140k via `StationBalance.UnlockCost` +
-> `GreyboxSimulation.UnlockCostFor`) im 2×5-Hof-Layout mit den echten Pipeline-Modellen je Gewerk, Bauzaun +
+> `GreyboxSimulation.UnlockCostFor`) im **Hufeisen-Bogen um den zentralen Marktplatz** (Start-Schreinerei vorn,
+> Progression wandert den Bogen hinauf) mit den Hunyuan-Pipeline-Modellen je Gewerk, Bauzaun +
 > Hold-to-Pay je gesperrtem Plot (Gebäude erscheint erst nach Unlock — `StationView.unlockedVisual`).
 > **Welt-Lesbarkeit + Leben:** `MakeSign`/`BillboardLabel` (Holzbrett + built-in-Font-3D-Text, Breite gedeckelt,
 > dreht zur Kamera) für Gewerk-Namen, Plot-Preise, Pad-Beschriftung; `ToonBob` animiert die (noch) ungeriggten
@@ -54,8 +55,15 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 >
 > **Live-Ops im Runtime aktiv:** Über die Formel-Sätze hinaus sind die Live-Systeme im `RuntimeGameController`
 > verdrahtet und periodisch ausgewertet: Master-Tool-Auto-Sammlung, Achievement-Gutschrift, Meister-Hans-Story-Beats,
-> Endgame-Renommee-Akkumulation, Rush-Event (2×), Saison-Erkennung, Free-Cash-Pad (Monetarisierung), Tagesaufgaben
+> Endgame-Renommee-Akkumulation, Rush-Event (2×), Saison-Erkennung, Free-Cash (HUD-Button, Monetarisierung), Tagesaufgaben
 > (3/Tag → Gems, UTC-Reset, persistiert + HMAC-signiert). Der headless-baubare Logik-Layer ist damit komplett.
+>
+> **Spiel-Logik aus den Referenzen (Hencoop/Open-Shop, Stil bleibt unser Hunyuan-3D — Memory `[[hwi-unity-visual-stilreferenz]]`):**
+> **Werkstatt-Ausbaustufen** (GDD §6.1: 3 Stufen je Gewerk, sichtbar via `StationBuildView` — Gebäude wächst +
+> Wimpel —, +50 % Verkaufswert/Stufe über `GreyboxSimulation.EffectiveSellValue`, persistiert); **Worker-Stufen**
+> (Anstellen + 4 Tempo-Stufen); **sichtbare Karren-Logistik** (`WorkerNpc` zieht beladenen Handkarren Station→Tresen);
+> **Worker-Verwaltungs-Panel** (HUD: alle 10 Gewerke, Anstellen/Tempo/Ausbau, live-Leistbarkeit) statt Boden-Platten;
+> **geführtes Onboarding** (zustandsgesteuerte Hinweis-Leiste, einmalig via PlayerPrefs, überspringbar).
 >
 > **Welt-Bestand (Assets + Verdrahtung):** 44 Pipeline-GLBs in `Art/Models/` — 6 Welt-Props
 > (Marktstand-Tresen, Bauzaun, Laternen mit Punktlicht, Fässer, Blumenbeete, Handkarren —
@@ -67,19 +75,23 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > (topologie-klassifizierter Gelenk-Gang, Schrittfrequenz = Tempo/Schrittlänge — NIE als freie Konstante),
 > Fallback `ToonBob`. Details/Re-Import/Sichtungs-Lehren → `Assets/_Project/Art/Models/README.md`.
 >
-> **Landschaft & Look (Builder-generiert):** prozedurale Skybox + Distanz-Nebel, Gras-Welt mit Pflaster-Hof
-> + Plaza-Rondell (prozedurale, kachelnde Texturen als Assets), Baum-Ring/Hügel/Felsen deterministisch geseedet,
-> URP-Post-Processing-Volume (Bloom/Vignette/ACES/warme Farb-Justage, Kamera SMAA), Pads mit Stein-Sockel +
-> Akzent-Ring, alle freistehenden Schilder auf Holzpfosten. Editor-asmdef referenziert dafür
-> `Unity.RenderPipelines.{Core,Universal}.Runtime`.
+> **Landschaft & Look (Builder-generiert):** prozedurale Skybox + Distanz-Nebel; **ruhiger Flat-Boden**
+> (Gras-Vollton + Marktplatz mit dezentem sauberem Fugen-Raster `FlatGridMaterial` + sandbeigem Rand,
+> Sandwege — KEINE candy-/noisy-SDXL-Tiles, kein Plaza-Rondell wegen UV-Verzerrung); saubere Low-Poly-Bäume/
+> Büsche (flach+satt, Wind-Sway via `CrownSway`) im Baum-Gürtel; **keine Hügel** (lagen als Scheiben auf dem
+> Rasen → Horizont aus Skybox+Nebel); URP-Post-Processing-Volume (Bloom/Vignette/ACES/warme Farb-Justage, SMAA);
+> Schornstein-Rauch/Blätter über **weiches Partikel-Material** (Dot-Textur + `Sprites/Default` — URP-
+> `defaultParticleMaterial` ist null → sonst Magenta). Editor-asmdef referenziert `Unity.RenderPipelines.{Core,Universal}.Runtime`.
+> **Gotcha:** wiederholte `MakeAssetTexturedMaterial`-Namen → Build-Material-Cache `_envMatCache` (sonst löscht
+> `SaveEnvAsset` ein noch referenziertes Asset → Magenta).
 >
 > **Leben + Steuerung:** `CustomerQueueView`/`CustomerAgent` spiegeln die Domain-Kunden-Queue physisch
 > (NPCs laufen vom Stadttor zur Theke, rücken nach, gehen nach Bedienung ab; Gang via Walker);
 > `TouchJoystick` (Floating, linke Hälfte, UI-Toolkit-Feedback mit PickingMode.Ignore) ist die
 > Android-Primärsteuerung (GDD §4), vom `AvatarController` zusätzlich zu WASD/Gamepad gelesen.
 >
-> **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **176 NUnit /
-> 0 Fehler** (162 Domain + 14 Game, via unity-mcp-Reflection-Runner). Zusätzlich **2 adversariale Mehr-Agenten-Reviews**
+> **Verifikation:** netstandard2.1/C#9-Compat-Compile (0 Fehler/0 Warnungen) + echtes Unity 6000.4.8f1 **181 NUnit /
+> 0 Fehler** (via unity-mcp-Reflection-Runner; inkl. Worker-Stufen, Werkstatt-Ausbau, Boost, Save-Roundtrip). Zusätzlich **2 adversariale Mehr-Agenten-Reviews**
 > gegen die .md-Specs → alle gefundenen Bugs (Anti-Cheat-Lücken, Determinismus, Overflow, Off-by-one) fix-forward behoben.
 > **HMAC-Mapping (CLAUDE.md §7-Tuple → neue Slices):** `Gems` ≙ GoldenScrews, kein `PlayerLevel` (stattdessen `Mastery.Level`
 > signiert) — bewusste Schema-Neuausrichtung.
@@ -90,8 +102,10 @@ Root-`CLAUDE.md` (gelten hier **nicht** — Unity hat einen eigenen Stack).
 > (siehe Tech-Stack-Tabelle). Bekannt offen: APK ist ~536 MB (unkomprimierte Texturen/GLBs) — Texture-
 > Compression (ASTC) + Strip-Pass sind P4-Arbeit; Release-Signing/AAB ebenfalls P4.
 >
-> **Offen (externe/gated Schichten):** Firebase-Backend/Push/Ad-IAP-SDK, Lokalisierung (6 Sprachen),
-> Beta/Store/KPIs/Performance/Cutover. **Spiel-Design** folgt
+> **Offen (externe/gated Schichten, Task-Liste):** Ads/Premium-SDK (#30, AdMob+Billing, Konten-Entscheidung),
+> Firebase-Backend/Push/Remote-Config/Leaderboards (#33, Konten-Entscheidung), Lokalisierung 6 Sprachen (#31),
+> Meta-UIs Master-Tools/Cosmetics/Franchise (#32), APK-Größe ASTC/Strip/AAB (#25), Performance-Pass (#35),
+> KPI-Balancing (#36), Store-Assets/Cutover (#37). **Spiel-Design** folgt
 > dem GDD ([3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)); ARCHITECTURE/DESIGN/ROADMAP-Mechanik = Referenz,
 > Infra/Tech (Scenes, Save, Netz, Pipeline) = Soll.
 

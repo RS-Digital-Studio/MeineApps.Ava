@@ -246,7 +246,7 @@ namespace HandwerkerImperium.Editor
             }
 
             var fencePalette = new Color(0.85f, 0.68f, 0.20f); // Bauzaun-Gelb
-            var stationTransforms = new Transform[stationCount];
+            var stationWorkerPoints = new Transform[stationCount]; // Pendel-Ziele für den WorkerSpawner
             for (int i = 0; i < stationCount; i++)
             {
                 Vector3 pos = stationPos[i];
@@ -280,7 +280,6 @@ namespace HandwerkerImperium.Editor
                 SetRef(view, "stackAnchor", stackAnchor);
                 SetRef(view, "warePrefab", stationWares[i]); // Gewerk-eigene Ware im Stapel
                 SetRef(view, "unlockedVisual", modelRoot);
-                stationTransforms[i] = stGo.transform;
 
                 // Gewerk-Schild knapp über dem Zaun an der Plot-Front (über der Station läge es außerhalb
                 // des Kamera-Framings; höher im Sichtkegel würde es den Avatar verdecken)
@@ -344,13 +343,19 @@ namespace HandwerkerImperium.Editor
                     SetRef(plotView, "fenceVisual", fence);
                 }
 
-                // Worker-Hire-Pad seitlich vor jeder Station (zahlt erst nach Unlock — Domain prueft Unlocked)
-                Vector3 side = Vector3.Cross(Vector3.up, toCenter).normalized;
-                MakeHirePad($"Hire_{i}", pos + toCenter * 2.2f + side * 3.0f + Vector3.up * 0.1f, i, controller, workerPrefab, stationTransforms[i], counterGo.transform);
-
-                // Perfekt-Aktions-Pad (GDD §6.7) auf der Gegenseite: Tap-Timing -> Produktions-Buff
-                MakeMiniGamePad($"Boost_{i}", pos + toCenter * 2.2f - side * 3.0f + Vector3.up * 0.1f, i, runtime, controller);
+                // Worker-Pendel-Ziel je Station (für den modellgesteuerten WorkerSpawner unten).
+                // Anstellen/Tempo-Stufen laufen jetzt über das HUD-Verwaltungs-Panel (GDD §6.2) —
+                // keine Hire-/Boost-Boden-Platten mehr (Nutzer-Entscheidung 12.06.).
+                stationWorkerPoints[i] = stackAnchor;
             }
+
+            // Worker-NPCs aus dem Modell-Zustand spawnen (auch nach Save-Load) statt aus einem Pad.
+            var spawnerGo = new GameObject("WorkerSpawner");
+            var spawner = spawnerGo.AddComponent<WorkerSpawner>();
+            SetRef(spawner, "runtime", runtime);
+            SetRef(spawner, "workerNpcPrefab", workerPrefab);
+            SetRef(spawner, "counterPoint", counterGo.transform);
+            SetRefArray(spawner, "stationPoints", System.Array.ConvertAll(stationWorkerPoints, t => (Object)t));
 
             // Upgrade-Pads (3 Achsen) zentral links neben dem Tresen, beschriftet
             MakeUpgradePad("Pad_Tempo", new Vector3(-6f, 0.1f, 2.5f), UpgradeTrack.StationSpeed, controller, new Color(0.9f, 0.4f, 0.4f));
@@ -370,8 +375,8 @@ namespace HandwerkerImperium.Editor
             MakeLandmark("stadttor", "Stadttor", new Vector3(0f, 0f, 16f), 4.5f,
                 ModelDir + "/landmark_gate_ruined.glb", ModelDir + "/landmark_gate_restored.glb", controller);
 
-            // Free-Cash-Pad (GDD §9.1) auf dem Platz: 2x Einkommen je Zeitblock + Münz-Regen
-            MakeFreeCashPad(new Vector3(6f, 0.1f, -3.5f), runtime, controller, coinPrefab);
+            // Gratis-Geld (GDD §9.1) + Perfekt-Aktions-Boost laufen jetzt übers HUD bzw. sind in den
+            // Rush-Event/Worker-Tempo gefaltet — keine Boden-Platten mehr (Nutzer-Entscheidung 12.06.).
 
             // Deko-Schicht gegen den "leeren Hof": Laternen (mit warmem Punktlicht), Fässer,
             // Blumenbeete am Plaza-Rand, Handkarren — nur platziert, wenn das Pipeline-GLB existiert.
@@ -1114,99 +1119,6 @@ namespace HandwerkerImperium.Editor
             Paint(core, Color.Lerp(accent, Color.white, 0.45f));
         }
 
-        /// <summary>
-        /// Perfekt-Aktions-Pad (GDD §6.7): Sockel + fester Gold-Ziel-Ring + weiße Puls-Scheibe
-        /// KNAPP DARUNTER — schrumpft die Puls-Scheibe, verschwindet ihr weißer Rand exakt im
-        /// Deckungs-Moment unter dem Gold-Ring ("Rand weg = JETZT tippen"). Feedback-Text als Billboard.
-        /// </summary>
-        private static void MakeMiniGamePad(string name, Vector3 pos, int stationIndex,
-            RuntimeGameController runtime, GreyboxGameController controller)
-        {
-            var pad = MakeTriggerZone(name, pos, new Vector3(2.4f, 1.5f, 2.4f));
-
-            var socket = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            socket.name = "Socket";
-            Object.DestroyImmediate(socket.GetComponent<Collider>());
-            socket.transform.SetParent(pad.transform, false);
-            socket.transform.localScale = new Vector3(2.5f, 0.05f, 2.5f);
-            Paint(socket, new Color(0.74f, 0.71f, 0.66f));
-
-            var pulse = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            pulse.name = "PulseRing";
-            Object.DestroyImmediate(pulse.GetComponent<Collider>());
-            pulse.transform.SetParent(pad.transform, false);
-            pulse.transform.localScale = new Vector3(2.3f, 0.05f, 2.3f);
-            pulse.transform.localPosition = new Vector3(0f, 0.02f, 0f);
-            Paint(pulse, new Color(0.97f, 0.96f, 0.92f));
-
-            var target = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            target.name = "TargetRing";
-            Object.DestroyImmediate(target.GetComponent<Collider>());
-            target.transform.SetParent(pad.transform, false);
-            target.transform.localScale = new Vector3(1.2f, 0.055f, 1.2f);
-            target.transform.localPosition = new Vector3(0f, 0.035f, 0f);
-            Paint(target, new Color(1.0f, 0.78f, 0.20f));
-
-            var feedbackRoot = new GameObject("Feedback");
-            feedbackRoot.transform.SetParent(pad.transform, false);
-            feedbackRoot.transform.localPosition = new Vector3(0f, 1.6f, 0f);
-            feedbackRoot.AddComponent<BillboardLabel>();
-            var tm = feedbackRoot.AddComponent<TextMesh>();
-            tm.anchor = TextAnchor.MiddleCenter;
-            tm.alignment = TextAlignment.Center;
-            tm.fontSize = 64;
-            tm.characterSize = 0.30f * 10f / 64f;
-            var feedbackFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (feedbackFont != null)
-            {
-                tm.font = feedbackFont;
-                feedbackRoot.GetComponent<MeshRenderer>().sharedMaterial = feedbackFont.material;
-            }
-
-            var view = pad.AddComponent<MiniGamePadView>();
-            SetRef(view, "runtime", runtime);
-            SetRef(view, "controller", controller);
-            SetInt(view, "stationIndex", stationIndex);
-            SetRef(view, "pulseRing", pulse.transform);
-            SetRef(view, "targetRing", target.transform);
-            SetRef(view, "feedbackText", tm);
-
-            var label = MakeSign("Boost", pos + Vector3.up * 1.0f, 0.24f, new Color(1.0f, 0.62f, 0.20f), post: true);
-            label.transform.SetParent(pad.transform, true);
-        }
-
-        /// <summary>Free-Cash-Pad (GDD §9.1): Gold-Pad + Countdown-Schild; Claim + Münz-Regen via FreeCashPadView.</summary>
-        private static void MakeFreeCashPad(Vector3 pos, RuntimeGameController runtime, GreyboxGameController controller, GameObject coinPrefab)
-        {
-            var pad = MakeTriggerZone("FreeCashPad", pos, new Vector3(2.5f, 1.5f, 2.5f));
-            MakePadVisual(pad.transform, new Color(1.0f, 0.78f, 0.20f)); // Gold
-            var core = pad.transform.Find("Core");
-
-            var labelRoot = new GameObject("Label");
-            labelRoot.transform.SetParent(pad.transform, false);
-            labelRoot.transform.localPosition = new Vector3(0f, 1.2f, 0f);
-            labelRoot.AddComponent<BillboardLabel>();
-            var tm = labelRoot.AddComponent<TextMesh>();
-            tm.text = "Gratis-Geld!";
-            tm.anchor = TextAnchor.MiddleCenter;
-            tm.alignment = TextAlignment.Center;
-            tm.fontSize = 64;
-            tm.characterSize = 0.28f * 10f / 64f;
-            var cashFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (cashFont != null)
-            {
-                tm.font = cashFont;
-                labelRoot.GetComponent<MeshRenderer>().sharedMaterial = cashFont.material;
-            }
-
-            var view = pad.AddComponent<FreeCashPadView>();
-            SetRef(view, "runtime", runtime);
-            SetRef(view, "controller", controller);
-            SetRef(view, "cashPrefab", coinPrefab);
-            SetRef(view, "labelText", tm);
-            if (core != null) SetRef(view, "readyVisual", core.gameObject);
-        }
-
         private static void MakeUpgradePad(string name, Vector3 pos, UpgradeTrack track, GreyboxGameController controller, Color color)
         {
             var pad = MakeTriggerZone(name, pos, new Vector3(2.5f, 1.5f, 2.5f));
@@ -1214,22 +1126,6 @@ namespace HandwerkerImperium.Editor
             var view = pad.AddComponent<UpgradePadView>();
             SetEnum(view, "track", (int)track);
             SetRef(view, "controller", controller);
-        }
-
-        private static void MakeHirePad(string name, Vector3 pos, int stationIndex, GreyboxGameController controller, GameObject workerPrefab, Transform stationPoint, Transform counterPoint)
-        {
-            var pad = MakeTriggerZone(name, pos, new Vector3(2.5f, 1.5f, 2.5f));
-            MakePadVisual(pad.transform, new Color(0.2f, 0.8f, 0.9f));
-            var view = pad.AddComponent<WorkerHirePadView>();
-            SetInt(view, "stationIndex", stationIndex);
-            SetRef(view, "controller", controller);
-            SetRef(view, "workerNpcPrefab", workerPrefab);
-            SetRef(view, "stationPoint", stationPoint);
-            SetRef(view, "counterPoint", counterPoint);
-            SetRef(view, "spawnPoint", pad.transform);
-            var label = MakeSign("Arbeiter", pos + Vector3.up * 1.0f, 0.24f, new Color(0.15f, 0.75f, 0.85f), post: true);
-            label.transform.SetParent(pad.transform, true); // verschwindet mit dem Pad (Max-Stufe)
-            SetRef(view, "labelText", label.GetComponentInChildren<TextMesh>()); // Pad aktualisiert: Arbeiter -> Tempo x/4 -> MAX
         }
 
         private static GameObject MakeBox(string name, Vector3 pos, Vector3 scale, Color color, bool trigger)

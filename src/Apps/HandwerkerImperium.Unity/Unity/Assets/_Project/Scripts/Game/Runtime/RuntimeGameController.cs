@@ -157,6 +157,37 @@ namespace HandwerkerImperium.Game
         public void ApplyStationBoost(int stationIndex, decimal multiplier, double durationSeconds) =>
             GreyboxSimulation.ApplyBoost(_model.Idle, stationIndex, (double)multiplier, durationSeconds);
 
+        // ── Worker-Verwaltung (HUD-Panel, GDD §6.2: Anstellen + Tempo-Stufen statt Boden-Platten) ──
+
+        /// <summary>Anzahl Stationen (für das Verwaltungs-Panel).</summary>
+        public int StationCount => _model != null ? _model.Idle.Stations.Count : 0;
+
+        /// <summary>Schnappschuss des Worker-/Station-Status für eine Zeile des Verwaltungs-Panels.</summary>
+        public WorkerRowInfo GetWorkerRow(int i)
+        {
+            var st = _model.Idle.Stations[i];
+            int max = _idleBal.WorkerMaxLevel;
+            return new WorkerRowInfo
+            {
+                Unlocked = st.Unlocked,
+                HasWorker = st.HasWorker,
+                Level = st.WorkerLevel,
+                MaxLevel = max,
+                HireCost = _idleBal.WorkerHireCost,
+                UpgradeCost = GreyboxSimulation.WorkerUpgradeCostFor(_model.Idle, _idleBal, i),
+                AtMax = st.HasWorker && st.WorkerLevel >= max
+            };
+        }
+
+        /// <summary>Stellt den Worker einer Station an (HUD-Panel). Liefert true bei Erfolg.</summary>
+        public bool HireWorker(int i) => GreyboxSimulation.HireWorker(_model.Idle, _idleBal, i);
+
+        /// <summary>Kauft die nächste Worker-Tempo-Stufe (HUD-Panel). Liefert true bei Erfolg.</summary>
+        public bool UpgradeWorker(int i) => GreyboxSimulation.UpgradeWorker(_model.Idle, _idleBal, i);
+
+        /// <summary>Aktueller Geldstand (für Affordability-Checks im Panel).</summary>
+        public decimal Money => _model != null ? _model.Idle.Money : 0m;
+
         /// <summary>Free-Cash-Pad (per Ad): 2× Einkommen je Zeitblock. Liefert den gutgeschriebenen Betrag.</summary>
         public decimal ClaimFreeCash()
         {

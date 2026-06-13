@@ -26,6 +26,18 @@
             <ui:Label name="task-2" text="" class="task-row" picking-mode="Ignore"/>
         </ui:VisualElement>
         <ui:Label name="story-toast" text="" class="story-toast story-toast--hidden" picking-mode="Ignore"/>
+        <!-- Arbeiter-Verwaltung: Button (rechts unten) öffnet das Panel; Zeilen baut der Binder dynamisch.
+             Ersetzt die früheren Hold-to-Pay-Boden-Platten (GDD §6.2, Nutzer-Entscheidung). -->
+        <ui:Button name="worker-button" text="Arbeiter" class="worker-button"/>
+        <!-- Gratis-Geld (GDD §9.1): HUD-Button mit Countdown statt Boden-Platte -->
+        <ui:Button name="freecash-button" text="Gratis-Geld" class="freecash-button"/>
+        <ui:VisualElement name="worker-overlay" class="modal-overlay modal-overlay--hidden">
+            <ui:VisualElement name="worker-card" class="worker-card">
+                <ui:Label text="Arbeiter-Verwaltung" class="modal-title"/>
+                <ui:ScrollView name="worker-list" class="worker-list"/>
+                <ui:Button name="worker-close" text="Schließen" class="modal-button"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
         <!-- Offline-Verdienst-Modal ("Während du weg warst") — blockiert bewusst den Input, bis bestätigt. -->
         <ui:VisualElement name="offline-overlay" class="modal-overlay modal-overlay--hidden">
             <ui:VisualElement name="offline-card" class="modal-card">

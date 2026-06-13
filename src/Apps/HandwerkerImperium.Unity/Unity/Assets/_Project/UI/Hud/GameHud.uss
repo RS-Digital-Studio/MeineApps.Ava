@@ -182,3 +182,96 @@
 
 .prestige-button:hover { background-color: rgb(255, 215, 110); }
 .prestige-button--hidden { display: none; }
+
+/* ── Arbeiter-Verwaltung ────────────────────────────────────────────────── */
+
+/* Öffnen-Button: rechts unten, über dem rechten Touch-/Tap-Bereich (Joystick liegt links) */
+.worker-button {
+    position: absolute;
+    right: 18px; bottom: 22px;
+    background-color: rgba(38, 27, 17, 0.92);
+    color: rgb(250, 244, 232);
+    font-size: 16px;
+    -unity-font-style: bold;
+    border-radius: 14px;
+    border-width: 2px;
+    border-color: rgb(217, 119, 6);
+    padding: 12px 22px;
+}
+.worker-button:hover { background-color: rgba(60, 42, 24, 0.95); }
+
+.worker-card {
+    background-color: rgb(46, 33, 21);
+    border-radius: 18px;
+    border-width: 2px;
+    border-color: rgb(217, 119, 6);
+    padding: 20px 24px 20px 24px;
+    align-items: stretch;
+    width: 76%;
+    max-width: 720px;
+    max-height: 80%;
+}
+
+.worker-list {
+    margin: 12px 0 14px 0;
+    min-height: 200px;
+    max-height: 460px;
+}
+
+/* Eine Werkstatt-Zeile: Name links, Status mittig, Kauf-Button rechts */
+.worker-row {
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(28, 20, 12, 0.7);
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+}
+.worker-row__name {
+    color: rgb(250, 244, 232);
+    font-size: 16px;
+    -unity-font-style: bold;
+    flex-grow: 1;
+}
+.worker-row__status {
+    color: rgb(214, 190, 160);
+    font-size: 13px;
+    width: 150px;
+    -unity-text-align: middle-left;
+}
+.worker-row__action {
+    background-color: rgb(217, 119, 6);
+    color: rgb(28, 18, 8);
+    font-size: 14px;
+    -unity-font-style: bold;
+    border-radius: 9px;
+    border-width: 0;
+    padding: 7px 14px;
+    min-width: 120px;
+}
+.worker-row__action:hover { background-color: rgb(240, 150, 40); }
+/* nicht leistbar / abgeschlossen: gedämpft + nicht klickbar */
+.worker-row__action--disabled {
+    background-color: rgba(90, 74, 52, 0.7);
+    color: rgba(220, 205, 180, 0.6);
+}
+.worker-row--locked .worker-row__name { color: rgba(214, 190, 160, 0.5); }
+
+/* Gratis-Geld-Button: links neben dem Arbeiter-Button */
+.freecash-button {
+    position: absolute;
+    right: 150px; bottom: 22px;
+    background-color: rgba(38, 27, 17, 0.92);
+    color: rgb(255, 211, 92);
+    font-size: 16px;
+    -unity-font-style: bold;
+    border-radius: 14px;
+    border-width: 2px;
+    border-color: rgb(255, 196, 56);
+    padding: 12px 22px;
+}
+.freecash-button:hover { background-color: rgba(60, 42, 24, 0.95); }
+.freecash-button--cooldown {
+    color: rgba(214, 190, 160, 0.7);
+    border-color: rgba(120, 96, 56, 0.7);
+}

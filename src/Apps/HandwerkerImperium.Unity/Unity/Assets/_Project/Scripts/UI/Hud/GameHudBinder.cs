@@ -41,14 +41,25 @@ namespace HandwerkerImperium.UI.Hud
             { "dt_cash_10000", "10.000 Geld ansammeln" },
         };
 
+        // Gewerk-Namen für das Verwaltungs-Panel (Reihenfolge = Stations-Index, GDD §6.1)
+        private static readonly string[] StationNames =
+        {
+            "Schreinerei", "Klempnerei", "Elektriker", "Malerei", "Dachdeckerei",
+            "Bauunternehmen", "Architekturbüro", "Generalunternehmer", "Meisterschmiede", "Innovationslabor"
+        };
+
         private Label _money, _income, _gems, _city, _star, _toast, _offlineAmount, _prestigeBonus;
-        private VisualElement _offlineOverlay, _prestigeOverlay;
+        private VisualElement _offlineOverlay, _prestigeOverlay, _workerOverlay;
+        private ScrollView _workerList;
         private Button _prestigeButton;
         private readonly Label[] _tasks = new Label[3];
         private float _slowTimer;
         private float _toastTimer;
         private string _lastBeat = "";
         private bool _offlineShown;
+        private bool _workerPanelOpen;
+        private Button _freeCashButton;
+        private float _freeCashReadyTime;
 
         private void OnEnable()
         {
@@ -80,6 +91,37 @@ namespace HandwerkerImperium.UI.Hud
                         audioHub?.Play(GameSfx.MoneyEarned);
                     }
                     doubleButton.SetEnabled(false); // einmalig je Start
+                };
+
+            // Arbeiter-Verwaltungs-Panel (GDD §6.2)
+            _workerOverlay = root.Q<VisualElement>("worker-overlay");
+            _workerList = root.Q<ScrollView>("worker-list");
+            var workerButton = root.Q<Button>("worker-button");
+            if (workerButton != null)
+                workerButton.clicked += () =>
+                {
+                    audioHub?.Play(GameSfx.ButtonTap);
+                    OpenWorkerPanel();
+                };
+            var workerClose = root.Q<Button>("worker-close");
+            if (workerClose != null)
+                workerClose.clicked += () =>
+                {
+                    audioHub?.Play(GameSfx.ButtonTap);
+                    _workerPanelOpen = false;
+                    _workerOverlay?.AddToClassList("modal-overlay--hidden");
+                };
+
+            // Gratis-Geld (GDD §9.1): HUD-Button mit Countdown statt Boden-Platte
+            _freeCashButton = root.Q<Button>("freecash-button");
+            if (_freeCashButton != null)
+                _freeCashButton.clicked += () =>
+                {
+                    if (controller == null || Time.time < _freeCashReadyTime) return;
+                    decimal reward = controller.ClaimFreeCash();
+                    if (reward <= 0m) return;
+                    _freeCashReadyTime = Time.time + (float)controller.Balancing.Monetization.FreeCashBlockSeconds;
+                    audioHub?.Play(GameSfx.OfflineEarnings);
                 };
 
             _prestigeButton = root.Q<Button>("prestige-button");
@@ -136,6 +178,8 @@ namespace HandwerkerImperium.UI.Hud
                 _city.text = "Stadt " + (m.Meta.CityIndex + 1);
                 _star.text = "Stern " + m.Meta.CurrentStar + "/5";
                 UpdateTasks(m);
+                if (_workerPanelOpen) RebuildWorkerList(); // Leistbarkeit folgt dem Geldstand
+                UpdateFreeCashButton();
 
                 // Prestige-Button erscheint, sobald der Umzug möglich ist (5★, Limit nicht erreicht)
                 if (_prestigeButton != null)
@@ -196,6 +240,112 @@ namespace HandwerkerImperium.UI.Hud
                 if (_toastTimer <= 0f)
                     _toast.AddToClassList("story-toast--hidden");
             }
+        }
+
+        /// <summary>Öffnet das Worker-Verwaltungs-Panel und baut die Zeilen aus dem Modell-Status.</summary>
+        private void OpenWorkerPanel()
+        {
+            if (_workerOverlay == null) return;
+            _workerPanelOpen = true;
+            _workerOverlay.RemoveFromClassList("modal-overlay--hidden");
+            RebuildWorkerList();
+        }
+
+        /// <summary>
+        /// Baut/aktualisiert die Werkstatt-Zeilen (Name · Status · Kauf-Button). Anstellen + Tempo-
+        /// Stufen laufen direkt über den Controller; nach jedem Kauf wird die Liste neu aufgebaut.
+        /// Wird auch periodisch refresht, solange das Panel offen ist (Leistbarkeit folgt dem Geld).
+        /// </summary>
+        private void RebuildWorkerList()
+        {
+            if (_workerList == null || controller == null) return;
+            _workerList.Clear();
+            int n = controller.StationCount;
+            for (int i = 0; i < n; i++)
+            {
+                int idx = i; // Closure-Capture
+                var info = controller.GetWorkerRow(i);
+
+                var row = new VisualElement();
+                row.AddToClassList("worker-row");
+                if (!info.Unlocked) row.AddToClassList("worker-row--locked");
+
+                var name = new Label(idx < StationNames.Length ? StationNames[idx] : "Gewerk " + (idx + 1));
+                name.AddToClassList("worker-row__name");
+                row.Add(name);
+
+                var status = new Label();
+                status.AddToClassList("worker-row__status");
+                row.Add(status);
+
+                var action = new Button();
+                action.AddToClassList("worker-row__action");
+                row.Add(action);
+
+                if (!info.Unlocked)
+                {
+                    status.text = "gesperrt";
+                    action.text = "—";
+                    action.AddToClassList("worker-row__action--disabled");
+                    action.SetEnabled(false);
+                }
+                else if (!info.HasWorker)
+                {
+                    status.text = "kein Arbeiter";
+                    action.text = "Anstellen " + MoneyFormat.Short(info.HireCost);
+                    bool afford = controller.Money >= info.HireCost;
+                    SetActionState(action, afford);
+                    action.clicked += () =>
+                    {
+                        if (controller.HireWorker(idx)) { audioHub?.Play(GameSfx.WorkerHired); RebuildWorkerList(); }
+                    };
+                }
+                else if (info.AtMax)
+                {
+                    status.text = "Tempo MAX (" + info.MaxLevel + ")";
+                    action.text = "Maximal";
+                    action.AddToClassList("worker-row__action--disabled");
+                    action.SetEnabled(false);
+                }
+                else
+                {
+                    status.text = "Tempo " + info.Level + "/" + info.MaxLevel;
+                    action.text = "Tempo +1  " + MoneyFormat.Short(info.UpgradeCost);
+                    bool afford = controller.Money >= info.UpgradeCost;
+                    SetActionState(action, afford);
+                    action.clicked += () =>
+                    {
+                        if (controller.UpgradeWorker(idx)) { audioHub?.Play(GameSfx.UpgradePaid); RebuildWorkerList(); }
+                    };
+                }
+
+                _workerList.Add(row);
+            }
+        }
+
+        /// <summary>Gratis-Geld-Button: „bereit" oder Countdown (mm:ss), abgekühlt gedämpft.</summary>
+        private void UpdateFreeCashButton()
+        {
+            if (_freeCashButton == null) return;
+            bool ready = Time.time >= _freeCashReadyTime;
+            if (ready)
+            {
+                _freeCashButton.text = "Gratis-Geld";
+                _freeCashButton.RemoveFromClassList("freecash-button--cooldown");
+            }
+            else
+            {
+                int rem = Mathf.CeilToInt(_freeCashReadyTime - Time.time);
+                _freeCashButton.text = $"Gratis-Geld {rem / 60}:{rem % 60:00}";
+                _freeCashButton.AddToClassList("freecash-button--cooldown");
+            }
+        }
+
+        private static void SetActionState(Button action, bool affordable)
+        {
+            action.SetEnabled(affordable);
+            if (affordable) action.RemoveFromClassList("worker-row__action--disabled");
+            else action.AddToClassList("worker-row__action--disabled");
         }
 
         /// <summary>Öffnet das Prestige-Modal mit dem konkreten Multiplikator-Sprung (×alt → ×neu).</summary>

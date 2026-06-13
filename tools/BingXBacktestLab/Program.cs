@@ -157,6 +157,10 @@ if (GetArg(argMap, "xsec", null) != null)
         ? XsecScreen.ResearchConfigs()
         : GetArg(argMap, "xsec-grid", null) is "strategies"
         ? XsecScreen.StrategyConfigs()
+        : GetArg(argMap, "xsec-grid", null) is "fine"
+        ? XsecScreen.FineConfigs()
+        : GetArg(argMap, "xsec-grid", null) is "final"
+        ? XsecScreen.FinalConfigs()
         : XsecScreen.DefaultConfigs();
     return await XsecScreen.RunAsync(configs, PhaseScreen.DefaultPhases(), symbols, navTf,
         botSettings, memData, symbolInfo, balance, parallelism, outDir, label);

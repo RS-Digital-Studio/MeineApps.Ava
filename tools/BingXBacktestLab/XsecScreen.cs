@@ -97,6 +97,40 @@ internal static class XsecScreen
         new(LookbackCandles: 84, RebalanceEveryCandles: 42, LongK: 3, ShortK: 0, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.Momentum, SkipCandles: 18), // Long-only + Skip
     ];
 
+    /// <summary>
+    /// Feinoptimierung um den bestaetigten Gewinner L84/R42 (14d/woechentlich, market-neutral) — die
+    /// "besten Einstellungen": Lookback {60,72,84,96} × Rebalance {30,42,54} × K {2,3,4}, alle radj/lev1.
+    /// Literatur-Fenster (10-35d Lookback, 7-14d Rebalance) wird damit feingerastert abgedeckt.
+    /// </summary>
+    public static XsecParams[] FineConfigs()
+    {
+        var list = new List<XsecParams>();
+        foreach (var lb in new[] { 60, 72, 84, 96 })
+            foreach (var rb in new[] { 30, 42, 54 })
+                foreach (var k in new[] { 2, 3, 4 })
+                    list.Add(new(LookbackCandles: lb, RebalanceEveryCandles: rb, LongK: k, ShortK: k,
+                        RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.Momentum));
+        return [.. list];
+    }
+
+    /// <summary>
+    /// Finale Bestaetigung des Fein-Gewinners L60/R54/3L-3S: lev1 vs lev2 (Live-Hebel) + Vol-Targeting-
+    /// Varianten (Ziel-Jahres-Vol 30/50/70%) + 2L-2S/4L-4S-Nachbarn zur Plateau-Bestaetigung.
+    /// </summary>
+    public static XsecParams[] FinalConfigs() =>
+    [
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 2, ShortK: 2, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 4, ShortK: 4, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, VolTargetAnnualPct: 30m),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, VolTargetAnnualPct: 50m),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, VolTargetAnnualPct: 70m),
+        // Referenz: aktuelles Live-Profil + frueherer Kandidat (zum direkten Vergleich)
+        new(LookbackCandles: 120, RebalanceEveryCandles: 126, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 84, RebalanceEveryCandles: 42, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+    ];
+
     private static async Task<XsecCell> EvaluateAsync(
         XsecParams cfg, Phase phase, IReadOnlyList<string> symbols, TimeFrame navTf,
         BotSettings settings, decimal balance, IPublicMarketDataClient data,

@@ -43,10 +43,15 @@ public enum XsecMode
 ///   (Risk-Parity-Overlay; Literatur: Vol-Targeting/Risk-Management hebt Krypto-Momentum-Sharpe).</param>
 /// <param name="SkipCandles">Skip-Period: juengste N Kerzen vom Momentum-Fenster ausschliessen
 ///   (klassischer 12-1-Momentum-Skip gegen kurzfristige Reversal-Kontamination). Nur Momentum/Reversal.</param>
+/// <param name="VolTargetAnnualPct">Portfolio-Vol-Targeting: Ziel-Jahres-Vol der Strategie-Equity in %
+///   (0 = aus). Skaliert die GESAMT-Exposure zeitvariabel (Ziel/realisiert, gekappt 0.25..2.0) — in
+///   ruhigen Phasen hoch, in volatilen runter. Anders als InverseVolWeight (within-basket): das hier
+///   ist die zeitvariable Gesamt-Exposure (Literatur: hebt TSMOM-Sharpe ~3x, aber conditional).</param>
 public readonly record struct XsecParams(
     int LookbackCandles, int RebalanceEveryCandles, int LongK, int ShortK,
     bool RiskAdjusted, decimal AtrStopMultiplier, int LeverageCap = 0,
-    XsecMode Mode = XsecMode.Momentum, bool InverseVolWeight = false, int SkipCandles = 0)
+    XsecMode Mode = XsecMode.Momentum, bool InverseVolWeight = false, int SkipCandles = 0,
+    decimal VolTargetAnnualPct = 0m)
 {
     public int Slots => LongK + ShortK;
     public string Label =>
@@ -55,6 +60,7 @@ public readonly record struct XsecParams(
         + $"{(RiskAdjusted && Mode != XsecMode.LowVol ? "/radj" : "")}"
         + $"{(SkipCandles > 0 ? $"/skip{SkipCandles}" : "")}"
         + $"{(InverseVolWeight ? "/ivw" : "")}"
+        + $"{(VolTargetAnnualPct > 0 ? $"/vt{VolTargetAnnualPct:0}" : "")}"
         + $"{(AtrStopMultiplier > 0 ? $"/stop{AtrStopMultiplier:0.0}" : "")}"
         + $"{(LeverageCap > 0 ? $"/lev{LeverageCap}" : "")}";
 }
@@ -145,7 +151,9 @@ public sealed class CrossSectionalMomentumEngine(
             var eligibleStart = step >= 0 && states.Any(s => s.NavIdx >= p.LookbackCandles + p.SkipCandles && t >= s.TradingStartCloseTime);
             if (eligibleStart && (lastRebalanceStep == int.MinValue || step - lastRebalanceStep >= p.RebalanceEveryCandles))
             {
-                await RebalanceAsync(sim, states, settings, p, slots, leverageSet, t, ct).ConfigureAwait(false);
+                // Portfolio-Vol-Targeting: Gesamt-Exposure nach realisierter Equity-Vol skalieren.
+                var volScale = p.VolTargetAnnualPct > 0m ? ComputeVolScale(equityCurve, p.VolTargetAnnualPct) : 1m;
+                await RebalanceAsync(sim, states, settings, p, slots, leverageSet, t, volScale, ct).ConfigureAwait(false);
                 lastRebalanceStep = step;
             }
 
@@ -167,7 +175,7 @@ public sealed class CrossSectionalMomentumEngine(
 
     private async Task RebalanceAsync(
         SimulatedExchange sim, List<PortfolioSymbolState> states, BotSettings settings, XsecParams p,
-        int slots, HashSet<string> leverageSet, DateTime t, CancellationToken ct)
+        int slots, HashSet<string> leverageSet, DateTime t, decimal volScale, CancellationToken ct)
     {
         // 1.+2. Ziel-Korb. Momentum nutzt den GETEILTEN MomentumBasketCalculator (identisch zur
         // Live-Logik); Reversal/LowVol sind Lab-Forschungs-Modi (lokal, Live unberuehrt).
@@ -194,7 +202,7 @@ public sealed class CrossSectionalMomentumEngine(
         var acc = await sim.GetAccountInfoAsync().ConfigureAwait(false);
         var equity = acc.Balance + acc.UnrealizedPnl;
         if (equity <= 0m || slots <= 0) return;
-        var totalMargin = equity * MarginUtilization;
+        var totalMargin = equity * MarginUtilization * volScale;   // volScale=1 wenn Vol-Targeting aus
 
         // Inverse-Vol-Gewichte (1/ATR%) je Korb-Symbol, normalisiert auf Summe 1 → perSymbolMargin.
         // Ohne Flag: Gleichgewicht (jedes Symbol 1/Slots). Geteilt fuer Long+Short (Gross-Exposure-Split).
@@ -285,6 +293,32 @@ public sealed class CrossSectionalMomentumEngine(
         return sum > 0m
             ? inv.ToDictionary(kv => kv.Key, kv => kv.Value / sum)
             : target.ToDictionary(kv => kv.Key, _ => 1m / n);
+    }
+
+    /// <summary>
+    /// Portfolio-Vol-Targeting-Skalierung: realisierte annualisierte Vol der Strategie-Equity (aus den
+    /// letzten ~30 Tages-Snapshots) gegen die Ziel-Vol; Faktor = Ziel/realisiert, gekappt 0.25..2.0.
+    /// Bei zu wenig Historie oder Null-Vol = 1 (kein Eingriff). Snapshots ~1/Tag (EquitySnapshotEverySteps).
+    /// </summary>
+    private static decimal ComputeVolScale(List<EquityPoint> equity, decimal targetAnnualPct)
+    {
+        const int window = 30;   // ~30 Tage
+        if (equity.Count < window + 1) return 1m;
+        var recent = equity.Skip(equity.Count - (window + 1)).ToList();
+        var rets = new List<double>();
+        for (var i = 1; i < recent.Count; i++)
+        {
+            var prev = (double)recent[i - 1].Equity;
+            if (prev > 0) rets.Add((double)recent[i].Equity / prev - 1.0);
+        }
+        if (rets.Count < 5) return 1m;
+        var mean = rets.Average();
+        var variance = rets.Sum(r => (r - mean) * (r - mean)) / (rets.Count - 1);
+        var dailyVol = Math.Sqrt(variance);
+        var annualVol = dailyVol * Math.Sqrt(365.0) * 100.0;   // in %
+        if (annualVol <= 0.01) return 1m;
+        var scale = (double)targetAnnualPct / annualVol;
+        return (decimal)Math.Clamp(scale, 0.25, 2.0);
     }
 
     /// <summary>ATR%(14) = ATR/letzter Close — vergleichbare Volatilitaet ueber Symbole hinweg.</summary>

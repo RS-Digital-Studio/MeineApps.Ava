@@ -12,24 +12,48 @@ using Microsoft.Extensions.Logging;
 namespace BingXBot.Backtest.Portfolio;
 
 /// <summary>
-/// Cross-Sectional-Momentum-Parameter. Bewusst parameterarm (Overfitting-Schutz).
+/// Selektions-Modus des Cross-Sectional-Korbs (Lab-Forschung, Live nutzt ausschliesslich Momentum).
 /// </summary>
-/// <param name="LookbackCandles">Momentum-Lookback in Nav-Kerzen (H4). ROC = Close[t]/Close[t-Lookback]-1.</param>
+public enum XsecMode
+{
+    /// <summary>Long Top-K Momentum / short Bottom-K (klassisch, Live-Default).</summary>
+    Momentum,
+    /// <summary>Long Bottom-K Momentum / short Top-K — wettet auf Reversal (Literatur: Krypto-CS kippt
+    /// jenseits ~1 Monat in Reversal; starker Tages-Reversal im breiten Querschnitt).</summary>
+    Reversal,
+    /// <summary>Long niedrigste Vol (ATR%) / short hoechste Vol — Betting-against-Beta / Low-Vol-Praemie
+    /// (Literatur: positive Low-Vol-Praemie in Krypto post-2017, negativer Vol-Risk-Premium).</summary>
+    LowVol,
+}
+
+/// <summary>
+/// Cross-Sectional-Korb-Parameter. Bewusst parameterarm (Overfitting-Schutz).
+/// </summary>
+/// <param name="LookbackCandles">Lookback in Nav-Kerzen (H4). Momentum/Reversal: ROC ueber Lookback. LowVol: ATR-Fenster.</param>
 /// <param name="RebalanceEveryCandles">Rebalance-Intervall in Nav-Kerzen (H4). 42 ≈ 1 Woche.</param>
-/// <param name="LongK">Anzahl Long-Slots (staerkste Momentum-Symbole). 0 = keine Longs.</param>
-/// <param name="ShortK">Anzahl Short-Slots (schwaechste). 0 = Long-only.</param>
-/// <param name="RiskAdjusted">Momentum durch ATR% normalisieren (vol-bereinigtes Ranking).</param>
+/// <param name="LongK">Anzahl Long-Slots. 0 = keine Longs.</param>
+/// <param name="ShortK">Anzahl Short-Slots. 0 = Long-only.</param>
+/// <param name="RiskAdjusted">Momentum durch ATR% normalisieren (vol-bereinigtes Ranking). Nur Momentum/Reversal.</param>
 /// <param name="AtrStopMultiplier">Per-Position-ATR-Stop zwischen Rebalances. 0 = reiner Rebalance ohne Stop.</param>
 /// <param name="LeverageCap">Obergrenze fuer das Per-Position-Leverage (0 = Kategorie-Leverage aus den Settings).
 ///   Begrenzt das Gross-Leverage des Korbs — entscheidend auf dem Mini-Konto, wo 5× × Auslastung in
 ///   volatilen Crypto-Crashes zu Totalverlust-naher Varianz fuehrt.</param>
+/// <param name="Mode">Selektions-Modus (Momentum/Reversal/LowVol). Live = Momentum.</param>
+/// <param name="InverseVolWeight">Slots nach inverser Vol (1/ATR%) gewichten statt gleichgewichtet
+///   (Risk-Parity-Overlay; Literatur: Vol-Targeting/Risk-Management hebt Krypto-Momentum-Sharpe).</param>
 public readonly record struct XsecParams(
     int LookbackCandles, int RebalanceEveryCandles, int LongK, int ShortK,
-    bool RiskAdjusted, decimal AtrStopMultiplier, int LeverageCap = 0)
+    bool RiskAdjusted, decimal AtrStopMultiplier, int LeverageCap = 0,
+    XsecMode Mode = XsecMode.Momentum, bool InverseVolWeight = false)
 {
     public int Slots => LongK + ShortK;
     public string Label =>
-        $"L{LookbackCandles}/R{RebalanceEveryCandles}/{LongK}L-{ShortK}S{(RiskAdjusted ? "/radj" : "")}{(AtrStopMultiplier > 0 ? $"/stop{AtrStopMultiplier:0.0}" : "")}{(LeverageCap > 0 ? $"/lev{LeverageCap}" : "")}";
+        $"L{LookbackCandles}/R{RebalanceEveryCandles}/{LongK}L-{ShortK}S"
+        + $"{(Mode != XsecMode.Momentum ? $"/{Mode}" : "")}"
+        + $"{(RiskAdjusted && Mode != XsecMode.LowVol ? "/radj" : "")}"
+        + $"{(InverseVolWeight ? "/ivw" : "")}"
+        + $"{(AtrStopMultiplier > 0 ? $"/stop{AtrStopMultiplier:0.0}" : "")}"
+        + $"{(LeverageCap > 0 ? $"/lev{LeverageCap}" : "")}";
 }
 
 /// <summary>
@@ -142,15 +166,15 @@ public sealed class CrossSectionalMomentumEngine(
         SimulatedExchange sim, List<PortfolioSymbolState> states, BotSettings settings, XsecParams p,
         int slots, HashSet<string> leverageSet, DateTime t, CancellationToken ct)
     {
-        // 1.+2. Ziel-Korb ueber den GETEILTEN MomentumBasketCalculator (identisch zur Live-Logik):
-        // Slice = letzte Lookback+20 Kerzen bis zur aktuellen (candles[^1] = jetzt) → ROC + ATR%-Ranking.
+        // 1.+2. Ziel-Korb. Momentum nutzt den GETEILTEN MomentumBasketCalculator (identisch zur
+        // Live-Logik); Reversal/LowVol sind Lab-Forschungs-Modi (lokal, Live unberuehrt).
+        // Slice = letzte Lookback+20 Kerzen bis zur aktuellen (candles[^1] = jetzt).
         var universe = states
             .Where(s => s.NavIdx >= p.LookbackCandles && t >= s.TradingStartCloseTime)
             .Select(s => (s.Symbol, (IReadOnlyList<Candle>)s.ContextSlice(p.LookbackCandles + 20)))
             .ToList();
         if (universe.Count == 0) return;
-        var target = MomentumBasketCalculator.ComputeBasket(
-            universe, p.LookbackCandles, p.LongK, p.ShortK, p.RiskAdjusted);
+        var target = BuildTargetBasket(universe, p);
 
         // 3. Bestehende Positionen, die NICHT (mehr) zum Ziel-Korb passen (Symbol raus ODER Seite gedreht), schliessen.
         var positions = await sim.GetPositionsAsync().ConfigureAwait(false);
@@ -160,13 +184,18 @@ public sealed class CrossSectionalMomentumEngine(
                 await sim.ClosePositionAsync(pos.Symbol, pos.Side, isMakerClose: false).ConfigureAwait(false);
         }
 
-        // 4. Ziel-Positionen eroeffnen, die noch nicht gehalten werden (gleichgewichtet nach Equity×Leverage).
+        // 4. Ziel-Positionen eroeffnen, die noch nicht gehalten werden.
+        //    Gewichtung: gleichgewichtet (Default) ODER inverse-Vol (Risk-Parity-Overlay).
         positions = await sim.GetPositionsAsync().ConfigureAwait(false);
         var held = positions.Select(pp => $"{pp.Symbol}_{pp.Side}").ToHashSet();
         var acc = await sim.GetAccountInfoAsync().ConfigureAwait(false);
         var equity = acc.Balance + acc.UnrealizedPnl;
         if (equity <= 0m || slots <= 0) return;
-        var perSlotMargin = equity * MarginUtilization / slots;
+        var totalMargin = equity * MarginUtilization;
+
+        // Inverse-Vol-Gewichte (1/ATR%) je Korb-Symbol, normalisiert auf Summe 1 → perSymbolMargin.
+        // Ohne Flag: Gleichgewicht (jedes Symbol 1/Slots). Geteilt fuer Long+Short (Gross-Exposure-Split).
+        var weights = ComputeWeights(target, states, p);
 
         foreach (var (symbol, side) in target)
         {
@@ -184,13 +213,85 @@ public sealed class CrossSectionalMomentumEngine(
             if (leverageSet.Add(levKey))
                 await sim.SetLeverageAsync(symbol, leverage, side).ConfigureAwait(false);
 
-            var notional = perSlotMargin * leverage;
+            var symbolMargin = totalMargin * weights[symbol];
+            var notional = symbolMargin * leverage;
             var qty = notional / price;
             if (qty <= 0m) continue;
 
             // Market-Entry — SimulatedExchange lehnt unter Min-Order/Margin ab (live-treu), dann kein Slot.
             await sim.PlaceOrderAsync(new OrderRequest(symbol, side, OrderType.Market, qty)).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// Baut den Ziel-Korb je nach <see cref="XsecMode"/>. Momentum = geteilter Live-Calculator;
+    /// Reversal = long schwaechstes / short staerkstes Momentum; LowVol = long niedrigste / short
+    /// hoechste ATR%-Vol (Betting-against-Beta).
+    /// </summary>
+    private static Dictionary<string, Side> BuildTargetBasket(
+        List<(string Symbol, IReadOnlyList<Candle> Candles)> universe, XsecParams p)
+    {
+        if (p.Mode == XsecMode.Momentum)
+            return MomentumBasketCalculator.ComputeBasket(universe, p.LookbackCandles, p.LongK, p.ShortK, p.RiskAdjusted);
+
+        if (p.Mode == XsecMode.Reversal)
+        {
+            // Gleiches Momentum-Ranking, aber Seiten gespiegelt: long die schwaechsten (Bottom-K,
+            // negatives Momentum), short die staerksten (Top-K, positives Momentum).
+            var ranked = universe
+                .Select(u => (u.Symbol, Mom: MomentumBasketCalculator.Momentum(u.Candles, p.LookbackCandles, p.RiskAdjusted)))
+                .Where(x => x.Mom.HasValue)
+                .OrderBy(x => x.Mom!.Value)
+                .ToList();
+            var basket = new Dictionary<string, Side>();
+            foreach (var x in ranked.Where(x => x.Mom!.Value < 0m).Take(p.LongK))
+                basket[x.Symbol] = Side.Buy;                       // long die groessten Verlierer
+            foreach (var x in ranked.Where(x => x.Mom!.Value > 0m).OrderByDescending(x => x.Mom!.Value).Take(p.ShortK))
+                basket[x.Symbol] = Side.Sell;                      // short die groessten Gewinner
+            return basket;
+        }
+
+        // LowVol: rank nach ATR% (ATR/Close) aufsteigend → long niedrigste Vol, short hoechste.
+        var byVol = universe
+            .Select(u => (u.Symbol, Vol: AtrPercent(u.Candles)))
+            .Where(x => x.Vol > 0m)
+            .OrderBy(x => x.Vol)
+            .ToList();
+        var lv = new Dictionary<string, Side>();
+        foreach (var x in byVol.Take(p.LongK)) lv[x.Symbol] = Side.Buy;
+        foreach (var x in byVol.AsEnumerable().Reverse().Take(p.ShortK)) lv.TryAdd(x.Symbol, Side.Sell);
+        return lv;
+    }
+
+    /// <summary>Gleichgewicht (1/Slots je Symbol) oder inverse-Vol (1/ATR%, normalisiert auf Σ=1).</summary>
+    private static Dictionary<string, decimal> ComputeWeights(
+        Dictionary<string, Side> target, List<PortfolioSymbolState> states, XsecParams p)
+    {
+        var n = target.Count;
+        if (!p.InverseVolWeight || n == 0)
+            return target.ToDictionary(kv => kv.Key, _ => n > 0 ? 1m / n : 0m);
+
+        var inv = new Dictionary<string, decimal>();
+        foreach (var sym in target.Keys)
+        {
+            var s = states.First(x => x.Symbol == sym);
+            var vol = AtrPercent(s.ContextSlice(40));
+            inv[sym] = vol > 0m ? 1m / vol : 0m;
+        }
+        var sum = inv.Values.Sum();
+        return sum > 0m
+            ? inv.ToDictionary(kv => kv.Key, kv => kv.Value / sum)
+            : target.ToDictionary(kv => kv.Key, _ => 1m / n);
+    }
+
+    /// <summary>ATR%(14) = ATR/letzter Close — vergleichbare Volatilitaet ueber Symbole hinweg.</summary>
+    private static decimal AtrPercent(IReadOnlyList<Candle> candles)
+    {
+        if (candles.Count < 16) return 0m;
+        var atrList = IndicatorHelper.CalculateAtr(candles, 14);
+        var atr = atrList.Count > 0 && atrList[^1].HasValue ? atrList[^1]!.Value : 0m;
+        var close = candles[^1].Close;
+        return close > 0m && atr > 0m ? atr / close : 0m;
     }
 
     /// <summary>Per-Position-ATR-Stop: schliesst eine Position, wenn die aktuelle Kerze den Stop reisst.</summary>

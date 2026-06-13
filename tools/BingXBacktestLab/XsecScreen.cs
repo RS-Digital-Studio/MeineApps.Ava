@@ -67,6 +67,32 @@ internal static class XsecScreen
         new(LookbackCandles: 84,  RebalanceEveryCandles: 42,  LongK: 3, ShortK: 0, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1), // Long-only (Claim: Short-Leg ist Schwaeche)
     ];
 
+    /// <summary>
+    /// Strategie-Klassen-Vergleich (Recherche 13.06.2026): testet die ANDEREN recherchierten
+    /// Ansaetze neben Momentum gegen den besten Momentum-Anker (L84/R42), alle auf demselben
+    /// Universum/Phasen/Konto. Reversal (Krypto kippt jenseits ~1 Monat / Tages-Reversal),
+    /// LowVol/Betting-against-Beta (Low-Vol-Praemie post-2017), Inverse-Vol-Gewichtung
+    /// (Risk-Parity hebt Momentum-Sharpe), Long-only-Momentum (Short-Leg = Schwaeche).
+    /// </summary>
+    public static XsecParams[] StrategyConfigs() =>
+    [
+        // Momentum-Anker (beste Horizonte aus dem Research-Screen)
+        new(LookbackCandles: 84, RebalanceEveryCandles: 42, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.Momentum),
+        new(LookbackCandles: 84, RebalanceEveryCandles: 84, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.Momentum),
+        // Momentum + Inverse-Vol-Gewichtung (Risk-Parity-Overlay)
+        new(LookbackCandles: 84, RebalanceEveryCandles: 42, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.Momentum, InverseVolWeight: true),
+        // Long-only Momentum (Short-Leg-Schwaeche)
+        new(LookbackCandles: 84, RebalanceEveryCandles: 42, LongK: 3, ShortK: 0, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.Momentum),
+        // Reversal (kurzer + langer Horizont)
+        new(LookbackCandles: 42, RebalanceEveryCandles: 42, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.Reversal),
+        new(LookbackCandles: 180, RebalanceEveryCandles: 42, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.Reversal),
+        // Low-Vol / Betting-against-Beta
+        new(LookbackCandles: 84, RebalanceEveryCandles: 42, LongK: 3, ShortK: 3, RiskAdjusted: false, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.LowVol),
+        new(LookbackCandles: 84, RebalanceEveryCandles: 84, LongK: 3, ShortK: 3, RiskAdjusted: false, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.LowVol),
+        // Low-Vol long-only (nur long niedrigste Vol)
+        new(LookbackCandles: 84, RebalanceEveryCandles: 42, LongK: 3, ShortK: 0, RiskAdjusted: false, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.LowVol),
+    ];
+
     private static async Task<XsecCell> EvaluateAsync(
         XsecParams cfg, Phase phase, IReadOnlyList<string> symbols, TimeFrame navTf,
         BotSettings settings, decimal balance, IPublicMarketDataClient data,

@@ -155,6 +155,8 @@ if (GetArg(argMap, "xsec", null) != null)
             .ToArray()
         : GetArg(argMap, "xsec-grid", null) is "research"
         ? XsecScreen.ResearchConfigs()
+        : GetArg(argMap, "xsec-grid", null) is "strategies"
+        ? XsecScreen.StrategyConfigs()
         : XsecScreen.DefaultConfigs();
     return await XsecScreen.RunAsync(configs, PhaseScreen.DefaultPhases(), symbols, navTf,
         botSettings, memData, symbolInfo, balance, parallelism, outDir, label);

@@ -162,6 +162,18 @@ if (GetArg(argMap, "xsec", null) != null)
         botSettings, memData, symbolInfo, balance, parallelism, outDir, label);
 }
 
+// --- Pairs-Screen: Distance-Method Statistical Arbitrage ueber 4 Phasen. Eigener Pfad. ---
+if (GetArg(argMap, "pairs", null) != null)
+{
+    var balance = decimal.Parse(GetArg(argMap, "balance", "158")!, CultureInfo.InvariantCulture);
+    var navTf = tfs.Count > 0 ? tfs[0] : TimeFrame.H4;
+    var parallelism = Math.Max(1, int.Parse(GetArg(argMap, "sweep-parallel", Environment.ProcessorCount.ToString())!, CultureInfo.InvariantCulture));
+    var memData = new MemoryKlineCache(dataClient);
+    var symbolInfo = await BingXSymbolInfoProvider.LoadAsync(Path.Combine(toolDir, ".symbolinfo-cache"));
+    return await PairsScreen.RunAsync(PairsScreen.DefaultConfigs(), PhaseScreen.DefaultPhases(), symbols, navTf,
+        botSettings, memData, symbolInfo, balance, parallelism, outDir, label);
+}
+
 // --- Sweep-Modus (Parameter-Grid + Walk-Forward)? Eigener Pfad, beendet danach. ---
 if (GetArg(argMap, "sweep", null) != null)
 {

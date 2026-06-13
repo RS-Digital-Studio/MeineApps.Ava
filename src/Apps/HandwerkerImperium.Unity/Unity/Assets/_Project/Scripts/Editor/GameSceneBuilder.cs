@@ -31,6 +31,7 @@ namespace HandwerkerImperium.Editor
         public static void Build()
         {
             _envMatCache.Clear(); // Material-Cache je Build frisch (sonst Referenzen auf alte Instanzen)
+            _particleMat = null;  // Partikel-Material je Build frisch
             EnsureFolder(SceneDir);
             EnsureFolder(PrefabDir);
 
@@ -492,17 +493,26 @@ namespace HandwerkerImperium.Editor
             yard.transform.SetParent(envRoot.transform, false);
             yard.transform.localScale = new Vector3(22f, 0.04f, 14.5f);
             yard.transform.position = new Vector3(0f, 0.02f, -0.25f);
+            // Warm-entsättigter Tint beruhigt die (zu bunten) Pastell-Steine deutlich Richtung Sandstein.
             yard.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeAssetTexturedMaterial("tex_cobblestone", Color.white, new Vector2(6.3f, 4.1f), "Mat_Plaza");
+                MakeAssetTexturedMaterial("tex_cobblestone", new Color(0.82f, 0.75f, 0.64f), new Vector2(5.2f, 3.4f), "Mat_Plaza");
 
-            // Helle Platz-Einfassung (Hencoop-Lesbarkeit: Flächen sind klar eingefasst)
+            // Weicher Übergang Pflaster->Gras: zwei gestaffelte Rand-Ringe (gras-grün -> sandbeige),
+            // statt einer harten Kante. Bricht die Rechteck-Silhouette von oben (Schneeflocken-Look).
+            var yardTrimOuter = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            yardTrimOuter.name = "Ground_YardTrimOuter";
+            Object.DestroyImmediate(yardTrimOuter.GetComponent<Collider>());
+            yardTrimOuter.transform.SetParent(envRoot.transform, false);
+            yardTrimOuter.transform.localScale = new Vector3(23.8f, 0.03f, 16.3f);
+            yardTrimOuter.transform.position = new Vector3(0f, 0.012f, -0.25f);
+            PaintFlat(yardTrimOuter, new Color(0.46f, 0.62f, 0.33f)); // gras-grüner Saum (mäht die Kante weich)
             var yardTrim = GameObject.CreatePrimitive(PrimitiveType.Cube);
             yardTrim.name = "Ground_YardTrim";
             Object.DestroyImmediate(yardTrim.GetComponent<Collider>());
             yardTrim.transform.SetParent(envRoot.transform, false);
             yardTrim.transform.localScale = new Vector3(22.8f, 0.035f, 15.3f);
             yardTrim.transform.position = new Vector3(0f, 0.016f, -0.25f);
-            Paint(yardTrim, new Color(0.96f, 0.90f, 0.74f));
+            PaintFlat(yardTrim, new Color(0.86f, 0.78f, 0.62f)); // sandbeiger Innen-Rand
 
             // Kundenweg zum Stadttor + radiale Wege zu allen Stationen (sandwarm, mit Einfassung)
             MakePath(envRoot.transform, new Vector3(0f, 0f, 11.5f), Quaternion.identity, new Vector2(4.5f, 9f), new Vector2(2f, 4f));
@@ -525,12 +535,15 @@ namespace HandwerkerImperium.Editor
                 MakeBush(envRoot.transform, new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius),
                     Random.Range(0.6f, 1.1f));
             }
-            for (int i = 0; i < 10; i++)
+            // Hügel entfernt: als flach gestauchte Kugeln lagen sie wie helle Scheiben/Krater auf dem
+            // Rasen (nicht AAA). Horizont kommt jetzt sauber aus Skybox + Distanz-Nebel; ein dichterer
+            // Baum-Gürtel weiter außen rahmt die Welt.
+            for (int i = 0; i < 16; i++)
             {
-                float angle = (i / 10f) * Mathf.PI * 2f + Random.Range(-0.2f, 0.2f);
-                float radius = Random.Range(70f, 95f);
-                MakeHill(envRoot.transform, new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius),
-                    Random.Range(18f, 34f), Random.Range(6f, 12f));
+                float angle = (i / 16f) * Mathf.PI * 2f + Random.Range(-0.12f, 0.12f);
+                float radius = Random.Range(50f, 64f);
+                MakeTree(envRoot.transform, new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius),
+                    Random.Range(1.1f, 1.7f));
             }
 
             // Sanft fallende Blätter über dem Spielbereich (Leben in der Luft, sehr dezent)
@@ -550,8 +563,10 @@ namespace HandwerkerImperium.Editor
             path.transform.position = center.WithY(0.024f);
             path.transform.rotation = rotation;
             path.transform.localScale = new Vector3(size.x, 0.035f, size.y);
+            // EIN gemeinsames Weg-Material (Cache) mit warm-sandigem Tint — beruhigt das rötliche Tile
+            // und vermeidet Material-Dubletten (Magenta-Ursache war geloest, Tint zentralisiert den Look).
             path.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeAssetTexturedMaterial("tex_dirt_path", Color.white, tiling, $"Mat_Path_{size.x:0_0}x{size.y:0_0}");
+                MakeAssetTexturedMaterial("tex_dirt_path", new Color(0.85f, 0.74f, 0.55f), tiling, "Mat_Path");
 
             var trim = GameObject.CreatePrimitive(PrimitiveType.Cube);
             trim.name = "Ground_PathTrim";
@@ -561,20 +576,6 @@ namespace HandwerkerImperium.Editor
             trim.transform.rotation = rotation;
             trim.transform.localScale = new Vector3(size.x + 0.5f, 0.03f, size.y + 0.5f);
             Paint(trim, new Color(0.96f, 0.90f, 0.74f));
-        }
-
-        /// <summary>Pipeline-Busch mit Wind-Sway (leicht versenkt gegen Konzept-Grassaum). Fallback: nichts.</summary>
-        private static void MakeBush(Transform parent, Vector3 pos, float scale) => MakeBushInto(parent, pos, scale);
-
-        private static void MakeBushInto(Transform parent, Vector3 pos, float scale)
-        {
-            if (AssetDatabase.LoadMainAssetAtPath(ModelDir + "/bush_round.glb") == null) return;
-            var root = new GameObject("Bush");
-            root.transform.SetParent(parent, false);
-            root.transform.position = pos + new Vector3(0f, -0.05f, 0f);
-            root.transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
-            var visual = AttachModel(root.transform, ModelDir + "/bush_round.glb", 0.9f * scale);
-            visual.AddComponent<CrownSway>();
         }
 
         /// <summary>Gemütlicher Schornstein-Rauch (lebt am unlockedVisual — erscheint erst nach dem Unlock).</summary>
@@ -640,75 +641,148 @@ namespace HandwerkerImperium.Editor
             ApplyParticleMaterial(ps);
         }
 
-        /// <summary>Pipeline-Default-Partikel-Material (Shader.Find wäre im Editor-Batch magenta-riskant).</summary>
-        private static void ApplyParticleMaterial(ParticleSystem ps)
-        {
-            var pipeline = GraphicsSettings.currentRenderPipeline;
-            if (pipeline != null && pipeline.defaultParticleMaterial != null)
-                ps.GetComponent<ParticleSystemRenderer>().sharedMaterial = pipeline.defaultParticleMaterial;
-        }
+        private static Material _particleMat;
 
         /// <summary>
-        /// Pipeline-Baum (Casual-Look) mit Wind-Sway: 60/40-Mix aus rundem und hohem Baum, leicht
-        /// im Boden versenkt (Konzept-Sockel verschwindet). Fallback: Primitive-Baum (Stamm + Kugeln).
+        /// Weiches Partikel-Material: URP-`defaultParticleMaterial` ist häufig NULL → der Renderer
+        /// fällt sonst auf das Magenta-Error-Material zurück (genau das „Magenta über den Gebäuden").
+        /// Daher eine eigene weiche Rund-Dot-Textur + `Sprites/Default` (in URP vorhanden, vertex-
+        /// color-fähig, additiv-weich) — als Asset gecacht, einmal je Build.
+        /// </summary>
+        private static void ApplyParticleMaterial(ParticleSystem ps)
+        {
+            if (_particleMat == null)
+            {
+                var tex = MakeSoftDotTexture();
+                SaveEnvAsset(tex, "Particle_SoftDot.asset");
+                var shader = Shader.Find("Sprites/Default");
+                _particleMat = new Material(shader != null ? shader : Shader.Find("Unlit/Transparent"));
+                _particleMat.mainTexture = tex;
+                SaveEnvAsset(_particleMat, "Mat_Particle_SoftDot.mat");
+            }
+            var renderer = ps.GetComponent<ParticleSystemRenderer>();
+            renderer.sharedMaterial = _particleMat;
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+        }
+
+        /// <summary>Weiche, runde Partikel-Textur (radialer Alpha-Falloff) — kein hartes Quadrat.</summary>
+        private static Texture2D MakeSoftDotTexture()
+        {
+            const int size = 64;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float c = (size - 1) * 0.5f;
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    float d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c)) / c;
+                    float a = Mathf.Clamp01(1f - d);
+                    a = a * a; // weicher Rand
+                    tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+                }
+            tex.Apply();
+            tex.wrapMode = TextureWrapMode.Clamp;
+            return tex;
+        }
+
+        // Flat-Casual-Farbpalette (satte, matte Töne — Hencoop/Open-Shop-Look)
+        private static readonly Color[] LeafTones =
+        {
+            new Color(0.42f, 0.68f, 0.30f), // frisches Grün
+            new Color(0.34f, 0.60f, 0.26f), // mittel
+            new Color(0.52f, 0.74f, 0.34f), // hell
+        };
+        private static readonly Color TrunkTone = new Color(0.55f, 0.40f, 0.24f);
+
+        /// <summary>
+        /// Sauberer Low-Poly-Casual-Baum mit Wind-Sway: konischer Stamm + 3 weiche, überlappende
+        /// Kronen-Kugeln in zwei flachen, satten Grüntönen. Bewusst KEIN Hunyuan-Mesh — die kamen
+        /// matschig/gelblich (nicht AAA); kontrolliertes Flat-Low-Poly trifft die Referenz besser.
         /// </summary>
         private static void MakeTree(Transform parent, Vector3 pos, float scale)
         {
-            string glb = Random.value < 0.6f ? "/tree_round.glb" : "/tree_tall.glb";
-            float height = glb.Contains("tall") ? 5.6f * scale : 4.4f * scale;
-            if (AssetDatabase.LoadMainAssetAtPath(ModelDir + glb) != null)
-            {
-                var glbRoot = new GameObject("Tree");
-                glbRoot.transform.SetParent(parent, false);
-                glbRoot.transform.position = pos + new Vector3(0f, -0.12f, 0f); // Sockel versenken
-                glbRoot.transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
-                var visual = AttachModel(glbRoot.transform, ModelDir + glb, height);
-                visual.AddComponent<CrownSway>();
-                return;
-            }
-
-            // Fallback: Primitive-Baum (nur wenn die Pipeline-GLBs lokal fehlen)
             var root = new GameObject("Tree");
             root.transform.SetParent(parent, false);
             root.transform.position = pos;
-            root.transform.localScale = Vector3.one * scale;
             root.transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
 
+            float trunkH = 1.5f * scale;
             var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             Object.DestroyImmediate(trunk.GetComponent<Collider>());
             trunk.name = "Trunk";
             trunk.transform.SetParent(root.transform, false);
-            trunk.transform.localScale = new Vector3(0.45f, 1.1f, 0.45f);
-            trunk.transform.localPosition = new Vector3(0f, 1.1f, 0f);
-            Paint(trunk, new Color(0.42f, 0.30f, 0.20f));
+            trunk.transform.localScale = new Vector3(0.30f * scale, trunkH * 0.5f, 0.30f * scale);
+            trunk.transform.localPosition = new Vector3(0f, trunkH * 0.5f, 0f);
+            PaintFlat(trunk, TrunkTone);
 
-            float hueShift = Random.Range(-0.06f, 0.06f);
-            var leaf = new Color(0.30f + hueShift, 0.52f + hueShift * 0.5f, 0.26f);
-            int crowns = Random.Range(2, 4);
-            for (int i = 0; i < crowns; i++)
+            // Krone als Wind-Sway-Gruppe (schwingt geschlossen)
+            var crown = new GameObject("Crown");
+            crown.transform.SetParent(root.transform, false);
+            crown.transform.localPosition = new Vector3(0f, trunkH, 0f);
+            crown.AddComponent<CrownSway>();
+            var baseLeaf = LeafTones[Random.Range(0, LeafTones.Length)];
+            int blobs = 3;
+            for (int i = 0; i < blobs; i++)
             {
-                var crown = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                Object.DestroyImmediate(crown.GetComponent<Collider>());
-                crown.name = "Crown";
-                crown.transform.SetParent(root.transform, false);
-                float s = Random.Range(1.6f, 2.4f);
-                crown.transform.localScale = Vector3.one * s;
-                crown.transform.localPosition = new Vector3(Random.Range(-0.5f, 0.5f), 2.3f + i * 0.7f, Random.Range(-0.5f, 0.5f));
-                Paint(crown, new Color(leaf.r + i * 0.025f, leaf.g + i * 0.03f, leaf.b));
+                var blob = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                Object.DestroyImmediate(blob.GetComponent<Collider>());
+                blob.name = "Leaf";
+                blob.transform.SetParent(crown.transform, false);
+                float s = (1.7f - i * 0.25f) * scale;
+                blob.transform.localScale = Vector3.one * s;
+                float ring = i == 0 ? 0f : 0.5f * scale;
+                float ang = Random.Range(0f, Mathf.PI * 2f);
+                blob.transform.localPosition = new Vector3(Mathf.Cos(ang) * ring, 0.5f * scale + i * 0.55f * scale, Mathf.Sin(ang) * ring);
+                PaintFlat(blob, i % 2 == 0 ? baseLeaf : baseLeaf * 1.12f);
             }
         }
 
-        /// <summary>Weicher Horizont-Hügel (plattgedrückte Kugel, sitzt im Distanz-Nebel).</summary>
-        private static void MakeHill(Transform parent, Vector3 pos, float width, float height)
+        /// <summary>Sauberer Low-Poly-Busch: flache satte Grün-Kuppel + 3 kleine Blüten-Punkte. Mit Wind-Sway.</summary>
+        private static void MakeBushInto(Transform parent, Vector3 pos, float scale)
         {
-            var hill = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            Object.DestroyImmediate(hill.GetComponent<Collider>());
-            hill.name = "Hill";
-            hill.transform.SetParent(parent, false);
-            hill.transform.position = pos;
-            hill.transform.localScale = new Vector3(width, height * 2f, width);
-            hill.transform.position = new Vector3(pos.x, 0f, pos.z); // Kugel-Mitte auf 0 -> Halbkugel ragt heraus
-            Paint(hill, new Color(0.38f, 0.50f, 0.30f));
+            var root = new GameObject("Bush");
+            root.transform.SetParent(parent, false);
+            root.transform.position = pos;
+            root.transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+            root.AddComponent<CrownSway>();
+
+            var leaf = LeafTones[Random.Range(0, LeafTones.Length)];
+            for (int i = 0; i < 2; i++)
+            {
+                var dome = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                Object.DestroyImmediate(dome.GetComponent<Collider>());
+                dome.name = "Dome";
+                dome.transform.SetParent(root.transform, false);
+                float s = (1.0f - i * 0.3f) * scale;
+                dome.transform.localScale = new Vector3(s, s * 0.7f, s);
+                dome.transform.localPosition = new Vector3((i == 0 ? 0f : 0.35f * scale) * (Random.value < 0.5f ? 1 : -1), s * 0.32f, 0f);
+                PaintFlat(dome, i % 2 == 0 ? leaf : leaf * 1.1f);
+            }
+            var flower = new Color(1.0f, 0.86f, 0.30f);
+            for (int i = 0; i < 3; i++)
+            {
+                var f = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                Object.DestroyImmediate(f.GetComponent<Collider>());
+                f.name = "Flower";
+                f.transform.SetParent(root.transform, false);
+                f.transform.localScale = Vector3.one * 0.12f * scale;
+                float ang = Random.Range(0f, Mathf.PI * 2f);
+                f.transform.localPosition = new Vector3(Mathf.Cos(ang) * 0.4f * scale, 0.55f * scale, Mathf.Sin(ang) * 0.4f * scale);
+                PaintFlat(f, i == 1 ? new Color(0.95f, 0.4f, 0.4f) : flower);
+            }
+        }
+
+        /// <summary>Pipeline-/Legacy-Einstieg für Busch (Signatur beibehalten).</summary>
+        private static void MakeBush(Transform parent, Vector3 pos, float scale) => MakeBushInto(parent, pos, scale);
+
+        /// <summary>Wie <see cref="Paint"/>, aber garantiert matt (Smoothness 0) — Casual-Flat-Look ohne Glanz.</summary>
+        private static void PaintFlat(GameObject go, Color color)
+        {
+            var mr = go.GetComponent<MeshRenderer>();
+            if (mr == null) return;
+            var mat = MakePipelineMaterial(color);
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0f);
+            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0f);
+            mr.sharedMaterial = mat;
         }
 
         /// <summary>Material aus einer Pipeline-Textur unter <c>Art/Textures/</c> (Asset, ASTC via Import).</summary>

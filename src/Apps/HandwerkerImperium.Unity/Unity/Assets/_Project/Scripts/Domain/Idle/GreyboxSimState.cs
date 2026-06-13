@@ -29,6 +29,9 @@ namespace HandwerkerImperium.Domain.Idle
         public double WorkerProgress;
         /// <summary>Gekaufte Worker-Tempo-Stufen (GDD §6.2: 3-5 Stufen; 0 = frisch angestellt). Persistiert.</summary>
         public int WorkerLevel;
+        /// <summary>Sichtbare Werkstatt-Ausbaustufe (GDD §6.1, Open-Shop): erhöht den Verkaufswert
+        /// dieser Station und verändert das Gebäude sichtbar. 0 = Grundausbau. Persistiert.</summary>
+        public int BuildLevel;
         /// <summary>Temporaerer Tempo-Buff der Perfekt-Aktion (GDD §6.7). FLUECHTIG — bewusst
         /// nicht persistiert (Buff-Dauer ~Sekunden; Save-Schema + HMAC bleiben unberuehrt).</summary>
         public double BoostMultiplier = 1.0;

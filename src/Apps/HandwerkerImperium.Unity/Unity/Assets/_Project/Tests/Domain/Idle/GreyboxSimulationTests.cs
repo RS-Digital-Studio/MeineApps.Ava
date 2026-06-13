@@ -258,6 +258,25 @@ namespace HandwerkerImperium.Domain.Tests.Idle
         }
 
         [Test]
+        public void StationBuild_RaisesWorkerAndOfflineIncome()
+        {
+            var bal = Bal();
+            var st = GreyboxSimState.CreateNew(bal);
+            st.Stations[0].HasWorker = true;
+            decimal baseRate = GreyboxSimulation.TotalAutomatedIncomePerSecond(st, bal);
+
+            // 1 Ausbaustufe (+50 % Wert) -> automatisiertes Einkommen/s steigt um 50 %
+            st.Stations[0].BuildLevel = 1;
+            decimal raised = GreyboxSimulation.TotalAutomatedIncomePerSecond(st, bal);
+            Assert.That(raised, Is.EqualTo(baseRate * 1.5m).Within(0.0001m));
+
+            // Worker-Tick honoriert den Ausbau (Stock vorhanden)
+            st.Stations[0].Stock = 8;
+            decimal earned = GreyboxSimulation.TickWorkers(st, bal, 1.0); // 1 Ware/s × (5 × 1.5) = 7.5
+            Assert.That(earned, Is.EqualTo(7.5m));
+        }
+
+        [Test]
         public void Offline_Staggered_AndCapped()
         {
             var bal = Bal();

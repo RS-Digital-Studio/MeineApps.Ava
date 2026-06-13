@@ -91,6 +91,10 @@ internal static class XsecScreen
         new(LookbackCandles: 84, RebalanceEveryCandles: 84, LongK: 3, ShortK: 3, RiskAdjusted: false, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.LowVol),
         // Low-Vol long-only (nur long niedrigste Vol)
         new(LookbackCandles: 84, RebalanceEveryCandles: 42, LongK: 3, ShortK: 0, RiskAdjusted: false, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.LowVol),
+        // Skip-Period-Momentum (juengste 1 Woche / 3 Tage ausgeschlossen — Reversal-Kontamination am kurzen Ende)
+        new(LookbackCandles: 84, RebalanceEveryCandles: 42, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.Momentum, SkipCandles: 42),
+        new(LookbackCandles: 84, RebalanceEveryCandles: 42, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.Momentum, SkipCandles: 18),
+        new(LookbackCandles: 84, RebalanceEveryCandles: 42, LongK: 3, ShortK: 0, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.Momentum, SkipCandles: 18), // Long-only + Skip
     ];
 
     private static async Task<XsecCell> EvaluateAsync(

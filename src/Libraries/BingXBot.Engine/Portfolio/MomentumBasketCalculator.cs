@@ -22,11 +22,15 @@ public static class MomentumBasketCalculator
     /// normalisiert — so sind unterschiedlich volatile Symbole vergleichbar. <c>null</c>, wenn zu wenige
     /// Kerzen oder ungueltige Preise.
     /// </summary>
-    public static decimal? Momentum(IReadOnlyList<Candle> candles, int lookback, bool riskAdjusted)
+    /// <param name="skip">Skip-Period in Kerzen: ROC ueber [now-skip-lookback .. now-skip] statt bis jetzt.
+    ///   Schliesst die juengsten <paramref name="skip"/> Kerzen aus, um die kurzfristige Reversal-
+    ///   Kontamination am kurzen Ende zu vermeiden (klassischer 12-1-Momentum-Skip). Default 0 =
+    ///   bisheriges Verhalten (Live unveraendert).</param>
+    public static decimal? Momentum(IReadOnlyList<Candle> candles, int lookback, bool riskAdjusted, int skip = 0)
     {
-        if (candles.Count <= lookback) return null;
-        var now = candles[^1].Close;
-        var past = candles[candles.Count - 1 - lookback].Close;
+        if (candles.Count <= lookback + skip) return null;
+        var now = candles[^(1 + skip)].Close;
+        var past = candles[candles.Count - 1 - lookback - skip].Close;
         if (past <= 0m || now <= 0m) return null;
         var roc = now / past - 1m;
         if (!riskAdjusted) return roc;
@@ -44,10 +48,10 @@ public static class MomentumBasketCalculator
     /// </summary>
     public static Dictionary<string, Side> ComputeBasket(
         IEnumerable<(string Symbol, IReadOnlyList<Candle> Candles)> universe,
-        int lookback, int longK, int shortK, bool riskAdjusted)
+        int lookback, int longK, int shortK, bool riskAdjusted, int skip = 0)
     {
         var ranked = universe
-            .Select(u => (u.Symbol, Mom: Momentum(u.Candles, lookback, riskAdjusted)))
+            .Select(u => (u.Symbol, Mom: Momentum(u.Candles, lookback, riskAdjusted, skip)))
             .Where(x => x.Mom.HasValue)
             .OrderByDescending(x => x.Mom!.Value)
             .ToList();

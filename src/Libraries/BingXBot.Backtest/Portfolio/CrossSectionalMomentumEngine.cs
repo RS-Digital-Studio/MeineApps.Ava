@@ -41,16 +41,19 @@ public enum XsecMode
 /// <param name="Mode">Selektions-Modus (Momentum/Reversal/LowVol). Live = Momentum.</param>
 /// <param name="InverseVolWeight">Slots nach inverser Vol (1/ATR%) gewichten statt gleichgewichtet
 ///   (Risk-Parity-Overlay; Literatur: Vol-Targeting/Risk-Management hebt Krypto-Momentum-Sharpe).</param>
+/// <param name="SkipCandles">Skip-Period: juengste N Kerzen vom Momentum-Fenster ausschliessen
+///   (klassischer 12-1-Momentum-Skip gegen kurzfristige Reversal-Kontamination). Nur Momentum/Reversal.</param>
 public readonly record struct XsecParams(
     int LookbackCandles, int RebalanceEveryCandles, int LongK, int ShortK,
     bool RiskAdjusted, decimal AtrStopMultiplier, int LeverageCap = 0,
-    XsecMode Mode = XsecMode.Momentum, bool InverseVolWeight = false)
+    XsecMode Mode = XsecMode.Momentum, bool InverseVolWeight = false, int SkipCandles = 0)
 {
     public int Slots => LongK + ShortK;
     public string Label =>
         $"L{LookbackCandles}/R{RebalanceEveryCandles}/{LongK}L-{ShortK}S"
         + $"{(Mode != XsecMode.Momentum ? $"/{Mode}" : "")}"
         + $"{(RiskAdjusted && Mode != XsecMode.LowVol ? "/radj" : "")}"
+        + $"{(SkipCandles > 0 ? $"/skip{SkipCandles}" : "")}"
         + $"{(InverseVolWeight ? "/ivw" : "")}"
         + $"{(AtrStopMultiplier > 0 ? $"/stop{AtrStopMultiplier:0.0}" : "")}"
         + $"{(LeverageCap > 0 ? $"/lev{LeverageCap}" : "")}";
@@ -139,7 +142,7 @@ public sealed class CrossSectionalMomentumEngine(
                 await ApplyAtrStopsAsync(sim, states, p, ct).ConfigureAwait(false);
 
             // d. Rebalance faellig?
-            var eligibleStart = step >= 0 && states.Any(s => s.NavIdx >= p.LookbackCandles && t >= s.TradingStartCloseTime);
+            var eligibleStart = step >= 0 && states.Any(s => s.NavIdx >= p.LookbackCandles + p.SkipCandles && t >= s.TradingStartCloseTime);
             if (eligibleStart && (lastRebalanceStep == int.MinValue || step - lastRebalanceStep >= p.RebalanceEveryCandles))
             {
                 await RebalanceAsync(sim, states, settings, p, slots, leverageSet, t, ct).ConfigureAwait(false);
@@ -170,8 +173,8 @@ public sealed class CrossSectionalMomentumEngine(
         // Live-Logik); Reversal/LowVol sind Lab-Forschungs-Modi (lokal, Live unberuehrt).
         // Slice = letzte Lookback+20 Kerzen bis zur aktuellen (candles[^1] = jetzt).
         var universe = states
-            .Where(s => s.NavIdx >= p.LookbackCandles && t >= s.TradingStartCloseTime)
-            .Select(s => (s.Symbol, (IReadOnlyList<Candle>)s.ContextSlice(p.LookbackCandles + 20)))
+            .Where(s => s.NavIdx >= p.LookbackCandles + p.SkipCandles && t >= s.TradingStartCloseTime)
+            .Select(s => (s.Symbol, (IReadOnlyList<Candle>)s.ContextSlice(p.LookbackCandles + p.SkipCandles + 20)))
             .ToList();
         if (universe.Count == 0) return;
         var target = BuildTargetBasket(universe, p);
@@ -232,14 +235,14 @@ public sealed class CrossSectionalMomentumEngine(
         List<(string Symbol, IReadOnlyList<Candle> Candles)> universe, XsecParams p)
     {
         if (p.Mode == XsecMode.Momentum)
-            return MomentumBasketCalculator.ComputeBasket(universe, p.LookbackCandles, p.LongK, p.ShortK, p.RiskAdjusted);
+            return MomentumBasketCalculator.ComputeBasket(universe, p.LookbackCandles, p.LongK, p.ShortK, p.RiskAdjusted, p.SkipCandles);
 
         if (p.Mode == XsecMode.Reversal)
         {
             // Gleiches Momentum-Ranking, aber Seiten gespiegelt: long die schwaechsten (Bottom-K,
             // negatives Momentum), short die staerksten (Top-K, positives Momentum).
             var ranked = universe
-                .Select(u => (u.Symbol, Mom: MomentumBasketCalculator.Momentum(u.Candles, p.LookbackCandles, p.RiskAdjusted)))
+                .Select(u => (u.Symbol, Mom: MomentumBasketCalculator.Momentum(u.Candles, p.LookbackCandles, p.RiskAdjusted, p.SkipCandles)))
                 .Where(x => x.Mom.HasValue)
                 .OrderBy(x => x.Mom!.Value)
                 .ToList();

@@ -77,20 +77,10 @@ public static class SettingsEndpoints
             CancellationToken ct) =>
         {
             if (!TryValidateXsec(dto, out var reason)) return Results.BadRequest(new ErrorResponse("invalid_xsec", reason));
-            // In den DI-Singleton kopieren (Referenz-Identitaet bewahren — der CrossSectionalManager
-            // haelt genau diese Instanz).
-            xsec.LookbackCandles = dto.LookbackCandles;
-            xsec.RebalanceDays = dto.RebalanceDays;
-            xsec.LongK = dto.LongK;
-            xsec.ShortK = dto.ShortK;
-            xsec.RiskAdjusted = dto.RiskAdjusted;
-            xsec.LeverageCap = dto.LeverageCap;
-            xsec.MarginUtilization = dto.MarginUtilization;
-            xsec.AtrStopMultiplier = dto.AtrStopMultiplier;
-            xsec.UniverseTopN = dto.UniverseTopN;
-            xsec.IncludeTradFi = dto.IncludeTradFi;
-            xsec.NavTimeframe = dto.NavTimeframe;
-            xsec.CheckIntervalMinutes = dto.CheckIntervalMinutes;
+            // Atomar in den DI-Singleton kopieren (Referenz-Identitaet bewahren — der
+            // CrossSectionalManager haelt genau diese Instanz; CopyFrom ist gegen den per-Tick-
+            // Clone des Service gelockt, kein torn read mit einem laufenden Rebalance/Drift-Tick).
+            xsec.CopyFrom(dto);
             botSettings.CrossSectional = xsec;
             await db.SaveSettingsAsync(botSettings).ConfigureAwait(false);
             return Results.NoContent();
@@ -202,7 +192,10 @@ public static class SettingsEndpoints
         if (dto.LongK < 0 || dto.LongK > 25) { reason = "LongK muss 0..25 sein."; return false; }
         if (dto.ShortK < 0 || dto.ShortK > 25) { reason = "ShortK muss 0..25 sein."; return false; }
         if (dto.LongK + dto.ShortK < 1) { reason = "LongK + ShortK muss mindestens 1 sein."; return false; }
-        if (dto.LeverageCap < 1 || dto.LeverageCap > 20) { reason = "LeverageCap muss 1..20 sein."; return false; }
+        // Obergrenze bewusst auf 3 begrenzt: Backtest-Sweep zeigt 2x in allen 4 Phasen positiv
+        // (validierter Live-Default), ab 3x kippt die Recovery-Phase, 5x ist Lotterie (−36%).
+        // Hoeheres Live-Leverage waere ein scharfes Werkzeug am Echtgeld-Konto → hart gedeckelt.
+        if (dto.LeverageCap < 1 || dto.LeverageCap > 3) { reason = "LeverageCap muss 1..3 sein (2 = validierter Live-Default)."; return false; }
         if (dto.MarginUtilization <= 0m || dto.MarginUtilization > 1m) { reason = "MarginUtilization muss 0..1 sein."; return false; }
         if (dto.AtrStopMultiplier < 0m || dto.AtrStopMultiplier > 20m) { reason = "AtrStopMultiplier muss 0..20 sein."; return false; }
         if (dto.UniverseTopN < dto.LongK + dto.ShortK || dto.UniverseTopN > 500) { reason = "UniverseTopN muss (LongK+ShortK)..500 sein."; return false; }

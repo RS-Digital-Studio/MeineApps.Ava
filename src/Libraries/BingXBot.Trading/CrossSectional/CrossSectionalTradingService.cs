@@ -213,21 +213,21 @@ public sealed class CrossSectionalTradingService : IDisposable
     /// TradFi) + Klines je Symbol (genug Vorlauf fuer den Lookback) + Preise + Kategorien.
     /// Geteilt zwischen vollem Rebalance und Drift-Refill. <c>null</c> wenn kein brauchbares Universum.
     /// </summary>
-    private async Task<UniverseData?> BuildUniverseAsync(string context, CancellationToken ct)
+    private async Task<UniverseData?> BuildUniverseAsync(string context, CrossSectionalSettings cfg, CancellationToken ct)
     {
         var tickers = await _marketData.GetAllTickersAsync(ct).ConfigureAwait(false);
         var symbols = tickers
             .Where(t => t.Symbol.EndsWith("-USDT", StringComparison.OrdinalIgnoreCase)
                         && SymbolClassifier.IsApiTradeable(t.Symbol)
-                        && (_cfg.IncludeTradFi || !SymbolClassifier.IsTradFi(t.Symbol)))
+                        && (cfg.IncludeTradFi || !SymbolClassifier.IsTradFi(t.Symbol)))
             .OrderByDescending(t => t.Volume24h)
-            .Take(Math.Max(_cfg.LongK + _cfg.ShortK, _cfg.UniverseTopN))
+            .Take(Math.Max(cfg.LongK + cfg.ShortK, cfg.UniverseTopN))
             .Select(t => t.Symbol)
             .ToList();
         if (symbols.Count == 0) { Log(LogLevel.Warning, "Engine", $"{context}: kein Universum (keine Tickers)."); return null; }
 
-        var navTf = ParseTf(_cfg.NavTimeframe);
-        var from = DateTime.UtcNow - TimeSpan.FromHours(TfHours(navTf) * (_cfg.LookbackCandles + 40));
+        var navTf = ParseTf(cfg.NavTimeframe);
+        var from = DateTime.UtcNow - TimeSpan.FromHours(TfHours(navTf) * (cfg.LookbackCandles + 40));
         var to = DateTime.UtcNow;
         var universe = new List<(string Symbol, IReadOnlyList<Candle> Candles)>();
         var prices = new Dictionary<string, decimal>();
@@ -238,7 +238,7 @@ public sealed class CrossSectionalTradingService : IDisposable
             List<Candle> candles;
             try { candles = await _marketData.GetKlinesAsync(symbol, navTf, from, to, ct).ConfigureAwait(false); }
             catch (Exception ex) { Log(LogLevel.Debug, "Engine", $"Klines {symbol} fehlgeschlagen: {ex.Message}"); continue; }
-            if (candles.Count <= _cfg.LookbackCandles) continue;
+            if (candles.Count <= cfg.LookbackCandles) continue;
             universe.Add((symbol, candles));
             prices[symbol] = candles[^1].Close;
             categories[symbol] = SymbolClassifier.Classify(symbol);
@@ -254,17 +254,21 @@ public sealed class CrossSectionalTradingService : IDisposable
 
     private async Task RebalanceAsync(CancellationToken ct)
     {
-        var data = await BuildUniverseAsync("Rebalance", ct).ConfigureAwait(false);
+        // Konsistenter Settings-Snapshot fuer den GANZEN Rebalance (Schutz vor torn read mit
+        // parallelem PUT /settings/xsec — der Tick liest sonst Korb-Bildung und Sizing aus
+        // verschiedenen Settings-Zustaenden).
+        var cfg = _cfg.Clone();
+        var data = await BuildUniverseAsync("Rebalance", cfg, ct).ConfigureAwait(false);
         if (data == null) return;
 
         // Ziel-Korb (geteilter Calculator — identisch zum Backtest).
         var basket = MomentumBasketCalculator.ComputeBasket(
-            data.Universe, _cfg.LookbackCandles, _cfg.LongK, _cfg.ShortK, _cfg.RiskAdjusted);
+            data.Universe, cfg.LookbackCandles, cfg.LongK, cfg.ShortK, cfg.RiskAdjusted);
         if (basket.Count == 0) { Log(LogLevel.Info, "Engine", "Rebalance: leerer Ziel-Korb (kein klares Momentum)."); }
 
         // Reconciliation (Close-vor-Open, Safety) — geteilt mit Paper/Live.
         var result = await CrossSectionalRebalancer.ReconcileAsync(
-            _execution, basket, data.Prices, data.Categories, _cfg, _risk,
+            _execution, basket, data.Prices, data.Categories, cfg, _risk,
             msg => Log(LogLevel.Info, "Exit", msg), ct,
             onClosed: pos => BookLiveClose(pos, "Xsec-Rebalance")).ConfigureAwait(false);
 
@@ -285,7 +289,7 @@ public sealed class CrossSectionalTradingService : IDisposable
             $"Rebalance fertig: {result.Closed} geschlossen, {result.Opened} eroeffnet, "
             + $"{result.SkippedMinOrder} Min-Order-Skip, {result.FailedClose} Close-Fehler. "
             + $"Korb ({basket.Count}): {DescribeBasket(basket)}. Naechster: "
-            + $"{(_lastRebalanceUtc + TimeSpan.FromDays(_cfg.RebalanceDays)):yyyy-MM-dd HH:mm} UTC.");
+            + $"{(_lastRebalanceUtc + TimeSpan.FromDays(cfg.RebalanceDays)):yyyy-MM-dd HH:mm} UTC.");
     }
 
     /// <summary>
@@ -300,6 +304,8 @@ public sealed class CrossSectionalTradingService : IDisposable
     internal async Task RefillBasketDriftAsync(CancellationToken ct)
     {
         if (_currentBasket.Count == 0) return;
+        // Konsistenter Settings-Snapshot fuer den ganzen Refill (torn-read-Schutz, s. RebalanceAsync).
+        var cfg = _cfg.Clone();
 
         // 1. Extern geschlossene Korb-Positionen erkennen (billig: 1 API-Call pro Tick).
         //    Mehrfach-Tick-Bestaetigung per Zaehler: erst handeln, wenn dieselbe Position in
@@ -335,14 +341,14 @@ public sealed class CrossSectionalTradingService : IDisposable
         }
 
         // 2. Freie Slots je Seite? (Korb soll LongK Longs + ShortK Shorts halten.)
-        var freeLongSlots = Math.Max(0, _cfg.LongK - _currentBasket.Count(kv => kv.Value == Side.Buy));
-        var freeShortSlots = Math.Max(0, _cfg.ShortK - _currentBasket.Count(kv => kv.Value == Side.Sell));
+        var freeLongSlots = Math.Max(0, cfg.LongK - _currentBasket.Count(kv => kv.Value == Side.Buy));
+        var freeShortSlots = Math.Max(0, cfg.ShortK - _currentBasket.Count(kv => kv.Value == Side.Sell));
         if (freeLongSlots == 0 && freeShortSlots == 0) return;
 
         // 3. Frisches Ranking NUR fuer die freien Slots. Ausgeschlossen: aktueller Korb (nicht doppeln),
         //    extern geschlossene Symbole (Sperre bis Rebalance) und Symbole mit offener Fremd-Position
         //    (kein ungewollter Hedge/Doppel-Exposure).
-        var data = await BuildUniverseAsync("Drift-Refill", ct).ConfigureAwait(false);
+        var data = await BuildUniverseAsync("Drift-Refill", cfg, ct).ConfigureAwait(false);
         if (data == null) return;
 
         var excluded = new HashSet<string>(_currentBasket.Keys);
@@ -351,11 +357,11 @@ public sealed class CrossSectionalTradingService : IDisposable
         var candidates = data.Universe.Where(u => !excluded.Contains(u.Symbol)).ToList();
 
         var refill = MomentumBasketCalculator.ComputeBasket(
-            candidates, _cfg.LookbackCandles, freeLongSlots, freeShortSlots, _cfg.RiskAdjusted);
+            candidates, cfg.LookbackCandles, freeLongSlots, freeShortSlots, cfg.RiskAdjusted);
         if (refill.Count == 0)
         {
             Log(LogLevel.Info, "Engine",
-                $"Drift-Refill: {freeLongSlots}L/{freeShortSlots}S Slot(s) frei, aber kein Kandidat mit klarem Momentum — naechster Versuch in {_cfg.CheckIntervalMinutes} min.");
+                $"Drift-Refill: {freeLongSlots}L/{freeShortSlots}S Slot(s) frei, aber kein Kandidat mit klarem Momentum — naechster Versuch in {cfg.CheckIntervalMinutes} min.");
             return;
         }
 
@@ -367,7 +373,7 @@ public sealed class CrossSectionalTradingService : IDisposable
             if (!target.ContainsKey(pos.Symbol)) target[pos.Symbol] = pos.Side;
 
         var result = await CrossSectionalRebalancer.ReconcileAsync(
-            _execution, target, data.Prices, data.Categories, _cfg, _risk,
+            _execution, target, data.Prices, data.Categories, cfg, _risk,
             msg => Log(LogLevel.Info, "Exit", msg), ct,
             onClosed: pos => BookLiveClose(pos, "Xsec-Drift-Refill")).ConfigureAwait(false);
 
@@ -395,16 +401,22 @@ public sealed class CrossSectionalTradingService : IDisposable
     /// Bucht einen verifizierten Live-Close des Rebalancers sofort als <see cref="CompletedTrade"/>
     /// (Event fuer Stats/SignalR/FCM + DB-Persistenz). Ohne diese Buchung erschienen Xsec-Closes
     /// erst nach bis zu 30 min als anonymer Income-Backfill ("Backfilled (Income)") — ohne
-    /// Entry-Preis, Holding-Time und Strategie-Reason. PnL/Fees sind Mark-to-Market-Naeherungen
-    /// (ClosePositionAsync liefert keine Fill-Daten); der Income-Backfill dedupliziert dagegen.
+    /// Entry-Preis und Strategie-Reason. PnL/Fees sind Mark-to-Market-Naeherungen (ClosePositionAsync
+    /// liefert keine Fill-Daten); der Income-Backfill dedupliziert dagegen.
+    /// EntryTime: BingX liefert in der Positions-Response keine echte Open-Zeit (pos.OpenTime = UtcNow
+    /// = Close-Zeit) → als konservativen Proxy den letzten Rebalance nehmen, damit die Holding-Time
+    /// nicht faelschlich ~0 ist. Genau exakt ist sie nur im Income-Backfill.
     /// </summary>
     private void BookLiveClose(Position pos, string reason)
     {
         if (_paper != null) return;   // Paper bucht ueber die SimulatedExchange (DrainPaperTrades).
         var fee = pos.Quantity * (pos.EntryPrice + pos.MarkPrice) * TakerFeeEstimate;
+        var entryTime = _lastRebalanceUtc != DateTime.MinValue && _lastRebalanceUtc < DateTime.UtcNow
+            ? _lastRebalanceUtc
+            : pos.OpenTime;
         var trade = new CompletedTrade(
             pos.Symbol, pos.Side, pos.EntryPrice, pos.MarkPrice, pos.Quantity,
-            pos.UnrealizedPnl - fee, fee, pos.OpenTime, DateTime.UtcNow, reason, TradingMode.Live);
+            pos.UnrealizedPnl - fee, fee, entryTime, DateTime.UtcNow, reason, TradingMode.Live);
         _eventBus.PublishTrade(trade);
         if (_dbService != null)
         {

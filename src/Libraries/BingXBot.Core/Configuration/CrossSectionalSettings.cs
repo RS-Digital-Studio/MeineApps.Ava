@@ -56,4 +56,54 @@ public sealed class CrossSectionalSettings
 
     /// <summary>Tick-Intervall der Pruefung „ist Rebalance faellig?" in Minuten (kein Trade dazwischen).</summary>
     public int CheckIntervalMinutes { get; set; } = 30;
+
+    // Gate fuer atomares Clone/CopyFrom: Der REST-PUT (/settings/xsec) mutiert diese Singleton-
+    // Instanz, waehrend der Xsec-Tick-Loop sie ueber viele Awaits hinweg liest. Ohne Atomaritaet
+    // koennte ein Tick einen Korb mit altem LongK bilden, aber das Sizing mit neuem LongK+ShortK
+    // rechnen (torn read → inkonsistente Slot-Dimensionierung mit Echtgeld). Der Tick liest daher
+    // EINEN konsistenten Snapshot (Clone) zu Operations-Beginn; der PUT schreibt atomar (CopyFrom).
+    private readonly object _gate = new();
+
+    /// <summary>Atomarer, konsistenter Snapshot fuer einen Tick-Durchlauf (kein torn read mit PUT).</summary>
+    public CrossSectionalSettings Clone()
+    {
+        lock (_gate)
+        {
+            return new CrossSectionalSettings
+            {
+                LookbackCandles = LookbackCandles,
+                RebalanceDays = RebalanceDays,
+                LongK = LongK,
+                ShortK = ShortK,
+                RiskAdjusted = RiskAdjusted,
+                LeverageCap = LeverageCap,
+                MarginUtilization = MarginUtilization,
+                AtrStopMultiplier = AtrStopMultiplier,
+                UniverseTopN = UniverseTopN,
+                IncludeTradFi = IncludeTradFi,
+                NavTimeframe = NavTimeframe,
+                CheckIntervalMinutes = CheckIntervalMinutes,
+            };
+        }
+    }
+
+    /// <summary>Atomares In-Place-Update (Referenz-Identitaet bleibt — DI-Singleton, vom Manager gehalten).</summary>
+    public void CopyFrom(CrossSectionalSettings src)
+    {
+        lock (_gate)
+        {
+            LookbackCandles = src.LookbackCandles;
+            RebalanceDays = src.RebalanceDays;
+            LongK = src.LongK;
+            ShortK = src.ShortK;
+            RiskAdjusted = src.RiskAdjusted;
+            LeverageCap = src.LeverageCap;
+            MarginUtilization = src.MarginUtilization;
+            AtrStopMultiplier = src.AtrStopMultiplier;
+            UniverseTopN = src.UniverseTopN;
+            IncludeTradFi = src.IncludeTradFi;
+            NavTimeframe = src.NavTimeframe;
+            CheckIntervalMinutes = src.CheckIntervalMinutes;
+        }
+    }
 }

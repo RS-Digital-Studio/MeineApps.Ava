@@ -833,7 +833,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (DateTime.Today != _trackedDate)
         {
             _trackedDate = DateTime.Today;
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(LoadDataAsync);
+            // Nur dispatchen wenn vom Timer (Background-Thread) aufgerufen. Im Init-Pfad
+            // (Loading-Pipeline) läuft diese Methode bereits auf dem UI-Thread — ein dortiges
+            // InvokeAsync würde während der noch synchron verketteten Startsequenz deadlocken
+            // (Job wird gequeued, aber die Dispatcher-Loop pumpt ihn erst nach Init-Abschluss).
+            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                await LoadDataAsync();
+            else
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(LoadDataAsync);
             return;
         }
 
@@ -848,7 +855,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             var balance = workTime - today.TargetWorkTime;
             var settings = _cachedSettings ?? await _database.GetSettingsAsync();
 
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            // UI-Properties aktualisieren. Im Init-Pfad (Loading-Pipeline) läuft diese Methode
+            // bereits auf dem UI-Thread — dann direkt ausführen statt erneut zu dispatchen.
+            // Ein InvokeAsync von innerhalb der noch synchron verketteten Startsequenz deadlockt
+            // sonst (der Job wird in die Dispatcher-Queue eingereiht, aber die Loop pumpt ihn
+            // erst nach Init-Abschluss — der wiederum auf diesen Job wartet). Beim 1s-Timer
+            // (System.Timers.Timer, Background-Thread) ist das Dispatchen weiterhin nötig.
+            void ApplyLiveData()
             {
                 CurrentWorkTime = TimeFormatter.FormatMinutes((int)workTime.TotalMinutes);
                 CurrentPauseTime = TimeFormatter.FormatMinutes((int)pauseTime.TotalMinutes);
@@ -914,7 +927,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 {
                     HasEarnings = false;
                 }
-            });
+            }
+
+            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                ApplyLiveData();
+            else
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(ApplyLiveData);
         }
         catch (Exception ex)
         {

@@ -34,6 +34,20 @@ internal static class FundingScreen
         new(LookbackSettlements: 3,  RebalanceEveryCandles: 42, LongK: 3, ShortK: 3, MinAbsFunding: 0m, LeverageCap: 1, LongHighFunding: true, MomentumWeight: 0.3m, MomentumLookback: 84),
         // Combo long-only (Long-Bias laut Literatur bevorzugt)
         new(LookbackSettlements: 3,  RebalanceEveryCandles: 42, LongK: 3, ShortK: 0, MinAbsFunding: 0m, LeverageCap: 1, LongHighFunding: true, MomentumWeight: 0.5m, MomentumLookback: 84),
+
+        // ── Unravel-Multi-Faktor-Nachbau (Momentum~30d=L180 + Carry, 50/50, Inverse-Vol, breites 20%-L/S) ──
+        // Quant-Blog berichtet Sharpe ~2 (aber survivorship-biased). 10L-10S = top/bottom 20% auf Top-50,
+        // R6 = taeglich. Direkt gegen unser reines Momentum L60/R9/3L-3S/lev2 (min +28,3 %) zu vergleichen.
+        new(LookbackSettlements: 3, RebalanceEveryCandles: 6,  LongK: 10, ShortK: 10, MinAbsFunding: 0m, LeverageCap: 1, LongHighFunding: true, MomentumWeight: 0.5m, MomentumLookback: 180, InverseVolWeight: true),
+        new(LookbackSettlements: 3, RebalanceEveryCandles: 6,  LongK: 10, ShortK: 10, MinAbsFunding: 0m, LeverageCap: 2, LongHighFunding: true, MomentumWeight: 0.5m, MomentumLookback: 180, InverseVolWeight: true),
+        // Inverse-Vol-Beitrag isolieren (gleiche Config ohne ivw)
+        new(LookbackSettlements: 3, RebalanceEveryCandles: 6,  LongK: 10, ShortK: 10, MinAbsFunding: 0m, LeverageCap: 2, LongHighFunding: true, MomentumWeight: 0.5m, MomentumLookback: 180, InverseVolWeight: false),
+        // Schmaler (5L-5S) — weniger Min-Order-Fragmentierung auf dem 154-USDT-Konto
+        new(LookbackSettlements: 3, RebalanceEveryCandles: 6,  LongK: 5,  ShortK: 5,  MinAbsFunding: 0m, LeverageCap: 2, LongHighFunding: true, MomentumWeight: 0.5m, MomentumLookback: 180, InverseVolWeight: true),
+        // Woechentlich statt taeglich (Turnover/Fee-Last senken)
+        new(LookbackSettlements: 3, RebalanceEveryCandles: 42, LongK: 10, ShortK: 10, MinAbsFunding: 0m, LeverageCap: 2, LongHighFunding: true, MomentumWeight: 0.5m, MomentumLookback: 180, InverseVolWeight: true),
+        // 3L-3S Multi-Faktor (ivw + L180) — direkt vergleichbar mit unserem reinen Momentum 3L-3S
+        new(LookbackSettlements: 3, RebalanceEveryCandles: 42, LongK: 3,  ShortK: 3,  MinAbsFunding: 0m, LeverageCap: 2, LongHighFunding: true, MomentumWeight: 0.5m, MomentumLookback: 180, InverseVolWeight: true),
     ];
 
     private sealed record Cell(int Trades, decimal WinRate, decimal ProfitFactor, decimal TotalPnl, decimal Pct, decimal MaxDd);
@@ -102,12 +116,13 @@ internal static class FundingScreen
         WriteReport(outDir, label, phases, symbols, navTf, balance, rows);
 
         Console.WriteLine($"\n=== ROBUSTHEITS-RANKING (nach schlechtester Phasen-Rendite) ===");
-        Console.WriteLine($"{"Config",-52} " + string.Join(" ", phases.Select(p => $"{p.Name,14}")) + $" {"min%",8} {"Σ%",8} {"n",5} {"robust",7}");
+        Console.WriteLine($"{"Config",-52} " + string.Join(" ", phases.Select(p => $"{p.Name,14}")) + $" {"min%",8} {"Σ%",8} {"maxDD",6} {"n",5} {"robust",7}");
         foreach (var r in rows)
         {
             var cellsStr = string.Join(" ", r.Cells.Select(c => $"{c.Pct,12:F1}% "));
             var robust = r.AllPositive ? "JA" : $"{r.PositivePhases}/{phases.Length}";
-            Console.WriteLine($"{r.Cfg.Label,-52} {cellsStr} {r.MinPhasePct,7:F1}% {r.SumPct,7:F1}% {r.TotalTrades,5} {robust,7}");
+            var worstDd = r.Cells.Max(c => c.MaxDd);
+            Console.WriteLine($"{r.Cfg.Label,-52} {cellsStr} {r.MinPhasePct,7:F1}% {r.SumPct,7:F1}% {worstDd,5:F0}% {r.TotalTrades,5} {robust,7}");
         }
         var robustRows = rows.Where(r => r.AllPositive).ToList();
         Console.WriteLine();

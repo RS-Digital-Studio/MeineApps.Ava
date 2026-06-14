@@ -4,6 +4,7 @@ using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Backtest.Reports;
 using BingXBot.Backtest.Simulation;
+using BingXBot.Engine.Indicators;
 using BingXBot.Engine.Portfolio;
 using Microsoft.Extensions.Logging;
 
@@ -21,15 +22,19 @@ namespace BingXBot.Backtest.Portfolio;
 /// <param name="MomentumWeight">0 = reiner Carry; &gt;0 = kombinierter z-Score (1-w)·z(Carry)+w·z(Momentum)
 ///   (Literatur: Momentum+Carry-Kombination hebt Sharpe ueber Einzelfaktoren via negativer Korrelation).</param>
 /// <param name="MomentumLookback">Lookback-Kerzen fuer die Momentum-Komponente (nur bei MomentumWeight&gt;0).</param>
+/// <param name="InverseVolWeight">Slots nach inverser Vol (1/ATR%) gewichten statt gleichgewichtet
+///   (Risk-Parity-Overlay, wie im Unravel-Multi-Faktor-Ansatz — daempft Tilts zu hochvolatilen Tokens).
+///   Default false = unveraendertes Gleichgewicht (/slots).</param>
 public readonly record struct FundingCarryParams(
     int LookbackSettlements, int RebalanceEveryCandles, int LongK, int ShortK,
     decimal MinAbsFunding, int LeverageCap = 1,
-    bool LongHighFunding = true, decimal MomentumWeight = 0m, int MomentumLookback = 84)
+    bool LongHighFunding = true, decimal MomentumWeight = 0m, int MomentumLookback = 84,
+    bool InverseVolWeight = false)
 {
     public string Label =>
         (MomentumWeight > 0m ? $"COMBO(c{1 - MomentumWeight:0.0}+m{MomentumWeight:0.0})" : "CARRY")
         + $"/{(LongHighFunding ? "hi" : "harvest")}/lb{LookbackSettlements}/R{RebalanceEveryCandles}"
-        + $"/{LongK}L-{ShortK}S/min{MinAbsFunding:0.0000}/lev{LeverageCap}";
+        + $"/{LongK}L-{ShortK}S/min{MinAbsFunding:0.0000}{(InverseVolWeight ? "/ivw" : "")}/lev{LeverageCap}";
 }
 
 /// <summary>
@@ -193,6 +198,23 @@ public sealed class FundingCarryEngine(
         if (equity <= 0m || slots <= 0) return;
         var perSlotMargin = equity * MarginUtilization / slots;
 
+        // Inverse-Vol-Gewichtung (opt-in, Unravel-Multi-Faktor): Gross-Margin nach 1/ATR% auf die
+        // Korb-Symbole verteilen. Default (Flag aus) → ivWeights null → unveraenderte /slots-Gewichtung.
+        Dictionary<string, decimal>? ivWeights = null;
+        if (p.InverseVolWeight && target.Count > 0)
+        {
+            var inv = new Dictionary<string, decimal>();
+            foreach (var (symbol, _) in target)
+            {
+                var st = states.First(s => s.Symbol == symbol);
+                var vol = AtrPercent(st.ContextSlice(40));
+                inv[symbol] = vol > 0m ? 1m / vol : 0m;
+            }
+            var sum = inv.Values.Sum();
+            if (sum > 0m) ivWeights = inv.ToDictionary(kv => kv.Key, kv => kv.Value / sum);
+        }
+        var grossMargin = equity * MarginUtilization;
+
         foreach (var (symbol, side) in target)
         {
             ct.ThrowIfCancellationRequested();
@@ -205,10 +227,21 @@ public sealed class FundingCarryEngine(
             var levKey = $"{symbol}_{side}";
             if (leverageSet.Add(levKey))
                 await sim.SetLeverageAsync(symbol, leverage, side).ConfigureAwait(false);
-            var qty = perSlotMargin * leverage / price;
+            var symbolMargin = ivWeights != null ? grossMargin * ivWeights[symbol] : perSlotMargin;
+            var qty = symbolMargin * leverage / price;
             if (qty <= 0m) continue;
             await sim.PlaceOrderAsync(new OrderRequest(symbol, side, OrderType.Market, qty)).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>ATR%(14) = ATR/letzter Close — vergleichbare Volatilitaet ueber Symbole (Inverse-Vol-Gewichtung).</summary>
+    private static decimal AtrPercent(IReadOnlyList<Candle> candles)
+    {
+        if (candles.Count < 16) return 0m;
+        var atrList = IndicatorHelper.CalculateAtr(candles, 14);
+        var atr = atrList.Count > 0 && atrList[^1].HasValue ? atrList[^1]!.Value : 0m;
+        var close = candles[^1].Close;
+        return close > 0m && atr > 0m ? atr / close : 0m;
     }
 
     /// <summary>Funding-Rate des Settlements bei/kurz vor t (Toleranz ±4h um den 8h-Punkt).</summary>

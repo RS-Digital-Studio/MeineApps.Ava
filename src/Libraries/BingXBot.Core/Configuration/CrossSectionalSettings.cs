@@ -3,18 +3,21 @@ namespace BingXBot.Core.Configuration;
 /// <summary>
 /// Parameter der Cross-Sectional-Momentum-Strategie (market-neutral: long staerkste / short schwaechste
 /// Symbole, periodischer Rebalance). Backtest-validiert: in ALLEN 4 Marktphasen positiv bei
-/// <c>L120/R~monatlich/radj/1x</c> auf dem Top-50-Universum INKL. TradFi mit 3L-3S (min +14,2 %,
-/// Σ +202 % ueber 4 Phasen bei 154 USDT). Wichtig: Auf Top-100 ist KEINE Config phasen-robust
-/// (5L-5S dort min −17,2 %) und OHNE TradFi kippt auch Top-50 — die Cross-Asset-Dispersion
+/// <c>L60/R9d/radj/2x</c> auf dem Top-50-Universum INKL. TradFi mit 3L-3S (min +28,3 %,
+/// Σ +297 % ueber 4 Phasen bei 154 USDT). Das fruehere L120/R21-Profil ist auf demselben Universum
+/// nur 2/4 Phasen positiv (min −50,6 %); das kuerzere 10-Tage-Lookback / ~woechentliche Rebalance
+/// deckt sich mit der Momentum-Literatur. Vol-Targeting verschlechtert das Top-50-Profil (vt30 senkt
+/// die schwaechste Phase auf +7,8 %) — daher NICHT als Feld aufgenommen. Wichtig: Auf Top-100 ist
+/// KEINE Config phasen-robust und OHNE TradFi kippt auch Top-50 — die Cross-Asset-Dispersion
 /// (Gold/Indizes/Forex) traegt den Edge. Persistierbar analog <see cref="RiskSettings"/>.
 /// </summary>
 public sealed class CrossSectionalSettings
 {
-    /// <summary>Momentum-Lookback in Nav-Kerzen (H4). 120 ≈ 20 Tage.</summary>
-    public int LookbackCandles { get; set; } = 120;
+    /// <summary>Momentum-Lookback in Nav-Kerzen (H4). 60 ≈ 10 Tage (validiertes Optimum; L120 nur 2/4 Phasen).</summary>
+    public int LookbackCandles { get; set; } = 60;
 
-    /// <summary>Rebalance-Intervall in TAGEN (Wall-Clock, robust gegen Pi-Downtime). 21 ≈ monatlich.</summary>
-    public int RebalanceDays { get; set; } = 21;
+    /// <summary>Rebalance-Intervall in TAGEN (Wall-Clock, robust gegen Pi-Downtime). 9 ≈ woechentlich (validiert).</summary>
+    public int RebalanceDays { get; set; } = 9;
 
     /// <summary>Anzahl Long-Slots (staerkste Momentum-Symbole). Top-50-Universum → 3 (phasen-robustestes Profil).</summary>
     public int LongK { get; set; } = 3;

@@ -145,6 +145,22 @@ public partial class DashboardView : UserControl
         }
     }
 
+    /// <summary>
+    /// Stoppt oder startet den 1Hz-Live-Countdown-Timer entsprechend dem App-Pause-Status.
+    /// Gefeuert von MainViewModel.PauseGameLoopAsync()/ResumeGameLoop() via Android-Lifecycle.
+    /// Die DashboardView bleibt bei App-Pause materialisiert (IsVisible-Toggle, kein Detach),
+    /// daher wuerde der DispatcherTimer sonst im Hintergrund weiterticken (Battery-Drain).
+    /// Beim Resume feuert der Timer wieder und der LIVE-Badge ist sofort synchron, da der
+    /// GameLoop ohnehin pausiert war und Live-Orders gecappt/pausiert sind.
+    /// </summary>
+    private void OnPauseStateChanged(bool isPaused)
+    {
+        if (isPaused)
+            _liveCountdownTimer?.Stop();
+        else
+            _liveCountdownTimer?.Start();
+    }
+
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
         StopCityRenderLoop();
@@ -166,6 +182,7 @@ public partial class DashboardView : UserControl
         if (_vm != null)
         {
             _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm.PauseStateChanged -= OnPauseStateChanged;
             _vm = null;
         }
 
@@ -202,6 +219,7 @@ public partial class DashboardView : UserControl
         if (_vm != null)
         {
             _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm.PauseStateChanged -= OnPauseStateChanged;
             _vm = null;
         }
 
@@ -213,6 +231,9 @@ public partial class DashboardView : UserControl
         {
             _vm = vm;
             _vm.PropertyChanged += OnVmPropertyChanged;
+            // App-Pause-Signal: 1Hz-Countdown-Timer im Hintergrund stoppen (Battery-Saving),
+            // beim Resume wieder starten. Symmetrisch zum MainView-Render-Timer.
+            _vm.PauseStateChanged += OnPauseStateChanged;
 
             // GameJuiceEngine über MainViewModel (kein Service Locator)
             _juiceEngine = vm.GameJuiceEngine;

@@ -96,6 +96,15 @@ public class AudioService : IAudioService
         CurrentBgm = null;
     }
 
+    /// <summary>
+    /// Pausiert die laufende BGM, ohne den MediaPlayer freizugeben (Desktop-Stub: no-op).
+    /// Für App-Pause (Akku) — <see cref="ResumeBgm"/> setzt an derselben Stelle fort.
+    /// </summary>
+    public virtual void PauseBgm() { }
+
+    /// <summary>Setzt eine zuvor pausierte BGM fort (Desktop-Stub: no-op).</summary>
+    public virtual void ResumeBgm() { }
+
     /// <summary>Haptisches Feedback (Desktop-Stub: no-op).</summary>
     public virtual void Vibrate(int durationMs = 30) { }
 
@@ -137,6 +146,15 @@ public interface IAudioService : IDisposable
 
     /// <summary>Stoppt die aktuelle Hintergrundmusik.</summary>
     void StopBgm();
+
+    /// <summary>
+    /// Pausiert die laufende BGM ohne sie freizugeben (App-Pause/Akku).
+    /// <see cref="ResumeBgm"/> setzt an derselben Stelle fort.
+    /// </summary>
+    void PauseBgm();
+
+    /// <summary>Setzt eine zuvor pausierte BGM fort.</summary>
+    void ResumeBgm();
 
     /// <summary>Haptisches Feedback (Kampf-Treffer etc.).</summary>
     void Vibrate(int durationMs = 30);

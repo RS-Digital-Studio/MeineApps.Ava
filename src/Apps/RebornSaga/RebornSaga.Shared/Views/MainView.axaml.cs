@@ -46,6 +46,14 @@ public partial class MainView : UserControl
         // KeyDown symmetrisch anmelden (wird in OnDetachedFromVisualTree abgemeldet)
         KeyDown += OnKeyDown;
 
+        // App-Lifecycle-Signale des VM abonnieren: Game-Loop-Timer im Hintergrund stoppen (Akku).
+        // (DataContext wird vor dem Attach gesetzt → _vm ist hier bereits vorhanden.)
+        if (_vm != null)
+        {
+            _vm.GameLoopPauseRequested += OnGameLoopPauseRequested;
+            _vm.GameLoopResumeRequested += OnGameLoopResumeRequested;
+        }
+
         // Services initialisieren (Skills, Items, Purchases laden)
         _ = InitializeServicesAsync();
 
@@ -66,12 +74,29 @@ public partial class MainView : UserControl
         KeyDown -= OnKeyDown;
 
         if (_vm != null)
+        {
+            _vm.GameLoopPauseRequested -= OnGameLoopPauseRequested;
+            _vm.GameLoopResumeRequested -= OnGameLoopResumeRequested;
             _vm = null;
+        }
 
         DataContextChanged -= OnDataContextChanged;
 
         base.OnDetachedFromVisualTree(e);
     }
+
+    /// <summary>
+    /// App ging in den Hintergrund: 60fps-Timer stoppen, damit er nicht weiter aufwacht (Akku).
+    /// Verlustfrei — das Spiel ist deltaTime-basiert, der Stopwatch-Stand wird beim Resume genutzt.
+    /// </summary>
+    private void OnGameLoopPauseRequested() => _gameLoopTimer?.Stop();
+
+    /// <summary>
+    /// App kam in den Vordergrund: Game-Loop neu starten (StartGameLoop setzt Delta-Basis zurück,
+    /// kein Zeit-Sprung beim ersten Frame). Nur erreichbar solange attached — OnDetachedFromVisualTree
+    /// meldet die VM-Events vorher ab.
+    /// </summary>
+    private void OnGameLoopResumeRequested() => StartGameLoop();
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {

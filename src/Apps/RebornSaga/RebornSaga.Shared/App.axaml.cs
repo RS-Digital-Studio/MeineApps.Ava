@@ -109,6 +109,9 @@ public partial class App : Application
 
             // SaveGameService: SQLite-Verbindung schließen
             Services.GetService<SaveGameService>()?.Dispose();
+
+            // MainViewModel: App-Lifecycle-Event-Abos abmelden
+            (Services.GetService<MainViewModel>() as IDisposable)?.Dispose();
         }
         catch
         {
@@ -168,6 +171,10 @@ public partial class App : Application
 
         services.AddSingleton<TutorialService>();
         services.AddSingleton<DailyService>();
+
+        // App-Lifecycle-Broker (Akku): Android speist NotifyPaused/Resumed in MainActivity;
+        // MainViewModel stoppt BGM + Game-Loop im Hintergrund.
+        services.AddSingleton<IAppLifecycleService, AppLifecycleService>();
 
         // Audio (Desktop-Stub, Android-Override via Factory)
         // (lazy, Avalonia-12-Factory-Timing: Factory wird erst beim Resolve gelesen)

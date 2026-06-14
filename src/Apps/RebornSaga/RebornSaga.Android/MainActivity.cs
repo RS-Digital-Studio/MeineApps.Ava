@@ -27,6 +27,7 @@ public class MainActivity : AvaloniaMainActivity
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
     private MainViewModel? _mainVm;
+    private IAppLifecycleService? _lifecycle;
     private Action<string>? _exitHintHandler;
 
     protected override void OnCreate(Bundle? savedInstanceState)
@@ -66,6 +67,9 @@ public class MainActivity : AvaloniaMainActivity
             _mainVm.ExitHintRequested += _exitHintHandler;
         }
 
+        // App-Lifecycle-Broker (Akku): OnPause/OnResume stoppen BGM + Game-Loop im Hintergrund.
+        _lifecycle = App.Services.GetService<IAppLifecycleService>();
+
         // Google Mobile Ads initialisieren - Ads erst nach SDK-Callback laden
         AdMobHelper.Initialize(this, () =>
         {
@@ -82,11 +86,13 @@ public class MainActivity : AvaloniaMainActivity
     {
         base.OnResume();
         EnableImmersiveMode();
+        _lifecycle?.NotifyResumed();
         _adMobHelper?.Resume();
     }
 
     protected override void OnPause()
     {
+        _lifecycle?.NotifyPaused();
         _adMobHelper?.Pause();
         base.OnPause();
     }

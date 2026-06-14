@@ -231,6 +231,46 @@ public sealed class AndroidAudioService : AudioService
         base.StopBgm();
     }
 
+    /// <summary>
+    /// Pausiert den laufenden MediaPlayer (App-Pause/Akku), ohne ihn freizugeben.
+    /// CurrentBgm bleibt gesetzt, damit ResumeBgm an derselben Stelle fortsetzt.
+    /// </summary>
+    public override void PauseBgm()
+    {
+        lock (_musicLock)
+        {
+            try
+            {
+                if (_musicPlayer is { IsPlaying: true })
+                    _musicPlayer.Pause();
+            }
+            catch
+            {
+                // MediaPlayer im ungueltigen State — bereits pausiert/released
+            }
+        }
+    }
+
+    /// <summary>Setzt eine zuvor pausierte BGM fort (App-Resume).</summary>
+    public override void ResumeBgm()
+    {
+        // BGM nur fortsetzen, wenn sie eingeschaltet ist (User koennte waehrend Pause deaktiviert haben).
+        if (!BgmEnabled) return;
+
+        lock (_musicLock)
+        {
+            try
+            {
+                if (_musicPlayer is { IsPlaying: false })
+                    _musicPlayer.Start();
+            }
+            catch
+            {
+                // Kann nicht fortgesetzt werden — released/ungueltiger State
+            }
+        }
+    }
+
     /// <summary>Stoppt und released den MediaPlayer. Muss innerhalb von lock(_musicLock) aufgerufen werden.</summary>
     private void StopBgmInternal()
     {

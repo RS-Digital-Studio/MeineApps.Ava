@@ -30,6 +30,7 @@ public static class ChoiceButtonRenderer
     // Gecachte Zeilen pro Choice-Button (vermeidet Split+List pro Frame)
     private static string[]? _cachedLabels;
     private static string[][]? _cachedWrappedLines;
+    private static int[]? _cachedLineCounts;   // Zeilen-Anzahl pro Button (= Höhen-Schleife, kein Re-Wrap pro Frame)
     private static float _cachedAvailWidth;
 
     /// <summary>
@@ -77,11 +78,13 @@ public static class ChoiceButtonRenderer
         {
             _cachedLabels = new string[count];
             _cachedWrappedLines = new string[count][];
+            _cachedLineCounts = new int[count];
             _cachedAvailWidth = availTextW;
             for (int i = 0; i < count && i < labels.Length; i++)
             {
                 _cachedLabels[i] = labels[i];
                 _cachedWrappedLines[i] = WrapTextToLines(labels[i], availTextW, baseFontSize);
+                _cachedLineCounts[i] = _cachedWrappedLines[i].Length;
             }
         }
 
@@ -89,7 +92,10 @@ public static class ChoiceButtonRenderer
         {
             if (labels != null && i < labels.Length && !string.IsNullOrEmpty(labels[i]))
             {
-                var lines = WrapText(labels[i], availTextW, baseFontSize);
+                // Zeilen-Anzahl aus dem Cache nutzen (oben gewrappt) statt pro Frame neu zu wrappen.
+                var lines = _cachedLineCounts != null && i < _cachedLineCounts.Length
+                    ? _cachedLineCounts[i]
+                    : WrapText(labels[i], availTextW, baseFontSize);
                 heights[i] = Math.Max(minBtnH, lineH * lines + baseFontSize * 0.8f);
             }
             else

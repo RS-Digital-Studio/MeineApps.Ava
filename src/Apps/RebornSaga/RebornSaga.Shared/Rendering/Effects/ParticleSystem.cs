@@ -54,6 +54,7 @@ public class ParticleSystem : IDisposable
     private readonly Particle[] _particles;
     private readonly int _maxParticles;
     private int _nextIndex;
+    private int _activeCount;       // O(1)-Zähler aktiver Partikel (statt linearer Pool-Scan)
     private readonly Random _random = new();
     private float _emitAccumulator; // Akkumulator für fraktionale Partikel-Emission
 
@@ -174,6 +175,11 @@ public class ParticleSystem : IDisposable
             ref var p = ref _particles[_nextIndex % _maxParticles];
             _nextIndex++;
 
+            // Ring-Buffer kann einen noch aktiven Partikel überschreiben → nur zählen, wenn der
+            // Slot vorher inaktiv war (sonst bliebe _activeCount bei Überschreibung zu hoch).
+            if (!p.IsActive)
+                _activeCount++;
+
             var angle = baseRad + (float)(_random.NextDouble() - 0.5) * spreadRad;
             var speed = config.MinSpeed + (float)_random.NextDouble() * (config.MaxSpeed - config.MinSpeed);
 
@@ -231,6 +237,7 @@ public class ParticleSystem : IDisposable
             if (p.Life <= 0)
             {
                 p.IsActive = false;
+                _activeCount--;
                 continue;
             }
 
@@ -306,20 +313,14 @@ public class ParticleSystem : IDisposable
     {
         for (int i = 0; i < _maxParticles; i++)
             _particles[i].IsActive = false;
+        _activeCount = 0;
     }
 
     /// <summary>
-    /// Gibt an, ob mindestens ein Partikel aktiv ist.
+    /// Gibt an, ob mindestens ein Partikel aktiv ist. O(1) über mitgeführten Zähler
+    /// (statt linearem Pool-Scan pro Frame).
     /// </summary>
-    public bool HasActiveParticles
-    {
-        get
-        {
-            for (int i = 0; i < _maxParticles; i++)
-                if (_particles[i].IsActive) return true;
-            return false;
-        }
-    }
+    public bool HasActiveParticles => _activeCount > 0;
 
     /// <summary>
     /// Gibt alle nativen Ressourcen frei (SKPaint, SKPath).

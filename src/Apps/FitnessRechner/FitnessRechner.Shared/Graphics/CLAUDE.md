@@ -17,9 +17,9 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → dort do
 | `MedicalCardRenderer.cs` | Static | Universeller Card-Hintergrund: Surface mit 85 % Alpha + HUD-Brackets + Akzent-Linie |
 | `VitalSignsHeroRenderer.cs` | Instance | Dashboard Vital Signs Monitor (300dp, 4 Quadranten, EKG-Ring, Center-Score) |
 | `QuickActionButtonRenderer.cs` | Static | Holografische Quick-Action Buttons: +kg (lila), +250ml (grün), +kcal (orange); 3s Puls-Animation, Press-Effekt Scale 0.95 |
-| `StreakCardRenderer.cs` | Static | Medical Streak-Anzeige: pulsierendes Herz, Mini-EKG |
-| `ChallengeCardRenderer.cs` | Static | Medical Challenge-Card: Indigo-Gradient, Scan-Line Progress |
-| `LevelProgressRenderer.cs` | Static | Medical XP/Level-Bar: Cyan-Badge + Gradient + Scan-Line |
+| `StreakCardRenderer.cs` | Instance | Medical Streak-Anzeige: pulsierendes Herz, Mini-EKG. Gecachte Paints/Fonts + bounds-gecachter Shader (30fps-Loop) |
+| `ChallengeCardRenderer.cs` | Instance | Medical Challenge-Card: Indigo-Gradient, Scan-Line Progress. Gecachte Paints/Fonts/MaskFilter + bounds-/fill-gecachte Shader |
+| `LevelProgressRenderer.cs` | Instance | Medical XP/Level-Bar: Cyan-Badge + Gradient + Scan-Line. Gecachte Paints/Fonts/MaskFilter + fill-gecachter Shader |
 | `CalculatorHeaderRenderer.cs` | Static | Header für alle 5 Rechner: Feature-Gradient + Grid + EKG, holografischer Back-Button |
 | `BmiGaugeRenderer.cs` | Static | BMI-Gauge: Medical Grid + Nadel-Glow + Scan-Line |
 | `BodyFatRenderer.cs` | Static | Körperfett-Grafik: Cyan-Kontur + Scan-Linie + Prozent-Ring Glow |
@@ -70,10 +70,14 @@ Herzschlag: 72 BPM (1.2 Beats/Sekunde). Wird in `MedicalBackgroundRenderer` (flo
 ## Static vs. Instance Renderer
 
 - **Instance-Renderer** (`MedicalBackgroundRenderer`, `MedicalTabBarRenderer`,
-  `VitalSignsHeroRenderer`): Halten eigenen Animationszustand (Partikelkoordinaten, EKG-Phase,
-  Zeit-Akkumulator). Ein Renderer pro View-Instanz.
-- **Static-Renderer** (alle anderen): Zustandslos — bekommen alle nötigen Werte als Parameter.
-  Kein Leak-Risiko, kein Lifetime-Management.
+  `VitalSignsHeroRenderer`, `StreakCardRenderer`, `ChallengeCardRenderer`, `LevelProgressRenderer`):
+  Halten eigenen Zustand (Animationszustand bzw. gecachte SKPaint/SKFont + bounds-/fill-gecachte
+  SKShader/SKMaskFilter). Ein Renderer pro View-Instanz, von `HomeView` gehalten + in
+  `OnDetachedFromVisualTree` disposed. Die Dashboard-Card-Renderer laufen im 30fps-Loop und cachen
+  ihre Shader bounds-/fortschrittsbasiert (kein Per-Frame-`CreateLinearGradient` mehr).
+- **Static-Renderer** (`CalculatorHeaderRenderer`, `BmiGaugeRenderer`, … die Calculator-Snapshots):
+  Zustandslos — bekommen alle nötigen Werte als Parameter. Laufen ohne Render-Loop (`time = 0f`),
+  daher sind die `using var`-Allokationen on-demand und unkritisch.
 
 ---
 

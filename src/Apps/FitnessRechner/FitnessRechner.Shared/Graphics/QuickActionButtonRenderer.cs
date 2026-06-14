@@ -6,7 +6,8 @@ namespace FitnessRechner.Graphics;
 /// <summary>
 /// Rendert holografische Quick-Action Buttons im VitalOS Medical-Design.
 /// Verwendet für +kg, +250ml, +kcal Dashboard-Buttons.
-/// Static Class - kein Render-Loop (20fps), daher using var für Paints OK.
+/// Static Class - laeuft im 30fps-Dashboard-Loop, aber nur Paints (kein Shader), daher
+/// using var für Paints unter der Allokations-Schwelle und OK.
 /// </summary>
 public static class QuickActionButtonRenderer
 {

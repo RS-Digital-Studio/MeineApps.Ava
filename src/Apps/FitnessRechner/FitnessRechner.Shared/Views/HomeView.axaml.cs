@@ -14,6 +14,12 @@ public partial class HomeView : UserControl
     private readonly VitalSignsHeroRenderer _heroRenderer = new();
     private SKRect _lastHeroBounds;
 
+    // Dashboard-Card Renderer (Instance-basiert: gecachte Paints/Fonts + bounds-gecachte Shader,
+    // 0 Per-Frame-Shader im 30fps-Dashboard-Loop)
+    private readonly LevelProgressRenderer _levelRenderer = new();
+    private readonly ChallengeCardRenderer _challengeRenderer = new();
+    private readonly StreakCardRenderer _streakRenderer = new();
+
     // Render-Zeit für Quick-Action Button Puls-Animation
     private float _renderTime;
 
@@ -43,6 +49,9 @@ public partial class HomeView : UserControl
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
         _heroRenderer.Dispose();
+        _levelRenderer.Dispose();
+        _challengeRenderer.Dispose();
+        _streakRenderer.Dispose();
     }
 
     // =====================================================================
@@ -234,7 +243,7 @@ public partial class HomeView : UserControl
             int.TryParse(numStr, out level);
         }
 
-        LevelProgressRenderer.Render(canvas, bounds,
+        _levelRenderer.Render(canvas, bounds,
             level, (float)vm.LevelProgress, vm.XpDisplay ?? "", _renderTime);
     }
 
@@ -248,7 +257,7 @@ public partial class HomeView : UserControl
         var bounds = canvas.LocalClipBounds;
         if (DataContext is not MainViewModel vm) return;
 
-        ChallengeCardRenderer.Render(canvas, bounds,
+        _challengeRenderer.Render(canvas, bounds,
             vm.ChallengeTitleText ?? "",
             (float)vm.ChallengeProgressValue,
             ParseXpReward(vm.ChallengeXpText),
@@ -269,7 +278,7 @@ public partial class HomeView : UserControl
         int currentStreak = ParseIntFromDisplay(vm.StreakDisplay);
         int bestStreak = ParseIntFromDisplay(vm.StreakBestDisplay);
 
-        StreakCardRenderer.Render(canvas, bounds,
+        _streakRenderer.Render(canvas, bounds,
             currentStreak, bestStreak, vm.HasStreak, _renderTime);
     }
 

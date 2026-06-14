@@ -197,7 +197,8 @@
         ".read": "auth != null",
         ".indexOn": ["weeklyGoalProgress"],
         "$clanId": {
-          ".write": "auth != null",
+          "//": "Client schreibt das Leaderboard nie (nur GetLeaderboardAsync liest) — Write gesperrt. Befuellung nur via Cloud-Function/Admin-SDK (umgeht Rules). Verhindert Leaderboard-Manipulation durch Clients.",
+          ".write": "false",
           ".validate": "newData.hasChildren(['clanId', 'name', 'weeklyGoalProgress'])",
           "weeklyGoalProgress": {
             ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000 && (!data.exists() || newData.val() >= data.val())"

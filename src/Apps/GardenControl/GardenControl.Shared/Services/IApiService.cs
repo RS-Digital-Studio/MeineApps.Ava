@@ -11,7 +11,10 @@ public interface IApiService
     /// <summary>Server-URL setzen</summary>
     void SetServerUrl(string url);
 
-    /// <summary>Verbindung testen</summary>
+    /// <summary>Shared-Secret fuer die Header-Auth setzen (wird bei allen Requests mitgeschickt).</summary>
+    void SetSecret(string secret);
+
+    /// <summary>Verbindung testen (Health-Endpoint — auch ohne gueltiges Secret erreichbar).</summary>
     Task<bool> TestConnectionAsync();
 
     /// <summary>Alle Zonen abrufen</summary>

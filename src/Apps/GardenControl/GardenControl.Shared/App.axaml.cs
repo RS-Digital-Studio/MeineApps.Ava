@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using GardenControl.Shared.Services;
 using GardenControl.Shared.ViewModels;
 using GardenControl.Shared.Views;
+using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GardenControl.Shared;
@@ -30,6 +31,7 @@ public class App : Application
         var services = new ServiceCollection();
 
         // Services
+        services.AddSingleton<IPreferencesService>(_ => new PreferencesService("GardenControl"));
         services.AddSingleton<IConnectionService, ConnectionService>();
         services.AddSingleton<IApiService, ApiService>();
 

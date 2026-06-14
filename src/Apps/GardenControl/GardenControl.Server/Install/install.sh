@@ -52,6 +52,20 @@ else
     echo "    scp -r bin/Release/net10.0/linux-arm64/publish/ pi@<IP>:~/gardencontrol/"
 fi
 
+# 4b. Shared-Secret fuer die Header-Auth erzeugen (nur falls noch nicht vorhanden).
+# Wird vom Service ueber EnvironmentFile=-/etc/gardencontrol/secret.env geladen.
+SECRET_DIR="/etc/gardencontrol"
+SECRET_FILE="$SECRET_DIR/secret.env"
+install -d -m 700 "$SECRET_DIR"
+if [ ! -f "$SECRET_FILE" ]; then
+    GARDEN_SECRET="$(openssl rand -base64 24)"
+    echo "Auth__SharedSecret=$GARDEN_SECRET" > "$SECRET_FILE"
+    chmod 600 "$SECRET_FILE"
+    echo "  Server-Secret erzeugt — auch in der Client-App eintragen: $GARDEN_SECRET"
+else
+    echo "  Server-Secret bereits vorhanden: $SECRET_FILE"
+fi
+
 # 5. Systemd-Service installieren
 echo "Systemd-Service installieren..."
 cp $SERVICE_FILE /etc/systemd/system/

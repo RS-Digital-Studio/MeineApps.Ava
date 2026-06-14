@@ -1,20 +1,24 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GardenControl.Core;
 using GardenControl.Shared.Services;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 
 namespace GardenControl.Shared.ViewModels;
 
 /// <summary>
-/// Einstellungen - Server-IP, Verbindungstest, Daten-Export.
+/// Einstellungen - Server-IP, Server-Secret, Verbindungstest, Daten-Export.
 /// Implementiert IDisposable, um das ConnectionService-Event-Abo sauber abzumelden.
 /// </summary>
 public partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private readonly IApiService _api;
     private readonly IConnectionService _connection;
+    private readonly IPreferencesService _prefs;
 
     [ObservableProperty] private string _serverUrl = "http://192.168.178.56:5000";
+    [ObservableProperty] private string _serverSecret = GardenAuth.DefaultDevSecret;
     [ObservableProperty] private string _connectionTestResult = string.Empty;
     [ObservableProperty] private bool _isConnected;
     [ObservableProperty] private string _serverInfo = string.Empty;
@@ -22,10 +26,16 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     /// <summary>Event wenn sich die Server-URL ändert</summary>
     public event Action<string>? ServerUrlChanged;
 
-    public SettingsViewModel(IApiService api, IConnectionService connection)
+    /// <summary>Event wenn sich das Server-Secret ändert (→ MainViewModel setzt + reconnectet).</summary>
+    public event Action<string>? ServerSecretChanged;
+
+    public SettingsViewModel(IApiService api, IConnectionService connection, IPreferencesService prefs)
     {
         _api = api;
         _connection = connection;
+        _prefs = prefs;
+        // Persistiertes Secret laden (Default-Dev-Secret, falls noch nie gesetzt).
+        _serverSecret = _prefs.Get(GardenAuth.ClientSecretPreferenceKey, GardenAuth.DefaultDevSecret);
         _connection.ConnectionChanged += OnConnectionChanged;
     }
 
@@ -37,6 +47,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     {
         ConnectionTestResult = "Teste Verbindung...";
         _api.SetServerUrl(ServerUrl);
+        // Aktuelles (ggf. noch nicht gespeichertes) Secret-Eingabefeld mittesten.
+        _api.SetSecret(ServerSecret);
 
         var success = await _api.TestConnectionAsync();
         ConnectionTestResult = success
@@ -48,6 +60,13 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private void SaveServerUrl()
     {
         ServerUrlChanged?.Invoke(ServerUrl);
+    }
+
+    [RelayCommand]
+    private void SaveServerSecret()
+    {
+        _prefs.Set(GardenAuth.ClientSecretPreferenceKey, ServerSecret);
+        ServerSecretChanged?.Invoke(ServerSecret);
     }
 
     [RelayCommand]

@@ -16,5 +16,13 @@ ExecStopPost=/usr/bin/bash -c 'echo 0 > /sys/class/gpio/gpio17/value 2>/dev/null
 Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=DOTNET_RUNNING_IN_CONTAINER=false
 
+# Shared-Secret fuer die Header-Auth (X-Garden-Secret). NICHT im Repo ablegen!
+# Eigenes Secret einmalig erzeugen und ablegen, z.B.:
+#   sudo install -d -m 700 /etc/gardencontrol
+#   echo "Auth__SharedSecret=$(openssl rand -base64 24)" | sudo tee /etc/gardencontrol/secret.env >/dev/null
+#   sudo chmod 600 /etc/gardencontrol/secret.env
+# Danach in der Client-App (Einstellungen -> Server-Secret) denselben Wert eintragen.
+EnvironmentFile=-/etc/gardencontrol/secret.env
+
 [Install]
 WantedBy=multi-user.target

@@ -34,6 +34,22 @@
                         </Button>
                     </Grid>
 
+                    <TextBlock Text="Server-Secret (muss mit dem Pi übereinstimmen)"
+                               FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0" />
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Text="{Binding ServerSecret}" PasswordChar="•"
+                                 PlaceholderText="Shared-Secret" FontSize="14" />
+                        <Button Grid.Column="1" Margin="8,0,0,0" Padding="12,8" CornerRadius="8"
+                                Background="{DynamicResource PrimaryBrush}"
+                                Command="{Binding SaveServerSecretCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <mi:MaterialIcon Kind="Key" Width="16" Height="16" />
+                                <TextBlock Text="Speichern" Foreground="White" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
                     <Button Content="Verbindung testen" Command="{Binding TestConnectionCommand}"
                             Padding="12,8" CornerRadius="8" Margin="0,4,0,0" />
 

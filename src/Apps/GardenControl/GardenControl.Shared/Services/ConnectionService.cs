@@ -1,3 +1,4 @@
+using GardenControl.Core;
 using GardenControl.Core.DTOs;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -6,14 +7,20 @@ namespace GardenControl.Shared.Services;
 /// <summary>
 /// SignalR-Client für Echtzeit-Kommunikation mit dem Pi-Server.
 /// Automatischer Reconnect bei Verbindungsverlust.
+/// Das Shared-Secret wird beim Verbindungsaufbau als Header (Long-Polling/SSE) UND
+/// als access_token-Query (WebSocket-Upgrade) mitgeschickt — siehe SharedSecretAuthMiddleware.
 /// </summary>
 public class ConnectionService : IConnectionService
 {
     private HubConnection? _hub;
     private bool _disposed;
+    // Default-Dev-Secret, bis SetSecret aus den Client-Einstellungen den echten Wert setzt.
+    private string _secret = GardenAuth.DefaultDevSecret;
 
     public bool IsConnected => _hub?.State == HubConnectionState.Connected;
     public string? ServerUrl { get; private set; }
+
+    public void SetSecret(string secret) => _secret = secret ?? string.Empty;
 
     public event Action<SensorDataDto>? SensorDataReceived;
     public event Action<SystemStatusDto>? SystemStatusReceived;
@@ -31,7 +38,14 @@ public class ConnectionService : IConnectionService
         var hubUrl = $"{ServerUrl}/hub/garden";
 
         _hub = new HubConnectionBuilder()
-            .WithUrl(hubUrl)
+            .WithUrl(hubUrl, options =>
+            {
+                // Header fuer Long-Polling/SSE-Transport.
+                options.Headers[GardenAuth.SecretHeader] = _secret;
+                // access_token-Query fuer den WebSocket-Upgrade (Header kommen dort nicht zuverlaessig
+                // durch). Die Middleware akzeptiert das Secret am Hub-Pfad als access_token.
+                options.AccessTokenProvider = () => Task.FromResult<string?>(_secret);
+            })
             .WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromSeconds(2),
                 TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10),
                 TimeSpan.FromSeconds(30) })

@@ -78,6 +78,22 @@ else
     echo "    dotnet publish GardenControl.Server -c Release -r linux-arm64 --self-contained"
 fi
 
+# Shared-Secret fuer die Header-Auth erzeugen (nur falls noch nicht vorhanden).
+# Liegt ausserhalb des Repos unter /etc/gardencontrol/secret.env und wird vom Service geladen.
+SECRET_DIR="/etc/gardencontrol"
+SECRET_FILE="$SECRET_DIR/secret.env"
+install -d -m 700 "$SECRET_DIR"
+if [ ! -f "$SECRET_FILE" ]; then
+    GARDEN_SECRET="$(openssl rand -base64 24)"
+    echo "Auth__SharedSecret=$GARDEN_SECRET" > "$SECRET_FILE"
+    chmod 600 "$SECRET_FILE"
+    echo "  Server-Secret erzeugt: $SECRET_FILE"
+    echo "  >>> SECRET (auch in Handy/PC-App eintragen): $GARDEN_SECRET"
+else
+    GARDEN_SECRET="$(sed -n 's/^Auth__SharedSecret=//p' "$SECRET_FILE")"
+    echo "  Server-Secret bereits vorhanden: $SECRET_FILE"
+fi
+
 # Server systemd Service
 cat > /etc/systemd/system/gardencontrol.service << 'SVCEOF'
 [Unit]
@@ -93,6 +109,8 @@ Restart=always
 RestartSec=10
 Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=DOTNET_RUNNING_IN_CONTAINER=false
+# Shared-Secret (X-Garden-Secret) — optional (-): fehlt es, laeuft der Server mit dem Default-Dev-Secret.
+EnvironmentFile=-/etc/gardencontrol/secret.env
 
 [Install]
 WantedBy=multi-user.target
@@ -118,6 +136,31 @@ else
     echo "  WARNUNG: ./desktop-publish nicht gefunden!"
     echo "  Bitte zuerst auf dem PC bauen:"
     echo "    dotnet publish GardenControl.Desktop -c Release -r linux-arm64 --self-contained"
+fi
+
+# Kiosk-Preferences mit demselben Secret seeden, damit die lokale Desktop-App auf dem Pi
+# sich gegen den Server authentifizieren kann (Preferences: ~/.config/GardenControl/preferences.json).
+# Merge-sicher (bestehende Preferences bleiben erhalten).
+if [ -n "$GARDEN_SECRET" ]; then
+    PREFS_DIR="/home/$USER/.config/GardenControl"
+    install -d -o "$USER" -g "$USER" "$PREFS_DIR"
+    GARDEN_SECRET="$GARDEN_SECRET" PREFS_FILE="$PREFS_DIR/preferences.json" python3 - <<'PYEOF'
+import json, os
+path = os.environ["PREFS_FILE"]
+secret = os.environ["GARDEN_SECRET"]
+try:
+    with open(path) as f:
+        data = json.load(f)
+        if not isinstance(data, dict):
+            data = {}
+except (FileNotFoundError, ValueError):
+    data = {}
+data["GardenControl.ServerSecret"] = secret
+with open(path, "w") as f:
+    json.dump(data, f, indent=2)
+PYEOF
+    chown "$USER:$USER" "$PREFS_DIR/preferences.json"
+    echo "  Kiosk-Preferences mit Server-Secret versorgt"
 fi
 
 # ──────────────────────────────────────

@@ -1,5 +1,6 @@
 using GardenControl.Core.DTOs;
 using GardenControl.Core.Enums;
+using GardenControl.Server.Auth;
 using GardenControl.Server.Hardware;
 using GardenControl.Server.Hubs;
 using GardenControl.Server.Services;
@@ -34,17 +35,25 @@ builder.Services.AddHostedService<SensorPollingWorker>();
 // SignalR für Echtzeit-Updates
 builder.Services.AddSignalR();
 
-// CORS: Lokales Netzwerk erlauben
-// SignalR braucht AllowCredentials(), das ist inkompatibel mit AllowAnyOrigin().
-// Stattdessen SetIsOriginAllowed verwenden.
+// CORS: Bewusst restriktiv. Der Avalonia-Client (Desktop/Android/Pi-Kiosk) ist KEIN Browser —
+// fuer ihn ist CORS irrelevant. Die fruehere offene Policy (SetIsOriginAllowed(_ => true) +
+// AllowCredentials) erlaubte jeder im Browser geoeffneten Webseite Cross-Origin-Zugriff mit
+// Credentials (CSRF/DNS-Rebinding-Risiko). Default: KEINE Origins. Nur falls eine kuenftige
+// Browser-Oberflaeche gebraucht wird, koennen ueber Cors:AllowedOrigins konkrete Origins
+// freigeschaltet werden (NIEMALS Wildcard + AllowCredentials kombinieren).
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.SetIsOriginAllowed(_ => true) // Alle Origins erlauben (lokales Netzwerk)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .WithHeaders(GardenControl.Core.GardenAuth.SecretHeader);
+        }
+        // Ohne konfigurierte Origins bleibt die Policy leer → keine Cross-Origin-Browser-Zugriffe.
     });
 });
 
@@ -52,10 +61,18 @@ var app = builder.Build();
 
 app.UseCors();
 
+// Shared-Secret-Auth VOR allen Endpunkten + dem SignalR-Hub. Health (/api/health) bleibt offen.
+app.UseMiddleware<SharedSecretAuthMiddleware>();
+
 // --- SignalR Hub ---
 app.MapHub<GardenHub>("/hub/garden");
 
 // --- REST API (Minimal API) ---
+
+// Health/Ping (auth-frei — siehe SharedSecretAuthMiddleware). Liefert bewusst KEINEN Zustand,
+// nur Erreichbarkeit, damit der Client "Server da, aber Secret falsch" (401) von "Server weg"
+// (Netzwerkfehler) unterscheiden kann.
+app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
 
 // Status
 app.MapGet("/api/status", async (IIrrigationService irrigation) =>

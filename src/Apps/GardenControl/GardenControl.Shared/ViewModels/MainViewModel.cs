@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GardenControl.Core;
 using GardenControl.Core.DTOs;
 using GardenControl.Shared.Services;
 using MeineApps.Core.Ava.Services;
@@ -15,7 +16,10 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
 {
     private readonly IConnectionService _connection;
     private readonly IApiService _api;
+    private readonly IPreferencesService _prefs;
     private readonly BackPressHelper _backPressHelper = new();
+    // Aktuelles Server-Secret (persistiert, in beide Services injiziert vor Connect).
+    private string _serverSecret;
 
     /// <summary>Wird ausgeloest um einen Exit-Hinweis anzuzeigen (Toast "Nochmal druecken zum Beenden").</summary>
     public event Action<string>? ExitHintRequested;
@@ -38,6 +42,7 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
     public MainViewModel(
         IConnectionService connection,
         IApiService api,
+        IPreferencesService prefs,
         DashboardViewModel dashboard,
         ZoneControlViewModel zoneControl,
         ScheduleViewModel schedule,
@@ -47,6 +52,9 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         _connection = connection;
         _api = api;
+        _prefs = prefs;
+        // Persistiertes Server-Secret laden (Default-Dev-Secret falls noch nie gesetzt).
+        _serverSecret = _prefs.Get(GardenAuth.ClientSecretPreferenceKey, GardenAuth.DefaultDevSecret);
 
         Dashboard = dashboard;
         ZoneControl = zoneControl;
@@ -63,8 +71,9 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
         // API-Fehler global anzeigen
         _api.ErrorOccurred += OnApiErrorOccurred;
 
-        // Settings-ViewModel kann URL ändern
+        // Settings-ViewModel kann URL + Secret ändern
         Settings.ServerUrlChanged += OnSettingsServerUrlChanged;
+        Settings.ServerSecretChanged += OnSettingsServerSecretChanged;
     }
 
     /// <summary>Verbindungsstatus-Update vom SignalR-Client (kommt auf Hintergrund-Thread).</summary>
@@ -89,6 +98,13 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
         await ConnectAsync();
     }
 
+    /// <summary>Reagiert auf ein im SettingsViewModel geändertes Server-Secret mit Reconnect.</summary>
+    private async void OnSettingsServerSecretChanged(string secret)
+    {
+        _serverSecret = secret;
+        await ConnectAsync();
+    }
+
     /// <summary>Beim App-Start verbinden</summary>
     public async Task InitializeAsync()
     {
@@ -102,6 +118,9 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             ConnectionStatus = "Verbinde...";
             ClearError();
+            // Secret in beide Services injizieren BEVOR verbunden wird (REST-Header + SignalR-Auth).
+            _api.SetSecret(_serverSecret);
+            _connection.SetSecret(_serverSecret);
             _api.SetServerUrl(ServerUrl);
             await _connection.ConnectAsync(ServerUrl);
             ConnectionStatus = "Verbunden";
@@ -195,6 +214,7 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _connection.ConnectionChanged -= OnConnectionChanged;
         _api.ErrorOccurred -= OnApiErrorOccurred;
         Settings.ServerUrlChanged -= OnSettingsServerUrlChanged;
+        Settings.ServerSecretChanged -= OnSettingsServerSecretChanged;
 
         // Child-ViewModels abmelden (HistoryViewModel abonniert keine Events → kein IDisposable)
         Dashboard.Dispose();

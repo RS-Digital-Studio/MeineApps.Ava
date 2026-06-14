@@ -8,6 +8,9 @@ namespace GardenControl.Shared.Services;
 /// </summary>
 public interface IConnectionService : IAsyncDisposable
 {
+    /// <summary>Shared-Secret fuer die Header-Auth setzen (vor ConnectAsync aufrufen).</summary>
+    void SetSecret(string secret);
+
     /// <summary>Verbindung zum Server herstellen</summary>
     Task ConnectAsync(string serverUrl);
 

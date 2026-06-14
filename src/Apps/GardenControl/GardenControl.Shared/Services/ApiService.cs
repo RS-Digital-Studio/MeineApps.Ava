@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using GardenControl.Core;
 using GardenControl.Core.DTOs;
 using GardenControl.Core.Models;
 
@@ -8,6 +9,7 @@ namespace GardenControl.Shared.Services;
 /// REST-API Client für den GardenControl-Server.
 /// Alle Methoden geben bei Fehlern sinnvolle Defaults zurück
 /// und melden Fehler über das ErrorOccurred-Event.
+/// Das Shared-Secret wird als Header <see cref="GardenAuth.SecretHeader"/> bei jedem Request mitgeschickt.
 /// </summary>
 public class ApiService : IApiService
 {
@@ -20,6 +22,9 @@ public class ApiService : IApiService
     public ApiService()
     {
         _http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        // Default-Dev-Secret, damit Mock/Dev/Pi-Kiosk out-of-the-box funktionieren.
+        // Der echte Wert wird per SetSecret aus den Client-Einstellungen gesetzt.
+        SetSecret(GardenAuth.DefaultDevSecret);
     }
 
     public void SetServerUrl(string url)
@@ -27,12 +32,21 @@ public class ApiService : IApiService
         _baseUrl = url.TrimEnd('/');
     }
 
+    public void SetSecret(string secret)
+    {
+        // DefaultRequestHeaders gelten fuer ALLE Requests dieses HttpClient (REST).
+        _http.DefaultRequestHeaders.Remove(GardenAuth.SecretHeader);
+        if (!string.IsNullOrEmpty(secret))
+            _http.DefaultRequestHeaders.Add(GardenAuth.SecretHeader, secret);
+    }
+
     public async Task<bool> TestConnectionAsync()
     {
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-            var response = await _http.GetAsync($"{_baseUrl}/api/status", cts.Token);
+            // Health-Endpoint ist auth-frei → testet Server-Erreichbarkeit unabhaengig vom Secret.
+            var response = await _http.GetAsync($"{_baseUrl}/api/health", cts.Token);
             return response.IsSuccessStatusCode;
         }
         catch (TaskCanceledException)

@@ -49,6 +49,16 @@ Mitternachts-Übergang: `LoadStatusAsync` prüft auch den gestrigen WorkDay (Nac
 
 - **Netto-Arbeitszeit** = Gesamt − Pausen − Auto-Pause-Ergänzung (wenn < gesetzlich).
 - **Saldo** = Netto − Soll (aus `WorkSettings.GetHoursForDay()` — gecachtes JSON-Dictionary).
+- **Tages-Saldo nach DayStatus (zentral in `WorkDay.CalculateBalance`/`EffectiveTargetMinutes`):**
+  Tage mit erfasster Arbeit zählen IMMER Ist−Soll (auch Dienstreise/Schulung mit Stempelung).
+  Ohne erfasste Arbeit gilt: bezahlte/unbezahlte **Abwesenheit** (Urlaub/Krank/Feiertag/Sonderurlaub/
+  Dienstreise/Schulung/Unbezahlt) = **Saldo 0** (Tag erfüllt, `IsFulfilledAbsence`); **Überstundenabbau/
+  Zeitausgleich** (`OvertimeCompensation`/`CompensatoryTime`) + nicht gestempelter Arbeitstag = **−Soll**
+  (bauen Plus ab bzw. fehlende Arbeit). Diese reinen statischen Methoden sind die **einzige Wahrheit** —
+  `RecalculateWorkDayAsync`, `CalculateWeek/MonthAsync` (effektives Soll im Tag-Loop), `DayDetailViewModel.
+  SelectStatusAsync` und `VacationService` nutzen sie, damit `GetTotalOvertimeMinutesAsync`
+  (`SUM(BalanceMinutes)`), Monats-/Wochen-Saldo und der Statistics-Overtime-Chart denselben Wert liefern.
+  (Vorher zählte ein Urlaubstag fälschlich als −Soll → Urlaubswoche = −40h.)
 - **§3 ArbZG**: 6-Monats-Durchschnitt ≤ 8h/Tag über Mo–Sa (Sonntage ausgeschlossen),
   Vacation/Sick zählen als 0h, Mindest-Schwelle 60 Werktage.
 - **Rundungs-Konvention (bewusste Entscheidung):** Der kumulative Saldo

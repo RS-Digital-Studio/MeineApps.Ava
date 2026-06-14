@@ -145,12 +145,14 @@ protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e
 ### Testbarkeit
 
 `tests/` enthält **13 Test-Projekte** — eines je App plus `MeineApps.CalcLib.Tests`. Stack:
-**xUnit 2.x** + NSubstitute (Mocks) + FluentAssertions + coverlet (Coverage). UI-nahe Tests
-laufen headless über `Avalonia.Headless` (z.B. HandwerkerImperium, BomberBlast, RechnerPlus).
+**xUnit v3** + NSubstitute (Mocks) + FluentAssertions + coverlet (Coverage). UI-nahe Tests
+laufen headless über `Avalonia.Headless` + `Avalonia.Headless.XUnit` (z.B. HandwerkerImperium,
+BomberBlast, RechnerPlus).
 
-> **Kein xUnit v3:** `Avalonia.Headless.XUnit` zieht `xunit.v3` transitiv und kollidiert mit
-> der xunit-2.x-Linie. Werden echte Headless-UI-Tests gebraucht, in ein eigenes
-> xunit.v3-Projekt extrahieren statt die Solution-weite Version zu wechseln.
+> **Test-Stack auf xUnit v3:** Die Solution nutzt durchgehend die `xunit.v3`-Linie (inkl.
+> `Avalonia.Headless.XUnit`, `Verify.XunitV3`, `FsCheck.Xunit.v3`). Die frühere v2/v3-Kollision
+> ist mit der Solution-weiten Umstellung auf v3 aufgelöst — neue Test-Projekte daher gegen
+> `xunit.v3` referenzieren, nicht gegen die alte 2.x-Linie.
 
 **Beim Hinzufügen oder Ändern testbarer Logik** (Berechnungen, Konvertierungen,
 Zustandsverwaltung, Parser, Algorithmen) gehören passende Unit-Tests ins zugehörige
@@ -202,7 +204,7 @@ F:\Meine_Apps_Ava\
 │       └── HandwerkerImperium.Unity/    # Neuentwicklung parallel zur Avalonia-Version (Unity 6)
 │
 ├── tools/                               # .NET-Tools (via dotnet run) + Python-Skripte
-│   ├── AppChecker/                      # .NET — 33 Checker, 200+ Prüfungen
+│   ├── AppChecker/                      # .NET — 34 Checker, 200+ Prüfungen
 │   ├── StoreAssetGenerator/             # .NET — Play-Store-Assets (SkiaSharp)
 │   ├── SocialPostGenerator/             # .NET — Social-Media-Posts + Promo-Bilder
 │   ├── BingXBacktestLab/                # .NET — Strategie-Backtest auf echten Klines (standalone, nicht in .sln)
@@ -212,7 +214,7 @@ F:\Meine_Apps_Ava\
 │   ├── SoundForge/                      # Python — Audio-Generierung (+ lufs-mastering.sh)
 │   └── screenshot-mcp/                  # MCP-Server für Screenshots
 │
-└── tests/                               # xUnit 2.x — 13 Projekte (je App + MeineApps.CalcLib)
+└── tests/                               # xUnit v3 — 13 Projekte (je App + MeineApps.CalcLib)
 ```
 
 ---
@@ -468,11 +470,11 @@ dotnet publish src/Apps/{App}/{App}.Desktop -c Release -r win-x64     # bzw. lin
 # Android Release (AAB) → bin/Release/net10.0-android/publish/
 dotnet publish src/Apps/{App}/{App}.Android -c Release
 
-# Tests (xUnit 2.x — je App ein Projekt + CalcLib)
+# Tests (xUnit v3 — je App ein Projekt + CalcLib)
 dotnet test tests/{App}.Tests                    # einzelnes Test-Projekt
 dotnet test MeineApps.Ava.sln                    # alle Tests
 
-# AppChecker (33 Checker, 200+ Prüfungen)
+# AppChecker (34 Checker, 200+ Prüfungen)
 dotnet run --project tools/AppChecker            # alle Apps
 dotnet run --project tools/AppChecker {App}      # einzelne App
 dotnet run --project tools/AppChecker --quiet | --fail-only | --json
@@ -506,31 +508,31 @@ Versionen zentral in `Directory.Packages.props`. Kern:
 
 | Package | Version | Zweck |
 |---------|---------|-------|
-| Avalonia | 12.0.2 | UI-Framework (migriert von MAUI) |
+| Avalonia | 12.0.4 | UI-Framework (migriert von MAUI) |
 | Material.Icons.Avalonia | 3.0.2 | 7000+ SVG-Icons |
 | CommunityToolkit.Mvvm | 8.4.2 | MVVM |
-| Xaml.Behaviors.Avalonia | 12.0.0 | Behaviors |
-| SkiaSharp (+ Skottie) | 3.119.4-preview.1.1 | 2D-Graphics + SkSL GPU-Shader (von Avalonia 12 erzwungener Preview) |
+| Xaml.Behaviors.Avalonia | 12.0.0.1 | Behaviors |
+| SkiaSharp (+ Skottie) | 3.119.4 | 2D-Graphics + SkSL GPU-Shader |
 | Avalonia.Labs.Lottie | 12.0.2 | Lottie-Animationen |
-| AvaloniaUI.DiagnosticsSupport | 2.2.1 | DevTools (Debug-only) |
+| AvaloniaUI.DiagnosticsSupport | 2.2.2 | DevTools (Debug-only) |
 | sqlite-net-pcl | 1.9.172 | Datenbank |
 | **Premium (Android)** | | |
 | Xamarin.GooglePlayServices.Ads.Lite | 124.0.0.5 | AdMob (+ UserMessagingPlatform 4.0.0.2) |
-| Xamarin.Android.Google.BillingClient | 8.3.0.2 | Google Play Billing v8 |
+| Xamarin.Android.Google.BillingClient | 9.0.0 | Google Play Billing v9 |
 | Xamarin.Google.Android.Play.Review | 2.0.2.7 | In-App Review |
 | Xamarin.GooglePlayServices.Games.V2 | 121.0.0.3 | Play Games Services v2 |
-| Xamarin.Firebase.Messaging / .Config | 124.1.2 / 123.0.1.2 | Push + Remote Config (kein Crashlytics/Analytics) |
+| Xamarin.Firebase.Messaging / .Config | 125.0.2 / 123.1.0 | Push + Remote Config (kein Crashlytics/Analytics) |
 | **Feature-spezifisch** | | |
-| Xamarin.AndroidX.Camera.* / MLKit.BarcodeScanning | 1.5.3.1 / 117.3.0.7 | Kamera + Barcode (FitnessRechner) |
+| Xamarin.AndroidX.Camera.* / MLKit.BarcodeScanning | 1.6.1 / 117.3.0.7 | Kamera + Barcode (FitnessRechner) |
 | PdfSharpCore / ClosedXML | 1.3.67 / 0.105.0 | PDF-/Excel-Export (WorkTimePro) |
 | Skender.Stock.Indicators | 2.7.1 | Trading-Indikatoren (BingXBot) |
-| Microsoft.AspNetCore.SignalR.Client | 10.0.7 | Server-Remote (BingXBot, GardenControl) |
+| Microsoft.AspNetCore.SignalR.Client | 10.0.8 | Server-Remote (BingXBot, GardenControl) |
 | System.Device.Gpio / Iot.Device.Bindings | 4.2.0 | Raspberry-Pi-GPIO (GardenControl) |
-| Mapsui.Avalonia / InTheHand.BluetoothLE / Vapolia.Google.ARCore | 5.0.2 / 4.0.44 / 1.47.1 | Karten + BLE + AR (SmartMeasure) |
+| Mapsui.Avalonia12 / InTheHand.BluetoothLE / Vapolia.Google.ARCore | 5.1.0 / 4.0.44 / 1.47.1 | Karten + BLE + AR (SmartMeasure) |
 | MQTTnet | 5.0.1.1416 | Anker-Cloud-Live-Watt via mTLS-MQTT (SunSeeker) |
 | **Test** | | |
-| xunit (+ runner.visualstudio) | 2.9.3 / 3.1.5 | Test-Framework (v2-Linie, kein v3) |
-| NSubstitute / FluentAssertions / coverlet.collector | 5.3.0 / 8.9.0 / 10.0.0 | Mocks / Assertions / Coverage |
+| xunit.v3 (+ runner.visualstudio) | 3.2.2 / 3.1.5 | Test-Framework (v3-Linie, inkl. Avalonia.Headless.XUnit) |
+| NSubstitute / FluentAssertions / coverlet.collector | 5.3.0 / 8.10.0 / 10.0.1 | Mocks / Assertions / Coverage |
 
 ### Keystore
 

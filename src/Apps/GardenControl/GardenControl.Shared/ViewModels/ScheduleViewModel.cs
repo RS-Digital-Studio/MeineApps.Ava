@@ -10,8 +10,9 @@ namespace GardenControl.Shared.ViewModels;
 
 /// <summary>
 /// Automatik-Konfiguration - Schwellenwerte, Zeitpläne und System-Einstellungen.
+/// Implementiert IDisposable, um das ConnectionService-Event-Abo sauber abzumelden.
 /// </summary>
-public partial class ScheduleViewModel : ViewModelBase
+public partial class ScheduleViewModel : ViewModelBase, IDisposable
 {
     private readonly IApiService _api;
     private readonly IConnectionService _connection;
@@ -28,9 +29,11 @@ public partial class ScheduleViewModel : ViewModelBase
     {
         _api = api;
         _connection = connection;
-        _connection.SystemStatusReceived += status =>
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => CurrentMode = status.Mode.ToString());
+        _connection.SystemStatusReceived += OnStatusReceived;
     }
+
+    private void OnStatusReceived(SystemStatusDto status) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => CurrentMode = status.Mode.ToString());
 
     [RelayCommand]
     private async Task LoadConfig()
@@ -106,6 +109,13 @@ public partial class ScheduleViewModel : ViewModelBase
     {
         await _api.UpdateConfigAsync(new SystemConfigDto { PollIntervalSeconds = PollIntervalSeconds });
         StatusMessage = $"Abfrageintervall auf {PollIntervalSeconds}s gesetzt";
+    }
+
+    /// <summary>Meldet das im Konstruktor abonnierte ConnectionService-Event wieder ab.</summary>
+    public void Dispose()
+    {
+        _connection.SystemStatusReceived -= OnStatusReceived;
+        GC.SuppressFinalize(this);
     }
 }
 

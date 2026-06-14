@@ -7,8 +7,9 @@ namespace GardenControl.Shared.ViewModels;
 
 /// <summary>
 /// Einstellungen - Server-IP, Verbindungstest, Daten-Export.
+/// Implementiert IDisposable, um das ConnectionService-Event-Abo sauber abzumelden.
 /// </summary>
-public partial class SettingsViewModel : ViewModelBase
+public partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private readonly IApiService _api;
     private readonly IConnectionService _connection;
@@ -25,9 +26,11 @@ public partial class SettingsViewModel : ViewModelBase
     {
         _api = api;
         _connection = connection;
-        _connection.ConnectionChanged += connected =>
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => IsConnected = connected);
+        _connection.ConnectionChanged += OnConnectionChanged;
     }
+
+    private void OnConnectionChanged(bool connected) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => IsConnected = connected);
 
     [RelayCommand]
     private async Task TestConnection()
@@ -60,5 +63,12 @@ public partial class SettingsViewModel : ViewModelBase
         {
             ServerInfo = "Keine Konfiguration abrufbar";
         }
+    }
+
+    /// <summary>Meldet das im Konstruktor abonnierte ConnectionService-Event wieder ab.</summary>
+    public void Dispose()
+    {
+        _connection.ConnectionChanged -= OnConnectionChanged;
+        GC.SuppressFinalize(this);
     }
 }

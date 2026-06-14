@@ -15,8 +15,10 @@ namespace GardenControl.Shared.ViewModels;
 /// 1. Sensor in trockene Erde stecken → "Trocken" kalibrieren
 /// 2. Sensor in nasse Erde stecken → "Nass" kalibrieren
 /// 3. Die Prozentwerte werden aus diesen Referenzwerten berechnet
+///
+/// Implementiert IDisposable, um das ConnectionService-Event-Abo sauber abzumelden.
 /// </summary>
-public partial class CalibrationViewModel : ViewModelBase
+public partial class CalibrationViewModel : ViewModelBase, IDisposable
 {
     private readonly IApiService _api;
     private readonly IConnectionService _connection;
@@ -31,21 +33,23 @@ public partial class CalibrationViewModel : ViewModelBase
         _connection = connection;
 
         // Live-Werte anzeigen (SignalR-Callback kommt auf Hintergrund-Thread)
-        _connection.SensorDataReceived += data =>
+        _connection.SensorDataReceived += OnSensorDataReceived;
+    }
+
+    private void OnSensorDataReceived(SensorDataDto data)
+    {
+        Dispatcher.UIThread.Post(() =>
         {
-            Dispatcher.UIThread.Post(() =>
+            foreach (var val in data.Values)
             {
-                foreach (var val in data.Values)
+                var item = Items.FirstOrDefault(i => i.ZoneId == val.ZoneId);
+                if (item != null)
                 {
-                    var item = Items.FirstOrDefault(i => i.ZoneId == val.ZoneId);
-                    if (item != null)
-                    {
-                        item.CurrentRawValue = val.RawValue;
-                        item.CurrentMoisturePercent = val.MoisturePercent;
-                    }
+                    item.CurrentRawValue = val.RawValue;
+                    item.CurrentMoisturePercent = val.MoisturePercent;
                 }
-            });
-        };
+            }
+        });
     }
 
     [RelayCommand]
@@ -106,6 +110,13 @@ public partial class CalibrationViewModel : ViewModelBase
         {
             StatusMessage = "Kalibrierung fehlgeschlagen - Sensor erreichbar?";
         }
+    }
+
+    /// <summary>Meldet das im Konstruktor abonnierte ConnectionService-Event wieder ab.</summary>
+    public void Dispose()
+    {
+        _connection.SensorDataReceived -= OnSensorDataReceived;
+        GC.SuppressFinalize(this);
     }
 }
 

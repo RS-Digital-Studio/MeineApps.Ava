@@ -58,28 +58,35 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
         // Verbindungsstatus tracken (SignalR-Callback kommt auf Hintergrund-Thread)
-        _connection.ConnectionChanged += connected =>
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                IsConnected = connected;
-                ConnectionStatus = connected ? "Verbunden" : "Verbindung verloren...";
-                if (connected) ClearError();
-            });
-        };
+        _connection.ConnectionChanged += OnConnectionChanged;
 
         // API-Fehler global anzeigen
-        _api.ErrorOccurred += error =>
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => ShowError(error));
-        };
+        _api.ErrorOccurred += OnApiErrorOccurred;
 
         // Settings-ViewModel kann URL ändern
-        Settings.ServerUrlChanged += async url =>
+        Settings.ServerUrlChanged += OnSettingsServerUrlChanged;
+    }
+
+    /// <summary>Verbindungsstatus-Update vom SignalR-Client (kommt auf Hintergrund-Thread).</summary>
+    private void OnConnectionChanged(bool connected)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            ServerUrl = url;
-            await ConnectAsync();
-        };
+            IsConnected = connected;
+            ConnectionStatus = connected ? "Verbunden" : "Verbindung verloren...";
+            if (connected) ClearError();
+        });
+    }
+
+    /// <summary>Globale Anzeige eines API-Fehlers (kommt synchron aus dem ApiService-catch).</summary>
+    private void OnApiErrorOccurred(string error) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => ShowError(error));
+
+    /// <summary>Reagiert auf eine im SettingsViewModel geänderte Server-URL mit Reconnect.</summary>
+    private async void OnSettingsServerUrlChanged(string url)
+    {
+        ServerUrl = url;
+        await ConnectAsync();
     }
 
     /// <summary>Beim App-Start verbinden</summary>
@@ -178,9 +185,24 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
         OnPropertyChanged(nameof(IsSettingsActive));
     }
 
-    /// <summary>Sauberes Cleanup: SignalR-Verbindung trennen</summary>
+    /// <summary>
+    /// Sauberes Cleanup: eigene Service-Event-Abos lösen, Child-ViewModels disposen
+    /// (melden ihre ConnectionService-Abos ab) und die SignalR-Verbindung trennen.
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
+        // Eigene Subscriptions abmelden
+        _connection.ConnectionChanged -= OnConnectionChanged;
+        _api.ErrorOccurred -= OnApiErrorOccurred;
+        Settings.ServerUrlChanged -= OnSettingsServerUrlChanged;
+
+        // Child-ViewModels abmelden (HistoryViewModel abonniert keine Events → kein IDisposable)
+        Dashboard.Dispose();
+        ZoneControl.Dispose();
+        Schedule.Dispose();
+        Calibration.Dispose();
+        Settings.Dispose();
+
         await _connection.DisposeAsync();
         GC.SuppressFinalize(this);
     }

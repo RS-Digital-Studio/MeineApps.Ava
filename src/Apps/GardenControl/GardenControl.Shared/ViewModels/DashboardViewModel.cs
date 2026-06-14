@@ -12,8 +12,9 @@ namespace GardenControl.Shared.ViewModels;
 /// <summary>
 /// Dashboard - Übersicht aller Zonen mit Live-Sensorwerten.
 /// Zeigt Feuchtigkeitsbalken, Systemstatus und Schnellaktionen.
+/// Implementiert IDisposable, um die ConnectionService-Event-Abos sauber abzumelden.
 /// </summary>
-public partial class DashboardViewModel : ViewModelBase
+public partial class DashboardViewModel : ViewModelBase, IDisposable
 {
     private readonly IConnectionService _connection;
 
@@ -112,6 +113,14 @@ public partial class DashboardViewModel : ViewModelBase
     private async Task StopWatering(int zoneId)
     {
         await _connection.StopWateringAsync(zoneId);
+    }
+
+    /// <summary>Meldet die im Konstruktor abonnierten ConnectionService-Events wieder ab.</summary>
+    public void Dispose()
+    {
+        _connection.SystemStatusReceived -= OnStatusReceived;
+        _connection.SensorDataReceived -= OnSensorDataReceived;
+        GC.SuppressFinalize(this);
     }
 }
 

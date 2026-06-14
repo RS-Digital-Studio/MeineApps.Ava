@@ -11,8 +11,9 @@ namespace GardenControl.Shared.ViewModels;
 
 /// <summary>
 /// Manuelle Steuerung - Ventile und Pumpe einzeln schalten mit konfigurierbarer Dauer.
+/// Implementiert IDisposable, um das ConnectionService-Event-Abo sauber abzumelden.
 /// </summary>
-public partial class ZoneControlViewModel : ViewModelBase
+public partial class ZoneControlViewModel : ViewModelBase, IDisposable
 {
     private readonly IConnectionService _connection;
 
@@ -92,5 +93,12 @@ public partial class ZoneControlViewModel : ViewModelBase
     partial void OnCustomDurationSecondsChanged(int value)
     {
         SelectedDurationSeconds = value;
+    }
+
+    /// <summary>Meldet das im Konstruktor abonnierte ConnectionService-Event wieder ab.</summary>
+    public void Dispose()
+    {
+        _connection.SystemStatusReceived -= OnStatusReceived;
+        GC.SuppressFinalize(this);
     }
 }

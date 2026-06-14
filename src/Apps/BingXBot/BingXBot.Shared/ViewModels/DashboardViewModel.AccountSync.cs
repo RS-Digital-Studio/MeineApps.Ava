@@ -406,4 +406,60 @@ public partial class DashboardViewModel
         }
         catch (OperationCanceledException) { /* Stopp */ }
     }
+
+    /// <summary>
+    /// Stoppt die Remote-Account-Polling-Schleife (cancelt das CTS, Loop bricht beim naechsten
+    /// <c>Task.Delay</c>/REST-Call ab). Idempotent — kein Effekt wenn nichts laeuft.
+    /// </summary>
+    private void StopRemoteAccountPolling()
+    {
+        _remoteAccountPollCts?.Cancel();
+        _remoteAccountPollCts?.Dispose();
+        _remoteAccountPollCts = null;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // App-Lifecycle (Akku): Client-seitige Polls/Timer im Hintergrund stoppen
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// App ging in den Hintergrund: die client-seitigen Poll-Loops und Timer anhalten (Akku).
+    /// Der Bot laeuft autonom auf dem Pi weiter — die App ist nur Monitor, im Hintergrund wird
+    /// nichts angezeigt, also ist kein Poll noetig. Im Vordergrund liefert zusaetzlich SignalR
+    /// Echtzeit-Updates; der Poll ist nur Lueckenfueller. Local-Mode (Desktop) erreicht diesen
+    /// Pfad nicht (kein Broker injiziert).
+    /// </summary>
+    private void OnAppPaused()
+    {
+        // Remote-Account-Poll-Schleife (3 REST-Calls/5s) stoppen.
+        if (IsRemoteMode)
+            StopRemoteAccountPolling();
+
+        // Stats-Breakdown-Timer (30s) stoppen.
+        _statsRefreshTimer?.Stop();
+    }
+
+    /// <summary>
+    /// App kam zurueck in den Vordergrund: Poll-Loop und Timer wieder anwerfen — mit sofortigem
+    /// erstem Poll, damit die Anzeige beim Wiedereintritt sofort frisch ist.
+    /// </summary>
+    private void OnAppResumed()
+    {
+        if (_disposed) return;
+
+        // Remote-Account-Poll-Schleife neu starten (StartRemoteAccountPollingAsync holt sofort
+        // initialen Status + Snapshot, bevor der 5s-Zyklus beginnt → Daten sofort frisch).
+        if (IsRemoteMode)
+        {
+            StopRemoteAccountPolling(); // sicherheitshalber Alt-Loop beenden (Doppellauf vermeiden)
+            _ = StartRemoteAccountPollingAsync();
+        }
+
+        // Stats-Breakdown-Timer wieder starten + sofortiger Refresh.
+        if (_statsRefreshTimer != null)
+        {
+            _statsRefreshTimer.Start();
+            _ = RefreshStatsAsync();
+        }
+    }
 }

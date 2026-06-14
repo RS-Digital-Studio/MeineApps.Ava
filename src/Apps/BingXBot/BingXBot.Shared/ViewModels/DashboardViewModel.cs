@@ -8,6 +8,7 @@ using BingXBot.Engine.Strategies;
 using BingXBot.Trading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
 
@@ -234,6 +235,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     private readonly IBotControlService _botControl;
     private readonly ISettingsService _settingsService;
     private readonly IAccountService _accountService;
+    // App-Lifecycle-Broker (Akku): stoppt Remote-Poll-Loop + Stats-Timer im Hintergrund.
+    private readonly IAppLifecycleService? _lifecycle;
     // Remote-Mode Polling-Loop — liest alle 5s AccountSnapshot vom Server
     private CancellationTokenSource? _remoteAccountPollCts;
 
@@ -263,7 +266,8 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         IPublicMarketDataClient? publicClient = null,
         BotDatabaseService? dbService = null,
         ISecureStorageService? secureStorage = null,
-        IStatsService? statsService = null)
+        IStatsService? statsService = null,
+        IAppLifecycleService? lifecycle = null)
     {
         _eventBus = eventBus;
         _eventStream = eventStream;
@@ -281,9 +285,10 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
         _dbService = dbService;
         _secureStorage = secureStorage;
         _statsService = statsService;
+        _lifecycle = lifecycle;
 
-        // Sub-ViewModels erstellen
-        BtcTicker = new BtcTickerViewModel(publicClient, eventBus);
+        // Sub-ViewModels erstellen — Lifecycle-Broker an den Ticker durchreichen (Akku: Poll-Stopp im Hintergrund).
+        BtcTicker = new BtcTickerViewModel(publicClient, eventBus, lifecycle);
         Activity = new ActivityFeedViewModel(eventStream);
 
         // Remote-Modus: Account/Positionen vom Server beziehen (Polling + Push-Events).
@@ -293,6 +298,15 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
             _eventStream.EquityUpdate += OnRemoteEquityUpdate;
             _botControl.StatusChanged += OnRemoteStatusChanged;
             _ = StartRemoteAccountPollingAsync();
+        }
+
+        // Akku: Bei App-Pause die Client-seitigen Loops/Timer stoppen, bei Resume neu starten.
+        // SignalR liefert Echtzeit-Updates ohnehin im Vordergrund; der Poll ist nur Lueckenfueller.
+        // Desktop liefert keinen Broker (null) → unveraendertes Verhalten.
+        if (_lifecycle != null)
+        {
+            _lifecycle.Paused += OnAppPaused;
+            _lifecycle.Resumed += OnAppResumed;
         }
 
 
@@ -536,6 +550,13 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+
+        // App-Lifecycle-Broker abmelden (symmetrisch zum Ctor-Abo).
+        if (_lifecycle != null)
+        {
+            _lifecycle.Paused -= OnAppPaused;
+            _lifecycle.Resumed -= OnAppResumed;
+        }
 
         // Remote-Mode: Event-Handler + Polling abmelden
         _remoteAccountPollCts?.Cancel();

@@ -5,6 +5,7 @@ using BingXBot.Graphics;
 using BingXBot.Trading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using System.Collections.ObjectModel;
 
@@ -18,12 +19,19 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
 {
     private readonly IPublicMarketDataClient? _publicClient;
     private readonly BotEventBus _eventBus;
+    private readonly IAppLifecycleService? _lifecycle;
 
     public ObservableCollection<Candle> BtcCandles { get; } = new();
     [ObservableProperty] private decimal _btcPrice;
     [ObservableProperty] private decimal _btcPriceChange;
     [ObservableProperty] private bool _isBtcLoading = true;
     [ObservableProperty] private string _btcStatusText = "Lade Daten...";
+
+    /// <summary>
+    /// Gate fuer die Auto-Refresh-Schleife (<see cref="StartAutoRefreshAsync"/> prueft
+    /// <c>if (!IsEnabled) continue;</c>). An den App-Vordergrund gekoppelt: bei App-Pause
+    /// false (kein REST-Poll im Hintergrund, Akku), bei Resume true + sofortiges Update.
+    /// </summary>
     [ObservableProperty] private bool _isEnabled = true;
 
     // Chart-Timeframe (wechselbar über UI-Buttons)
@@ -49,14 +57,35 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
 
     public BtcTickerViewModel(
         IPublicMarketDataClient? publicClient,
-        BotEventBus eventBus)
+        BotEventBus eventBus,
+        IAppLifecycleService? lifecycle = null)
     {
         _publicClient = publicClient;
         _eventBus = eventBus;
+        _lifecycle = lifecycle;
+
+        // Akku: Ticker-Poll an den App-Vordergrund koppeln. Bei App-Pause stoppt die Schleife
+        // (IsEnabled=false → das vorhandene `if (!IsEnabled) continue;` greift), bei Resume neu
+        // an + sofortiges Update. Desktop liefert keinen Broker (null) → laeuft dauerhaft.
+        if (_lifecycle != null)
+        {
+            _lifecycle.Paused += OnAppPaused;
+            _lifecycle.Resumed += OnAppResumed;
+        }
 
         // Chart-Daten laden und Auto-Refresh starten
         _ = LoadChartDataAsync();
         _ = StartAutoRefreshAsync();
+    }
+
+    /// <summary>App im Hintergrund: Ticker-Poll-Schleife pausieren (laeuft leer weiter, kein REST-Call).</summary>
+    private void OnAppPaused() => IsEnabled = false;
+
+    /// <summary>App im Vordergrund: Poll wieder aktivieren und sofort frische Daten holen.</summary>
+    private void OnAppResumed()
+    {
+        IsEnabled = true;
+        _ = LoadChartDataAsync(); // sofortiger initialer Poll — Chart ist beim Wiedereintritt frisch
     }
 
     [RelayCommand]
@@ -219,6 +248,11 @@ public partial class BtcTickerViewModel : ViewModelBase, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        if (_lifecycle != null)
+        {
+            _lifecycle.Paused -= OnAppPaused;
+            _lifecycle.Resumed -= OnAppResumed;
+        }
         _refreshTimer?.Dispose();
     }
 }

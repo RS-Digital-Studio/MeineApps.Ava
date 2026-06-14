@@ -505,6 +505,12 @@ public partial class App : Application
         services.AddSingleton<ISecureStorageService, SecureStorageService>();
         services.AddSingleton<BotEventBus>();
 
+        // App-Lifecycle-Broker (Akku): Android speist NotifyPaused/Resumed aus MainActivity.
+        // Konsumenten (DashboardViewModel, BtcTickerViewModel) stoppen ihre REST-Poll-Loops/Timer
+        // im Hintergrund. Desktop bleibt dauerhaft Vordergrund (kein Akku-Thema).
+        services.AddSingleton<MeineApps.Core.Ava.Services.IAppLifecycleService,
+            MeineApps.Core.Ava.Services.AppLifecycleService>();
+
         // Settings-Persistenz (ersetzt statische App.SaveAllSettingsAsync)
         services.AddSingleton<ISettingsPersistenceService, SettingsPersistenceService>();
 

@@ -128,43 +128,4 @@ public sealed class ShiftService : IShiftService
 
         await _calculation.RecalculateWorkDayAsync(workDay);
     }
-
-    public async Task<bool> IsWithinShiftAsync(DateTime time)
-    {
-        var assignment = await GetShiftAssignmentAsync(time.Date);
-        if (assignment?.ShiftPattern == null)
-            return true; // No shift = always allowed
-
-        var currentTime = TimeOnly.FromDateTime(time);
-        var shiftStart = assignment.ShiftPattern.StartTime;
-        var shiftEnd = assignment.ShiftPattern.EndTime;
-
-        // Normal shift (e.g. 6:00-14:00)
-        if (shiftStart < shiftEnd)
-        {
-            return currentTime >= shiftStart && currentTime <= shiftEnd;
-        }
-        // Night shift (e.g. 22:00-6:00)
-        else
-        {
-            return currentTime >= shiftStart || currentTime <= shiftEnd;
-        }
-    }
-
-    public async Task<int> CalculateTargetMinutesAsync(DateTime date)
-    {
-        var assignment = await GetShiftAssignmentAsync(date);
-        if (assignment?.ShiftPattern == null)
-        {
-            // Fallback to default settings
-            var settings = await _database.GetSettingsAsync();
-            return settings.IsWorkDay(date.DayOfWeek) ? settings.DailyMinutes : 0;
-        }
-
-        // Shift-based calculation
-        if (assignment.ShiftPattern.Type == ShiftType.Off)
-            return 0;
-
-        return (int)assignment.ShiftPattern.WorkDuration.TotalMinutes;
-    }
 }

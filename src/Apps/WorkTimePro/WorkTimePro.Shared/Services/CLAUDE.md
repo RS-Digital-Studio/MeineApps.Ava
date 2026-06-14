@@ -15,7 +15,7 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `IVacationService` | `VacationService` | 9 Abwesenheits-Typen (DayStatus-Subset), Resturlaub, Übertrag |
 | `IHolidayService` | `HolidayService` | DE (16 BL), AT (9 BL), CH (12 Kantone) |
 | `IProjectService` | `ProjectService` | Projekte: CRUD + Stunden-Aggregation aus TimeEntry |
-| `IShiftService` | `ShiftService` | Schichtplanung: Muster + Einzelzuweisungen. Eine zugewiesene Schicht **bestimmt das Tages-Soll** (Vorrang-Regel s. CalculationService); `AssignShiftAsync`/`RemoveShiftAssignmentAsync` aktualisieren bestehende WorkDays via `ICalculationService`. (Die alten `CalculateTargetMinutesAsync`/`IsWithinShiftAsync` sind ungenutzt — Verdrahtung läuft über `GetOrCreateWorkDayAsync` + `RefreshWorkDayTargetAsync`.) |
+| `IShiftService` | `ShiftService` | Schichtplanung: Muster + Einzelzuweisungen. Eine zugewiesene Schicht **bestimmt das Tages-Soll** (Vorrang-Regel s. CalculationService); `AssignShiftAsync`/`RemoveShiftAssignmentAsync` aktualisieren bestehende WorkDays via `ICalculationService` (`RefreshWorkDayTargetAsync`). Soll bei der Anlage neuer Tage: `DatabaseService.GetOrCreateWorkDayAsync`. |
 | `IEmployerService` | `EmployerService` | Arbeitgeber: Default-Flag, Stunden-Aggregation |
 | `IBackupService` | `BackupService` | JSON-Backup/Restore mit Safety-Backup, BulkRestore |
 | `INotificationService` | `DesktopNotificationService` (Shared) / `AndroidNotificationService` (in `.Android`) | Plattform-abstrakt |

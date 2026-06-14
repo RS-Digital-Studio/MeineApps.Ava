@@ -46,14 +46,4 @@ public interface IShiftService
     /// Remove shift assignment
     /// </summary>
     Task RemoveShiftAssignmentAsync(DateTime date);
-
-    /// <summary>
-    /// Check if current time is within a shift
-    /// </summary>
-    Task<bool> IsWithinShiftAsync(DateTime time);
-
-    /// <summary>
-    /// Calculate target work minutes for a date based on shift
-    /// </summary>
-    Task<int> CalculateTargetMinutesAsync(DateTime date);
 }

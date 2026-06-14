@@ -375,21 +375,6 @@ public sealed partial class ArPointOverlayView : View
         path.Close();
     }
 
-    public void UpdateProjectedPositions(
-        List<(float screenX, float screenY, int pointIndex, float depth, float groundX, float groundY, float worldY)> points,
-        List<(float screenX, float screenY, int contourIdx, int pointIdx, float depth)> contourPoints)
-    {
-        _projectedPoints = points;
-        _projectedContourPoints = contourPoints;
-        Invalidate();
-    }
-
-    public void UpdateProjectedPlanes(List<List<(float screenX, float screenY)>> planes)
-    {
-        _projectedPlanes = planes;
-        Invalidate();
-    }
-
     /// <summary>Übernimmt das projizierte Boden-Raster (null = aus / kein Ground-Tracking).</summary>
     public void UpdateGroundGrid(List<(float x1, float y1, float x2, float y2, float dist)>? segments)
     {
@@ -406,6 +391,15 @@ public sealed partial class ArPointOverlayView : View
 
     public void UpdateState(ArOverlayState state)
     {
+        ApplyState(state);
+        Invalidate();
+    }
+
+    /// <summary>Uebernimmt den State OHNE Invalidate — fuer den kombinierten Per-Frame-Push
+    /// (<see cref="UpdateFrame"/>), der State + Projektionen in EINEM Hop setzt und nur EINMAL
+    /// invalidiert.</summary>
+    private void ApplyState(ArOverlayState state)
+    {
         _state = state;
         if (!string.IsNullOrEmpty(state.TransientHint))
         {
@@ -416,6 +410,26 @@ public sealed partial class ArPointOverlayView : View
             _transientHintSeverity = state.TransientHintSeverity;
             _transientHintUntilMs = Java.Lang.JavaSystem.CurrentTimeMillis() + 1500;
         }
+    }
+
+    /// <summary>Kombinierter Per-Frame-Push: setzt State + projizierte Punkte/Konturen + Planes +
+    /// Boden-Raster in EINEM UI-Hop und invalidiert nur EINMAL. Ersetzt die frueheren zwei
+    /// getrennten RunOnUiThread-Closures (State separat von den Projektionen) samt bis zu vier
+    /// Invalidate-Aufrufen pro Frame. Ein einziger Hop haelt State und Projektionen zudem
+    /// konsistent — vorher konnte ein OnDraw zwischen den beiden Posts mit neuem State, aber alten
+    /// Projektionen (oder umgekehrt) zeichnen.</summary>
+    public void UpdateFrame(
+        ArOverlayState state,
+        List<(float screenX, float screenY, int pointIndex, float depth, float groundX, float groundY, float worldY)> points,
+        List<(float screenX, float screenY, int contourIdx, int pointIdx, float depth)> contourPoints,
+        List<List<(float screenX, float screenY)>> planes,
+        List<(float x1, float y1, float x2, float y2, float dist)>? groundGrid)
+    {
+        ApplyState(state);
+        _projectedPoints = points;
+        _projectedContourPoints = contourPoints;
+        _projectedPlanes = planes;
+        _groundGridSegments = groundGrid;
         Invalidate();
     }
 

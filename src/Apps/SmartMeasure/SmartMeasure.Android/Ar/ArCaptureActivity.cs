@@ -2938,9 +2938,24 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 _reticleHeightDelta = null;
             }
 
-            // Overlay-State pro Frame auf UI-Thread pushen
+            // Overlay-State pro Frame auf UI-Thread pushen. Im trackenden Fall hat
+            // ProjectPointsToScreen die Uebergabe-Listen gefuellt → State UND Projektionen in EINEM
+            // UI-Hop pushen (eine Closure, ein Invalidate, konsistenter Frame). Im nicht-trackenden
+            // Fall lief keine Projektion → nur den State pushen, die zuletzt projizierten Punkte
+            // bleiben (verhaltensgleich zum frueheren getrennten State-Push).
             var state = BuildOverlayState(camera);
-            RunOnUiThread(() => _overlayView?.UpdateState(state));
+            if (isTracking)
+            {
+                var pts = _ptsForUi;
+                var cPts = _cPtsForUi;
+                var planes = _planesForUi;
+                var grid = _gridForUi;
+                RunOnUiThread(() => _overlayView?.UpdateFrame(state, pts, cPts, planes, grid));
+            }
+            else
+            {
+                RunOnUiThread(() => _overlayView?.UpdateState(state));
+            }
         }
         catch (CameraNotAvailableException)
         {
@@ -3007,6 +3022,16 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private readonly float[,] _heatmapGrid = new float[HeatmapCols, HeatmapRows];
     private int _heatmapFrameCounter;
     private bool _heatmapEnabled;
+
+    /// <summary>Letzter, an das Overlay uebergebener Heatmap-Snapshot. Wird NUR in
+    /// <see cref="UpdateQualityHeatmap"/> (~1x/s) als FRISCHE Kopie des GL-lokalen
+    /// <see cref="_heatmapGrid"/> neu erzeugt; <see cref="BuildOverlayState"/> reicht in den
+    /// uebrigen ~29 Frames/s dieselbe Referenz durch (Overlay liest nur read-only). Spart die
+    /// Per-Frame-<c>new float[12,21]</c>-Allokation (252 floats) der frueheren CloneHeatmapGrid.
+    /// Cross-Thread sicher: Referenz-Zuweisung ist atomar, und jeder 1-Hz-Lauf publiziert eine
+    /// NEUE Referenz — die UI sieht nie ein Grid, das gerade befuellt wird. GL-Thread schreibt,
+    /// UI-Thread liest.</summary>
+    private float[,]? _heatmapSnapshot;
 
     private void ProjectPointsToScreen(Google.AR.Core.Camera camera)
     {
@@ -3091,27 +3116,34 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         }
 
         // Erkannte Planes projizieren
-        var projectedPlanes = ProjectPlanesToScreen(_mvpMatrixScratch);
+        _planesForUi = ProjectPlanesToScreen(_mvpMatrixScratch);
 
         // Boden-Raster auf der Ground-Plane projizieren (3D-Tiefenanker der Szene)
         ProjectGroundGrid(camera, _mvpMatrixScratch);
 
-        // Overlay auf UI-Thread aktualisieren. Die Builder leben auf dem GL-Thread weiter —
+        // Übergabe-Listen fuer das Overlay vorbereiten. Die Builder leben auf dem GL-Thread weiter —
         // wir kopieren NUR einmal in eine Übergabe-Liste statt zweifach (vorher: erst Builder,
-        // dann eine zusaetzliche Snapshot-Copy unter dem _projectedPoints-Lock).
-        var ptsForUi = new List<(float, float, int, float, float, float, float)>(_projectedPointsBuilder);
-        var cPtsForUi = new List<(float, float, int, int, float)>(_projectedContourPointsBuilder);
-        var gridForUi = _projectedGroundGridBuilder.Count > 0
+        // dann eine zusaetzliche Snapshot-Copy unter dem _projectedPoints-Lock). Die frische
+        // Per-Frame-Kopie ist bewusst gewaehlt: das Overlay haelt die Referenz ueber mehrere
+        // GL-Frames (PostInvalidateDelayed) und ueber asynchrone RunOnUiThread-Hops hinweg — ein
+        // wiederverwendeter Puffer koennte vom naechsten GL-Frame ueberschrieben werden, waehrend
+        // OnDraw ihn noch liest. Die Listen werden NICHT hier gepusht, sondern vom kombinierten
+        // Frame-Push in OnDrawFrame (ein UI-Hop fuer State + Projektionen).
+        _ptsForUi = new List<(float, float, int, float, float, float, float)>(_projectedPointsBuilder);
+        _cPtsForUi = new List<(float, float, int, int, float)>(_projectedContourPointsBuilder);
+        _gridForUi = _projectedGroundGridBuilder.Count > 0
             ? new List<(float, float, float, float, float)>(_projectedGroundGridBuilder)
             : null;
-
-        RunOnUiThread(() =>
-        {
-            _overlayView?.UpdateProjectedPositions(ptsForUi, cPtsForUi);
-            _overlayView?.UpdateProjectedPlanes(projectedPlanes);
-            _overlayView?.UpdateGroundGrid(gridForUi);
-        });
     }
+
+    // GL-Thread-lokale Uebergabe-Listen aus ProjectPointsToScreen, die OnDrawFrame im kombinierten
+    // Frame-Push (zusammen mit dem State) an das Overlay reicht. Jeder Frame erzeugt frische Listen
+    // (Cross-Thread-Uebergabe), daher kein Lock noetig — Schreiben + Lesen liegen sequenziell im
+    // selben OnDrawFrame-Durchlauf auf dem GL-Thread.
+    private List<(float screenX, float screenY, int pointIndex, float depth, float groundX, float groundY, float worldY)> _ptsForUi = [];
+    private List<(float screenX, float screenY, int contourIdx, int pointIdx, float depth)> _cPtsForUi = [];
+    private List<List<(float screenX, float screenY)>> _planesForUi = [];
+    private List<(float x1, float y1, float x2, float y2, float dist)>? _gridForUi;
 
     /// <summary>
     /// Projiziert ein 1-m-Boden-Raster auf der erkannten Ground-Plane in Screen-Koordinaten.
@@ -3214,6 +3246,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         return (screenX, screenY, clipW);
     }
 
+    /// <summary>Gepoolter Scratch fuer die Plane-Polygon-Vertices (GL-Thread-only). Waechst an den
+    /// groessten bisher gesehenen Vertex-Count und wird pro Plane via Laengen-Overload nur teilweise
+    /// befuellt — spart das new float[vertexCount*2] pro Plane pro Frame. Rein lokal in der
+    /// Projektions-Schleife, geht NICHT ans Overlay (anders als die Polygon-Listen).</summary>
+    private float[] _planeVertexScratch = new float[64];
+
     /// <summary>Erkannte ARCore-Planes in Screen-Koordinaten projizieren</summary>
     private List<List<(float, float)>> ProjectPlanesToScreen(float[] mvpMatrix)
     {
@@ -3236,9 +3274,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 var pose = plane.CenterPose;
                 if (pose == null) continue;
 
-                var vertexCount = polygon.Remaining() / 2;
-                var vertices = new float[vertexCount * 2];
-                polygon.Get(vertices);
+                var floatCount = polygon.Remaining();
+                var vertexCount = floatCount / 2;
+                // Scratch an den groessten Vertex-Count wachsen lassen, dann nur die ersten
+                // floatCount Elemente befuellen (Laengen-Overload — der Puffer darf groesser sein).
+                if (_planeVertexScratch.Length < floatCount)
+                    _planeVertexScratch = new float[floatCount];
+                var vertices = _planeVertexScratch;
+                polygon.Get(vertices, 0, floatCount);
                 polygon.Rewind();
 
                 // Rotationsmatrix aus Quaternion (wie in SnapToPlaneEdge)
@@ -3870,20 +3913,31 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// <summary>Aktualisiert alle ArPoint-Positionen aus ihren Anchors (Drift-Kompensation).</summary>
     private void RefreshAllAnchors()
     {
-        List<ArPoint> allPoints;
+        // Wiederverwendetes Scratch-Feld statt new List<ArPoint> pro Frame — RefreshAnchors
+        // iteriert die Liste nur synchron im Aufruf (mutiert die ArPoint-Objekte, nicht die Liste)
+        // und haelt sie nicht. GL-Thread-only + sequenziell pro Frame, daher exklusiv: nur unter
+        // _dataLock befuellt (Clear+AddRange), danach ausserhalb Lock iteriert — identisch zum
+        // frueheren Ablauf (die Kopie war schon immer vom _points-Backing entkoppelt, die
+        // ArPoint-Referenzen sind dieselben). Spart die Per-Frame-Listen-Allokation + 4 AddRange-
+        // Array-Wachstuemer.
+        _allPointsScratch.Clear();
         lock (_dataLock)
         {
-            allPoints = new List<ArPoint>(_points);
-            foreach (var c in _contours) allPoints.AddRange(c.Points);
-            if (_activeContour != null) allPoints.AddRange(_activeContour.Points);
+            _allPointsScratch.AddRange(_points);
+            foreach (var c in _contours) _allPointsScratch.AddRange(c.Points);
+            if (_activeContour != null) _allPointsScratch.AddRange(_activeContour.Points);
             // Plan-Kap. 5.2: Site-Marker auch refreshen, sonst driften die alten Punkte
-            allPoints.AddRange(_sitePointAnchors);
+            _allPointsScratch.AddRange(_sitePointAnchors);
             // Massband-Punkte haben aus FinalizeSampling ebenfalls Anchors — ohne Refresh
             // wuerden sie driften (und der Anchor waere nutzlos teurer Ballast).
-            allPoints.AddRange(_tapeMeasurePoints);
+            _allPointsScratch.AddRange(_tapeMeasurePoints);
         }
-        _anchorManager.RefreshAnchors(allPoints);
+        _anchorManager.RefreshAnchors(_allPointsScratch);
     }
+
+    /// <summary>Wiederverwendete Sammel-Liste fuer <see cref="RefreshAllAnchors"/> (GL-Thread-only,
+    /// 1x/Frame). Wird unter _dataLock befuellt, danach lesend an RefreshAnchors gereicht.</summary>
+    private readonly List<ArPoint> _allPointsScratch = [];
 
     /// <summary>
     /// Plan 3.3: Verbindet wiederhergestellte Recovery-Punkte erneut mit Earth-Anchors.
@@ -4672,21 +4726,52 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// pro Frame selbst) — vermeidet die ZWEITE GetAllTrackables-Iteration im Hot-Path.</param>
     private (bool ready, string checkList) ValidatePreMeasureConditions(int? knownPlaneCount = null)
     {
-        var failed = new List<string>();
-
-        if (_arSession == null) failed.Add("Session nicht aktiv");
-
+        // Das Ergebnis haengt nur an vier diskreten Schwellen-Zustaenden. Sind sie unveraendert
+        // ggue. dem letzten Frame, dieselbe (ready, checkList) zurueckgeben — spart die Per-Frame
+        // new List<string> + string.Join im Render-Hot-Path. GL-Thread-lokal, kein Lock noetig.
+        var sessionMissing = _arSession == null;
         var stability = _stabilityMonitor?.StabilityScore ?? 0f;
-        if (stability < 0.6f) failed.Add("Kamera wackelt");
-
-        if (_magneticAccuracy < 2) failed.Add("Kompass unkalibriert");
-
+        var unstable = stability < 0.6f;
+        var compassBad = _magneticAccuracy < 2;
         var planeCount = knownPlaneCount ?? CountTrackedPlanes();
+        var noPlane = planeCount == 0;
 
-        if (planeCount == 0) failed.Add("Keine Fläche erkannt");
+        if (_preMeasureCacheValid
+            && sessionMissing == _preMeasureSessionMissing
+            && unstable == _preMeasureUnstable
+            && compassBad == _preMeasureCompassBad
+            && noPlane == _preMeasureNoPlane)
+        {
+            return (_preMeasureReady, _preMeasureCheckList);
+        }
 
-        return (failed.Count == 0, string.Join(" · ", failed));
+        var failed = new List<string>();
+        if (sessionMissing) failed.Add("Session nicht aktiv");
+        if (unstable) failed.Add("Kamera wackelt");
+        if (compassBad) failed.Add("Kompass unkalibriert");
+        if (noPlane) failed.Add("Keine Fläche erkannt");
+
+        _preMeasureReady = failed.Count == 0;
+        _preMeasureCheckList = string.Join(" · ", failed);
+        _preMeasureSessionMissing = sessionMissing;
+        _preMeasureUnstable = unstable;
+        _preMeasureCompassBad = compassBad;
+        _preMeasureNoPlane = noPlane;
+        _preMeasureCacheValid = true;
+
+        return (_preMeasureReady, _preMeasureCheckList);
     }
+
+    // Cache fuer ValidatePreMeasureConditions (GL-Thread-lokal). Die Checkliste ist frame-konstant,
+    // solange sich keiner der vier Schwellen-Zustaende aendert — dann wird der zuletzt gebaute
+    // String wiederverwendet statt pro Frame neu alloziert.
+    private bool _preMeasureCacheValid;
+    private bool _preMeasureReady;
+    private string _preMeasureCheckList = "";
+    private bool _preMeasureSessionMissing;
+    private bool _preMeasureUnstable;
+    private bool _preMeasureCompassBad;
+    private bool _preMeasureNoPlane;
 
     /// <summary>Durchschnittliche Messgenauigkeit aller bisherigen Punkte (für Quality-Score).
     /// Alloc-frei (laeuft pro Frame in BuildOverlayState unter _dataLock — Listen-Kopie +
@@ -4744,6 +4829,52 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// aktiven Erfassungs-Modus und den Live-Counts. Der Detail-Text führt durch geführte Modi
     /// (Rechteck-Schritte) bzw. zeigt den Fortschritt (Linie/Maßband/Abstecken).</summary>
     private (string title, string? detail) BuildModeChipLabel(
+        int pointCount, int activeContourCount, int rectCornerCount, int tapeCount)
+    {
+        // Label haengt nur an Modus + Kontur-Typ + den vier Counts. Unveraendert ggue. dem letzten
+        // Frame → gecachte (title, detail) zurueckgeben statt die String-Interpolation pro Frame zu
+        // wiederholen. Die zurueckgegebenen Strings sind immutable → Cross-Thread sicher (wandern in
+        // den State-Snapshot, UI-Thread liest). GL-Thread-lokal, kein Lock.
+        if (_modeChipCacheValid
+            && _captureMode == _modeChipMode
+            && _currentContourType == _modeChipContourType
+            && pointCount == _modeChipPointCount
+            && activeContourCount == _modeChipActiveContourCount
+            && rectCornerCount == _modeChipRectCornerCount
+            && tapeCount == _modeChipTapeCount)
+        {
+            return (_modeChipTitleCache, _modeChipDetailCache);
+        }
+
+        var (title, detail) = BuildModeChipLabelCore(
+            pointCount, activeContourCount, rectCornerCount, tapeCount);
+
+        _modeChipTitleCache = title;
+        _modeChipDetailCache = detail;
+        _modeChipMode = _captureMode;
+        _modeChipContourType = _currentContourType;
+        _modeChipPointCount = pointCount;
+        _modeChipActiveContourCount = activeContourCount;
+        _modeChipRectCornerCount = rectCornerCount;
+        _modeChipTapeCount = tapeCount;
+        _modeChipCacheValid = true;
+
+        return (title, detail);
+    }
+
+    // Cache fuer BuildModeChipLabel (GL-Thread-lokal). Vermeidet die Per-Frame-String-Interpolation,
+    // solange Modus/Kontur-Typ/Counts gleich bleiben.
+    private bool _modeChipCacheValid;
+    private string _modeChipTitleCache = "";
+    private string? _modeChipDetailCache;
+    private CaptureMode _modeChipMode;
+    private global::SmartMeasure.Shared.Models.ArContourType _modeChipContourType;
+    private int _modeChipPointCount;
+    private int _modeChipActiveContourCount;
+    private int _modeChipRectCornerCount;
+    private int _modeChipTapeCount;
+
+    private (string title, string? detail) BuildModeChipLabelCore(
         int pointCount, int activeContourCount, int rectCornerCount, int tapeCount)
     {
         switch (_captureMode)
@@ -5176,19 +5307,24 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             // Plan-Kap. 5.2: Site-Marker-Snapshot
             SiteMarkerScreenPoints = BuildSiteMarkerSnapshot(),
             // Plan-Kap. 5.15: Quality-Heatmap (Snapshot der letzten Berechnung)
-            QualityHeatmapGrid = _heatmapEnabled ? CloneHeatmapGrid() : null,
+            // Heatmap wird nur ~1x/s neu berechnet (UpdateQualityHeatmap publiziert dann eine frische
+            // Snapshot-Referenz). In allen uebrigen Frames dieselbe Referenz durchreichen statt pro
+            // Frame zu klonen — Overlay liest nur read-only.
+            QualityHeatmapGrid = _heatmapEnabled ? _heatmapSnapshot : null,
             QualityHeatmapCols = HeatmapCols,
             QualityHeatmapRows = HeatmapRows,
         };
     }
 
-    /// <summary>Plan-Kap. 5.15: Defensive Kopie damit Overlay-View nicht parallel mit
-    /// dem GL-Thread auf dem Live-Grid schreibt.</summary>
-    private float[,] CloneHeatmapGrid()
+    /// <summary>Plan-Kap. 5.15: Publiziert eine FRISCHE defensive Kopie des GL-lokalen Grids als
+    /// neuen <see cref="_heatmapSnapshot"/> — wird nur in <see cref="UpdateQualityHeatmap"/> (~1x/s)
+    /// nach abgeschlossener Berechnung aufgerufen, nicht pro Frame. Die neue Referenz wird atomar
+    /// gesetzt; bestehende Snapshots, die die UI noch haelt, bleiben unveraendert gueltig.</summary>
+    private void PublishHeatmapSnapshot()
     {
         var copy = new float[HeatmapCols, HeatmapRows];
         Array.Copy(_heatmapGrid, copy, _heatmapGrid.Length);
-        return copy;
+        _heatmapSnapshot = copy;
     }
 
     private IReadOnlyList<(float screenX, float screenY, string label)>? BuildSiteMarkerSnapshot()
@@ -5315,6 +5451,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         for (var c = 0; c < HeatmapCols; c++)
             for (var r = 0; r < HeatmapRows; r++)
                 _heatmapGrid[c, r] *= qualityScore;
+
+        // Frische Snapshot-Referenz fuer das Overlay publizieren (nur hier, ~1x/s) — danach reicht
+        // BuildOverlayState die Referenz in den uebrigen Frames ohne erneuten Klon durch.
+        PublishHeatmapSnapshot();
     }
 
     /// <summary>Plan-Kap. 5.2: Erzeugt iterativ Earth-Anchors fuer alle bestehenden

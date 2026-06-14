@@ -124,6 +124,7 @@ public sealed class BattlePassService : IBattlePassService
 
     public int AddXp(int amount, string source = "")
     {
+        if (amount <= 0) return 0; // Guard gegen 0/negative XP (vor Boost-Multiplikation)
         if (_data.IsSeasonExpired) return 0;
         if (_data.CurrentTier >= BattlePassTierDefinitions.MaxTier) return 0;
 

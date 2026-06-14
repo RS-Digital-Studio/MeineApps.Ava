@@ -34,8 +34,9 @@ public sealed class WhatsNewService : IWhatsNewService
         ("2.1.2", ["WhatsNewMinigameFlow", "WhatsNewBalancingPolish", "WhatsNewCraftingStability", "WhatsNewGuildHallBonuses", "WhatsNewEconomySaveFixes"]),
         // Eintrag fuer die aktuelle Version (2.1.3) — bei jeder funktionalen Aenderung
         // kumulativ erweitern, beim naechsten Release neuen Eintrag fuer die Folge-Version anhaengen.
-        // WICHTIG: Jeder Key MUSS in den RESX (neutral + de/en/es/fr/it/pt) existieren — GetString gibt
-        // bei Miss den ROHEN Key-Namen zurueck (kein Fallback-Helper), sonst zeigt der Dialog die Key-ID.
+        // WICHTIG: Jeder Key MUSS in den RESX (neutral + de/en/es/fr/it/pt) existieren. GetString gibt
+        // bei Miss den ROHEN Key-Namen zurueck (nie null); fehlende Bullet-Keys werden in
+        // ShowWhatsNewIfNeededAsync uebersprungen (line == key), Titel/Button fallen via L() zurueck.
         ("2.1.3", ["WhatsNewGuildMultiplayerLive", "WhatsNewNoBannerAds", "WhatsNewPrestigeShopReset", "WhatsNewFairCostsAndMaterials", "WhatsNewSaveStabilityV213", "WhatsNewSmoothnessAndTouch"]),
         // Release v2.1.4 — Fixes seit 2.1.3 (Belohnungs-/Kauf-Reparatur, Markt-UI).
         ("2.1.4", ["WhatsNewV214RewardsRestored", "WhatsNewV214WorkerCountInstant"]),
@@ -105,7 +106,9 @@ public sealed class WhatsNewService : IWhatsNewService
         for (int i = 0; i < newKeys.Count; i++)
         {
             var line = _localization.GetString(newKeys[i]);
-            if (!string.IsNullOrEmpty(line))
+            // RESX-Miss gibt den rohen Key-Namen zurueck (nie null) — dann Bullet ueberspringen
+            // statt die Key-ID im Dialog anzuzeigen.
+            if (!string.IsNullOrEmpty(line) && line != newKeys[i])
                 lines.Add($"{bullet} {line}");
         }
 
@@ -115,9 +118,9 @@ public sealed class WhatsNewService : IWhatsNewService
             return Task.CompletedTask;
         }
 
-        var title = _localization.GetString("WhatsNewTitle") ?? "What's new";
+        var title = L("WhatsNewTitle", "What's new");
         var body = string.Join("\n", lines);
-        var ok = _localization.GetString("Confirm") ?? "OK";
+        var ok = L("Confirm", "OK");
 
         _dialogService.ShowAlertDialog(title, body, ok);
 
@@ -126,6 +129,17 @@ public sealed class WhatsNewService : IWhatsNewService
         settings.LastWhatsNewVersion = currentVersion;
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Lokalisiert mit Fallback: GetString liefert bei RESX-Miss den ROHEN Key-Namen (nie null)
+    /// — dieser Helper erkennt das (value == key) und liefert den Fallback, damit nie eine
+    /// Key-ID im Dialog landet (analog BomberBlast.WhatsNewService).
+    /// </summary>
+    private string L(string key, string fallback)
+    {
+        var value = _localization.GetString(key);
+        return string.IsNullOrEmpty(value) || value == key ? fallback : value;
     }
 
     private static string GetCurrentAppVersion()

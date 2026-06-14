@@ -27,6 +27,7 @@ public class MainActivity : AvaloniaMainActivity
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
     private MainViewModel? _mainVm;
+    private Action<string>? _exitHintHandler;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -57,9 +58,12 @@ public class MainActivity : AvaloniaMainActivity
         _mainVm = App.Services.GetService<MainViewModel>();
         if (_mainVm != null)
         {
-            _mainVm.ExitHintRequested += msg =>
+            // Handler in Feld halten → in OnDestroy abmeldbar (die Singleton-VM wuerde sonst die
+            // Activity ueber das capturing Lambda festhalten = Leak bei Activity-Recreation).
+            _exitHintHandler = msg =>
                 RunOnUiThread(() =>
                     Toast.MakeText(this, msg, ToastLength.Short)?.Show());
+            _mainVm.ExitHintRequested += _exitHintHandler;
         }
 
         // Google Mobile Ads initialisieren - Ads erst nach SDK-Callback laden
@@ -143,6 +147,8 @@ public class MainActivity : AvaloniaMainActivity
 
     protected override void OnDestroy()
     {
+        if (_mainVm != null && _exitHintHandler != null)
+            _mainVm.ExitHintRequested -= _exitHintHandler;
         App.DisposeServices();
         _rewardedAdHelper?.Dispose();
         _adMobHelper?.Dispose();

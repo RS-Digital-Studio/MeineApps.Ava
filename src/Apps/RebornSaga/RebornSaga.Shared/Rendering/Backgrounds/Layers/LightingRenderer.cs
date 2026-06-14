@@ -18,7 +18,9 @@ public static class LightingRenderer
     private static float _cachedAmbientIntensity;
 
     // Shader-Cache fuer Punkt-Lichtquellen (vermeidet CreateRadialGradient pro Licht pro Frame)
-    // Key: quantisierte Position (2px) + Radius + Farbe+Alpha
+    // Key: quantisierte Position (4px) + Radius (8px) + Farbe+Basis-Alpha (OHNE Flacker-Alpha →
+    // stabiler Key; der Helligkeits-Flacker laeuft ueber das Paint-Alpha in RenderPointLights,
+    // sonst Cache-Miss + neuer Shader pro Frame + unbegrenztes Cache-Wachstum)
     private struct LightShaderKey : IEquatable<LightShaderKey>
     {
         public int Cx, Cy, Radius;
@@ -100,31 +102,36 @@ public static class LightingRenderer
             var cy = bounds.Top + bounds.Height * light.Y;
             var radius = light.Radius;
 
-            // Flacker-Effekt
+            // Radius-Flacker (visuell). Grob gecacht (s.u.) statt pro Frame neuer Shader.
             if (light.Flickers)
                 radius *= 0.85f + MathF.Sin(time * 5f) * 0.1f + MathF.Sin(time * 13f) * 0.05f;
 
-            var alpha = (byte)(light.Intensity * 255f *
-                (light.Flickers ? 0.8f + MathF.Sin(time * 3f) * 0.2f : 1f));
+            // Basis-Alpha OHNE Helligkeits-Flacker → STABILER Cache-Key. Der Flacker wird unten
+            // ueber das Paint-Alpha moduliert (baseAlpha * flicker == originales flackerndes Alpha).
+            var baseAlpha = (byte)(light.Intensity * 255f);
 
-            // Quantisierten Cache-Key berechnen (2px Toleranz)
+            // Cache-Key: Position 4px-, Radius 8px-quantisiert → der Radius-Flacker erzeugt nur
+            // wenige diskrete Shader pro Licht (nach einem Flacker-Zyklus nur noch Cache-Hits).
             var key = new LightShaderKey
             {
-                Cx = (int)(cx / 2f) * 2,
-                Cy = (int)(cy / 2f) * 2,
-                Radius = (int)(radius / 2f) * 2,
-                ColorWithAlpha = (uint)((light.Color.Red << 24) | (light.Color.Green << 16) | (light.Color.Blue << 8) | alpha)
+                Cx = (int)(cx / 4f) * 4,
+                Cy = (int)(cy / 4f) * 4,
+                Radius = (int)(radius / 8f) * 8,
+                ColorWithAlpha = (uint)((light.Color.Red << 24) | (light.Color.Green << 16) | (light.Color.Blue << 8) | baseAlpha)
             };
 
             if (!_lightShaderCache.TryGetValue(key, out var shader))
             {
                 shader = SKShader.CreateRadialGradient(
                     new SKPoint(cx, cy), radius,
-                    new[] { light.Color.WithAlpha(alpha), SKColors.Transparent },
+                    new[] { light.Color.WithAlpha(baseAlpha), SKColors.Transparent },
                     SKShaderTileMode.Clamp);
                 _lightShaderCache[key] = shader;
             }
 
+            // Helligkeits-Flacker per Paint-Alpha (moduliert den gecachten Shader, kein neuer Shader).
+            var flicker = light.Flickers ? (0.8f + MathF.Sin(time * 3f) * 0.2f) : 1f;
+            _lightPaint.Color = SKColors.White.WithAlpha((byte)(flicker * 255f));
             _lightPaint.Shader = shader;
             canvas.DrawRect(bounds, _lightPaint);
             _lightPaint.Shader = null;

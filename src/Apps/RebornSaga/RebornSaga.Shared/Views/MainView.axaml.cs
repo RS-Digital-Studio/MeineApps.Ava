@@ -113,6 +113,14 @@ public partial class MainView : UserControl
         };
         _gameLoopTimer.Tick += (_, _) =>
         {
+            // App im Hintergrund / View unsichtbar → teures Update + Render ueberspringen
+            // (Akku/CPU; die Activity bleibt bei App-Switch oft im Visual-Tree, der Timer tickt sonst weiter).
+            if (!IsEffectivelyVisible)
+            {
+                _lastFrameTicks = _stopwatch.ElapsedTicks; // kein Delta-Sprung beim Zurueckkehren
+                return;
+            }
+
             var currentTicks = _stopwatch.ElapsedTicks;
             var deltaTime = (float)(currentTicks - _lastFrameTicks) / Stopwatch.Frequency;
             _lastFrameTicks = currentTicks;

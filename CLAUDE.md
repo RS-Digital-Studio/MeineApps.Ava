@@ -178,9 +178,7 @@ F:\Meine_Apps_Ava\
 │   ├── Libraries/                       # Geteilte Bibliotheken (keine Referenz auf Apps)
 │   │   ├── MeineApps.CalcLib/            # Calculator-Engine (Tokenizer + Parser + Evaluator)
 │   │   ├── MeineApps.Core.Ava/          # Preferences, Lokalisierung, Themes, Converters, ViewLocator
-│   │   ├── MeineApps.Core.Premium.Ava/  # AdMob, Google Play Billing, Trial (Android-Linked-Files)
-│   │   └── BingXBot.*                    # Trading-Backend, geteilt zwischen Server/Clients/Backtest:
-│   │                                     #   .Core .Contracts .Engine .Exchange .Trading .Backtest .ClientApi
+│   │   └── MeineApps.Core.Premium.Ava/  # AdMob, Google Play Billing, Trial (Android-Linked-Files)
 │   │
 │   ├── UI/
 │   │   └── MeineApps.UI/                # Custom Controls, Behaviors, SkiaSharp, GPU-Shader, Loading-Pipeline
@@ -196,6 +194,7 @@ F:\Meine_Apps_Ava\
 │       ├── BomberBlast/                 # Bomberman-Klon (SkiaSharp, Landscape)
 │       ├── RebornSaga/                  # Anime Isekai-RPG (volle SkiaSharp-Engine)
 │       ├── BingXBot/                    # Trading Bot — .Shared .Android .Desktop + .Server (Pi 24/7)
+│       │                                #   + 7 app-eigene Backend-Libs: .Core .Contracts .Engine .Exchange .Trading .Backtest .ClientApi
 │       ├── GardenControl/               # Bewässerung — .Core .Shared .Android .Desktop + .Server (Pi)
 │       ├── SmartMeasure/                # 3D-Grundstücksvermessung (RTK-GPS, privat)
 │       ├── SunSeeker/                   # Solarpanel-Ausrichtung (Sonnenstand, Bifazial, privat)
@@ -615,7 +614,7 @@ konkreter zu ihrem Gebiet. **Gotchas/Troubleshooting leben in der Domänen-Datei
 [BingXBacktestLab](tools/BingXBacktestLab/CLAUDE.md)
 **Python-Skripte (README statt CLAUDE.md):** `BingXBotTrainer`, `ContentPipeline`, `SkAnalytics`, `SoundForge`.
 
-Die `BingXBot.*`-Backend-Libraries (`src/Libraries/`) und die `*.Server`-Projekte sind in der
+Die `BingXBot.*`-Backend-Libraries (`src/Apps/BingXBot/`, app-eigenes Subsystem) und die `*.Server`-Projekte sind in der
 [BingXBot-App-CLAUDE.md](src/Apps/BingXBot/CLAUDE.md) bzw.
 [GardenControl-App-CLAUDE.md](src/Apps/GardenControl/CLAUDE.md) dokumentiert (keine eigene Lib-CLAUDE.md).
 

@@ -74,7 +74,7 @@ ein `MarketContext` pro H4-Kerze (Direktpfad). Output: `reports/portfolio-{label
 echter **Konto-MaxDD%** (aus der Equity-Curve), WinRate, PF, Long/Short-Split, Trade-Anzahl + **pro-Symbol-
 Breakdown**. Lädt `BingXSymbolInfoProvider` (Min-Order/Min-Notional spiegeln die Live-Reject-Semantik).
 
-**Architektur** (`src/Libraries/BingXBot.Backtest/Portfolio/`): `MergedTimeline` (alle H4-CloseTimes
+**Architektur** (`src/Apps/BingXBot/BingXBot.Backtest/Portfolio/`): `MergedTimeline` (alle H4-CloseTimes
 sortiert+dedupliziert, kein Look-Ahead) · `PortfolioSymbolState` (pro Symbol: Nav-Kerzen, inkr. `navIdx`,
 EIGENE Strategie-Instanz — kein geteilter Indikator-State) · `PortfolioBacktestEngine` (1 `SimulatedExchange`
 + 1 `RiskManager`, iteriert die Timeline: Tageswechsel 1×/Kalendertag konto-weit, Preise aller Symbole

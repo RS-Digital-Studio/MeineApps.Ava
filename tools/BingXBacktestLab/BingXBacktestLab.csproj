@@ -10,10 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Libraries\BingXBot.Core\BingXBot.Core.csproj" />
-    <ProjectReference Include="..\..\src\Libraries\BingXBot.Exchange\BingXBot.Exchange.csproj" />
-    <ProjectReference Include="..\..\src\Libraries\BingXBot.Engine\BingXBot.Engine.csproj" />
-    <ProjectReference Include="..\..\src\Libraries\BingXBot.Backtest\BingXBot.Backtest.csproj" />
+    <ProjectReference Include="..\..\src\Apps\BingXBot\BingXBot.Core\BingXBot.Core.csproj" />
+    <ProjectReference Include="..\..\src\Apps\BingXBot\BingXBot.Exchange\BingXBot.Exchange.csproj" />
+    <ProjectReference Include="..\..\src\Apps\BingXBot\BingXBot.Engine\BingXBot.Engine.csproj" />
+    <ProjectReference Include="..\..\src\Apps\BingXBot\BingXBot.Backtest\BingXBot.Backtest.csproj" />
   </ItemGroup>
 
 </Project>

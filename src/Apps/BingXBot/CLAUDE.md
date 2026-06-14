@@ -34,13 +34,13 @@ Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md]
 
 | Projekt | Framework | Befehl |
 |---------|-----------|--------|
-| `BingXBot.Core` | `net10.0` | `dotnet build src/Libraries/BingXBot.Core` |
-| `BingXBot.Contracts` | `net10.0` | `dotnet build src/Libraries/BingXBot.Contracts` |
-| `BingXBot.Exchange` | `net10.0` | `dotnet build src/Libraries/BingXBot.Exchange` |
-| `BingXBot.Engine` | `net10.0` | `dotnet build src/Libraries/BingXBot.Engine` |
-| `BingXBot.Backtest` | `net10.0` | `dotnet build src/Libraries/BingXBot.Backtest` |
-| `BingXBot.Trading` | `net10.0` | `dotnet build src/Libraries/BingXBot.Trading` |
-| `BingXBot.ClientApi` | `net10.0` | `dotnet build src/Libraries/BingXBot.ClientApi` |
+| `BingXBot.Core` | `net10.0` | `dotnet build src/Apps/BingXBot/BingXBot.Core` |
+| `BingXBot.Contracts` | `net10.0` | `dotnet build src/Apps/BingXBot/BingXBot.Contracts` |
+| `BingXBot.Exchange` | `net10.0` | `dotnet build src/Apps/BingXBot/BingXBot.Exchange` |
+| `BingXBot.Engine` | `net10.0` | `dotnet build src/Apps/BingXBot/BingXBot.Engine` |
+| `BingXBot.Backtest` | `net10.0` | `dotnet build src/Apps/BingXBot/BingXBot.Backtest` |
+| `BingXBot.Trading` | `net10.0` | `dotnet build src/Apps/BingXBot/BingXBot.Trading` |
+| `BingXBot.ClientApi` | `net10.0` | `dotnet build src/Apps/BingXBot/BingXBot.ClientApi` |
 | `BingXBot.Server` | `net10.0` | `dotnet run --project src/Apps/BingXBot/BingXBot.Server` |
 | `BingXBot.Shared` | `net10.0` | `dotnet build src/Apps/BingXBot/BingXBot.Shared` |
 | `BingXBot.Desktop` | `net10.0` | `dotnet run --project src/Apps/BingXBot/BingXBot.Desktop` |

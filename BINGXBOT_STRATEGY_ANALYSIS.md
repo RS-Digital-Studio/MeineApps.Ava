@@ -408,6 +408,6 @@ Sobald die Snapshot-Datei in `F:\Meine_Apps_Ava\bingxbot_snapshot.db` liegt, sag
 - `F:\Meine_Apps_Ava\.claude\agent-memory\bingxbot\sk_spec_compliance_2026_04_21.md`
 - `F:\Meine_Apps_Ava\.claude\agent-memory\bingxbot\sk_0ab_detection_2026_04_22.md`
 - `F:\Meine_Apps_Ava\src\Apps\BingXBot\CLAUDE.md`
-- `F:\Meine_Apps_Ava\src\Libraries\BingXBot.Engine\Strategies\SequenzKonzeptStrategy.cs`
-- `F:\Meine_Apps_Ava\src\Libraries\BingXBot.Core\Configuration\ScannerSettings.cs`
-- `F:\Meine_Apps_Ava\src\Libraries\BingXBot.Core\Configuration\RiskSettings.cs`
+- `F:\Meine_Apps_Ava\src\Apps\BingXBot\BingXBot.Engine\Strategies\SequenzKonzeptStrategy.cs`
+- `F:\Meine_Apps_Ava\src\Apps\BingXBot\BingXBot.Core\Configuration\ScannerSettings.cs`
+- `F:\Meine_Apps_Ava\src\Apps\BingXBot\BingXBot.Core\Configuration\RiskSettings.cs`

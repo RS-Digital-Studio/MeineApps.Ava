@@ -17,12 +17,12 @@
   <ItemGroup>
     <!-- Server referenziert NICHT Shared/Desktop — kein Avalonia-Ballast auf dem Pi.
          BingXBot.Trading kapselt alle Trading-Services (Engine-Wrapper + Local-Impls). -->
-    <ProjectReference Include="..\..\..\Libraries\BingXBot.Core\BingXBot.Core.csproj" />
-    <ProjectReference Include="..\..\..\Libraries\BingXBot.Contracts\BingXBot.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\Libraries\BingXBot.Exchange\BingXBot.Exchange.csproj" />
-    <ProjectReference Include="..\..\..\Libraries\BingXBot.Engine\BingXBot.Engine.csproj" />
-    <ProjectReference Include="..\..\..\Libraries\BingXBot.Backtest\BingXBot.Backtest.csproj" />
-    <ProjectReference Include="..\..\..\Libraries\BingXBot.Trading\BingXBot.Trading.csproj" />
+    <ProjectReference Include="..\BingXBot.Core\BingXBot.Core.csproj" />
+    <ProjectReference Include="..\BingXBot.Contracts\BingXBot.Contracts.csproj" />
+    <ProjectReference Include="..\BingXBot.Exchange\BingXBot.Exchange.csproj" />
+    <ProjectReference Include="..\BingXBot.Engine\BingXBot.Engine.csproj" />
+    <ProjectReference Include="..\BingXBot.Backtest\BingXBot.Backtest.csproj" />
+    <ProjectReference Include="..\BingXBot.Trading\BingXBot.Trading.csproj" />
   </ItemGroup>
 
   <ItemGroup>

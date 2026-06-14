@@ -15,7 +15,7 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `IVacationService` | `VacationService` | 9 Abwesenheits-Typen (DayStatus-Subset), Resturlaub, Übertrag |
 | `IHolidayService` | `HolidayService` | DE (16 BL), AT (9 BL), CH (12 Kantone) |
 | `IProjectService` | `ProjectService` | Projekte: CRUD + Stunden-Aggregation aus TimeEntry |
-| `IShiftService` | `ShiftService` | Schichtplanung: wiederkehrende Muster + Einzelzuweisungen |
+| `IShiftService` | `ShiftService` | Schichtplanung: Muster + Einzelzuweisungen. Eine zugewiesene Schicht **bestimmt das Tages-Soll** (Vorrang-Regel s. CalculationService); `AssignShiftAsync`/`RemoveShiftAssignmentAsync` aktualisieren bestehende WorkDays via `ICalculationService`. (Die alten `CalculateTargetMinutesAsync`/`IsWithinShiftAsync` sind ungenutzt — Verdrahtung läuft über `GetOrCreateWorkDayAsync` + `RefreshWorkDayTargetAsync`.) |
 | `IEmployerService` | `EmployerService` | Arbeitgeber: Default-Flag, Stunden-Aggregation |
 | `IBackupService` | `BackupService` | JSON-Backup/Restore mit Safety-Backup, BulkRestore |
 | `INotificationService` | `DesktopNotificationService` (Shared) / `AndroidNotificationService` (in `.Android`) | Plattform-abstrakt |
@@ -48,7 +48,11 @@ Mitternachts-Übergang: `LoadStatusAsync` prüft auch den gestrigen WorkDay (Nac
 ## CalculationService — Überstunden & §3 ArbZG
 
 - **Netto-Arbeitszeit** = Gesamt − Pausen − Auto-Pause-Ergänzung (wenn < gesetzlich).
-- **Saldo** = Netto − Soll (aus `WorkSettings.GetHoursForDay()` — gecachtes JSON-Dictionary).
+- **Tages-Soll-Vorrang:** Feiertag (0) > zugewiesene **Schicht** (`ShiftPattern.WorkDuration` = Start−Ende −
+  Pause, Off=0) > Wochentag-Soll aus `WorkSettings.GetDailyMinutesForDay()`. Festgelegt in
+  `DatabaseService.GetOrCreateWorkDayAsync` (Anlage), `ShiftService.RefreshWorkDayTargetAsync`
+  (Schicht-Zuweisung/-Entfernung) und `CalculationService.ResolveTemporaryDay` (noch nicht angelegte
+  Tage in der Wochen-/Monats-Aggregation) — diese drei müssen dieselbe Reihenfolge abbilden.
 - **Tages-Saldo nach DayStatus (zentral in `WorkDay.CalculateBalance`/`EffectiveTargetMinutes`):**
   Tage mit erfasster Arbeit zählen IMMER Ist−Soll (auch Dienstreise/Schulung mit Stempelung).
   Ohne erfasste Arbeit gilt: bezahlte/unbezahlte **Abwesenheit** (Urlaub/Krank/Feiertag/Sonderurlaub/

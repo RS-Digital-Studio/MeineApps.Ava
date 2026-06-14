@@ -5,6 +5,7 @@ using Android.OS;
 using Android.Runtime;
 using Android.Widget;
 using Avalonia.Android;
+using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
 using SunSeeker.Android.Ar;
 using SunSeeker.Android.Services;
@@ -28,6 +29,7 @@ public class MainActivity : AvaloniaMainActivity
     private AndroidLocationService? _locationService;
     private AndroidHeadingService? _headingService;
     private MainViewModel? _mainVm;
+    private IAppLifecycleService? _lifecycle;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -49,6 +51,10 @@ public class MainActivity : AvaloniaMainActivity
             _mainVm.ExitHintRequested += msg =>
                 RunOnUiThread(() => Toast.MakeText(this, msg, ToastLength.Short)?.Show());
 
+        // App-Lifecycle-Broker (Akku): speist NotifyPaused/Resumed → MainViewModel deaktiviert/reaktiviert
+        // den sichtbaren Tab (Heading-Sensor + Anker-MQTT). GPS bleibt separat (OnResume/OnPause unten).
+        _lifecycle = App.Services.GetService<IAppLifecycleService>();
+
         RequestLocationPermissionIfNeeded();
     }
 
@@ -69,12 +75,16 @@ public class MainActivity : AvaloniaMainActivity
         // direkt nach einem frischen Grant übernimmt OnRequestPermissionsResult den Start.
         if (CheckSelfPermission(global::Android.Manifest.Permission.AccessFineLocation) == Permission.Granted)
             _locationService?.Start();
+        // Sichtbaren Tab reaktivieren (Heading-Sensor + Anker-MQTT). Läuft auf dem UI-Thread.
+        _lifecycle?.NotifyResumed();
     }
 
     protected override void OnPause()
     {
         // Im Hintergrund (oder während der AR-Activity) keine Standort-Updates — spart Akku.
         _locationService?.Stop();
+        // Sichtbaren Tab deaktivieren (Heading-Sensor + Anker-MQTT stoppen). Läuft auf dem UI-Thread.
+        _lifecycle?.NotifyPaused();
         base.OnPause();
     }
 

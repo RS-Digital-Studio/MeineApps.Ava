@@ -104,6 +104,11 @@ public class App : Application
         services.AddSingleton<ILocalizationService>(sp =>
             new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));
 
+        // App-Lifecycle-Broker: Android speist NotifyPaused/Resumed (MainActivity.OnPause/OnResume).
+        // MainViewModel deaktiviert/reaktiviert darüber den aktuell sichtbaren Tab → Heading-Sensor
+        // und Anker-MQTT laufen im Hintergrund nicht weiter (Akku). GPS verwaltet der Host separat.
+        services.AddSingleton<IAppLifecycleService, AppLifecycleService>();
+
         // Plattform-Factory LAZY auswerten (Avalonia-12-Android: DI-Build läuft vor
         // MainActivity.OnCreate). Build-Zeit-Prüfung würde den Mock-Fallback einbrennen.
         services.AddSingleton<ILocationService>(sp =>

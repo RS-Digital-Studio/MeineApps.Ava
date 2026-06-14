@@ -21,8 +21,21 @@ public partial class LiveTradingService
         if (_wsClient == null) return;
         try
         {
-            _tickerPriceHandler = (symbol, price) => _wsTickerPrices[symbol] = price;
+            // PERF-1 — bei jedem WS-Ticker-Update den Frische-Zeitstempel mitschreiben (Interlocked,
+            // da Receive-Loop und PriceTickerLoop parallel laufen). PERF-2 reduziert die Updates
+            // bereits auf die relevanten Symbole; BTC ist immer im Set, also bleibt der Heartbeat
+            // belastbar, solange der Stream lebt.
+            _tickerPriceHandler = (symbol, price) =>
+            {
+                _wsTickerPrices[symbol] = price;
+                System.Threading.Interlocked.Exchange(ref _lastWsTickerUtcTicks, DateTime.UtcNow.Ticks);
+            };
             _wsClient.TickerPriceReceived += _tickerPriceHandler;
+            // PERF-2 — Relevanz-Filter verdrahten: der WS-Client verwirft irrelevante Symbole vor
+            // Parse/Write/Invoke. BTC immer relevant (Dashboard-Ticker + BTC-Health laufen
+            // unabhaengig von offenen Positionen).
+            _relevantTickerSymbols["BTC-USDT"] = 1;
+            _wsClient.TickerSymbolFilter = sym => _relevantTickerSymbols.ContainsKey(sym);
             // Haupt-WS explizit verbinden — SubscribeAsync schickt das Abo sonst ins Leere
             // (loggt nur "nicht verbunden" und merkt den Handler fuer einen Reconnect vor,
             // der nie kommt) und IsWsTickerActive waere eine Fehlanzeige.
@@ -43,6 +56,65 @@ public partial class LiveTradingService
     /// <summary>Gibt den WebSocket-Preis für ein Symbol zurück, falls verfügbar.</summary>
     public decimal? GetWebSocketPrice(string symbol) =>
         _wsTickerPrices.TryGetValue(symbol, out var price) ? price : null;
+
+    /// <summary>
+    /// PERF-1 — Bevorzugt die Echtzeit-WebSocket-Preise statt des ~80-kB-REST-Tickers (alle ~600
+    /// Symbole) pro 5-s-Tick. Liefert nur dann WS-Preise, wenn der Stream aktiv UND frisch ist
+    /// (<see cref="WsTickerStaleAfter"/>) UND fuer JEDES offene Positions-Symbol ein Preis vorliegt
+    /// (Alles-oder-nichts: SL/TP arbeiten nie auf einer Mischung aus frischen WS- und veralteten
+    /// REST-Preisen). Faellt der Stream aus oder fehlt auch nur ein Symbol, geht der komplette Tick
+    /// ueber den REST-Fallback (<c>base</c>), damit kein Preis je einfriert. Pflegt zugleich das
+    /// PERF-2-Relevanz-Set (offene Positions-Symbole + BTC).
+    /// </summary>
+    protected override async Task<Ticker?> PopulateTickerPricesForPositionsAsync(
+        IReadOnlyList<Position> positions, CancellationToken ct)
+    {
+        // PERF-2 — Relevanz-Set neu aufbauen: aktuelle Positions-Symbole + BTC (immer drin).
+        // Erst hinzufuegen, dann nicht mehr offene Symbole entfernen — minimiert das Fenster, in
+        // dem ein gerade geoeffnetes Symbol noch nicht durchgelassen wuerde.
+        foreach (var p in positions)
+            _relevantTickerSymbols.TryAdd(p.Symbol, 1);
+        foreach (var sym in _relevantTickerSymbols.Keys)
+        {
+            if (string.Equals(sym, "BTC-USDT", StringComparison.OrdinalIgnoreCase)) continue;
+            if (!positions.Any(p => string.Equals(p.Symbol, sym, StringComparison.OrdinalIgnoreCase)))
+                _relevantTickerSymbols.TryRemove(sym, out _);
+        }
+
+        // WS nur nutzen, wenn aktiv UND frisch.
+        var lastWsTicks = System.Threading.Interlocked.Read(ref _lastWsTickerUtcTicks);
+        var wsFresh = IsWsTickerActive && lastWsTicks > 0
+            && (DateTime.UtcNow - new DateTime(lastWsTicks, DateTimeKind.Utc)) < WsTickerStaleAfter;
+
+        if (wsFresh)
+        {
+            // Alles-oder-nichts: erst pruefen, ob JEDES Positions-Symbol einen WS-Preis hat.
+            var allPresent = true;
+            for (var i = 0; i < positions.Count; i++)
+            {
+                if (!_wsTickerPrices.ContainsKey(positions[i].Symbol)) { allPresent = false; break; }
+            }
+
+            if (allPresent)
+            {
+                for (var i = 0; i < positions.Count; i++)
+                {
+                    var sym = positions[i].Symbol;
+                    if (_wsTickerPrices.TryGetValue(sym, out var wsPrice))
+                        SetTickerPrice(sym, wsPrice);
+                }
+
+                // BTC-Ticker fuer das Dashboard aus dem WS (nur der Preis wird vom DTO-Mapping
+                // genutzt — Volume/Change werden ohnehin nicht uebertragen, siehe LocalBotEventStream).
+                if (_wsTickerPrices.TryGetValue("BTC-USDT", out var btcPrice))
+                    return new Ticker("BTC-USDT", btcPrice, 0m, 0m, 0m, 0m, DateTime.UtcNow);
+                return null;
+            }
+        }
+
+        // Fallback: WS tot/veraltet oder unvollstaendig → vollstaendiger REST-Ticker (sicher fuer SL/TP).
+        return await base.PopulateTickerPricesForPositionsAsync(positions, ct).ConfigureAwait(false);
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // WebSocket User-Data-Stream (Live-spezifisch)

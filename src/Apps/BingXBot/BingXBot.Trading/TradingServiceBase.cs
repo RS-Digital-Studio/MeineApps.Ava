@@ -534,18 +534,16 @@ public abstract class TradingServiceBase : IDisposable
                 await OnBeforePriceTickerIteration(positions).ConfigureAwait(false);
                 if (positions.Count == 0) continue;
 
-                // Aktuelle Ticker holen (ein API-Call für alle Symbole)
-                var tickers = await _publicClient.GetAllTickersAsync(ct).ConfigureAwait(false);
-                if (tickers.Count == 0) continue;
-
-                // Ticker-Preise aktualisieren (ConcurrentDictionary, Thread-safe)
-                foreach (var t in tickers)
-                    _tickerPriceMap[t.Symbol] = t.LastPrice;
+                // Preise fuer die offenen Positions-Symbole (+ BTC) besorgen. Der Live-Service
+                // liest sie aus dem WebSocket-Ticker-Stream, sofern dieser aktiv UND frisch ist,
+                // und faellt nur bei totem/veraltetem Stream auf den 80-kB-REST-Ticker zurueck
+                // (PERF-1). Der Default (Paper) ruft weiterhin GetAllTickersAsync. Befuellt
+                // _tickerPriceMap fuer die Positions-Symbole und liefert den BTC-Ticker (oder null).
+                var btc = await PopulateTickerPricesForPositionsAsync(positions, ct).ConfigureAwait(false);
 
                 // v1.3.0 K1: BTC-USDT-Ticker als separates Event fuer Dashboard-Ticker.
                 // Einmal pro PriceTickerLoop-Iteration (alle 5 s) — ueber Hub-Throttle ist das
                 // ausreichend glatt ohne Client zu spammen.
-                var btc = tickers.FirstOrDefault(t => t.Symbol == "BTC-USDT");
                 if (btc != null) _eventBus.PublishBtcPrice(btc);
 
                 foreach (var pos in positions)
@@ -936,12 +934,20 @@ public abstract class TradingServiceBase : IDisposable
         foreach (var tf in activeTfsEarly)
             candidatesByTf[tf] = ScanHelper.FilterCandidatesForTimeframe(tickers, _scannerSettings, tf);
 
-        // Superset: Union aller TF-Kandidaten (Kerzen nur einmal pro Symbol fetchen)
-        var candidates = candidatesByTf.Values
-            .SelectMany(x => x)
-            .GroupBy(t => t.Symbol)
-            .Select(g => g.First())
-            .ToList();
+        // Superset: Union aller TF-Kandidaten (Kerzen nur einmal pro Symbol fetchen). PERF-5 —
+        // HashSet-Dedup statt SelectMany→GroupBy→Select (kein Grouping-Zwischenbau); erstes
+        // Vorkommen pro Symbol gewinnt (identisch zu GroupBy(...).First() in Iterationsreihenfolge).
+        var candidates = new List<Ticker>();
+        var seenSymbols = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var tf in activeTfsEarly)
+        {
+            var tfList = candidatesByTf[tf];
+            for (var i = 0; i < tfList.Count; i++)
+            {
+                if (seenSymbols.Add(tfList[i].Symbol))
+                    candidates.Add(tfList[i]);
+            }
+        }
 
         if (candidates.Count == 0)
         {
@@ -963,20 +969,28 @@ public abstract class TradingServiceBase : IDisposable
         // Sweep-Nachricht mit Top-N-Tickern. Score/SuggestedSide sind hier noch 0/null, weil
         // die SK-Evaluation erst weiter unten (pro Symbol+TF) laeuft. Client zeigt damit die
         // Vor-Filter-Liste im Dashboard an — reicht fuer "sieht-was-gerade-passiert"-UX.
-        foreach (var kvp in candidatesByTf)
+        // PERF-5 — nur bauen, wenn ein Client lauscht (sonst pro Kandidat eine ScannerCandidate-
+        // Record-Allokation ins Leere; der Pi laeuft 24/7 meist ohne verbundenen Client).
+        if (_eventBus.HasScannerSweepSubscribers)
         {
-            if (kvp.Value.Count == 0) continue;
-            var sweepCandidates = kvp.Value
-                .Select(t => new ScannerCandidate(
-                    Symbol: t.Symbol,
-                    Price: t.LastPrice,
-                    Volume24h: t.Volume24h,
-                    PriceChangePercent: t.PriceChangePercent24h,
-                    Score: 0,
-                    SuggestedSide: null,
-                    Reason: null))
-                .ToList();
-            _eventBus.PublishScannerSweep(new ScannerSweepArgs(kvp.Key, sweepCandidates));
+            foreach (var kvp in candidatesByTf)
+            {
+                if (kvp.Value.Count == 0) continue;
+                var sweepCandidates = new List<ScannerCandidate>(kvp.Value.Count);
+                for (var i = 0; i < kvp.Value.Count; i++)
+                {
+                    var t = kvp.Value[i];
+                    sweepCandidates.Add(new ScannerCandidate(
+                        Symbol: t.Symbol,
+                        Price: t.LastPrice,
+                        Volume24h: t.Volume24h,
+                        PriceChangePercent: t.PriceChangePercent24h,
+                        Score: 0,
+                        SuggestedSide: null,
+                        Reason: null));
+                }
+                _eventBus.PublishScannerSweep(new ScannerSweepArgs(kvp.Key, sweepCandidates));
+            }
         }
 
         // 2. Globale MarketFilter prüfen (VOR dem teuren Klines-Loading)
@@ -1038,9 +1052,15 @@ public abstract class TradingServiceBase : IDisposable
         var activeTfs = activeTfsEarly;
 
         // Lookup-Set pro TF für schnelles "ist Symbol in dieser TF-Kandidatenliste?"
-        var candidateSetByTf = candidatesByTf.ToDictionary(
-            kv => kv.Key,
-            kv => kv.Value.Select(t => t.Symbol).ToHashSet(StringComparer.OrdinalIgnoreCase));
+        // PERF-5 — direkt befuellen statt ToDictionary(...Select().ToHashSet()) (kein LINQ-Zwischenbau).
+        var candidateSetByTf = new Dictionary<TimeFrame, HashSet<string>>(candidatesByTf.Count);
+        foreach (var kv in candidatesByTf)
+        {
+            var set = new HashSet<string>(kv.Value.Count, StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < kv.Value.Count; i++)
+                set.Add(kv.Value[i].Symbol);
+            candidateSetByTf[kv.Key] = set;
+        }
 
         // Shared D1/W1 pro Symbol
         var dailyResults = new ConcurrentDictionary<string, List<Candle>?>();
@@ -1586,6 +1606,32 @@ public abstract class TradingServiceBase : IDisposable
 
     /// <summary>Hook: Wird vor jeder PriceTicker-Iteration aufgerufen (z.B. verwaiste Signale bereinigen). Positionen werden übergeben.</summary>
     protected virtual Task OnBeforePriceTickerIteration(IReadOnlyList<Position> positions) => Task.CompletedTask;
+
+    /// <summary>
+    /// PERF-1 — Befuellt <see cref="_tickerPriceMap"/> mit den aktuellen Preisen der offenen
+    /// Positions-Symbole und liefert zusaetzlich den BTC-USDT-Ticker fuer das Dashboard (oder null).
+    /// Default-Implementierung (Paper) zieht den vollstaendigen REST-Ticker. Der Live-Service
+    /// ueberschreibt das und bevorzugt den WebSocket-Ticker-Stream, solange dieser frisch ist —
+    /// das spart pro 5-s-Tick den ~80-kB-REST-Call samt Voll-Deserialisierung von ~600 Symbolen.
+    /// </summary>
+    protected virtual async Task<Ticker?> PopulateTickerPricesForPositionsAsync(
+        IReadOnlyList<Position> positions, CancellationToken ct)
+    {
+        var tickers = await _publicClient.GetAllTickersAsync(ct).ConfigureAwait(false);
+        if (tickers.Count == 0) return null;
+
+        // Ticker-Preise aktualisieren (ConcurrentDictionary, Thread-safe)
+        for (var i = 0; i < tickers.Count; i++)
+            _tickerPriceMap[tickers[i].Symbol] = tickers[i].LastPrice;
+
+        return tickers.FirstOrDefault(t => t.Symbol == "BTC-USDT");
+    }
+
+    /// <summary>
+    /// PERF-1 — Setzt einen Preis im wiederverwendbaren Ticker-Preis-Map. Erlaubt Subklassen
+    /// (Live-WS-Pfad), nur die relevanten Positions-Preise einzutragen ohne das ganze Universum.
+    /// </summary>
+    protected void SetTickerPrice(string symbol, decimal price) => _tickerPriceMap[symbol] = price;
 
     /// <summary>Hook: Zusätzliche Aktionen nach erfolgreicher Order-Platzierung.</summary>
     protected virtual Task OnOrderPlacedAsync(Ticker ticker, Side side, decimal quantity) => Task.CompletedTask;

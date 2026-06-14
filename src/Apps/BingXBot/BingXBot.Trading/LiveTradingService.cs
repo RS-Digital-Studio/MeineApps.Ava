@@ -158,6 +158,26 @@ public partial class LiveTradingService : TradingServiceBase
     private readonly ConcurrentDictionary<string, decimal> _wsTickerPrices = new();
     /// <summary>True wenn der WebSocket-Ticker-Stream aktiv ist (für schnellere SL/TP-Prüfung).</summary>
     public bool IsWsTickerActive { get; private set; }
+
+    // PERF-1 — Zeitstempel des letzten empfangenen WS-Ticker-Updates (UTC-Ticks, Interlocked-sicher
+    // gelesen/geschrieben da der WS-Receive-Loop und der PriceTickerLoop parallel zugreifen).
+    // Der !ticker@arr-Stream feuert im Normalbetrieb mehrmals/Sekunde — vergeht laenger als
+    // WsTickerStaleAfter kein Update, gilt der Stream als veraltet und der PriceTickerLoop faellt
+    // verlaesslich auf den REST-Ticker zurueck, damit SL/TP nie auf eingefrorenen Preisen arbeiten.
+    private long _lastWsTickerUtcTicks;
+
+    /// <summary>
+    /// PERF-1 — Staleness-Schwelle fuer den WS-Ticker-Stream. 15 s = 3x das REST-Polling-Intervall
+    /// (5 s) und deutlich unter dem Ping-Drift-Warn-Threshold (35 s). Liegt das letzte WS-Update
+    /// laenger zurueck, schaltet der PriceTickerLoop auf REST-Polling (sicherheitsrelevant fuer SL/TP).
+    /// </summary>
+    private static readonly TimeSpan WsTickerStaleAfter = TimeSpan.FromSeconds(15);
+
+    // PERF-2 — Relevanz-Set fuer den WS-Ticker-Filter: offene Positions-Symbole + BTC-USDT.
+    // Wird pro PriceTickerLoop-Iteration aus den aktuellen Positionen neu gesetzt (ConcurrentDictionary
+    // als Set, da WS-Receive-Loop parallel liest). Der WS-Client uebernimmt nur Symbole aus diesem Set.
+    private readonly ConcurrentDictionary<string, byte> _relevantTickerSymbols = new(StringComparer.OrdinalIgnoreCase);
+
     // Throttle für SL-Sync auf BingX nach BE-Anpassung (max 1 API-Call pro 30s pro Symbol)
     private readonly ConcurrentDictionary<string, DateTime> _lastTrailingSyncTimes = new();
     // WebSocket-Ticker Event-Handler (gespeichert für sauberes Abmelden in Dispose)
@@ -552,6 +572,10 @@ public partial class LiveTradingService : TradingServiceBase
         _signalCreatedAt.Clear();
         _positionOpenTimes.Clear();
         _lastTrailingSyncTimes.Clear();
+        // PERF-2 — WS-Relevanz-Set auf BTC zuruecksetzen (alle Positions-Signale sind weg);
+        // BTC bleibt fuer den Dashboard-Ticker drin.
+        _relevantTickerSymbols.Clear();
+        _relevantTickerSymbols["BTC-USDT"] = 1;
     }
 
     protected override void OnSignalCreated(string key)
@@ -561,6 +585,12 @@ public partial class LiveTradingService : TradingServiceBase
         // Neuer Entry auf diesem Key → Buchungs-Gate des vorherigen Closes freigeben,
         // sonst wuerde der naechste native Close dieses Symbols nicht gebucht.
         ClearNativeCloseBooking(key);
+        // PERF-2 — neues Symbol sofort in den WS-Relevanz-Filter aufnehmen (statt erst beim
+        // naechsten PriceTickerLoop-Tick), damit der WS-Preis des frisch geoeffneten Symbols
+        // ohne 5-s-REST-Fallback-Fenster sofort durchgelassen wird.
+        var sep = key.LastIndexOf('_');
+        if (sep > 0)
+            _relevantTickerSymbols.TryAdd(key[..sep], 1);
     }
 
     // Pending-Limit-Orders-Management extrahiert in LiveTradingService.PendingLimitOrders.cs
@@ -761,8 +791,14 @@ public partial class LiveTradingService : TradingServiceBase
                 _wsClient.TickerPriceReceived -= _tickerPriceHandler;
                 _tickerPriceHandler = null;
             }
+            // PERF-2 — Relevanz-Filter abmelden, sonst haelt der WS-Client den Closure am Leben.
+            _wsClient.TickerSymbolFilter = null;
         }
         IsWsTickerActive = false;
+        // PERF-1/2 — WS-Frische-Zeitstempel + Relevanz-Set zuruecksetzen (sauberer Neustart).
+        System.Threading.Interlocked.Exchange(ref _lastWsTickerUtcTicks, 0L);
+        _relevantTickerSymbols.Clear();
+        _wsTickerPrices.Clear();
 
         _listenKeyRenewTimer?.Dispose();
         _listenKeyRenewTimer = null;

@@ -55,6 +55,17 @@ public class BingXWebSocketClient : IAsyncDisposable
     public event EventHandler<string>? UserDataReceived;
     /// <summary>Wird bei Echtzeit-Ticker-Updates ausgelöst (Symbol → LastPrice).</summary>
     public event Action<string, decimal>? TickerPriceReceived;
+
+    /// <summary>
+    /// PERF-2 — Relevanz-Filter fuer den <c>!ticker@arr</c>-Stream. BingX sendet pro Message ~600
+    /// Symbole mehrmals/Sekunde; gebraucht werden im Live-Betrieb nur die offenen Positions-Symbole
+    /// plus BTC. Ist der Filter gesetzt, werden irrelevante Symbole VOR decimal-Parse,
+    /// Dictionary-Write und Event-Invoke verworfen (<c>if (!filter(symbol)) continue;</c>).
+    /// Null = alle Symbole durchlassen (Rueckwaertskompatibilitaet). Der LiveTradingService
+    /// pflegt das Set aus den offenen Positionen — die SL/TP-Reaktion bleibt unveraendert, da
+    /// genau die offenen Symbole im Set bleiben und irrelevante Preise nie genutzt wurden.
+    /// </summary>
+    public Func<string, bool>? TickerSymbolFilter { get; set; }
     public bool IsConnected => _ws?.State == WebSocketState.Open;
     public bool IsUserDataConnected => _userWs?.State == WebSocketState.Open;
 
@@ -146,11 +157,17 @@ public class BingXWebSocketClient : IAsyncDisposable
                 using var doc = JsonDocument.Parse(json);
                 if (doc.RootElement.TryGetProperty("data", out var dataArr) && dataArr.ValueKind == JsonValueKind.Array)
                 {
+                    // PERF-2 — Filter lokal cachen (Property-Read pro Item vermeiden, Set kann
+                    // mitten in der Schleife durch den PriceTickerLoop neu gesetzt werden).
+                    var filter = TickerSymbolFilter;
                     foreach (var item in dataArr.EnumerateArray())
                     {
                         var symbol = item.GetProperty("s").GetString();
+                        if (symbol == null) continue;
+                        // Irrelevante Symbole VOR decimal-Parse/Dictionary-Write/Event-Invoke verwerfen.
+                        if (filter != null && !filter(symbol)) continue;
                         var priceStr = item.GetProperty("c").GetString();
-                        if (symbol != null && decimal.TryParse(priceStr, System.Globalization.NumberStyles.Any,
+                        if (decimal.TryParse(priceStr, System.Globalization.NumberStyles.Any,
                             System.Globalization.CultureInfo.InvariantCulture, out var price) && price > 0)
                         {
                             TickerPriceReceived?.Invoke(symbol, price);

@@ -81,11 +81,15 @@ public class BingXPublicClient : IPublicMarketDataClient
                     dataEl.GetArrayLength() == 0)
                     break;
 
-                var result = JsonSerializer.Deserialize<BingXResponse<List<BingXKlineDetail>>>(response);
-                if (result?.Data == null || result.Data.Count == 0)
+                // PERF-4 — Den bereits geparsten `data`-JsonElement direkt deserialisieren statt
+                // den kompletten Roh-String (bis 1440 Kerzen) ein zweites Mal zu parsen. Die
+                // [JsonConverter(FlexibleStringConverter)]-Attribute auf BingXKlineDetail greifen
+                // beim Element-Deserialize identisch.
+                var klines = dataEl.Deserialize<List<BingXKlineDetail>>();
+                if (klines == null || klines.Count == 0)
                     break;
 
-                foreach (var k in result.Data)
+                foreach (var k in klines)
                 {
                     var openTime = DateTimeOffset.FromUnixTimeMilliseconds(k.Time).UtcDateTime;
                     if (openTime < from || openTime > to) continue;
@@ -102,10 +106,10 @@ public class BingXPublicClient : IPublicMarketDataClient
                 }
 
                 // Naechster (aelterer) Batch: endTime knapp vor die aelteste Kerze dieses Batches.
-                var batchOldest = DateTimeOffset.FromUnixTimeMilliseconds(result.Data.Min(k => k.Time)).UtcDateTime;
+                var batchOldest = DateTimeOffset.FromUnixTimeMilliseconds(klines.Min(k => k.Time)).UtcDateTime;
                 var newEnd = batchOldest.Add(-candleDuration);
 
-                _logger.LogDebug("Geladen: {Count} Candles, aelteste {Time}", result.Data.Count, batchOldest);
+                _logger.LogDebug("Geladen: {Count} Candles, aelteste {Time}", klines.Count, batchOldest);
 
                 if (batchOldest <= from)
                     break; // 'from' erreicht — genug Historie geladen.

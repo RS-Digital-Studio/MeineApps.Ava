@@ -161,14 +161,29 @@ public sealed class BotHubEventForwarder : IHostedService, IDisposable
 
     private void Fire<T>(string method, T payload)
     {
+        // PERF-3 — Bei 0 verbundenen Clients gar nicht erst senden. Der Pi laeuft 24/7 meist ohne
+        // verbundenen Client; SendAsync(...).ContinueWith(...) allokierte sonst pro Event Task +
+        // Continuation ins Leere. SignalR-eigener Backplane-State braucht den Broadcast nicht.
+        if (BotHub.ConnectionCount == 0) return;
+
         // Fire-and-forget an alle Clients. SignalR kuemmert sich um den I/O.
         // Unobserved-Exception-Schutz: wenn der Send auf einem Client crasht (Disconnect-Race,
-        // OOM, Serialization), fangen wir hier — sonst wuerde die Task an TaskScheduler.
-        // UnobservedTaskException eskalieren und bei Default-Config den Prozess beenden.
-        _ = _hub.Clients.All.SendAsync(method, payload).ContinueWith(
-            t => _logger.LogWarning(t.Exception,
-                "SignalR-Send {Method} fehlgeschlagen: {Error}", method, t.Exception?.GetBaseException().Message),
-            TaskContinuationOptions.OnlyOnFaulted);
+        // OOM, Serialization), fangen wir in der lokalen async-Funktion — sonst wuerde die Task an
+        // TaskScheduler.UnobservedTaskException eskalieren und bei Default-Config den Prozess beenden.
+        _ = SendSafeAsync();
+
+        async Task SendSafeAsync()
+        {
+            try
+            {
+                await _hub.Clients.All.SendAsync(method, payload).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "SignalR-Send {Method} fehlgeschlagen: {Error}",
+                    method, ex.GetBaseException().Message);
+            }
+        }
     }
 
     public void Dispose() { }

@@ -75,6 +75,13 @@ public class BotEventBus
     /// <summary>Ob mindestens ein Subscriber für LogEmitted registriert ist. Prüfen VOR LogEntry-Allokation.</summary>
     public bool HasLogSubscribers => LogEmitted != null;
 
+    /// <summary>
+    /// PERF-5 — Ob mindestens ein Subscriber für ScannerSweep registriert ist. Prüfen VOR dem Bau
+    /// der ScannerCandidate-Listen im Scan-Loop (pro TF eine Record-Allokation je Kandidat). Ohne
+    /// verbundenen Client (Pi 24/7) ist das reine Verschwendung — die Sweep-Liste landet im Leeren.
+    /// </summary>
+    public bool HasScannerSweepSubscribers => ScannerSweep != null;
+
     public void PublishTrade(CompletedTrade trade) => TradeCompleted?.Invoke(this, trade);
 
     /// <summary>Publiziert einen Log-Eintrag. Wird ignoriert wenn kein Subscriber registriert ist.</summary>

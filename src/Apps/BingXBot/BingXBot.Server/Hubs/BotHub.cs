@@ -16,6 +16,15 @@ public class BotHub : Hub
 {
     private readonly ILogger<BotHub> _logger;
 
+    // PERF-3 — Aktive Connection-Anzahl. SignalR instanziiert den Hub transient pro Connection,
+    // deshalb ist der Counter static (Interlocked-synchronisiert). Der BotHubEventForwarder liest
+    // ihn, um bei 0 verbundenen Clients keinen SendAsync-Task samt Continuation zu allokieren —
+    // der Pi laeuft 24/7 meist ohne verbundenen Client.
+    private static volatile int _connectionCount;
+
+    /// <summary>PERF-3 — Anzahl aktuell verbundener SignalR-Clients (fuer Broadcast-Kurzschluss).</summary>
+    public static int ConnectionCount => _connectionCount;
+
     public BotHub(ILogger<BotHub> logger)
     {
         _logger = logger;
@@ -23,12 +32,14 @@ public class BotHub : Hub
 
     public override async Task OnConnectedAsync()
     {
+        Interlocked.Increment(ref _connectionCount);
         _logger.LogInformation("Client verbunden: {ConnectionId}", Context.ConnectionId);
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        Interlocked.Decrement(ref _connectionCount);
         _logger.LogInformation("Client getrennt: {ConnectionId} (Error={Err})",
             Context.ConnectionId, exception?.Message);
         await base.OnDisconnectedAsync(exception);

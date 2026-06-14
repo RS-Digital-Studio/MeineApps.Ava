@@ -30,7 +30,10 @@ public sealed class CalculationService : ICalculationService
             workDay.UnroundedWorkMinutes = 0;
             workDay.FirstCheckIn = null;
             workDay.LastCheckOut = null;
-            workDay.BalanceMinutes = -workDay.TargetWorkMinutes;
+            // Status-bewusst: bezahlte/unbezahlte Abwesenheit (Urlaub/Krank/Feiertag/…) ohne
+            // erfasste Arbeit gilt als erfüllt (Saldo 0); Arbeitstag ohne Stempelung sowie
+            // Überstundenabbau/Zeitausgleich bleiben −Soll.
+            workDay.BalanceMinutes = WorkDay.CalculateBalance(workDay.Status, 0, workDay.TargetWorkMinutes);
             await _database.SaveWorkDayAsync(workDay);
             return;
         }
@@ -64,8 +67,10 @@ public sealed class CalculationService : ICalculationService
 
         workDay.ActualWorkMinutes = netMinutes;
 
-        // Saldo berechnen
-        workDay.BalanceMinutes = workDay.ActualWorkMinutes - workDay.TargetWorkMinutes;
+        // Saldo status-bewusst berechnen (Tage mit erfasster Arbeit zählen Ist−Soll, auch bei
+        // Status Dienstreise/Schulung; reine Abwesenheit ohne Arbeit ist über den frühen Pfad
+        // oben bereits behandelt).
+        workDay.BalanceMinutes = WorkDay.CalculateBalance(workDay.Status, workDay.ActualWorkMinutes, workDay.TargetWorkMinutes);
 
         await _database.SaveWorkDayAsync(workDay);
     }
@@ -184,21 +189,15 @@ public sealed class CalculationService : ICalculationService
         var settings = await _database.GetSettingsAsync();
         var workDays = await _database.GetWorkDaysAsync(firstDay, lastDay);
 
-        // Wochen-Soll berechnen: individuelle Tagesstunden berücksichtigen
-        var weekTargetMinutes = 0;
-        for (var d = firstDay; d <= lastDay; d = d.AddDays(1))
-        {
-            if (settings.IsWorkDay(d.DayOfWeek))
-                weekTargetMinutes += settings.GetDailyMinutesForDay(d.DayOfWeek);
-        }
-
+        // Wochen-Soll wird im Tag-Loop als EFFEKTIVES Soll akkumuliert (Abwesenheitstage tragen
+        // 0 bei), damit (Ist − Soll) == Summe der Tages-Salden bleibt und nicht — wie früher —
+        // Urlaub/Krank/Feiertag fälschlich als offenes Soll und damit als Minus zählt.
         var week = new WorkWeek
         {
             WeekNumber = weekNumber,
             Year = year,
             StartDate = DateOnly.FromDateTime(firstDay),
-            EndDate = DateOnly.FromDateTime(lastDay),
-            TargetWorkMinutes = weekTargetMinutes
+            EndDate = DateOnly.FromDateTime(lastDay)
         };
 
         // Lookup-Dictionary statt O(n)-FirstOrDefault pro Tag: spart 30+ Compares pro Woche,
@@ -213,13 +212,14 @@ public sealed class CalculationService : ICalculationService
             if (workDay == null)
             {
                 var targetMinutes = settings.IsWorkDay(date.DayOfWeek) ? settings.GetDailyMinutesForDay(date.DayOfWeek) : 0;
+                var status = settings.IsWorkDay(date.DayOfWeek) ? DayStatus.WorkDay : DayStatus.Weekend;
                 workDay = new WorkDay
                 {
                     Date = date,
-                    Status = settings.IsWorkDay(date.DayOfWeek) ? DayStatus.WorkDay : DayStatus.Weekend,
+                    Status = status,
                     TargetWorkMinutes = targetMinutes,
                     ActualWorkMinutes = 0,
-                    BalanceMinutes = -targetMinutes
+                    BalanceMinutes = WorkDay.CalculateBalance(status, 0, targetMinutes)
                 };
             }
             // Legacy-Migration läuft einmalig beim DB-Init (siehe DatabaseService.InitializeDatabaseAsync)
@@ -228,6 +228,7 @@ public sealed class CalculationService : ICalculationService
 
             // Statistics
             week.ActualWorkMinutes += workDay.ActualWorkMinutes;
+            week.TargetWorkMinutes += WorkDay.EffectiveTargetMinutes(workDay.Status, workDay.ActualWorkMinutes, workDay.TargetWorkMinutes);
             week.TotalPauseMinutes += workDay.ManualPauseMinutes + workDay.AutoPauseMinutes;
 
             if (workDay.ActualWorkMinutes > 0)
@@ -266,18 +267,14 @@ public sealed class CalculationService : ICalculationService
             Year = year
         };
 
-        // Monats-Soll berechnen: individuelle Tagesstunden berücksichtigen
-        var monthTargetMinutes = 0;
+        // Monats-Soll (effektiv) + Saldo werden im Tag-Loop status-bewusst akkumuliert
+        // (Abwesenheitstage tragen 0 zum offenen Soll bei). TargetWorkDays zählt weiterhin
+        // alle regulären Soll-Wochentage (unabhängig vom Status) für die Anzeige "x / y Tage".
         for (var date = firstDay; date <= lastDay; date = date.AddDays(1))
         {
             if (settings.IsWorkDay(date.DayOfWeek))
-            {
                 workMonth.TargetWorkDays++;
-                monthTargetMinutes += settings.GetDailyMinutesForDay(date.DayOfWeek);
-            }
         }
-
-        workMonth.TargetWorkMinutes = monthTargetMinutes;
 
         // Lookup-Dictionary statt O(n)-FirstOrDefault pro Tag
         var workDaysByDate = workDays.ToDictionary(d => d.Date.Date);
@@ -290,13 +287,14 @@ public sealed class CalculationService : ICalculationService
             if (workDay == null)
             {
                 var targetMinutes = settings.IsWorkDay(date.DayOfWeek) ? settings.GetDailyMinutesForDay(date.DayOfWeek) : 0;
+                var status = settings.IsWorkDay(date.DayOfWeek) ? DayStatus.WorkDay : DayStatus.Weekend;
                 workDay = new WorkDay
                 {
                     Date = date,
-                    Status = settings.IsWorkDay(date.DayOfWeek) ? DayStatus.WorkDay : DayStatus.Weekend,
+                    Status = status,
                     TargetWorkMinutes = targetMinutes,
                     ActualWorkMinutes = 0,
-                    BalanceMinutes = -targetMinutes
+                    BalanceMinutes = WorkDay.CalculateBalance(status, 0, targetMinutes)
                 };
             }
             // Legacy-Migration läuft einmalig beim DB-Init (siehe DatabaseService.InitializeDatabaseAsync)
@@ -305,6 +303,7 @@ public sealed class CalculationService : ICalculationService
 
             // Statistics
             workMonth.ActualWorkMinutes += workDay.ActualWorkMinutes;
+            workMonth.TargetWorkMinutes += WorkDay.EffectiveTargetMinutes(workDay.Status, workDay.ActualWorkMinutes, workDay.TargetWorkMinutes);
             workMonth.TotalPauseMinutes += workDay.ManualPauseMinutes + workDay.AutoPauseMinutes;
 
             if (workDay.ActualWorkMinutes > 0)

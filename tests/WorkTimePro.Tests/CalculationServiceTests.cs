@@ -458,4 +458,86 @@ public class CalculationServiceTests
         // Prüfung: Keine Warnungen wenn Prüfung deaktiviert
         warnungen.Should().BeEmpty();
     }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Status-basierter Tages-Saldo (WorkDay.CalculateBalance)
+    // Regel: Bezahlte/unbezahlte Abwesenheit ohne erfasste Arbeit = erfüllt (0).
+    // Überstundenabbau/Zeitausgleich + nicht gestempelter Arbeitstag = −Soll.
+    // ═══════════════════════════════════════════════════════════════════
+
+    [Theory]
+    // Bezahlte Abwesenheit ohne Arbeit → Tag erfüllt, kein Minus
+    [InlineData(DayStatus.Vacation, 0)]
+    [InlineData(DayStatus.Holiday, 0)]
+    [InlineData(DayStatus.Sick, 0)]
+    [InlineData(DayStatus.SpecialLeave, 0)]
+    [InlineData(DayStatus.BusinessTrip, 0)]
+    [InlineData(DayStatus.Training, 0)]
+    [InlineData(DayStatus.UnpaidLeave, 0)]
+    // Überstundenabbau/Zeitausgleich → baut Plus-Saldo ab (zählt als Minus)
+    [InlineData(DayStatus.OvertimeCompensation, -480)]
+    [InlineData(DayStatus.CompensatoryTime, -480)]
+    // Nicht gestempelter Arbeitstag / Homeoffice → fehlende Arbeit = Minus
+    [InlineData(DayStatus.WorkDay, -480)]
+    [InlineData(DayStatus.HomeOffice, -480)]
+    public void CalculateBalance_OhneArbeit_RichtetSichNachStatus(DayStatus status, int erwarteterSaldo)
+    {
+        WorkDay.CalculateBalance(status, actualWorkMinutes: 0, targetWorkMinutes: 480)
+            .Should().Be(erwarteterSaldo);
+    }
+
+    [Theory]
+    // Sobald echte Arbeit erfasst ist, zählt IMMER Ist−Soll — auch bei Dienstreise/Schulung/Urlaub
+    [InlineData(DayStatus.WorkDay, 480, 0)]
+    [InlineData(DayStatus.WorkDay, 540, 60)]
+    [InlineData(DayStatus.BusinessTrip, 480, 0)]
+    [InlineData(DayStatus.Training, 540, 60)]
+    [InlineData(DayStatus.Vacation, 300, -180)]
+    public void CalculateBalance_MitErfassterArbeit_ImmerIstMinusSoll(DayStatus status, int ist, int erwarteterSaldo)
+    {
+        WorkDay.CalculateBalance(status, actualWorkMinutes: ist, targetWorkMinutes: 480)
+            .Should().Be(erwarteterSaldo);
+    }
+
+    [Theory]
+    // Erfüllte Abwesenheit ohne Arbeit trägt 0 zum offenen Soll bei (konsistent zu CalculateBalance)
+    [InlineData(DayStatus.Vacation, 0)]
+    [InlineData(DayStatus.Sick, 0)]
+    [InlineData(DayStatus.Holiday, 0)]
+    [InlineData(DayStatus.UnpaidLeave, 0)]
+    // Zeitausgleich/Arbeitstag tragen volles Soll bei
+    [InlineData(DayStatus.OvertimeCompensation, 480)]
+    [InlineData(DayStatus.WorkDay, 480)]
+    public void EffectiveTargetMinutes_OhneArbeit_RichtetSichNachStatus(DayStatus status, int erwartetesSoll)
+    {
+        WorkDay.EffectiveTargetMinutes(status, actualWorkMinutes: 0, targetWorkMinutes: 480)
+            .Should().Be(erwartetesSoll);
+    }
+
+    [Fact]
+    public async Task RecalculateWorkDayAsync_UrlaubOhneEintraege_SaldoIstNull()
+    {
+        // Urlaubstag ohne Stempelung darf NICHT als −Soll zählen (sonst Urlaubswoche = −40h)
+        var db = ErstelleDbMock();
+        var sut = new CalculationService(db);
+        var urlaubstag = new WorkDay { Id = 1, TargetWorkMinutes = 480, Status = DayStatus.Vacation };
+
+        await sut.RecalculateWorkDayAsync(urlaubstag);
+
+        urlaubstag.ActualWorkMinutes.Should().Be(0);
+        urlaubstag.BalanceMinutes.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task RecalculateWorkDayAsync_ZeitausgleichOhneEintraege_BautPlusSaldoAb()
+    {
+        // Zeitausgleich/Gleittag baut bewusst Überstunden ab → −Soll
+        var db = ErstelleDbMock();
+        var sut = new CalculationService(db);
+        var gleittag = new WorkDay { Id = 1, TargetWorkMinutes = 480, Status = DayStatus.CompensatoryTime };
+
+        await sut.RecalculateWorkDayAsync(gleittag);
+
+        gleittag.BalanceMinutes.Should().Be(-480);
+    }
 }

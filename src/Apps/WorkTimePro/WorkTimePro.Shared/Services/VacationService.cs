@@ -286,6 +286,10 @@ public sealed class VacationService : IVacationService
             {
                 workDay.Status = entry.Type;
                 workDay.Note = entry.Note;
+                // Saldo an den Abwesenheits-Status koppeln: Urlaub/Krank/Sonderurlaub ohne erfasste
+                // Arbeit gilt als erfüllt (Saldo 0) statt als −Soll. Sonst zählte eine Urlaubswoche
+                // fälschlich als Minusstunden.
+                workDay.BalanceMinutes = WorkDay.CalculateBalance(workDay.Status, workDay.ActualWorkMinutes, workDay.TargetWorkMinutes);
                 await _database.SaveWorkDayAsync(workDay);
             }
 
@@ -325,6 +329,9 @@ public sealed class VacationService : IVacationService
                     workDay.Status = DayStatus.Weekend;
                 }
                 workDay.Note = null;
+                // Saldo zurück auf Status-Basis: ein wieder freigegebener Arbeitstag ohne Stempelung
+                // ist −Soll, ein Wochenende 0.
+                workDay.BalanceMinutes = WorkDay.CalculateBalance(workDay.Status, workDay.ActualWorkMinutes, workDay.TargetWorkMinutes);
                 await _database.SaveWorkDayAsync(workDay);
             }
 

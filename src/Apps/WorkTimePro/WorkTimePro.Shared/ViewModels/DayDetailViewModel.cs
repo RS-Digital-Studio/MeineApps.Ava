@@ -319,7 +319,10 @@ public sealed partial class DayDetailViewModel : ViewModelBase, INavigationSourc
         WorkDay.Status = status;
         IsStatusSelectionVisible = false;
 
-        await _database.SaveWorkDayAsync(WorkDay);
+        // Saldo/Soll an den neuen Status anpassen: bezahlte Abwesenheit (Urlaub/Krank/Feiertag/…)
+        // ohne erfasste Arbeit gilt als erfüllt (kein Minus) — RecalculateWorkDayAsync setzt das
+        // status-bewusst und persistiert. Reines SaveWorkDayAsync würde den alten −Soll-Saldo lassen.
+        await _calculation.RecalculateWorkDayAsync(WorkDay);
         await LoadDataAsync();
     }
 

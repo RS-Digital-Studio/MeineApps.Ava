@@ -92,6 +92,39 @@ public class WorkDay
     /// </summary>
     public DateTime ModifiedAt { get; set; } = DateTime.UtcNow;
 
+    // === Status-basierte Saldo-/Soll-Logik (zentrale Wahrheit) ===
+
+    /// <summary>
+    /// Bezahlte/unbezahlte Abwesenheit, die ohne erfasste Arbeit als erfüllt gilt (Tages-Soll
+    /// neutralisiert, Saldo 0). NICHT dabei: Überstundenabbau (<see cref="DayStatus.OvertimeCompensation"/>)
+    /// und Zeitausgleich (<see cref="DayStatus.CompensatoryTime"/>) — die bauen bewusst Plus-Saldo ab.
+    /// </summary>
+    public static bool IsFulfilledAbsence(DayStatus status) => status is
+        DayStatus.Vacation or DayStatus.Holiday or DayStatus.Sick or
+        DayStatus.SpecialLeave or DayStatus.BusinessTrip or DayStatus.Training or
+        DayStatus.UnpaidLeave;
+
+    /// <summary>
+    /// Tages-Saldo (Plus/Minus) anhand Status, Ist- und Soll-Zeit. Wurde echte Arbeit erfasst
+    /// (z.B. Dienstreise/Schulung mit Stempelung), zählt immer Ist−Soll. Bezahlte/unbezahlte
+    /// Abwesenheit ohne erfasste Arbeit gilt als erfüllt → 0. Nicht gestempelte Arbeitstage sowie
+    /// Überstundenabbau/Zeitausgleich bleiben −Soll (fehlende Arbeit bzw. Abbau von Plus-Stunden).
+    /// </summary>
+    public static int CalculateBalance(DayStatus status, int actualWorkMinutes, int targetWorkMinutes)
+        => actualWorkMinutes > 0 || !IsFulfilledAbsence(status)
+            ? actualWorkMinutes - targetWorkMinutes
+            : 0;
+
+    /// <summary>
+    /// Effektives Tages-Soll für Wochen-/Monats-Aggregation. Erfüllte Abwesenheit ohne erfasste
+    /// Arbeit trägt 0 zum offenen Soll bei — so bleibt (Summe Ist − Summe Soll) == Summe der
+    /// Tages-Salden aus <see cref="CalculateBalance"/> konsistent.
+    /// </summary>
+    public static int EffectiveTargetMinutes(DayStatus status, int actualWorkMinutes, int targetWorkMinutes)
+        => actualWorkMinutes > 0 || !IsFulfilledAbsence(status)
+            ? targetWorkMinutes
+            : 0;
+
     // === Berechnete Properties ===
 
     /// <summary>

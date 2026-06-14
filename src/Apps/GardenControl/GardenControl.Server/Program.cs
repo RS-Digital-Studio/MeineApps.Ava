@@ -29,6 +29,9 @@ builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
 builder.Services.AddSingleton<IWeatherService, WeatherService>();
 builder.Services.AddSingleton<IIrrigationService, IrrigationService>();
 
+// Cache für poll-relevante Config-Werte (Intervall, Retention) — vermeidet DB-Query pro Tick.
+builder.Services.AddSingleton<PollConfigCache>();
+
 // Background-Service für Sensor-Polling
 builder.Services.AddHostedService<SensorPollingWorker>();
 
@@ -181,10 +184,14 @@ app.MapGet("/api/history/events", async (int? zoneId, DateTime? from, DateTime? 
 app.MapGet("/api/config", async (IDatabaseService db) =>
     Results.Ok(await db.GetAllConfigAsync()));
 
-app.MapPut("/api/config", async (SystemConfigDto config, IDatabaseService db, IIrrigationService irrigation) =>
+app.MapPut("/api/config", async (SystemConfigDto config, IDatabaseService db, IIrrigationService irrigation, PollConfigCache pollConfig) =>
 {
     if (config.PollIntervalSeconds.HasValue)
+    {
         await db.SetConfigAsync("poll_interval_seconds", config.PollIntervalSeconds.Value.ToString());
+        // Cache mitziehen, damit der Worker das neue Intervall ohne DB-Query übernimmt.
+        pollConfig.PollIntervalSeconds = config.PollIntervalSeconds.Value;
+    }
 
     if (config.Mode != null && Enum.TryParse<SystemMode>(config.Mode, true, out var mode))
         await irrigation.SetModeAsync(mode);

@@ -26,6 +26,13 @@ public class GardenHub : Hub
     private readonly IIrrigationService _irrigation;
     private readonly ILogger<GardenHub> _logger;
 
+    // Anzahl aktuell verbundener Clients (prozessweit, thread-safe). Der SensorPollingWorker
+    // fragt diesen Wert ab, um periodische Broadcasts zu überspringen, wenn niemand zuhört.
+    private static int _connectionCount;
+
+    /// <summary>Aktuell verbundene Clients (für broadcast-sparende Entscheidungen im Worker).</summary>
+    public static int ConnectionCount => Volatile.Read(ref _connectionCount);
+
     public GardenHub(IIrrigationService irrigation, ILogger<GardenHub> logger)
     {
         _irrigation = irrigation;
@@ -34,7 +41,9 @@ public class GardenHub : Hub
 
     public override async Task OnConnectedAsync()
     {
-        _logger.LogInformation("Client verbunden: {ConnectionId}", Context.ConnectionId);
+        var count = Interlocked.Increment(ref _connectionCount);
+        _logger.LogInformation("Client verbunden: {ConnectionId} (verbunden: {Count})",
+            Context.ConnectionId, count);
 
         // Sofort aktuellen Status senden
         var status = await _irrigation.GetStatusAsync();
@@ -45,7 +54,9 @@ public class GardenHub : Hub
 
     public override Task OnDisconnectedAsync(Exception? exception)
     {
-        _logger.LogInformation("Client getrennt: {ConnectionId}", Context.ConnectionId);
+        var count = Interlocked.Decrement(ref _connectionCount);
+        _logger.LogInformation("Client getrennt: {ConnectionId} (verbunden: {Count})",
+            Context.ConnectionId, count);
         return base.OnDisconnectedAsync(exception);
     }
 

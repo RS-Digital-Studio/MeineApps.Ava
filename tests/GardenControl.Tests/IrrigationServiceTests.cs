@@ -145,7 +145,7 @@ public class IrrigationServiceTests
         h.Sensor.ReadRawValue(zone.SensorChannel).Returns(RawDryBelowThreshold);
         h.Weather.GetCurrentWeatherAsync().Returns(new WeatherDto { ShouldSkipWatering = true, SkipReason = "Regen" });
         await h.Service.SetModeAsync(SystemMode.Automatic);
-        await h.Service.GetStatusAsync(); // setzt _lastWeather (sonst null)
+        await h.Service.RefreshWeatherAsync(); // setzt _lastWeather (sonst null)
 
         await h.Service.CheckAndWaterAsync();
 
@@ -162,7 +162,7 @@ public class IrrigationServiceTests
         h.Sensor.ReadRawValue(zone.SensorChannel).Returns(RawModerate42Percent);
         h.Weather.GetCurrentWeatherAsync().Returns(new WeatherDto { TemperatureCelsius = 35 });
         await h.Service.SetModeAsync(SystemMode.Automatic);
-        await h.Service.GetStatusAsync();
+        await h.Service.RefreshWeatherAsync();
 
         await h.Service.CheckAndWaterAsync();
 
@@ -179,7 +179,7 @@ public class IrrigationServiceTests
         h.Sensor.ReadRawValue(zone.SensorChannel).Returns(RawModerate37Percent);
         h.Weather.GetCurrentWeatherAsync().Returns(new WeatherDto { HumidityPercent = 85 });
         await h.Service.SetModeAsync(SystemMode.Automatic);
-        await h.Service.GetStatusAsync();
+        await h.Service.RefreshWeatherAsync();
 
         await h.Service.CheckAndWaterAsync();
 

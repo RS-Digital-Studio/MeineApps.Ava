@@ -243,10 +243,12 @@ public class IrrigationService : IIrrigationService
         }
     }
 
-    public async Task<SystemStatusDto> GetStatusAsync()
+    public async Task RefreshWeatherAsync()
     {
-        // Wetterdaten aktualisieren (gecacht, max. alle 30 Min.)
-        // Exception darf GetStatusAsync nicht blockieren
+        // Wetterdaten aktualisieren (gecacht, max. alle 30 Min.).
+        // Exception darf den Aufrufer nicht blockieren — identische Behandlung wie zuvor in
+        // GetStatusAsync. _lastWeather bleibt die einzige Quelle, die GetStatusAsync +
+        // CheckAndWaterAsync konsumieren; die Bewässerungslogik sieht denselben gecachten Wert.
         try
         {
             _lastWeather = await _weather.GetCurrentWeatherAsync();
@@ -255,7 +257,13 @@ public class IrrigationService : IIrrigationService
         {
             _logger.LogWarning(ex, "Wetterdaten konnten nicht aktualisiert werden");
         }
+    }
 
+    public async Task<SystemStatusDto> GetStatusAsync(IReadOnlyDictionary<int, int>? sensorSnapshot = null)
+    {
+        // Wetter wird NICHT mehr hier (Hot-Path) abgerufen, sondern in einem eigenen langsamen
+        // Loop (SensorPollingWorker) aktualisiert. Hier nur das gecachte _lastWeather lesen —
+        // genau das Feld, das auch CheckAndWaterAsync konsumiert. Kein blockierender HTTP-Call mehr.
         await _semaphore.WaitAsync();
         try
         {
@@ -273,7 +281,12 @@ public class IrrigationService : IIrrigationService
         foreach (var zone in _zones)
         {
             var runtime = _runtimes.GetValueOrDefault(zone.Id);
-            var rawValue = _sensor.ReadRawValue(zone.SensorChannel);
+            // Messwert bevorzugt aus dem Zyklus-Snapshot (vermeidet erneutes ADC-Lesen);
+            // ohne Snapshot-Eintrag (z.B. deaktivierte Zone, die nicht gepollt wurde)
+            // Fallback auf frisches Lesen — identisches Verhalten wie zuvor.
+            var rawValue = sensorSnapshot != null && sensorSnapshot.TryGetValue(zone.Id, out var snap)
+                ? snap
+                : _sensor.ReadRawValue(zone.SensorChannel);
             // Bei disconnected Sensor (-1) nicht CalculateMoisturePercent aufrufen
             // (wuerde falschen Wert liefern und den Disconnect maskieren)
             var moisture = rawValue >= 0 ? zone.CalculateMoisturePercent(rawValue) : 0;
@@ -304,16 +317,22 @@ public class IrrigationService : IIrrigationService
         }
     }
 
-    public async Task<SensorDataDto> PollSensorsAsync()
+    public async Task<(SensorDataDto Data, IReadOnlyDictionary<int, int> Snapshot)> PollSensorsAsync()
     {
         await _semaphore.WaitAsync();
         try
         {
             var data = new SensorDataDto { TimestampUtc = DateTime.UtcNow };
 
+            // Snapshot der frisch gelesenen ADC-Rohwerte pro Zone. Wird im selben Poll-Zyklus
+            // an CheckAndWaterAsync + GetStatusAsync durchgereicht, damit der Sensor nur EINMAL
+            // pro Zyklus statt bis zu dreimal pro Kanal gelesen wird (I2C-Last-Reduktion).
+            var snapshot = new Dictionary<int, int>(_zones.Count);
+
             foreach (var zone in _zones.Where(z => z.IsEnabled))
             {
                 var rawValue = _sensor.ReadRawValue(zone.SensorChannel);
+                snapshot[zone.Id] = rawValue;
 
                 // Disconnected Sensor: Nicht in DB speichern (verfaelscht Verlauf)
                 if (rawValue < 0)
@@ -346,7 +365,7 @@ public class IrrigationService : IIrrigationService
                 });
             }
 
-            return data;
+            return (data, snapshot);
         }
         finally
         {
@@ -354,7 +373,7 @@ public class IrrigationService : IIrrigationService
         }
     }
 
-    public async Task CheckAndWaterAsync()
+    public async Task CheckAndWaterAsync(IReadOnlyDictionary<int, int>? sensorSnapshot = null)
     {
         if (CurrentMode != SystemMode.Automatic) return;
 
@@ -377,7 +396,11 @@ public class IrrigationService : IIrrigationService
                 var runtime = _runtimes.GetValueOrDefault(zone.Id);
                 if (runtime == null || runtime.State != ZoneState.Idle) continue;
 
-                var rawValue = _sensor.ReadRawValue(zone.SensorChannel);
+                // Messwert bevorzugt aus dem Zyklus-Snapshot (vermeidet erneutes ADC-Lesen);
+                // ohne Snapshot-Eintrag Fallback auf frisches Lesen — identisches Verhalten.
+                var rawValue = sensorSnapshot != null && sensorSnapshot.TryGetValue(zone.Id, out var snap)
+                    ? snap
+                    : _sensor.ReadRawValue(zone.SensorChannel);
                 if (rawValue < 0) continue; // Sensor nicht erreichbar
 
                 var moisture = zone.CalculateMoisturePercent(rawValue);

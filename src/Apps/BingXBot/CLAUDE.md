@@ -48,6 +48,16 @@ Für generische Build-Befehle, Conventions und Architektur → [Haupt-CLAUDE.md]
 
 Pi-Server-Deploy via Skill `/server-deploy` (siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)).
 
+## Lokalisierung (bewusste Ausnahme)
+
+BingXBot ist ein **privates Single-User-Trading-Tool** ohne Store-Veröffentlichung und wird
+daher **nicht lokalisiert** — kein `AppStrings.resx`, keine `ILocalizationService`, View-Texte
+sind direkte (deutsche) Literale. Bewusste Abweichung von der 6-Sprachen-Convention der
+Store-Apps. Folge: Der AppChecker meldet für BingXBot einen Lokalisierungs-FAIL (fehlende
+RESX / hardcodierte Strings) — das ist **erwartet**, kein Bug (analog zur Material-Icons-Ausnahme
+bei BomberBlast). Bei einer etwaigen späteren Veröffentlichung müsste die Lokalisierung
+(RESX + `ILocalizationService` + 6 Sprachen) nachgezogen werden.
+
 ## Namespace-Konvention
 
 | Ordner | Namespace |

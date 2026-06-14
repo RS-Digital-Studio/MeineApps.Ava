@@ -19,6 +19,7 @@ public class CountUpBehavior : Behavior<TextBlock>
     private int _frameCount;
     private int _currentFrame;
     private CultureInfo? _cultureInfoCache;
+    private IDisposable? _subscription;
 
     public static readonly StyledProperty<double> TargetValueProperty =
         AvaloniaProperty.Register<CountUpBehavior, double>(nameof(TargetValue));
@@ -108,9 +109,10 @@ public class CountUpBehavior : Behavior<TextBlock>
     protected override void OnAttached()
     {
         base.OnAttached();
-        // TargetValue-Änderung überwachen
+        // TargetValue-Änderung überwachen. Subscription halten → in OnDetaching abmelden, sonst
+        // akkumulieren bei Re-Attach (Template-/Item-Recycling) mehrere Abos → Mehrfach-Animation.
         var observable = this.GetObservable(TargetValueProperty);
-        observable.Subscribe(new ValueObserver(this));
+        _subscription = observable.Subscribe(new ValueObserver(this));
     }
 
     private class ValueObserver(CountUpBehavior behavior) : IObserver<double>
@@ -123,6 +125,8 @@ public class CountUpBehavior : Behavior<TextBlock>
     protected override void OnDetaching()
     {
         base.OnDetaching();
+        _subscription?.Dispose();
+        _subscription = null;
         StopAnimation();
     }
 

@@ -77,6 +77,16 @@ public class SkiaCelebrationOverlay : SKCanvasView
         IsVisible = false;
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        // Timer stoppen, wenn das Overlay aus dem Visual-Tree entfernt wird (Pendant zum
+        // Attach-Lifecycle, sonst tickt ein toter Timer weiter). Die SK-Paints/-Path bleiben
+        // bewusst erhalten (readonly, instanz-langlebig) — ein Dispose hier wuerde bei Re-Attach
+        // ein use-after-free beim naechsten Render ausloesen.
+        StopAnimation();
+        base.OnDetachedFromVisualTree(e);
+    }
+
     /// <summary>
     /// Startet die Celebration-Animation. Kann mehrfach aufgerufen werden.
     /// </summary>

@@ -92,14 +92,19 @@ public sealed class DatabaseService : IDatabaseService, IBackupDataAccess
                 $"DatabaseService: UNIQUE-Index auf TimeEntries konnte nicht erstellt werden (vermutlich Altdaten-Duplikate): {ex.Message}");
         }
 
-        // One-Time-Legacy-Migration: Frühere Versionen hatten WorkDays mit Saldo=0 + Soll>0 + Ist=0
-        // (vor der Negativ-Saldo-Berechnung). Hier einmalig korrigieren statt bei jeder
-        // Wochen-/Monatsberechnung erneut zu prüfen.
+        // Legacy-Migration: Frühere Versionen hatten Arbeitstage mit Saldo=0 + Soll>0 + Ist=0
+        // (vor der Negativ-Saldo-Berechnung) → auf −Soll korrigieren. Läuft idempotent bei jedem
+        // Start (nach einmaligem Setzen ist Saldo≠0 → kein erneuter Treffer).
+        // WICHTIG: bezahlte/unbezahlte Abwesenheit (Urlaub=2, Feiertag=3, Krank=4, Unbezahlt=5,
+        // Dienstreise=7, Sonderurlaub=9, Schulung=10) AUSNEHMEN — die gelten als erfüllt (Saldo 0,
+        // s. WorkDay.IsFulfilledAbsence) und dürfen NICHT auf −Soll gesetzt werden, sonst würde der
+        // korrekte 0-Saldo eines Urlaubstags bei jedem App-Start wieder zu Minusstunden.
         try
         {
             await _database.ExecuteAsync(
                 "UPDATE WorkDays SET BalanceMinutes = -TargetWorkMinutes " +
-                "WHERE ActualWorkMinutes = 0 AND BalanceMinutes = 0 AND TargetWorkMinutes > 0");
+                "WHERE ActualWorkMinutes = 0 AND BalanceMinutes = 0 AND TargetWorkMinutes > 0 " +
+                "AND Status NOT IN (2, 3, 4, 5, 7, 9, 10)");
         }
         catch (Exception ex)
         {

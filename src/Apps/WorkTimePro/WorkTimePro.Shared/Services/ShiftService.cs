@@ -8,10 +8,12 @@ namespace WorkTimePro.Services;
 public sealed class ShiftService : IShiftService
 {
     private readonly IDatabaseService _database;
+    private readonly ICalculationService _calculation;
 
-    public ShiftService(IDatabaseService database)
+    public ShiftService(IDatabaseService database, ICalculationService calculation)
     {
         _database = database;
+        _calculation = calculation;
     }
 
     public async Task<List<ShiftPattern>> GetShiftPatternsAsync()
@@ -56,6 +58,8 @@ public sealed class ShiftService : IShiftService
             };
             await _database.SaveShiftAssignmentAsync(assignment);
         }
+
+        await RefreshWorkDayTargetAsync(date);
     }
 
     public async Task GenerateWeekScheduleAsync(DateTime weekStart, List<int?> shiftPatternIds)
@@ -86,6 +90,43 @@ public sealed class ShiftService : IShiftService
         {
             await _database.DeleteShiftAssignmentAsync(existing.Id);
         }
+
+        await RefreshWorkDayTargetAsync(date);
+    }
+
+    /// <summary>
+    /// Aktualisiert das Tages-Soll eines bereits angelegten WorkDays, wenn sich seine
+    /// Schichtzuweisung geändert hat. Vorrang: manuelle Abwesenheit (Urlaub/Krank/…) und
+    /// Feiertag bleiben unangetastet; sonst überschreibt eine zugewiesene Schicht das Soll
+    /// (Off=0, macht einen sonst freien Tag zum Arbeitstag), ohne Zuweisung gilt wieder das
+    /// Wochentag-Soll. Existiert noch kein WorkDay, setzt GetOrCreateWorkDayAsync das Soll
+    /// bei der Anlage korrekt — dann ist hier nichts zu tun.
+    /// </summary>
+    private async Task RefreshWorkDayTargetAsync(DateTime date)
+    {
+        var workDay = await _database.GetWorkDayAsync(date);
+        if (workDay == null) return;
+        if (workDay.Status is not (DayStatus.WorkDay or DayStatus.Weekend)) return;
+
+        var settings = await _database.GetSettingsAsync();
+        if (await _database.IsHolidayAsync(date, settings.HolidayRegion)) return;
+
+        var assignment = await GetShiftAssignmentAsync(date);
+        if (assignment?.ShiftPattern != null)
+        {
+            workDay.TargetWorkMinutes = assignment.ShiftPattern.Type == ShiftType.Off
+                ? 0
+                : (int)assignment.ShiftPattern.WorkDuration.TotalMinutes;
+            workDay.Status = DayStatus.WorkDay;
+        }
+        else
+        {
+            var isWork = settings.IsWorkDay(date.DayOfWeek);
+            workDay.Status = isWork ? DayStatus.WorkDay : DayStatus.Weekend;
+            workDay.TargetWorkMinutes = isWork ? settings.GetDailyMinutesForDay(date.DayOfWeek) : 0;
+        }
+
+        await _calculation.RecalculateWorkDayAsync(workDay);
     }
 
     public async Task<bool> IsWithinShiftAsync(DateTime time)

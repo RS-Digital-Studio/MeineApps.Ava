@@ -172,6 +172,25 @@ public sealed class CalculationService : ICalculationService
         }
     }
 
+    /// <summary>
+    /// Bestimmt Status + Soll eines (noch nicht angelegten) Tages für die Wochen-/Monats-Aggregation.
+    /// Vorrang wie bei der WorkDay-Anlage (GetOrCreateWorkDayAsync): Feiertag (0) > zugewiesene
+    /// Schicht (Netto-Schichtdauer, Off=0) > Wochentag-Soll aus den Settings.
+    /// </summary>
+    private static (DayStatus Status, int TargetMinutes) ResolveTemporaryDay(
+        WorkSettings settings, DateTime date, bool isHoliday, ShiftAssignment? shift)
+    {
+        if (isHoliday)
+            return (DayStatus.Holiday, 0);
+        if (shift?.ShiftPattern != null)
+            return (DayStatus.WorkDay, shift.ShiftPattern.Type == ShiftType.Off
+                ? 0
+                : (int)shift.ShiftPattern.WorkDuration.TotalMinutes);
+        var isWork = settings.IsWorkDay(date.DayOfWeek);
+        return (isWork ? DayStatus.WorkDay : DayStatus.Weekend,
+                isWork ? settings.GetDailyMinutesForDay(date.DayOfWeek) : 0);
+    }
+
     public async Task<WorkWeek> CalculateWeekAsync(DateTime dateInWeek)
     {
         var weekNumber = GetIsoWeekNumber(dateInWeek);
@@ -197,12 +216,16 @@ public sealed class CalculationService : ICalculationService
             WeekNumber = weekNumber,
             Year = year,
             StartDate = DateOnly.FromDateTime(firstDay),
-            EndDate = DateOnly.FromDateTime(lastDay)
+            EndDate = DateOnly.FromDateTime(lastDay),
+            TargetWorkMinutes = 0 // wird im Tag-Loop akkumuliert (überschreibt den Default 2400)
         };
 
         // Lookup-Dictionary statt O(n)-FirstOrDefault pro Tag: spart 30+ Compares pro Woche,
         // wird relevant bei Statistics-Year-Range mit 365 Tagen.
         var workDaysByDate = workDays.ToDictionary(d => d.Date.Date);
+        // Schichtzuweisungen einmal laden (für noch nicht angelegte Tage zählt das Schicht-Soll).
+        var shiftsByDate = (await _database.GetShiftAssignmentsAsync(firstDay, lastDay))
+            .ToDictionary(s => s.Date.Date);
 
         // Process days
         for (var date = firstDay; date <= lastDay; date = date.AddDays(1))
@@ -211,8 +234,9 @@ public sealed class CalculationService : ICalculationService
 
             if (workDay == null)
             {
-                var targetMinutes = settings.IsWorkDay(date.DayOfWeek) ? settings.GetDailyMinutesForDay(date.DayOfWeek) : 0;
-                var status = settings.IsWorkDay(date.DayOfWeek) ? DayStatus.WorkDay : DayStatus.Weekend;
+                shiftsByDate.TryGetValue(date.Date, out var shift);
+                var (status, targetMinutes) = ResolveTemporaryDay(
+                    settings, date, HolidayCalculator.IsHoliday(date, settings.HolidayRegion), shift);
                 workDay = new WorkDay
                 {
                     Date = date,
@@ -278,6 +302,9 @@ public sealed class CalculationService : ICalculationService
 
         // Lookup-Dictionary statt O(n)-FirstOrDefault pro Tag
         var workDaysByDate = workDays.ToDictionary(d => d.Date.Date);
+        // Schichtzuweisungen einmal laden (für noch nicht angelegte Tage zählt das Schicht-Soll).
+        var shiftsByDate = (await _database.GetShiftAssignmentsAsync(firstDay, lastDay))
+            .ToDictionary(s => s.Date.Date);
 
         // Process days
         for (var date = firstDay; date <= lastDay; date = date.AddDays(1))
@@ -286,8 +313,9 @@ public sealed class CalculationService : ICalculationService
 
             if (workDay == null)
             {
-                var targetMinutes = settings.IsWorkDay(date.DayOfWeek) ? settings.GetDailyMinutesForDay(date.DayOfWeek) : 0;
-                var status = settings.IsWorkDay(date.DayOfWeek) ? DayStatus.WorkDay : DayStatus.Weekend;
+                shiftsByDate.TryGetValue(date.Date, out var shift);
+                var (status, targetMinutes) = ResolveTemporaryDay(
+                    settings, date, HolidayCalculator.IsHoliday(date, settings.HolidayRegion), shift);
                 workDay = new WorkDay
                 {
                     Date = date,

@@ -57,8 +57,22 @@ public class CalculationServiceTests
             .Returns(Task.FromResult<WorkDay?>(null));
         db.GetWorkDaysAsync(Arg.Any<DateTime>(), Arg.Any<DateTime>())
             .Returns(Task.FromResult(new List<WorkDay>()));
+        db.GetShiftAssignmentsAsync(Arg.Any<DateTime>(), Arg.Any<DateTime>())
+            .Returns(Task.FromResult(new List<ShiftAssignment>()));
         return db;
     }
+
+    /// <summary>Schichtmuster für Tests (Frühschicht 06:00–14:00, 30 min Pause → 7,5 h).</summary>
+    private static ShiftPattern ErstelleSchicht(ShiftType typ = ShiftType.Early,
+        int startStunde = 6, int endStunde = 14, int pauseMin = 30)
+        => new()
+        {
+            Id = 1,
+            Type = typ,
+            StartTime = new TimeOnly(startStunde, 0),
+            EndTime = new TimeOnly(endStunde, 0),
+            BreakMinutes = pauseMin
+        };
 
     /// <summary>
     /// Erstellt ein Check-In/Check-Out Paar für die angegebene Zeitspanne.
@@ -539,5 +553,43 @@ public class CalculationServiceTests
         await sut.RecalculateWorkDayAsync(gleittag);
 
         gleittag.BalanceMinutes.Should().Be(-480);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Schicht-Soll: ShiftPattern.WorkDuration + Verdrahtung in CalculateWeekAsync
+    // ═══════════════════════════════════════════════════════════════════
+
+    [Theory]
+    [InlineData(6, 14, 30, 450)]   // Frühschicht 06–14, 30 min Pause → 7,5 h
+    [InlineData(9, 17, 30, 450)]   // 8 h brutto − 30 min → 7,5 h
+    [InlineData(22, 6, 45, 435)]   // Nachtschicht 22–06 (Wraparound) = 8 h − 45 min → 7,25 h
+    public void ShiftPattern_WorkDuration_ZiehtPauseAb_UndKenntNachtschicht(
+        int start, int end, int pause, int erwarteteMinuten)
+    {
+        var schicht = ErstelleSchicht(startStunde: start, endStunde: end, pauseMin: pause);
+        ((int)schicht.WorkDuration.TotalMinutes).Should().Be(erwarteteMinuten);
+    }
+
+    [Fact]
+    public async Task CalculateWeekAsync_SchichtAmFreienTag_ErhoehtWochenSollUmSchichtdauer()
+    {
+        // Mo–Fr je 8 h (480), Sa/So frei. Eine Frühschicht (450) am Samstag muss das Wochen-Soll
+        // erhoehen — die Schicht macht den freien Tag zum Arbeitstag (Soll = Netto-Schichtdauer).
+        var settings = ErstelleStandardSettings();
+        settings.WorkDays = "1,2,3,4,5";
+        var db = ErstelleDbMock(settings: settings);
+
+        var samstag = new DateTime(2026, 6, 13); // Sa in KW 24
+        db.GetShiftAssignmentsAsync(Arg.Any<DateTime>(), Arg.Any<DateTime>())
+            .Returns(Task.FromResult(new List<ShiftAssignment>
+            {
+                new() { Date = samstag, ShiftPatternId = 1, ShiftPattern = ErstelleSchicht() }
+            }));
+
+        var sut = new CalculationService(db);
+        var woche = await sut.CalculateWeekAsync(samstag);
+
+        // 5×480 (Mo–Fr) + 450 (Sa-Schicht) + 0 (So)
+        woche.TargetWorkMinutes.Should().Be(5 * 480 + 450);
     }
 }

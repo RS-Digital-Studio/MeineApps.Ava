@@ -150,26 +150,35 @@ public sealed class DatabaseService : IDatabaseService, IBackupDataAccess
         // Individuelle Stunden pro Tag berücksichtigen — über GetDailyMinutesForDay
         // (kaufmännisch gerundet), damit das persistierte Tages-Soll identisch mit der
         // Wochen-/Monats-Aggregation ist (Truncation lieferte z.B. bei 8,2h 491 statt 492).
-        int targetMinutes = 0;
-        if (settings.IsWorkDay(date.DayOfWeek))
+        var isWorkday = settings.IsWorkDay(date.DayOfWeek);
+        int targetMinutes = isWorkday ? settings.GetDailyMinutesForDay(date.DayOfWeek) : 0;
+        var status = isWorkday ? DayStatus.WorkDay : DayStatus.Weekend;
+
+        // Soll-Vorrang: Feiertag (0) > zugewiesene Schicht (Netto-Schichtdauer, Off=0) >
+        // Wochentag-Soll aus den Settings. Eine Schicht macht auch einen sonst freien Tag
+        // zum Arbeitstag (und eine Off-Schicht einen Wochentag frei).
+        if (await IsHolidayAsync(date, settings.HolidayRegion))
         {
-            targetMinutes = settings.GetDailyMinutesForDay(date.DayOfWeek);
+            status = DayStatus.Holiday;
+            targetMinutes = 0;
         }
+        else
+        {
+            var shiftMinutes = await GetShiftTargetMinutesAsync(date);
+            if (shiftMinutes.HasValue)
+            {
+                targetMinutes = shiftMinutes.Value;
+                status = DayStatus.WorkDay;
+            }
+        }
+
         workDay = new WorkDay
         {
             Date = date.Date,
-            Status = settings.IsWorkDay(date.DayOfWeek) ? DayStatus.WorkDay : DayStatus.Weekend,
+            Status = status,
             TargetWorkMinutes = targetMinutes,
-            BalanceMinutes = -targetMinutes
+            BalanceMinutes = WorkDay.CalculateBalance(status, 0, targetMinutes)
         };
-
-        // Check for holiday
-        if (await IsHolidayAsync(date, settings.HolidayRegion))
-        {
-            workDay.Status = DayStatus.Holiday;
-            workDay.TargetWorkMinutes = 0;
-            workDay.BalanceMinutes = 0;
-        }
 
         try
         {
@@ -484,6 +493,19 @@ public sealed class DatabaseService : IDatabaseService, IBackupDataAccess
     // Hinweis: Feiertage werden ausschließlich über HolidayCalculator (In-Memory) berechnet.
     // Die frühere DB-gestützte Persistenz (GetHolidaysAsync(year,region)/SaveHolidaysAsync)
     // wurde nie befüllt und ist entfernt — IsHolidayAsync rechnet jetzt direkt.
+
+    /// <summary>
+    /// Tages-Soll aus einer zugewiesenen Schicht: Netto-Schichtdauer (Start−Ende − Pause),
+    /// 0 bei einer Off-Schicht, oder null wenn dem Tag keine Schicht zugewiesen ist (dann gilt
+    /// das Wochentag-Soll aus den Settings). Interner DB-Lookup → kein DI-Zyklus mit ShiftService.
+    /// </summary>
+    private async Task<int?> GetShiftTargetMinutesAsync(DateTime date)
+    {
+        var assignment = await GetShiftAssignmentAsync(date);
+        if (assignment?.ShiftPattern == null) return null;
+        if (assignment.ShiftPattern.Type == ShiftType.Off) return 0;
+        return (int)assignment.ShiftPattern.WorkDuration.TotalMinutes;
+    }
 
     public Task<bool> IsHolidayAsync(DateTime date, string region)
     {

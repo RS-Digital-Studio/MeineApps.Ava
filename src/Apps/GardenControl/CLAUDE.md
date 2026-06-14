@@ -122,6 +122,24 @@ Mock-Erkennung: automatisch wenn `/sys/class/gpio` nicht vorhanden ist (`Program
 |-----|------|
 | `GardenHub` | `/hub/garden` — SignalR-Hub, empfängt Befehle und sendet Status-Push |
 
+## Authentifizierung (Shared-Secret)
+
+Server + Client teilen ein Shared Secret (Header `X-Garden-Secret`), analog zum BingX-Server.
+`SharedSecretAuthMiddleware` (`Server/Auth/`) prüft es bei ALLEN `/api`-Endpunkten + am SignalR-Hub
+`/hub/garden` (`FixedTimeEquals` gegen Timing-Angriffe; am Hub zusätzlich als `access_token`-Query
+für den WebSocket-Upgrade). Einzige auth-freie Ausnahme: `GET /api/health` (zustandslos). CORS ist
+gehärtet — keine Wildcard-Origins mit Credentials (der Avalonia-Client ist kein Browser).
+
+- **Geteilte Konstanten:** `GardenControl.Core/GardenAuth.cs` (Header-Name, Default-Dev-Secret, Pref-Key).
+- **Server-Secret:** `Auth:SharedSecret` (`appsettings.json`) bzw. Env `Auth__SharedSecret`. Leer →
+  Default-Dev-Secret mit Log-Warnung (Mock/Dev läuft out-of-the-box; gesetztes Secret lehnt das Default ab).
+- **Client/Kiosk-Secret:** via `IPreferencesService` persistiert, Eingabe unter Einstellungen →
+  "Server-Secret". `ApiService`/`ConnectionService.SetSecret(...)`, `MainViewModel` setzt es vor `ConnectAsync` + reconnectet bei Änderung.
+- **Pi-Deploy:** `install-pi5.sh`/`install.sh` erzeugen `/etc/gardencontrol/secret.env` (`openssl rand`,
+  chmod 600) + laden es per systemd `EnvironmentFile`; der Kiosk wird mit demselben Secret geseedet. Das
+  ausgegebene Secret in der Handy/PC-App eintragen. Laufender Pi: `secret.env` anlegen ODER `install-pi5.sh`
+  neu laufen, dann `sudo systemctl daemon-reload && sudo systemctl restart gardencontrol`.
+
 ## Build-Befehle
 
 ```bash

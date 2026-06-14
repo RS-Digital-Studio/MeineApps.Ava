@@ -1028,7 +1028,7 @@ public sealed partial class GameRenderer : IDisposable
         List<Enemy> enemies, List<Bomb> bombs,
         List<Explosion> explosions, List<PowerUp> powerUps,
         float remainingTime, int score, int lives, Cell? exitCell = null,
-        List<Cell>? specialEffectCells = null)
+        List<Cell>? specialEffectCells = null, List<Cell>? afterglowCells = null)
     {
         // TEMP-DIAGNOSE: Canvas fuer Phasen-Flush registrieren (ordnet GPU-Zeit der jeweiligen Phase zu).
         RenderProbe.FlushTarget = canvas;
@@ -1076,8 +1076,8 @@ public sealed partial class GameRenderer : IDisposable
 
         using (RenderProbe.Measure("grid"))
             RenderGrid(canvas, grid);
-        RenderSpecialBombCellEffects(canvas, grid);
-        RenderAfterglow(canvas, grid);
+        RenderSpecialBombCellEffects(canvas, grid, specialEffectCells);
+        RenderAfterglow(canvas, grid, afterglowCells);
         RenderDangerWarning(canvas, grid, bombs);
         RenderExit(canvas, grid, exitCell);
 

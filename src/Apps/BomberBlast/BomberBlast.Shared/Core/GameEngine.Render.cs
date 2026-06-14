@@ -241,7 +241,7 @@ public sealed partial class GameEngine
         // _player ist im Ctor initialisiert und nie null zur Render-Zeit → Null-Forgiving (!) zulaessig.
         _renderer.Render(canvas, _grid, _player!,
             _enemies, _bombs, _explosions, _powerUps,
-            displayTime, _player!.Score, _player.Lives, _exitCell, _specialEffectCells);
+            displayTime, _player!.Score, _player.Lives, _exitCell, _specialEffectCells, _afterglowCells);
 
         // Partikel rendern (über dem Spielfeld, unter den Controls)
         if (_particleSystem.HasActiveParticles)

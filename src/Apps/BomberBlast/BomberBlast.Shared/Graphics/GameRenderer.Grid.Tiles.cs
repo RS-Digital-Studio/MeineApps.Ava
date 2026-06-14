@@ -253,7 +253,26 @@ public sealed partial class GameRenderer
         canvas.DrawLine(px, py, px, py + cs, _strokePaint);
     }
 
-    private void RenderWallTile(SKCanvas canvas, float px, float py, int cs, int gx, int gy, bool isNeon)
+    // ───────────────────────────────────────────────────────────────────────
+    // WAND-RENDERING (statischer Teil → Wand-Cache, animierter Teil → Per-Frame)
+    //
+    // Wände (CellType.Wall) werden ausschließlich beim Level-Setup gesetzt
+    // (Border + festes Schachbrett-/Layout-Muster) und nie zur Laufzeit verändert
+    // — also genauso statisch wie der Boden. Der statische Anteil wird einmalig in
+    // das Boden-Cache-Bitmap gebacken (RebuildFloorCache). Pro Frame fällt damit
+    // nur noch der eine Bitmap-Blit an statt ~35 Wand-Renderings.
+    //
+    // Welt-spezifische ANIMIERTE Wand-Effekte (zeitabhängiges Pulsieren) dürfen
+    // NICHT eingefroren werden — sie laufen weiter als dünner Per-Frame-Overlay
+    // (RenderWallTileAnimatedOverlay). Betroffen sind nur Welt 4 (Inferno,
+    // pulsierende Glut-Risse) und Welt 9 (ShadowRealm, pulsierende dunkle Masse).
+    // ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Statischer Wand-Anteil (Basis-Block + zeit-unabhängige Welt-Details).
+    /// Wird in den Boden-Cache gebacken. Enthält bewusst KEINE animierten Effekte.
+    /// </summary>
+    private void RenderWallTileStatic(SKCanvas canvas, float px, float py, int cs, int gx, int gy, bool isNeon)
     {
         _fillPaint.MaskFilter = null;
 
@@ -287,7 +306,7 @@ public sealed partial class GameRenderer
             canvas.DrawRect(px + cs - 3, py, 3, cs, _fillPaint);
         }
 
-        // Welt-spezifische Wand-Details
+        // Welt-spezifische Wand-Details (nur statische — Welt 4 + 9 laufen im Overlay)
         if (_worldPalette != null)
         {
             switch (_currentWorldIndex)
@@ -354,10 +373,7 @@ public sealed partial class GameRenderer
                     }
                     break;
 
-                case 4: // Inferno: Glut-durchzogener Obsidian
-                    ProceduralTextures.DrawEmberCracks(canvas, _strokePaint, px, py, cs, gx, gy, _globalTimer,
-                        isNeon ? (byte)50 : (byte)45);
-                    break;
+                // case 4 (Inferno, pulsierende Glut-Risse) → RenderWallTileAnimatedOverlay
 
                 case 5: // Ruins: Sandstein mit Risslinien + abgebrochene Ecken
                     if (!isNeon)
@@ -432,16 +448,39 @@ public sealed partial class GameRenderer
                     }
                     break;
 
-                case 9: // ShadowRealm: Pulsierende dunkle Masse
-                {
-                    float pulse = MathF.Sin(_globalTimer * 1.5f + gx * 0.9f + gy * 1.1f) * 0.4f + 0.6f;
-                    byte darkAlpha = (byte)(isNeon ? 20 * pulse : 15 * pulse);
-                    _fillPaint.Color = isNeon
-                        ? new SKColor(150, 30, 220, darkAlpha)
-                        : new SKColor(40, 15, 60, darkAlpha);
-                    canvas.DrawRect(px + 2, py + 2, cs - 4, cs - 4, _fillPaint);
-                    break;
-                }
+                // case 9 (ShadowRealm, pulsierende dunkle Masse) → RenderWallTileAnimatedOverlay
+            }
+        }
+    }
+
+    /// <summary>
+    /// Animierter Wand-Overlay (zeitabhängiges Pulsieren). Wird pro Frame über den
+    /// gecachten statischen Wand-Block gezeichnet — nur für Welten mit animiertem
+    /// Wand-Detail (Welt 4 Inferno, Welt 9 ShadowRealm). Alle anderen Welten haben
+    /// rein statische Wände und zeichnen hier nichts.
+    /// </summary>
+    private void RenderWallTileAnimatedOverlay(SKCanvas canvas, float px, float py, int cs, int gx, int gy, bool isNeon)
+    {
+        if (_worldPalette == null)
+            return;
+
+        switch (_currentWorldIndex)
+        {
+            case 4: // Inferno: Glut-durchzogener Obsidian (pulsierend)
+                ProceduralTextures.DrawEmberCracks(canvas, _strokePaint, px, py, cs, gx, gy, _globalTimer,
+                    isNeon ? (byte)50 : (byte)45);
+                break;
+
+            case 9: // ShadowRealm: Pulsierende dunkle Masse
+            {
+                _fillPaint.MaskFilter = null;
+                float pulse = MathF.Sin(_globalTimer * 1.5f + gx * 0.9f + gy * 1.1f) * 0.4f + 0.6f;
+                byte darkAlpha = (byte)(isNeon ? 20 * pulse : 15 * pulse);
+                _fillPaint.Color = isNeon
+                    ? new SKColor(150, 30, 220, darkAlpha)
+                    : new SKColor(40, 15, 60, darkAlpha);
+                canvas.DrawRect(px + 2, py + 2, cs - 4, cs - 4, _fillPaint);
+                break;
             }
         }
     }

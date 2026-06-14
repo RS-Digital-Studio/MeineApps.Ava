@@ -15,7 +15,7 @@ namespace BomberBlast.Graphics;
 public sealed partial class GameRenderer
 {
     // ═══════════════════════════════════════════════════════════════════════
-    // BODEN-CACHE (statische Floor-Texturen als SKBitmap)
+    // BODEN+WAND-CACHE (statische Floor- + Wall-Texturen als SKBitmap)
     // ═══════════════════════════════════════════════════════════════════════
 
     private SKBitmap? _floorCacheBitmap;
@@ -43,8 +43,12 @@ public sealed partial class GameRenderer
     }
 
     /// <summary>
-    /// Alle Floor-Tiles einmalig in ein SKBitmap rendern (Schachbrett + Welt-Details + Grid-Linien).
-    /// Spart ~750 Draw-Calls pro Frame → 1 DrawBitmap.
+    /// Alle Floor-Tiles + statische Wände einmalig in ein SKBitmap rendern
+    /// (Schachbrett + Welt-Details + Grid-Linien, darüber der statische Wand-Block).
+    /// Wände sind genauso statisch wie der Boden (nur Level-Setup, keine Laufzeit-Mutation),
+    /// daher gehören sie in denselben Cache. Spart pro Frame ~750 Floor-Draw-Calls UND
+    /// ~35 Wand-Renderings (je ~5-10 Draw-Calls) → 1 DrawBitmap.
+    /// Animierte Wand-Effekte (Welt 4 + 9) laufen separat pro Frame, siehe RenderGrid.
     /// Audit M08: Muss auf UI-Thread laufen — Skia ist nicht thread-safe. DEBUG-Assert prueft.
     /// </summary>
     private void RebuildFloorCache(GameGrid grid, bool isNeon)
@@ -77,7 +81,14 @@ public sealed partial class GameRenderer
             {
                 float px = x * cs;
                 float py = y * cs;
+
+                // Boden immer zuerst (auch unter Wänden — identische Reihenfolge wie zuvor im Per-Frame-Pfad).
                 RenderFloorTile(cacheCanvas, px, py, cs, x, y, isNeon);
+
+                // Statischen Wand-Block über den Boden backen. Der animierte Anteil
+                // (Welt 4 Glut-Puls, Welt 9 dunkle Masse) wird NICHT gebacken.
+                if (grid[x, y].Type == CellType.Wall)
+                    RenderWallTileStatic(cacheCanvas, px, py, cs, x, y, isNeon);
             }
         }
 
@@ -143,7 +154,8 @@ public sealed partial class GameRenderer
         if (_floorCacheWorldIndex != _currentWorldIndex || _floorCacheStyle != _styleService.CurrentStyle)
             RebuildFloorCache(grid, isNeon);
 
-        // Gecachten Boden als einzelnes Bitmap zeichnen (statt ~750 Draw-Calls)
+        // Gecachten Boden + statische Wände als einzelnes Bitmap zeichnen
+        // (statt ~750 Floor-Draw-Calls + ~35 Wand-Renderings pro Frame)
         if (_floorCacheBitmap != null)
             canvas.DrawBitmap(_floorCacheBitmap, 0, 0);
 
@@ -158,7 +170,9 @@ public sealed partial class GameRenderer
                 switch (cell.Type)
                 {
                     case CellType.Wall:
-                        RenderWallTile(canvas, px, py, cs, x, y, isNeon);
+                        // Statische Wand-Basis kommt aus dem Cache-Blit oben.
+                        // Hier nur noch der animierte Overlay (Welt 4 + 9), sonst nichts.
+                        RenderWallTileAnimatedOverlay(canvas, px, py, cs, x, y, isNeon);
                         break;
 
                     case CellType.Block:
@@ -418,10 +432,23 @@ public sealed partial class GameRenderer
     // (RenderSpecialBombCellEffects → Grid.GridFx.cs)
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>Nachglühen auf Zellen nach Explosionsende (warmer Schimmer + Glut-Glow)</summary>
-    private void RenderAfterglow(SKCanvas canvas, GameGrid grid)
+    /// <summary>
+    /// Nachglühen auf Zellen nach Explosionsende (warmer Schimmer + Glut-Glow).
+    /// Iteriert über die Afterglow-Dirty-Liste der GameEngine statt über alle ~150 Zellen
+    /// (Early-Out bei 0 aktiven Zellen, was der Normalfall ist). Fällt auf einen Voll-Grid-Scan
+    /// zurück, falls keine Dirty-Liste übergeben wurde (Defensiv-Fallback).
+    /// </summary>
+    private void RenderAfterglow(SKCanvas canvas, GameGrid grid, List<Cell>? afterglowCells)
     {
-        int cs = GameGrid.CELL_SIZE;
+        if (afterglowCells != null)
+        {
+            // Schneller Pfad: nur tatsächlich nachglühende Zellen (Dirty-Liste).
+            for (int i = 0; i < afterglowCells.Count; i++)
+                RenderAfterglowCell(canvas, afterglowCells[i].X, afterglowCells[i].Y, afterglowCells[i].AfterglowTimer);
+            return;
+        }
+
+        // Fallback: Voll-Grid-Scan (nur falls keine Dirty-Liste vorhanden).
         for (int y = 0; y < grid.Height; y++)
         {
             for (int x = 0; x < grid.Width; x++)
@@ -429,24 +456,33 @@ public sealed partial class GameRenderer
                 var cell = grid[x, y];
                 if (cell.AfterglowTimer <= 0)
                     continue;
-
-                float intensity = cell.AfterglowTimer / Models.Entities.Explosion.AFTERGLOW_DURATION;
-
-                // Basis-Glow (orange, weicher Rand)
-                byte alpha = (byte)(100 * intensity);
-                _fillPaint.Color = _explOuter.WithAlpha(alpha);
-                _fillPaint.MaskFilter = _outerGlow;
-                canvas.DrawRect(x * cs - 1, y * cs - 1, cs + 2, cs + 2, _fillPaint);
-                _fillPaint.MaskFilter = null;
-
-                // Innerer heller Kern (verblasst schneller)
-                if (intensity > 0.4f)
-                {
-                    float coreAlpha = (intensity - 0.4f) / 0.6f;
-                    _fillPaint.Color = _explInner.WithAlpha((byte)(40 * coreAlpha));
-                    canvas.DrawRect(x * cs + cs * 0.2f, y * cs + cs * 0.2f, cs * 0.6f, cs * 0.6f, _fillPaint);
-                }
+                RenderAfterglowCell(canvas, x, y, cell.AfterglowTimer);
             }
+        }
+    }
+
+    /// <summary>Eine einzelne Afterglow-Zelle zeichnen (Basis-Glow + heller Kern).</summary>
+    private void RenderAfterglowCell(SKCanvas canvas, int x, int y, float afterglowTimer)
+    {
+        if (afterglowTimer <= 0)
+            return;
+
+        int cs = GameGrid.CELL_SIZE;
+        float intensity = afterglowTimer / Models.Entities.Explosion.AFTERGLOW_DURATION;
+
+        // Basis-Glow (orange, weicher Rand)
+        byte alpha = (byte)(100 * intensity);
+        _fillPaint.Color = _explOuter.WithAlpha(alpha);
+        _fillPaint.MaskFilter = _outerGlow;
+        canvas.DrawRect(x * cs - 1, y * cs - 1, cs + 2, cs + 2, _fillPaint);
+        _fillPaint.MaskFilter = null;
+
+        // Innerer heller Kern (verblasst schneller)
+        if (intensity > 0.4f)
+        {
+            float coreAlpha = (intensity - 0.4f) / 0.6f;
+            _fillPaint.Color = _explInner.WithAlpha((byte)(40 * coreAlpha));
+            canvas.DrawRect(x * cs + cs * 0.2f, y * cs + cs * 0.2f, cs * 0.6f, cs * 0.6f, _fillPaint);
         }
     }
 

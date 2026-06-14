@@ -2,6 +2,7 @@ namespace HandwerkerImperium.Services;
 
 using System.Collections.Concurrent;
 using Avalonia.Platform;
+using Avalonia.Threading;
 using SkiaSharp;
 
 /// <summary>
@@ -25,8 +26,11 @@ public sealed class GameAssetService : IGameAssetService
     private long _currentCacheBytes;
     private bool _disposed;
 
-    // Bitmaps die aus dem Cache entfernt wurden, aber noch in Benutzung sein könnten
-    private readonly List<SKBitmap> _pendingDispose = new();
+    // Pending-Dispose-Queue: Verdraengte Bitmaps werden nicht sofort disposed, weil der
+    // UI-Render-Thread sie u.U. noch in einer lokalen Variable haelt. Nach DrainAgeMs sind
+    // garantiert mehrere Frames vergangen -> sicher zu disposen (siehe DrainPendingDispose).
+    private readonly ConcurrentQueue<(SKBitmap Bitmap, long EnqueuedTick)> _pendingDispose = new();
+    private const long DrainAgeMs = 200;
 
     /// <summary>
     /// Plattform-spezifische Lade-Funktion.
@@ -84,16 +88,40 @@ public sealed class GameAssetService : IGameAssetService
 
     public void Evict(string assetPath)
     {
-        // NUR aus Cache entfernen, NICHT disposen!
+        // NUR aus Cache entfernen, verzoegert disposen (nicht sofort)!
         // Grund: Ein anderer Thread könnte das Bitmap gerade in DrawBitmap() nutzen.
-        // Dispose passiert erst bei ClearCache()/App-Shutdown.
+        // Dispose passiert verzoegert via DrainPendingDispose (nach DrainAgeMs).
         if (_cache.TryRemove(assetPath, out var entry))
         {
             Interlocked.Add(ref _currentCacheBytes, -entry.SizeBytes);
-            lock (_pendingDispose)
-                _pendingDispose.Add(entry.Bitmap);
+            _pendingDispose.Enqueue((entry.Bitmap, Environment.TickCount64));
         }
         _loadingTasks.TryRemove(assetPath, out _);
+    }
+
+    /// <summary>
+    /// Disposed alle Bitmaps in der Pending-Queue, die aelter als DrainAgeMs sind. Wird nach
+    /// jeder Eviction in LoadBitmapInternal auf dem UI-Thread aufgerufen.
+    /// </summary>
+    public void DrainPendingDispose()
+    {
+        long now = Environment.TickCount64;
+        int initialCount = _pendingDispose.Count;
+        for (int i = 0; i < initialCount; i++)
+        {
+            if (!_pendingDispose.TryDequeue(out var item)) break;
+
+            if (now - item.EnqueuedTick >= DrainAgeMs)
+            {
+                item.Bitmap.Dispose();
+            }
+            else
+            {
+                // Noch zu jung -> wieder einreihen. Queue ist FIFO: Folge-Eintraege auch zu jung.
+                _pendingDispose.Enqueue(item);
+                break;
+            }
+        }
     }
 
     public void ClearCache()
@@ -108,13 +136,9 @@ public sealed class GameAssetService : IGameAssetService
                 entry.Bitmap.Dispose();
             }
         }
-        // Jetzt auch pending Bitmaps disposen (App-Shutdown, kein Rendering mehr)
-        lock (_pendingDispose)
-        {
-            foreach (var bmp in _pendingDispose)
-                bmp.Dispose();
-            _pendingDispose.Clear();
-        }
+        // Pending-Queue zwangsleeren (App-Shutdown, kein Rendering mehr)
+        while (_pendingDispose.TryDequeue(out var item))
+            item.Bitmap.Dispose();
         _loadingTasks.Clear();
     }
 
@@ -149,6 +173,12 @@ public sealed class GameAssetService : IGameAssetService
             {
                 EvictOldest();
             }
+
+            // Verdraengte Bitmaps verzoegert auf dem UI-Thread disposen: LoadBitmapInternal laeuft
+            // im Background, ein Direkt-Dispose koennte mit aktivem canvas.DrawBitmap() im
+            // Render-Thread kollidieren (use-after-free). Dispatcher serialisiert mit den Render-Calls.
+            if (!_pendingDispose.IsEmpty)
+                Dispatcher.UIThread.Post(DrainPendingDispose);
 
             var entry = new CacheEntry
             {

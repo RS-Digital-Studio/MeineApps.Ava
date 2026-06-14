@@ -43,7 +43,8 @@ internal static class TestHelper
         ILocalizationService? localization = null,
         IPreferencesService? preferences = null,
         IHapticService? haptic = null,
-        IHistoryService? historyService = null)
+        IHistoryService? historyService = null,
+        IAppLifecycleService? lifecycle = null)
     {
         var engine = new CalculatorEngine();
         var parser = new ExpressionParser(engine);
@@ -51,7 +52,8 @@ internal static class TestHelper
         preferences ??= ErstellePreferencesMock();
         haptic ??= new NoOpHapticService();
         historyService ??= new HistoryService();
+        lifecycle ??= new AppLifecycleService();
 
-        return new CalculatorViewModel(engine, parser, localization, historyService, preferences, haptic);
+        return new CalculatorViewModel(engine, parser, localization, historyService, preferences, haptic, lifecycle);
     }
 }

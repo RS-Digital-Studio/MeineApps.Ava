@@ -15,6 +15,11 @@ public partial class MainView : UserControl
     private MainViewModel? _vm;
     private readonly Random _rng = new();
 
+    // App-Pause-Zustand (Android-Lifecycle via MainViewModel.PauseStateChanged). Hat Vorrang vor
+    // der Calculator-Sichtbarkeit: im Hintergrund läuft der Render-Timer nie. Bei Resume
+    // entscheidet die bestehende UpdateRenderTimerState-Logik (verdeckt oder nicht).
+    private bool _appPaused;
+
     // SkiaSharp Blueprint-Hintergrund
     private readonly BlueprintBackgroundRenderer _backgroundRenderer = new();
     // Lifecycle: Start in OnDataContextChanged (StartRenderTimer), Stop + Tick-Unsubscribe + null
@@ -55,6 +60,7 @@ public partial class MainView : UserControl
             _vm.FloatingTextRequested -= OnFloatingText;
             _vm.ClipboardRequested -= OnClipboardRequested;
             _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm.PauseStateChanged -= OnPauseStateChanged;
             _vm = null;
         }
     }
@@ -67,6 +73,7 @@ public partial class MainView : UserControl
             _vm.FloatingTextRequested -= OnFloatingText;
             _vm.ClipboardRequested -= OnClipboardRequested;
             _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm.PauseStateChanged -= OnPauseStateChanged;
         }
 
         _vm = DataContext as MainViewModel;
@@ -83,7 +90,22 @@ public partial class MainView : UserControl
             // Auf CurrentPage-Wechsel reagieren: Render-Timer pausieren wenn Calculator offen
             // (Hintergrund ist verdeckt - 5fps × 5 Layer GPU-Last sparen)
             _vm.PropertyChanged += OnVmPropertyChanged;
+
+            // App-Pause/Resume (Android-Lifecycle): im Hintergrund den Render-Timer stoppen
+            _vm.PauseStateChanged += OnPauseStateChanged;
         }
+    }
+
+    /// <summary>
+    /// App-Pause/Resume (Android-Lifecycle via MainViewModel). Im Hintergrund den dekorativen
+    /// ~5fps-Blueprint-Render-Timer anhalten (niemand sieht ihn → Akku). Bei Resume nicht blind
+    /// starten, sondern die bestehende Sichtbarkeits-Logik entscheiden lassen (Calculator-Overlay
+    /// kann den Hintergrund weiterhin verdecken).
+    /// </summary>
+    private void OnPauseStateChanged(bool isPaused)
+    {
+        _appPaused = isPaused;
+        UpdateRenderTimerState();
     }
 
     private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -93,17 +115,22 @@ public partial class MainView : UserControl
     }
 
     /// <summary>
-    /// Pausiert den Background-Render-Timer wenn ein Calculator offen ist
-    /// (vom CalculatorOverlay verdeckt → keine GPU-Arbeit nötig).
+    /// Einziger Entscheidungspunkt für den Background-Render-Timer. Der Timer läuft nur, wenn die
+    /// App im Vordergrund ist UND kein Calculator-Overlay den Hintergrund verdeckt:
+    /// - App im Hintergrund (<see cref="_appPaused"/>): immer aus (Akku — niemand sieht den Hintergrund).
+    /// - Calculator offen (<c>CurrentPage</c> gesetzt): aus (vom Overlay verdeckt → keine GPU-Arbeit).
+    /// App-Pause hat damit Vorrang; bei Resume entscheidet die Calculator-Sichtbarkeit.
     /// </summary>
     private void UpdateRenderTimerState()
     {
         if (_renderTimer == null || _vm == null) return;
 
         bool calculatorOpen = !string.IsNullOrEmpty(_vm.CurrentPage);
-        if (calculatorOpen && _renderTimer.IsEnabled)
+        bool shouldRun = !_appPaused && !calculatorOpen;
+
+        if (!shouldRun && _renderTimer.IsEnabled)
             _renderTimer.Stop();
-        else if (!calculatorOpen && !_renderTimer.IsEnabled)
+        else if (shouldRun && !_renderTimer.IsEnabled)
             _renderTimer.Start();
     }
 

@@ -20,6 +20,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _localization;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IFavoritesService _favoritesService;
+    private readonly IAppLifecycleService _lifecycle;
 
     // Zähler für Berechnungen: nach jeder 3. Berechnung wird ein Opt-in-Ad-Angebot gezeigt
     private int _calculationCount;
@@ -41,6 +42,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public event Action<string, string>? FloatingTextRequested;
     public event Action<string>? ClipboardRequested;
 
+    /// <summary>App-Pause/Resume (Android-Lifecycle). Die MainView stoppt darüber ihren
+    /// animierten Blueprint-Hintergrund-Render-Timer im Hintergrund (Akku-Sparen);
+    /// bei Resume entscheidet die View-eigene Sichtbarkeits-Logik über den Neustart.</summary>
+    public event Action<bool>? PauseStateChanged;
+
     // Sub-ViewModels for embedded tabs
     public SettingsViewModel SettingsViewModel { get; }
     public ProjectsViewModel ProjectsViewModel { get; }
@@ -57,7 +63,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         ICalculatorFactoryService calculatorFactory,
         IFavoritesService favoritesService,
         ProjectTemplatesViewModel projectTemplatesViewModel,
-        QuoteViewModel quoteViewModel)
+        QuoteViewModel quoteViewModel,
+        IAppLifecycleService lifecycle)
     {
         _purchaseService = purchaseService;
         _adService = adService;
@@ -65,6 +72,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _rewardedAdService = rewardedAdService;
         _calculatorFactory = calculatorFactory;
         _favoritesService = favoritesService;
+        _lifecycle = lifecycle;
         ProjectTemplatesViewModel = projectTemplatesViewModel;
         QuoteViewModel = quoteViewModel;
         SettingsViewModel = settingsViewModel;
@@ -114,9 +122,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Back-Press Helper verdrahten
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
+        // App-Lifecycle: Hintergrund-Render-Loop der MainView im Hintergrund anhalten (Akku)
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
+
         UpdateStatus();
         UpdateNavTexts();
     }
+
+    private void OnAppPaused() => PauseStateChanged?.Invoke(true);
+    private void OnAppResumed() => PauseStateChanged?.Invoke(false);
 
     #region Tab Navigation
 
@@ -630,6 +645,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         QuoteViewModel.MessageRequested -= OnChildMessage;
         QuoteViewModel.FloatingTextRequested -= OnChildFloatingText;
         _favoritesService.FavoritesChanged -= OnFavoritesChanged;
+
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
 
         _disposed = true;
     }

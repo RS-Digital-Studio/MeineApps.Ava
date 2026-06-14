@@ -190,6 +190,10 @@ public partial class App : Application
         services.AddSingleton<IUnitConverterService, UnitConverterService>();
         services.AddSingleton<ICalculationHistoryService, CalculationHistoryService>();
 
+        // App-Lifecycle-Broker: Android speist NotifyPaused/Resumed; die MainView stoppt darüber
+        // ihren animierten Blueprint-Hintergrund-Render-Timer im Hintergrund (Akku-Sparen).
+        services.AddSingleton<IAppLifecycleService, AppLifecycleService>();
+
         // Premium Services (Ads, Purchases)
         services.AddMeineAppsPremium();
 

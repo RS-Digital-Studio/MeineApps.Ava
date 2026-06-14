@@ -25,6 +25,8 @@ public class MainActivity : AvaloniaMainActivity
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
     private MainViewModel? _mainVm;
+    // App-Lifecycle-Broker fuer Akku-Optimierung (MainView-Render-Loop im Hintergrund stoppen).
+    private IAppLifecycleService? _lifecycle;
     // Handler als Feld: MainViewModel ist Singleton — ohne Abmeldung in OnDestroy
     // würde die Lambda (this-Capture) die Activity leaken.
     private Action<string>? _exitHintHandler;
@@ -74,6 +76,9 @@ public class MainActivity : AvaloniaMainActivity
             _mainVm.ExitHintRequested += _exitHintHandler;
         }
 
+        // App-Lifecycle-Broker holen (speist NotifyPaused/Resumed in OnPause/OnResume)
+        _lifecycle = App.Services?.GetService<IAppLifecycleService>();
+
         // Google Mobile Ads initialisieren - Ads erst nach SDK-Callback laden
         AdMobHelper.Initialize(this, () =>
         {
@@ -107,12 +112,14 @@ public class MainActivity : AvaloniaMainActivity
     {
         base.OnResume();
         _adMobHelper?.Resume();
+        _lifecycle?.NotifyResumed();
         EnableImmersiveMode();
     }
 
     protected override void OnPause()
     {
         _adMobHelper?.Pause();
+        _lifecycle?.NotifyPaused();
         base.OnPause();
     }
 

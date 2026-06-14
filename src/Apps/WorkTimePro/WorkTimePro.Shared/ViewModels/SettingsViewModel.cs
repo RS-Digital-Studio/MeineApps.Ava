@@ -41,6 +41,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
     private bool _disposed;
     private bool _isInitializing;
     private bool _workTimeSettingsChanged;
+    private bool _holidayRegionChanged;
     private CancellationTokenSource? _autoSaveCts;
     private CancellationTokenSource? _reminderRescheduleCts;
 
@@ -452,7 +453,11 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
         }
     }
     partial void OnLegalComplianceEnabledChanged(bool value) => ScheduleAutoSave();
-    partial void OnSelectedRegionIndexChanged(int value) => ScheduleAutoSave();
+    partial void OnSelectedRegionIndexChanged(int value)
+    {
+        _holidayRegionChanged = true;
+        ScheduleAutoSave();
+    }
 
     partial void OnMorningReminderTimeChanged(TimeSpan value)
     {
@@ -685,6 +690,21 @@ public sealed partial class SettingsViewModel : ViewModelBase, IMessageSource, I
             // Flag-Setzung sonst durch das späte Zurücksetzen verloren.
             var requiresReload = _workTimeSettingsChanged;
             _workTimeSettingsChanged = false;
+
+            // Bundesland-Wechsel: bereits angelegte automatische Tage gegen den neuen
+            // Feiertagskalender abgleichen (sonst bleiben Tage, die jetzt Feiertag sind, als
+            // Arbeitstag mit -Soll stehen bzw. umgekehrt). Tage mit erfasster Arbeit / manuelle
+            // Status bleiben unberührt.
+            if (_holidayRegionChanged)
+            {
+                _holidayRegionChanged = false;
+                var firstDay = await _database.GetFirstWorkDayDateAsync();
+                if (firstDay != null)
+                {
+                    var changed = await _database.SyncHolidaysAsync(firstDay.Value, DateTime.Today.AddYears(1));
+                    if (changed > 0) requiresReload = true;
+                }
+            }
 
             // Andere Tabs über Änderungen informieren — Bool signalisiert ob ein
             // Daten-Reload nötig ist (nur bei arbeitszeit-relevanten Settings).

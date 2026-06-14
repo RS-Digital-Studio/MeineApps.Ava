@@ -17,6 +17,15 @@ public interface IDatabaseService
     Task<int> SaveWorkDayAsync(WorkDay workDay);
     Task DeleteWorkDayAsync(int id);
 
+    /// <summary>
+    /// Gleicht bereits angelegte Tage im Zeitraum gegen den Feiertagskalender der aktuellen
+    /// Region ab (nach Bundesland-Wechsel): automatische Tage (WorkDay/Weekend) ohne erfasste
+    /// Arbeit werden zu Holiday (Soll 0) bzw. ein nicht mehr gültiger Holiday zurück auf den
+    /// regulären Status. Tage mit erfasster Arbeit und manuelle Status (Urlaub/Krank/…) bleiben
+    /// unangetastet. Liefert die Anzahl geänderter Tage.
+    /// </summary>
+    Task<int> SyncHolidaysAsync(DateTime startDate, DateTime endDate);
+
     // === TimeEntry ===
     Task<List<TimeEntry>> GetTimeEntriesAsync(int workDayId);
     Task<Dictionary<int, List<TimeEntry>>> GetTimeEntriesForWorkDaysAsync(List<int> workDayIds);

@@ -493,6 +493,44 @@ public sealed class DatabaseService : IDatabaseService, IBackupDataAccess
         return Task.FromResult(HolidayCalculator.IsHoliday(date, region));
     }
 
+    public async Task<int> SyncHolidaysAsync(DateTime startDate, DateTime endDate)
+    {
+        var settings = await GetSettingsAsync();
+        var workDays = await GetWorkDaysAsync(startDate, endDate);
+        var changed = 0;
+
+        foreach (var wd in workDays)
+        {
+            // Tage mit erfasster Arbeit und manuell gesetzte Abwesenheiten (Urlaub/Krank/…)
+            // nie automatisch umstatusen — nur die automatischen Status WorkDay/Weekend/Holiday.
+            if (wd.ActualWorkMinutes > 0) continue;
+            if (wd.Status is not (DayStatus.WorkDay or DayStatus.Weekend or DayStatus.Holiday)) continue;
+
+            var isHoliday = HolidayCalculator.IsHoliday(wd.Date, settings.HolidayRegion);
+
+            if (isHoliday && wd.Status != DayStatus.Holiday)
+            {
+                wd.Status = DayStatus.Holiday;
+                wd.TargetWorkMinutes = 0;
+                wd.BalanceMinutes = 0;
+                await SaveWorkDayAsync(wd);
+                changed++;
+            }
+            else if (!isHoliday && wd.Status == DayStatus.Holiday)
+            {
+                // Region-Wechsel: war Feiertag, ist hier keiner mehr → regulärer Status zurück.
+                var isWork = settings.IsWorkDay(wd.Date.DayOfWeek);
+                wd.Status = isWork ? DayStatus.WorkDay : DayStatus.Weekend;
+                wd.TargetWorkMinutes = isWork ? settings.GetDailyMinutesForDay(wd.Date.DayOfWeek) : 0;
+                wd.BalanceMinutes = WorkDay.CalculateBalance(wd.Status, 0, wd.TargetWorkMinutes);
+                await SaveWorkDayAsync(wd);
+                changed++;
+            }
+        }
+
+        return changed;
+    }
+
     // ==================== Project ====================
 
     public async Task<List<Project>> GetProjectsAsync(bool includeInactive = false)

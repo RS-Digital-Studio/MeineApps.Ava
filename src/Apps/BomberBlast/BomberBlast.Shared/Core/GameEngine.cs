@@ -250,12 +250,6 @@ public sealed partial class GameEngine : IDisposable
     /// </summary>
     public int CombinedScore => _player.Score + (_player2?.Score ?? 0);
 
-    // FPS-Sample-Buffer (5s Window, ~150 Samples bei 30 FPS). Initial-Capacity 400 verhindert
-    // Queue-Internal-Resize bei 60 FPS x 5s = 300 Items. Wird aktuell nur erfasst, nicht
-    // ausgewertet — der ehemals daran haengende FPS-Bucket-/Memory-Telemetrie-Pfad
-    // (Crashlytics-Custom-Keys) wurde mit dem Crashlytics-Removal entfernt.
-    private readonly Queue<long> _fpsFrameTicks = new(400);
-    private const long FpsReportIntervalTicks = 5 * TimeSpan.TicksPerSecond;
     // Cached SKColorFilter wenn Colorblind-Modus aktiv (verhindert pro-Frame-Allokation).
     private SKColorFilter? _colorblindFilter;
     private string _lastColorblindMode = "Off";

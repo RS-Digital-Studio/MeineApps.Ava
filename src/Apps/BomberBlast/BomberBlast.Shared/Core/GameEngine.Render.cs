@@ -131,11 +131,6 @@ public sealed partial class GameEngine
         try
         {
 
-        // v2.0.45 — Performance-Telemetry: Frame-Time-Sampling für FPS-Bucket-Reporting.
-        // Alle 5s wird der gemessene Avg-FPS auf einen Bucket gerundet (15/30/45/60+) und
-        // als Crashlytics-Custom-Key gesetzt — ermöglicht Crash-Filterung nach Frame-Rate.
-        TrackFrameSample();
-
         // v2.0.44 — Accessibility: Colorblind-Filter via SaveLayer + ColorMatrix.
         // SKColorFilter wird gecacht und nur neu erzeugt wenn der Modus sich ändert.
         bool colorblindActive = false;
@@ -379,21 +374,6 @@ public sealed partial class GameEngine
         _overlayTextPaint.Color = prevColor;
         _overlayTextPaint.Style = prevStyle;
         _overlayTextPaint.StrokeWidth = prevWidth;
-    }
-
-    /// <summary>
-    /// Frame-Time-Tracking-Hook: pro Render-Aufruf wird ein Tick-Sample fuer die Ring-Buffer
-    /// gepusht. FPS-Bucket + Memory-Sampling wurden zusammen mit dem Crashlytics-Backend
-    /// entfernt — die Sample-Erfassung bleibt als Hook fuer kuenftige Telemetrie-Provider.
-    /// </summary>
-    private void TrackFrameSample()
-    {
-        var now = DateTime.UtcNow.Ticks;
-        _fpsFrameTicks.Enqueue(now);
-
-        // Älter als 5s entfernen
-        while (_fpsFrameTicks.Count > 0 && now - _fpsFrameTicks.Peek() > FpsReportIntervalTicks)
-            _fpsFrameTicks.Dequeue();
     }
 
     private void RenderStateOverlay(SKCanvas canvas, float screenWidth, float screenHeight)

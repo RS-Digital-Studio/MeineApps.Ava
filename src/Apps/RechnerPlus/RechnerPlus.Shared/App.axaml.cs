@@ -134,6 +134,10 @@ public partial class App : Application
         services.AddSingleton<IHapticService>(sp =>
             HapticServiceFactory?.Invoke(sp) ?? ActivatorUtilities.CreateInstance<NoOpHapticService>(sp));
 
+        // App-Lifecycle-Broker: Android speist NotifyPaused/Resumed; Render-Loops (VFD-Flicker,
+        // animierter Hintergrund) stoppen im Hintergrund (Akku).
+        services.AddSingleton<IAppLifecycleService, AppLifecycleService>();
+
         // ViewModels (alle Singleton - werden von MainViewModel gehalten)
         services.AddSingleton<CalculatorViewModel>(sp =>
             new CalculatorViewModel(
@@ -142,7 +146,8 @@ public partial class App : Application
                 sp.GetRequiredService<ILocalizationService>(),
                 sp.GetRequiredService<MeineApps.CalcLib.IHistoryService>(),
                 sp.GetRequiredService<IPreferencesService>(),
-                sp.GetRequiredService<IHapticService>()));
+                sp.GetRequiredService<IHapticService>(),
+                sp.GetRequiredService<IAppLifecycleService>()));
         services.AddSingleton<ConverterViewModel>(sp =>
             new ConverterViewModel(sp.GetRequiredService<ILocalizationService>()));
         services.AddSingleton<SettingsViewModel>();

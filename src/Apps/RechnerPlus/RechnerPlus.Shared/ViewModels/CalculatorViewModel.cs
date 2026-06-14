@@ -21,6 +21,7 @@ public sealed partial class CalculatorViewModel : ViewModelBase, IDisposable
     private readonly IHistoryService _historyService;
     private readonly IPreferencesService _preferences;
     private readonly IHapticService _haptic;
+    private readonly IAppLifecycleService _lifecycle;
 
     private const string HistoryKey = "calculator_history";
     private const string MemoryKey = "calculator_memory";
@@ -228,6 +229,10 @@ public sealed partial class CalculatorViewModel : ViewModelBase, IDisposable
     /// <summary>Event wenn sich die aktive Funktion ändert (für Funktionsgraph im View).</summary>
     public event EventHandler? FunctionGraphChanged;
 
+    /// <summary>App-Pause/Resume (Android-Lifecycle). Die CalculatorView stoppt darüber ihren
+    /// VFD-Flicker-Burst im Hintergrund (Akku-Sparen).</summary>
+    public event Action<bool>? PauseStateChanged;
+
     #endregion
 
     #region Funktionsgraph-Properties
@@ -270,7 +275,8 @@ public sealed partial class CalculatorViewModel : ViewModelBase, IDisposable
 
     public CalculatorViewModel(CalculatorEngine engine, ExpressionParser parser,
                                 ILocalizationService localization, IHistoryService historyService,
-                                IPreferencesService preferences, IHapticService haptic)
+                                IPreferencesService preferences, IHapticService haptic,
+                                IAppLifecycleService lifecycle)
     {
         _engine = engine;
         _parser = parser;
@@ -278,8 +284,11 @@ public sealed partial class CalculatorViewModel : ViewModelBase, IDisposable
         _historyService = historyService;
         _preferences = preferences;
         _haptic = haptic;
+        _lifecycle = lifecycle;
         _localization.LanguageChanged += OnLanguageChanged;
         _historyService.HistoryChanged += OnHistoryChanged;
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
 
         // Gespeicherten Modus laden
         _currentMode = (CalculatorMode)_preferences.Get(ModeKey, 0);
@@ -321,12 +330,17 @@ public sealed partial class CalculatorViewModel : ViewModelBase, IDisposable
             SaveHistory();
     }
 
+    private void OnAppPaused() => PauseStateChanged?.Invoke(true);
+    private void OnAppResumed() => PauseStateChanged?.Invoke(false);
+
     public void Dispose()
     {
         if (_disposed) return;
 
         _localization.LanguageChanged -= OnLanguageChanged;
         _historyService.HistoryChanged -= OnHistoryChanged;
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
 
         _disposed = true;
         GC.SuppressFinalize(this);

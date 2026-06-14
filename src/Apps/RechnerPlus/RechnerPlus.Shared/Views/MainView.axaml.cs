@@ -82,7 +82,27 @@ public partial class MainView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        // Altes VM abmelden um Memory Leak zu vermeiden
+        if (_vm != null)
+            _vm.PauseStateChanged -= OnPauseStateChanged;
+
         _vm = DataContext as MainViewModel;
+
+        if (_vm != null)
+            _vm.PauseStateChanged += OnPauseStateChanged;
+    }
+
+    /// <summary>
+    /// App-Pause/Resume (Android-Lifecycle via MainViewModel): den ~5fps-Hintergrund-Render-Timer
+    /// im Hintergrund anhalten — er ist rein dekorativ und niemand sieht ihn (Akku). Avalonia
+    /// detacht die View beim App-Backgrounding nicht, daher greift OnDetachedFromVisualTree hier nicht.
+    /// </summary>
+    private void OnPauseStateChanged(bool isPaused)
+    {
+        if (isPaused)
+            _bgTimer?.Stop();
+        else
+            _bgTimer?.Start();
     }
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -142,6 +162,10 @@ public partial class MainView : UserControl
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+
+        // Pause-Event abmelden (VM ist Singleton — sonst dangling Handler bei View-Neuerstellung)
+        if (_vm != null)
+            _vm.PauseStateChanged -= OnPauseStateChanged;
 
         // Hintergrund-Render-Loop stoppen und Renderer freigeben
         if (_bgTimer != null)

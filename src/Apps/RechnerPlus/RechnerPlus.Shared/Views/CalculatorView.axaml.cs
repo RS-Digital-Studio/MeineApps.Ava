@@ -27,9 +27,14 @@ public partial class CalculatorView : UserControl
     private Button? _equalsButton;
     private Border? _functionGraphBorder;
 
-    // VFD-Flicker-Animation
+    // VFD-Flicker-Animation — laeuft NICHT dauerhaft, sondern nur als kurzer Burst nach
+    // einer Display-Aenderung (bzw. solange der Funktionsgraph mit Glow sichtbar ist).
+    // Im Leerlauf/Hintergrund steht der Timer (Akku) — das statische VFD-Bild wird ohnehin
+    // bei jeder Display-/HasError-Aenderung neu gezeichnet (OnVmPropertyChanged).
     private DispatcherTimer? _vfdTimer;
     private float _vfdAnimTime;
+    private const double VfdBurstSeconds = 1.5;        // Flacker-Nachlauf nach letzter Aenderung
+    private DateTime _vfdBurstUntilUtc = DateTime.MinValue;
 
     // Result-Burst-Animation
     private DispatcherTimer? _burstTimer;
@@ -68,27 +73,60 @@ public partial class CalculatorView : UserControl
             }
         };
 
-        // VFD-Flicker-Timer (subtiles ~7Hz Flackern) - auch für Funktionsgraph-Glow
+        // VFD-Flicker-Timer (subtiles ~7Hz Flackern) - auch für Funktionsgraph-Glow.
+        // Laeuft nur als kurzer Burst nach einer Display-Aenderung bzw. solange der
+        // Funktionsgraph sichtbar ist; im Leerlauf stoppt er sich selbst (Akku).
         _vfdTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
-        _vfdTimer.Tick += (_, _) =>
-        {
-            // Keine Canvas-Invalidierung wenn View nicht sichtbar (z.B. anderer Tab aktiv)
-            if (!IsEffectivelyVisible) return;
+        _vfdTimer.Tick += OnVfdTimerTick;
+    }
 
-            _vfdAnimTime += 0.033f;
+    /// <summary>
+    /// VFD-Flacker-Tick. Beendet sich selbst, sobald der Burst-Nachlauf abgelaufen ist und
+    /// kein Funktionsgraph-Glow mehr gebraucht wird — kein Dauerlauf im Leerlauf.
+    /// </summary>
+    private void OnVfdTimerTick(object? sender, EventArgs e)
+    {
+        var graphActive = _currentVm?.ShowFunctionGraph == true;
+        var burstActive = DateTime.UtcNow < _vfdBurstUntilUtc;
+
+        // Nichts mehr zu animieren → Timer stoppen (Leerlauf)
+        if (!burstActive && !graphActive)
+        {
+            _vfdTimer?.Stop();
+            return;
+        }
+
+        // Keine Canvas-Invalidierung wenn View nicht sichtbar (z.B. anderer Tab aktiv)
+        if (!IsEffectivelyVisible) return;
+
+        _vfdAnimTime += 0.033f;
+
+        // VFD nur waehrend des Burst-Nachlaufs neu zeichnen (im reinen Graph-Fall unnoetig)
+        if (burstActive)
             VfdCanvas?.InvalidateSurface();
 
-            // Funktionsgraph-Canvas mitaktualisieren (Glow-Pulsierung)
-            if (_currentVm?.ShowFunctionGraph == true)
-                FunctionGraphCanvas?.InvalidateSurface();
-        };
+        // Funktionsgraph-Canvas nur invalidieren wenn der Graph wirklich sichtbar ist (Glow-Pulsierung)
+        if (graphActive)
+            FunctionGraphCanvas?.InvalidateSurface();
+    }
+
+    /// <summary>
+    /// Startet den VFD-Flacker-Burst: setzt das Nachlauf-Fenster und stellt sicher, dass der
+    /// Timer laeuft. Wird bei jeder Display-/HasError-Aenderung und bei Berechnungen aufgerufen.
+    /// </summary>
+    private void StartVfdBurst()
+    {
+        _vfdBurstUntilUtc = DateTime.UtcNow.AddSeconds(VfdBurstSeconds);
+        if (_vfdTimer != null && !_vfdTimer.IsEnabled)
+            _vfdTimer.Start();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
         Focus();
-        _vfdTimer?.Start();
+        // Kurzer Flacker-Burst beim ersten Anzeigen, danach stoppt der Timer sich selbst (kein Dauerlauf).
+        StartVfdBurst();
 
         // Controls einmalig cachen (FindControl ist teuer bei wiedeholten Aufrufen)
         _burstOverlay ??= this.FindControl<Border>("BurstOverlay");
@@ -125,6 +163,7 @@ public partial class CalculatorView : UserControl
             _currentVm.FunctionGraphChanged -= OnFunctionGraphChanged;
             _currentVm.ErrorShakeRequested -= OnErrorShakeRequested;
             _currentVm.CopyFeedbackRequested -= OnCopyFeedbackRequested;
+            _currentVm.PauseStateChanged -= OnPauseStateChanged;
         }
 
         _currentVm = DataContext as CalculatorViewModel;
@@ -139,17 +178,42 @@ public partial class CalculatorView : UserControl
             _currentVm.FunctionGraphChanged += OnFunctionGraphChanged;
             _currentVm.ErrorShakeRequested += OnErrorShakeRequested;
             _currentVm.CopyFeedbackRequested += OnCopyFeedbackRequested;
+            _currentVm.PauseStateChanged += OnPauseStateChanged;
         }
     }
 
     /// <summary>
-    /// Bei Display-Änderungen VFD-Canvas neu zeichnen.
+    /// App-Pause/Resume (Android-Lifecycle via CalculatorViewModel): den VFD-Flacker-Timer im
+    /// Hintergrund anhalten (Akku). Avalonia detacht die View beim App-Backgrounding nicht, daher
+    /// greift OnDetachedFromVisualTree hier nicht. Beim Resume laeuft der Timer erst wieder an, wenn
+    /// eine Display-Aenderung oder der Funktionsgraph ihn ueber StartVfdBurst neu startet — im
+    /// Vordergrund-Leerlauf bleibt das statische VFD-Bild ohnehin stehen.
+    /// </summary>
+    private void OnPauseStateChanged(bool isPaused)
+    {
+        if (isPaused)
+            _vfdTimer?.Stop();
+        else if (_currentVm?.ShowFunctionGraph == true)
+            StartVfdBurst(); // sichtbarer Graph-Glow muss nach Resume weiterlaufen
+    }
+
+    /// <summary>
+    /// Bei Display-Änderungen VFD-Canvas neu zeichnen und den kurzen Flacker-Burst (an)starten.
+    /// Der Burst sorgt dafuer, dass das ~7Hz-Flackern bei aktiver Nutzung (Eingabe/Ergebnis)
+    /// sichtbar bleibt, ohne den Timer im Leerlauf dauerhaft laufen zu lassen.
     /// </summary>
     private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(CalculatorViewModel.Display) or nameof(CalculatorViewModel.HasError))
         {
             VfdCanvas?.InvalidateSurface();
+            StartVfdBurst();
+        }
+        else if (e.PropertyName is nameof(CalculatorViewModel.ShowFunctionGraph)
+                 && _currentVm?.ShowFunctionGraph == true)
+        {
+            // Graph sichtbar → Glow-Pulsierung braucht den Timer (Auto-Hide stoppt ihn via Tick-Selbstabschaltung).
+            StartVfdBurst();
         }
     }
 

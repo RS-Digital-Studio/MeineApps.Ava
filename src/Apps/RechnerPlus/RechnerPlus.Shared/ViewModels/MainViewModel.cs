@@ -15,6 +15,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _localization;
     private readonly IPreferencesService _preferences;
     private readonly ExpressionParser _expressionParser;
+    private readonly IAppLifecycleService _lifecycle;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCalculatorActive))]
@@ -50,23 +51,32 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// <summary>Wird ausgelöst um einen Exit-Hinweis anzuzeigen (z.B. Toast "Nochmal drücken zum Beenden").</summary>
     public event Action<string>? ExitHintRequested;
 
+    /// <summary>App-Pause/Resume (Android-Lifecycle). Die MainView stoppt darüber ihren
+    /// animierten Hintergrund-Render-Timer im Hintergrund (Akku-Sparen).</summary>
+    public event Action<bool>? PauseStateChanged;
+
     public MainViewModel(
         ILocalizationService localization,
         IPreferencesService preferences,
         ExpressionParser expressionParser,
         CalculatorViewModel calculatorViewModel,
         ConverterViewModel converterViewModel,
-        SettingsViewModel settingsViewModel)
+        SettingsViewModel settingsViewModel,
+        IAppLifecycleService lifecycle)
     {
         _localization = localization;
         _preferences = preferences;
         _expressionParser = expressionParser;
+        _lifecycle = lifecycle;
         _calculatorViewModel = calculatorViewModel;
         _converterViewModel = converterViewModel;
         _settingsViewModel = settingsViewModel;
 
         _localization.LanguageChanged += OnLanguageChanged;
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
+
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
 
         // Floating-Text-Events vom Calculator weiterleiten
         CalculatorViewModel.FloatingTextRequested += OnCalculatorFloatingText;
@@ -170,9 +180,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void NavigateToSettings() => SelectedTabIndex = 2;
 
+    private void OnAppPaused() => PauseStateChanged?.Invoke(true);
+    private void OnAppResumed() => PauseStateChanged?.Invoke(false);
+
     public void Dispose()
     {
         if (_disposed) return;
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
         _localization.LanguageChanged -= OnLanguageChanged;
         CalculatorViewModel.FloatingTextRequested -= OnCalculatorFloatingText;
         _disposed = true;

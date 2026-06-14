@@ -22,6 +22,7 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
     private readonly IFileShareService _fileShareService;
     private readonly IPurchaseService _purchaseService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IExpenseFilterService _filterService;
 
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
@@ -31,7 +32,8 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
     public ExpenseTrackerViewModel(IExpenseService expenseService, ILocalizationService localizationService,
         IExportService exportService, IFileDialogService fileDialogService,
         IFileShareService fileShareService,
-        IPurchaseService purchaseService, IRewardedAdService rewardedAdService)
+        IPurchaseService purchaseService, IRewardedAdService rewardedAdService,
+        IExpenseFilterService filterService)
     {
         _expenseService = expenseService;
         _localizationService = localizationService;
@@ -40,86 +42,12 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
         _fileShareService = fileShareService;
         _purchaseService = purchaseService;
         _rewardedAdService = rewardedAdService;
+        _filterService = filterService;
 
         // Auf aktuellen Monat initialisieren
         _selectedYear = DateTime.Today.Year;
         _selectedMonth = DateTime.Today.Month;
     }
-
-    #region Localized Text Properties
-
-    public string FinanceTrackerText => _localizationService.GetString("FinanceTracker") ?? "Finance Tracker";
-    public string SearchTransactionsText => _localizationService.GetString("SearchTransactions") ?? "Search transactions...";
-    public string SortText => _localizationService.GetString("Sort") ?? "Sort";
-    public string FilterText => _localizationService.GetString("Filter") ?? "Filter";
-    public string FilterByCategoryText => _localizationService.GetString("FilterByCategory") ?? "Filter by category";
-    public string MinAmountText => _localizationService.GetString("MinAmount") ?? "Min. amount";
-    public string MaxAmountText => _localizationService.GetString("MaxAmount") ?? "Max. amount";
-    public string ResetFiltersText => _localizationService.GetString("ResetFilters") ?? "Reset filters";
-    public string IncomeLabelText => _localizationService.GetString("IncomeTotalLabel") ?? "Income:";
-    public string ExpensesLabelText => _localizationService.GetString("ExpensesTotalLabel") ?? "Expenses:";
-    public string BalanceLabelText => _localizationService.GetString("BalanceTotalLabel") ?? "Balance:";
-    public string TodayText => _localizationService.GetString("Today") ?? "Today";
-    public string NewTransactionText => _localizationService.GetString("NewTransaction") ?? "New Transaction";
-    public string EditTransactionText => _localizationService.GetString("EditTransaction") ?? "Edit Transaction";
-    public string DialogTitleText => IsEditing ? EditTransactionText : NewTransactionText;
-    public string AmountText => _localizationService.GetString("Amount") ?? "Amount";
-    public string TypeText => _localizationService.GetString("Type") ?? "Type";
-    public string ExpenseText => _localizationService.GetString("Expense") ?? "Expense";
-    public string IncomeText => _localizationService.GetString("Income") ?? "Income";
-    public string CategoryText => _localizationService.GetString("Category") ?? "Category";
-    public string DescriptionText => _localizationService.GetString("Description") ?? "Description";
-    public string NoteText => _localizationService.GetString("Note") ?? "Note";
-    public string RecurringText => _localizationService.GetString("Recurring") ?? "Recurring";
-    public string MakeRecurringText => _localizationService.GetString("MakeRecurring") ?? "Make recurring";
-    public string CancelText => _localizationService.GetString("Cancel") ?? "Cancel";
-    public string SaveText => _localizationService.GetString("Save") ?? "Save";
-    public string NoTransactionsText => _localizationService.GetString("EmptyTransactionsTitle") ?? "No Transactions";
-    public string NoTransactionsHintText => _localizationService.GetString("EmptyTransactionsDesc") ?? "Start tracking your income and expenses by tapping the + button";
-    public string UndoText => _localizationService.GetString("Undo") ?? "Undo";
-    public string CategoryBreakdownText => _localizationService.GetString("CategoryBreakdown") ?? "Categories";
-    public string ExportLockedText => _localizationService.GetString("ExportLocked") ?? "Unlock Export";
-    public string ExportLockedDescText => _localizationService.GetString("ExportLockedDesc") ?? "Watch a short video to start your export.";
-    public string WatchVideoExportText => _localizationService.GetString("WatchVideoExport") ?? "Watch Video → Export";
-
-    public void UpdateLocalizedTexts()
-    {
-        OnPropertyChanged(nameof(FinanceTrackerText));
-        OnPropertyChanged(nameof(SearchTransactionsText));
-        OnPropertyChanged(nameof(SortText));
-        OnPropertyChanged(nameof(FilterText));
-        OnPropertyChanged(nameof(FilterByCategoryText));
-        OnPropertyChanged(nameof(MinAmountText));
-        OnPropertyChanged(nameof(MaxAmountText));
-        OnPropertyChanged(nameof(ResetFiltersText));
-        OnPropertyChanged(nameof(IncomeLabelText));
-        OnPropertyChanged(nameof(ExpensesLabelText));
-        OnPropertyChanged(nameof(BalanceLabelText));
-        OnPropertyChanged(nameof(TodayText));
-        OnPropertyChanged(nameof(NewTransactionText));
-        OnPropertyChanged(nameof(EditTransactionText));
-        OnPropertyChanged(nameof(DialogTitleText));
-        OnPropertyChanged(nameof(AmountText));
-        OnPropertyChanged(nameof(TypeText));
-        OnPropertyChanged(nameof(ExpenseText));
-        OnPropertyChanged(nameof(IncomeText));
-        OnPropertyChanged(nameof(CategoryText));
-        OnPropertyChanged(nameof(DescriptionText));
-        OnPropertyChanged(nameof(NoteText));
-        OnPropertyChanged(nameof(RecurringText));
-        OnPropertyChanged(nameof(MakeRecurringText));
-        OnPropertyChanged(nameof(CancelText));
-        OnPropertyChanged(nameof(SaveText));
-        OnPropertyChanged(nameof(NoTransactionsText));
-        OnPropertyChanged(nameof(NoTransactionsHintText));
-        OnPropertyChanged(nameof(UndoText));
-        OnPropertyChanged(nameof(CategoryBreakdownText));
-        OnPropertyChanged(nameof(ExportLockedText));
-        OnPropertyChanged(nameof(ExportLockedDescText));
-        OnPropertyChanged(nameof(WatchVideoExportText));
-    }
-
-    #endregion
 
     #region Navigation Events
 
@@ -576,48 +504,16 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
 
     private void ApplyFilterAndSort()
     {
-        // Optimierte Filterung: Ein Durchlauf mit List statt IEnumerable
-        var filtered = new List<Expense>(_allExpenses.Count);
-        var hasSearch = !string.IsNullOrWhiteSpace(SearchTerm);
+        var criteria = new ExpenseFilterCriteria(
+            SearchTerm,
+            SelectedFilter,
+            SelectedCategoryFilter,
+            MinAmountFilter,
+            MaxAmountFilter,
+            SelectedSort);
 
-        foreach (var expense in _allExpenses)
-        {
-            // Nach Suchbegriff filtern (OrdinalIgnoreCase statt ToLowerInvariant)
-            if (hasSearch &&
-                !expense.Description.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) &&
-                (expense.Note == null || !expense.Note.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)))
-                continue;
-
-            // Nach Transaktionstyp filtern
-            if (SelectedFilter == FilterTypeOption.Expenses && expense.Type != TransactionType.Expense)
-                continue;
-            if (SelectedFilter == FilterTypeOption.Income && expense.Type != TransactionType.Income)
-                continue;
-
-            // Nach Kategorie filtern
-            if (SelectedCategoryFilter.HasValue && expense.Category != SelectedCategoryFilter.Value)
-                continue;
-
-            // Nach Betrag filtern
-            if (MinAmountFilter > 0m && expense.Amount < MinAmountFilter)
-                continue;
-            if (MaxAmountFilter > 0m && expense.Amount > MaxAmountFilter)
-                continue;
-
-            // Alle Filter bestanden - hinzufügen
-            filtered.Add(expense);
-        }
-
-        // Sortierung anwenden (in-place)
-        filtered.Sort(SelectedSort switch
-        {
-            SortOption.DateAscending => (a, b) => a.Date.CompareTo(b.Date),
-            SortOption.DateDescending => (a, b) => b.Date.CompareTo(a.Date),
-            SortOption.AmountDescending => (a, b) => b.Amount.CompareTo(a.Amount),
-            SortOption.AmountAscending => (a, b) => a.Amount.CompareTo(b.Amount),
-            SortOption.Description => (a, b) => string.Compare(a.Description, b.Description, StringComparison.Ordinal),
-            _ => (a, b) => b.Date.CompareTo(a.Date) // Default: DateDescending
-        });
+        // Filterung + Sortierung in den Service ausgelagert (reine, testbare Berechnung)
+        var filtered = _filterService.Apply(_allExpenses, criteria);
 
         // Bestehende Container wiederverwenden: Clear+Add behält die Item-Container
         // (inkl. SwipeToReveal/StaggerFadeIn-Behaviors). Neue Collection-Zuweisung würde
@@ -630,11 +526,7 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
         UpdateGroupedExpenses(filtered);
 
         // Filterstatus aktualisieren
-        IsFilterActive = !string.IsNullOrWhiteSpace(SearchTerm) ||
-                        SelectedFilter != FilterTypeOption.All ||
-                        SelectedCategoryFilter.HasValue ||
-                        MinAmountFilter > 0m ||
-                        MaxAmountFilter > 0m;
+        IsFilterActive = _filterService.IsFilterActive(criteria);
 
         // Anzeige aktualisieren
         FilteredCountDisplay = _allExpenses.Count > 0
@@ -987,172 +879,6 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
     {
         NewTransactionType = TransactionType.Income;
     }
-
-    [ObservableProperty]
-    private string? _exportStatusMessage;
-
-    [ObservableProperty]
-    private bool _isExportStatusVisible;
-
-    private CancellationTokenSource? _statusCts;
-
-    private async Task ShowExportStatusAsync(string message)
-    {
-        _statusCts?.Cancel();
-        _statusCts?.Dispose();
-        _statusCts = new CancellationTokenSource();
-        var token = _statusCts.Token;
-
-        ExportStatusMessage = message;
-        IsExportStatusVisible = true;
-
-        try
-        {
-            await Task.Delay(4000, token);
-            IsExportStatusVisible = false;
-        }
-        catch (TaskCanceledException) { }
-    }
-
-    #region CSV Export Ad Gate
-
-    [ObservableProperty]
-    private bool _showCsvExportAdOverlay;
-
-    /// <summary>
-    /// Merkt sich welcher CSV-Export angefragt wurde ("month" oder "all").
-    /// </summary>
-    private string _pendingCsvExportType = "";
-
-    [RelayCommand]
-    private async Task ExportToCsvAsync()
-    {
-        if (IsLoading) return;
-
-        if (_purchaseService.IsPremium)
-        {
-            await DoExportToCsvAsync();
-            return;
-        }
-
-        _pendingCsvExportType = "month";
-        ShowCsvExportAdOverlay = true;
-    }
-
-    [RelayCommand]
-    private async Task ExportAllToCsvAsync()
-    {
-        if (IsLoading) return;
-
-        if (_purchaseService.IsPremium)
-        {
-            await DoExportAllToCsvAsync();
-            return;
-        }
-
-        _pendingCsvExportType = "all";
-        ShowCsvExportAdOverlay = true;
-    }
-
-    [RelayCommand]
-    private async Task ConfirmCsvExportAdAsync()
-    {
-        ShowCsvExportAdOverlay = false;
-
-        var success = await _rewardedAdService.ShowAdAsync("export_csv");
-        if (success)
-        {
-            if (_pendingCsvExportType == "month")
-                await DoExportToCsvAsync();
-            else if (_pendingCsvExportType == "all")
-                await DoExportAllToCsvAsync();
-        }
-        else
-        {
-            var msg = _localizationService.GetString("ExportAdFailed") ?? "Could not load video";
-            _ = ShowExportStatusAsync(msg);
-        }
-        _pendingCsvExportType = "";
-    }
-
-    [RelayCommand]
-    private void CancelCsvExportAd()
-    {
-        ShowCsvExportAdOverlay = false;
-        _pendingCsvExportType = "";
-    }
-
-    private async Task DoExportToCsvAsync()
-    {
-        if (IsLoading) return;
-
-        try
-        {
-            var monthName = new DateTime(SelectedYear, SelectedMonth, 1).ToString("MMMM yyyy");
-            var suggestedName = $"transactions_{SelectedYear}_{SelectedMonth:D2}.csv";
-            var title = $"{_localizationService.GetString("ExportTitle") ?? "Export"} - {monthName}";
-
-            var targetPath = await _fileDialogService.SaveFileAsync(suggestedName, title, "CSV", "csv");
-            if (targetPath == null)
-            {
-                var exportDir = _fileShareService.GetExportDirectory("FinanzRechner");
-                targetPath = Path.Combine(exportDir, suggestedName);
-            }
-
-            IsLoading = true;
-            var filePath = await _exportService.ExportToCsvAsync(SelectedYear, SelectedMonth, targetPath);
-
-            await _fileShareService.ShareFileAsync(filePath, title, "text/csv");
-
-            var successMsg = _localizationService.GetString("ExportSuccess") ?? "Export successful";
-            _ = ShowExportStatusAsync($"{successMsg}: {Path.GetFileName(filePath)}");
-        }
-        catch (Exception ex)
-        {
-            var errorMsg = $"{_localizationService.GetString("ExportError") ?? "Export failed"}: {ex.Message}";
-            _ = ShowExportStatusAsync(errorMsg);
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    private async Task DoExportAllToCsvAsync()
-    {
-        if (IsLoading) return;
-
-        try
-        {
-            var title = _localizationService.GetString("ExportAllTitle") ?? "Export all transactions";
-
-            var targetPath = await _fileDialogService.SaveFileAsync("transactions_all.csv", title, "CSV", "csv");
-            if (targetPath == null)
-            {
-                var exportDir = _fileShareService.GetExportDirectory("FinanzRechner");
-                targetPath = Path.Combine(exportDir, "transactions_all.csv");
-            }
-
-            IsLoading = true;
-            var filePath = await _exportService.ExportAllToCsvAsync(targetPath);
-
-            await _fileShareService.ShareFileAsync(filePath, title, "text/csv");
-
-            var successMsg = _localizationService.GetString("ExportSuccess") ?? "Export successful";
-            _ = ShowExportStatusAsync($"{successMsg}: {Path.GetFileName(filePath)}");
-        }
-        catch (Exception ex)
-        {
-            var errorMsg = $"{_localizationService.GetString("ExportError") ?? "Export failed"}: {ex.Message}";
-            _ = ShowExportStatusAsync(errorMsg);
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    #endregion
 
     #endregion
 

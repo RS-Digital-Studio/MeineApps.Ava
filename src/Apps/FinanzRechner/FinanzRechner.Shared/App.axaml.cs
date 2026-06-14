@@ -194,6 +194,9 @@ public partial class App : Application
         // Berechnungs-Engine
         services.AddSingleton<FinanceEngine>();
 
+        // Filter-/Sortier-Logik (reine Berechnung, testbar)
+        services.AddSingleton<IExpenseFilterService, ExpenseFilterService>();
+
         // ViewModels
         services.AddSingleton<ExpenseTrackerViewModel>();
         services.AddSingleton<StatisticsViewModel>();

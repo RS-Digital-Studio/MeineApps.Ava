@@ -76,7 +76,7 @@ nicht umgekehrt). Build: `dotnet build src/UI/MeineApps.UI/MeineApps.UI.csproj`.
 | `SkiaFireEffect.cs` | Feuer/Flammen (DrawFlames, DrawEmbers, DrawForgeFlame, DrawCampfire) |
 | `SkiaHeatShimmerEffect.cs` | Hitze-Verzerrung (DrawHeatShimmer, DrawHeatHaze, DrawForgeHeat, DrawSoftHeat) |
 | `SkiaElectricArcEffect.cs` | Elektrische Lichtbögen (DrawArc, DrawEnergyPulse, DrawLightning, DrawTeslaCoil) |
-| `ShaderPreloader.cs` | Kompiliert alle 12 Shader vorab (Startup), gibt Dauer zurück |
+| `ShaderPreloader.cs` | Vorab-Kompilierung: `PreloadAll()` (alle 12) **oder** selektiv `PreloadShimmer/Glow/Wave/Fire/HeatShimmer/ElectricArc()` (nur genutzte Familien) |
 
 ### Splash-Screen-System (`SkiaSharp/SplashScreen/`)
 
@@ -234,7 +234,9 @@ Wenn ein Segment 360° einnimmt, erzeugt SkiaSharp `ArcTo` einen leeren Path (St
 
 ### ShaderPreloader — Timing
 
-`ShaderPreloader.PreloadAll()` auf dem Background-Thread aufrufen (via `Task.Run`). Das erste Rendern eines Shaders braucht 50–200ms auf Android — ohne Preload entsteht sichtbarer Jank beim ersten Auftauchen des Controls.
+`ShaderPreloader` auf dem Background-Thread aufrufen (via `Task.Run`). Das erste Rendern eines Shaders braucht 50–200ms auf Android — ohne Preload entsteht sichtbarer Jank beim ersten Auftauchen des Controls.
+
+**Selektiv statt pauschal preloaden:** `PreloadAll()` kompiliert alle 12 Shader (600ms–2,4s auf Android) — das lohnt nur, wenn die App auch alle Effekt-Familien rendert (z.B. HandwerkerImperium). Pro App ermitteln, welche der 6 Effekt-Klassen tatsächlich gerendert werden — **direkt** (`Skia*Effect`-Aufrufe im App-Code) UND **indirekt** über MeineApps.UI-Controls: `SkiaGradientRing`, `DonutChartVisualization`, `LinearProgressVisualization` ziehen alle nur **Shimmer**; `CardGlowRenderer`-artige App-Renderer ziehen **Glow**. `SkiaWaterGlass`/`SkiaGauge`/`SkiaBlueprintCanvas` ziehen **keinen** SkSL-Shader (zeichnen Wellen/Tacho/Raster manuell). Dann nur die genutzten `PreloadXxx()` aufrufen (z.B. `PreloadShimmer()`); Apps ganz ohne SkSL-Effekt rufen den Preloader **gar nicht** auf (jeder Effekt kompiliert beim ersten echten Gebrauch lazy nach, das `??=`-Pattern in den Effekt-Klassen ist thread-safe). Ziel: keine nutzlose 2,4s-Kompilierung, aber kein Jank beim ersten Erscheinen eines genutzten Controls.
 
 ### SKMaskFilter — kein Leak
 

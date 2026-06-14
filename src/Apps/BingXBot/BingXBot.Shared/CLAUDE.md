@@ -27,7 +27,10 @@ Registriert **alles als Singleton**. Besonderheiten:
 - **`LocalBotEventStream`** wird im Remote-Mode NICHT registriert — sonst tote Subscriptions auf dem
   `BotEventBus`.
 - **`ValidateOnBuild = true` + `ValidateScopes = true`** im `ServiceProviderOptions` — fängt fehlende
-  Konstruktor-Params und Scope-Verletzungen beim App-Start statt beim ersten Resolve.
+  Konstruktor-Params und Scope-Verletzungen beim App-Start statt beim ersten Resolve. **Nur im
+  `#if DEBUG`-Pfad**: `ValidateOnBuild` instanziiert beim Bootstrap JEDEN registrierten Service
+  eager (teurer Startup). Im Release-Build läuft der schlanke Standard-`BuildServiceProvider()`
+  ohne Eager-Instanziierung — der Dev-Schutz greift im Dev-Run, der User zahlt die Startup-Kosten nicht.
 - **`Lazy<T>`-Wrapper** (`LazyDiService<T>`): `services.AddTransient(typeof(Lazy<>), typeof(LazyDiService<>))`
   aktiviert `Lazy<T>`-Injection für alle Typen. Nötig weil `Microsoft.Extensions.DependencyInjection`
   `Lazy<T>` nicht out-of-the-box auflöst.

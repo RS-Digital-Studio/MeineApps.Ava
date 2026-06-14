@@ -17,7 +17,11 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 **Schritt 1 — DB+Shader (Weight 40):** Alle Services + Shader parallel via `Task.WhenAll`:
 - `IExpenseService.InitializeAsync()` (expenses.json lesen)
-- `Task.Run(() => ShaderPreloader.PreloadAll())` (GPU-Shader kompilieren)
+- `Task.Run(() => { ShaderPreloader.PreloadShimmer(); ShaderPreloader.PreloadGlow(); })` — nur
+  die tatsächlich gerenderten Effekte: **Shimmer** (`SkiaGradientRing` + `DonutChartVisualization`
+  + `LinearProgressVisualization`) und **Glow** (`CardGlowRenderer` auf Status-Karten).
+  Wave/Fire/HeatShimmer/ElectricArc werden nicht gerendert; `PreloadAll()` hätte 4 ungenutzte
+  Shader-Paare kompiliert.
 - `IPurchaseService.InitializeAsync()` (Premium-Status mit Google Play abgleichen)
 - `IAccountService.InitializeAsync()` (accounts.json lesen)
 - `ISavingsGoalService.InitializeAsync()` (savings_goals.json lesen)

@@ -19,9 +19,14 @@ Mindest-Splash-Dauer, Fehler-Resilienz und `RunLoadingAsync` → [FitnessRechner
 
 | Schritt | Gewicht | Was passiert |
 |---------|---------|--------------|
-| `Shader+ViewModel` | 45 | `ShaderPreloader.PreloadAll()` (Task.Run) + `MainViewModel`-Auflösung (Task.Run) + `IPurchaseService.InitializeAsync()` parallel via `Task.WhenAll` |
+| `Shader+ViewModel` | 45 | `ShaderPreloader.PreloadShimmer()` (Task.Run) + `MainViewModel`-Auflösung (Task.Run) + `IPurchaseService.InitializeAsync()` parallel via `Task.WhenAll` |
 
 **Warum parallel?** Shader-Compilation auf der GPU und ViewModel-Auflösung (DI-Graph) sind
 voneinander unabhängig. `IPurchaseService.InitializeAsync()` prüft den Premium-Status gegen
 Google Play — ohne diesen Schritt könnten Geräte-/Datenwechsel dazu führen, dass der
 Premium-Status erst beim nächsten Start wiederhergestellt wird.
+
+**Nur Shimmer preloaden:** FitnessRechner rendert einzig den Shimmer-Effekt — indirekt über
+`LinearProgressVisualization` (ProgressView) bei `animationTime>0`. Glow/Wave/Fire/HeatShimmer/
+ElectricArc werden nicht gerendert (`SkiaWaterGlass` zeichnet seine Wellen manuell, ohne SkSL);
+`PreloadAll()` hätte 5 ungenutzte Shader-Paare kompiliert.

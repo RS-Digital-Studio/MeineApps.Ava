@@ -26,7 +26,11 @@ public sealed class ZeitManagerLoadingPipeline : LoadingPipelineBase
             ExecuteAsync = async () =>
             {
                 var dbTask = services.GetRequiredService<IDatabaseService>().InitializeAsync();
-                var shaderTask = Task.Run(() => ShaderPreloader.PreloadAll());
+                // Nur Shimmer preloaden: ZeitManager rendert einzig den Shimmer-Effekt — indirekt
+                // über SkiaGradientRing (TimerView), das ihn ab >80% Fortschritt zieht. Glow/Wave/
+                // Fire/HeatShimmer/ElectricArc werden nirgends gerendert (würden 5 ungenutzte
+                // Shader-Paare kompilieren). Spart Startup-Zeit ohne Jank beim ersten Ring-Auftritt.
+                var shaderTask = Task.Run(ShaderPreloader.PreloadShimmer);
                 await Task.WhenAll(dbTask, shaderTask);
             }
         });

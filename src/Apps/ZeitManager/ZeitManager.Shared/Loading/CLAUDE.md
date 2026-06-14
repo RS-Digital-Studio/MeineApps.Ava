@@ -14,7 +14,7 @@ Splash verschwindet. Generische Conventions → [Haupt-CLAUDE.md](../../../../..
 
 | Schritt | Name | Gewicht | Was |
 |---------|------|---------|-----|
-| 1 | `DB+Shader` | 40 | `IDatabaseService.InitializeAsync()` + `ShaderPreloader.PreloadAll()` parallel (`Task.WhenAll`). Größter Zeitblock. |
+| 1 | `DB+Shader` | 40 | `IDatabaseService.InitializeAsync()` + `ShaderPreloader.PreloadShimmer()` parallel (`Task.WhenAll`). Größter Zeitblock. |
 | 2 | `AlarmScheduler` | 8 | `IAlarmSchedulerService.InitializeAsync()` — lädt Alarme aus DB, startet 60s-Check-Timer, prüft Alarm-Permission. |
 | 3 | `ViewModel` | 20 | `GetRequiredService<MainViewModel>()` (löst alle Child-VMs aus). `WaitForInitializationAsync()` wartet auf Timer- + Alarm-DB-Laden. |
 
@@ -23,6 +23,10 @@ Splash verschwindet. Generische Conventions → [Haupt-CLAUDE.md](../../../../..
 DB-Init und Shader-Kompilierung sind voneinander unabhängig. Auf Mid-Tier-Android dauern
 beide ~100-200ms. Parallel spart messbare Zeit bei jedem Kaltstart. AlarmScheduler braucht
 die fertige DB (Schritt 2 nach Schritt 1).
+
+**Nur Shimmer preloaden:** ZeitManager rendert einzig den Shimmer-Effekt — indirekt über
+`SkiaGradientRing` (TimerView), das ihn ab >80% Fortschritt zieht. Glow/Wave/Fire/HeatShimmer/
+ElectricArc werden nirgends gerendert; `PreloadAll()` hätte 5 ungenutzte Shader-Paare kompiliert.
 
 ## Mindest-Splash-Dauer
 

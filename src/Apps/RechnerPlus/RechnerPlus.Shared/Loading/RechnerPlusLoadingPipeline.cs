@@ -1,14 +1,16 @@
 using MeineApps.Core.Ava.Localization;
 using MeineApps.UI.Loading;
-using MeineApps.UI.SkiaSharp.Shaders;
 using Microsoft.Extensions.DependencyInjection;
 using RechnerPlus.ViewModels;
 
 namespace RechnerPlus.Loading;
 
 /// <summary>
-/// RechnerPlus Lade-Pipeline: Shader-Kompilierung + ViewModel-Erstellung.
-/// Leichtgewichtig (keine DB), aber Shader-Preload verhindert Jank.
+/// RechnerPlus Lade-Pipeline: ViewModel-Erstellung (leichtgewichtig, keine DB).
+/// Kein Shader-Preload — RechnerPlus rendert KEINEN der 12 SkSL-Effekte. Alle Grafiken
+/// (VFD-Display, Result-Burst, Funktionsgraph, animierter Hintergrund) nutzen klassische
+/// SkiaSharp-Gradienten + MaskFilter, kein SkSL und kein MeineApps.UI-Control, das einen
+/// Shader zöge. PreloadAll() hätte 12 ungenutzte Shader (bis 2,4s auf Android) kompiliert.
 /// </summary>
 public sealed class RechnerPlusLoadingPipeline : LoadingPipelineBase
 {
@@ -16,18 +18,13 @@ public sealed class RechnerPlusLoadingPipeline : LoadingPipelineBase
     {
         var loc = services.GetRequiredService<ILocalizationService>();
 
-        // Schritt 1: Shader + ViewModel parallel (unabhängig voneinander)
+        // Schritt 1: ViewModel-Graph auflösen
         AddStep(new LoadingStep
         {
-            Name = "Shader+ViewModel",
+            Name = "ViewModel",
             DisplayName = loc.GetString("SplashStep_Graphics") ?? "Grafik vorbereiten...",
             Weight = 40,
-            ExecuteAsync = async () =>
-            {
-                var shaderTask = Task.Run(() => ShaderPreloader.PreloadAll());
-                var vmTask = Task.Run(() => services.GetRequiredService<MainViewModel>());
-                await Task.WhenAll(shaderTask, vmTask);
-            }
+            ExecuteAsync = () => Task.Run(() => services.GetRequiredService<MainViewModel>())
         });
     }
 }

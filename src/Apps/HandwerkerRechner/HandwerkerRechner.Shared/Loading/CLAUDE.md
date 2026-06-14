@@ -14,11 +14,15 @@ Composition Root + `RunLoadingAsync`-Aufruf → [HandwerkerRechner.Shared/CLAUDE
 
 Ein Schritt (Gewicht 45):
 
-1. `ShaderPreloader.PreloadAll()` auf `Task.Run` — GPU-Shader kompilieren (parallel).
-2. `IPurchaseService.InitializeAsync()` direkt — Google Play Billing abgleichen,
+1. `IPurchaseService.InitializeAsync()` direkt — Google Play Billing abgleichen,
    Premium-Status bei Geräte-/Datenwechsel wiederherstellen (parallel).
-3. `services.GetRequiredService<MainViewModel>()` via `Dispatcher.UIThread.InvokeAsync` —
+2. `services.GetRequiredService<MainViewModel>()` via `Dispatcher.UIThread.InvokeAsync` —
    VM-Graph auf dem **UI-Thread** instanziieren, löst alle Singleton-Services transitiv auf.
+
+**Kein Shader-Preload:** HandwerkerRechner rendert KEINEN der 12 SkSL-Effekte — weder direkt
+noch über ein MeineApps.UI-Control. Alle Blueprint-Visualisierungen (`SkiaBlueprintCanvas` etc.)
+nutzen klassische SkiaSharp-Gradienten/Pfade ohne SkSL. `PreloadAll()` hätte hier 12 nie genutzte
+Shader (bis 2,4s auf Android) kompiliert.
 
 ## Gotcha: VM-Instanziierung NIE auf Background-Thread
 

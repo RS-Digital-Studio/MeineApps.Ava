@@ -66,9 +66,17 @@ public class GameIcon : TemplatedControl
     }
 
     /// <summary>
-    /// Laedt alle Icon-Bitmaps beim App-Start.
+    /// Laedt alle Icon-Bitmaps (SKBitmap) beim App-Start in den GameAssetService-Cache.
     /// Sollte waehrend der Loading-Pipeline aufgerufen werden.
     /// Bei 128x128 WebP-Icons: ~224 Dateien x ~5KB = ~1.1 MB I/O, ~200ms.
+    ///
+    /// <para>Bewusst NUR die SKBitmap-I/O — die SKBitmap→Avalonia-Bitmap-Konvertierung
+    /// (PNG-Encode/Decode-Roundtrip via <see cref="ConvertToAvaloniaBitmap"/>) laeuft NICHT mehr
+    /// eager fuer alle 224 Icons, sondern lazy beim ersten <c>Render()</c> jedes Icons
+    /// (<see cref="GetOrCreateBitmap"/>). Da die SKBitmaps nach diesem Preload bereits im Cache
+    /// liegen, findet die Lazy-Konvertierung sie synchron (~0,5ms/Icon, nur fuer sichtbare Icons) —
+    /// kein null-Return/Retry-Pfad. Spart 224 Encode/Decode-Roundtrips im Startup-kritischen Pfad,
+    /// von denen die meisten Icons (Tabs, die der Spieler nie oeffnet) nie gebraucht werden.</para>
     /// </summary>
     public static async System.Threading.Tasks.Task PreloadAllAsync()
     {
@@ -81,15 +89,9 @@ public class GameIcon : TemplatedControl
             paths.Add(GetIconPath(kind));
         }
 
-        // Alle Icons parallel laden (SKBitmap via GameAssetService)
+        // Alle Icons parallel laden (SKBitmap via GameAssetService). Die Avalonia-Bitmap-
+        // Konvertierung erfolgt lazy beim ersten Render (GetOrCreateBitmap).
         await _assetService.PreloadAsync(paths);
-
-        // SKBitmap -> Avalonia Bitmap konvertieren
-        foreach (GameIconKind kind in Enum.GetValues<GameIconKind>())
-        {
-            if (kind == GameIconKind.None) continue;
-            GetOrCreateBitmap(kind);
-        }
 
         _allPreloaded = true;
     }

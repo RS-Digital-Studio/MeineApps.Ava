@@ -65,17 +65,24 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // DI-Container synchron aufbauen. ValidateOnBuild=true prueft beim Bootstrap, dass ALLE
-        // registrierten Services konstruierbar sind — wenn ein Konstruktor-Param nicht resolvbar
-        // ist (wie v1.3.5 IRateLimiter), crasht der App-Start hier mit klarer Fehlermeldung,
-        // statt erst beim ersten tatsaechlichen Resolve. Fehler im Dev-Run statt beim User.
+        // DI-Container synchron aufbauen.
         var services = new ServiceCollection();
         ConfigureServices(services);
+#if DEBUG
+        // ValidateOnBuild=true prueft beim Bootstrap, dass ALLE registrierten Services
+        // konstruierbar sind — wenn ein Konstruktor-Param nicht resolvbar ist (wie v1.3.5
+        // IRateLimiter), crasht der App-Start hier mit klarer Fehlermeldung, statt erst beim
+        // ersten tatsaechlichen Resolve. Reiner Dev-Schutz: ValidateOnBuild instanziiert JEDEN
+        // registrierten Service eager (teurer Startup). Im Release daher der schlanke
+        // Standard-Build ohne Eager-Instanziierung.
         Services = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateOnBuild = true,
             ValidateScopes = true
         });
+#else
+        Services = services.BuildServiceProvider();
+#endif
 
         // 04.05.2026 — Market-Cap-Provider beim Static-Bridge einhängen (HTTP-Logic in Engine,
         // damit Core HTTP-frei bleibt). Wirkt nur im Local-Mode; im Remote-Mode liefert der Server.

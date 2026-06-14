@@ -45,12 +45,21 @@ xmlns:icons="using:HandwerkerImperium.Icons"
 ```
 App.axaml.cs nach BuildServiceProvider():
     GameIcon.Initialize(assetService)       // setzt _assetService + ruft GameIconRenderer.Initialize() auf
-    → Loading-Pipeline: GameIcon.PreloadAllAsync()  // ~224 Icons parallel laden, SKBitmap → Avalonia Bitmap
+    → Loading-Pipeline: GameIcon.PreloadAllAsync()  // ~224 SKBitmaps parallel in den Cache laden
 
 App.DisposeServices():
     GameIcon.ClearCache()                   // _bitmapCache + _brushCache + _pathMap leeren, Avalonia-Bitmaps disposed
     GameIconRenderer.Cleanup()              // _lastTintFilter disposed; static SKPaint-Felder bleiben (Prozessende)
 ```
+
+**Lazy Avalonia-Bitmap-Konvertierung:** `PreloadAllAsync` laedt nur die **SKBitmaps** in den
+`IGameAssetService`-Cache (~200ms I/O). Die SKBitmap→Avalonia-`Bitmap`-Konvertierung
+(PNG-Encode/Decode-Roundtrip) laeuft NICHT eager fuer alle 224 Icons, sondern lazy beim ersten
+`Render()` jedes Icons (`GetOrCreateBitmap`). Da die SKBitmaps bereits gecacht sind, findet die
+Konvertierung sie synchron (~0,5ms/Icon, nur fuer tatsaechlich sichtbare Icons) — der
+Null/Retry-Pfad greift nur, wenn ein Icon vor dem ersten Render aus dem LRU-Cache evicted wurde.
+Das haelt den Startup-kritischen Pfad frei von 224 Encode/Decode-Roundtrips (die meisten Tabs
+oeffnet der Spieler nie).
 
 **Achtung:** `GameIcon.ClearCache()` bereinigt auch `_pathMap` (snake_case-Pfad-Cache),
 damit kein staler Zustand bei Re-Initialisierung (z.B. Tests) entsteht.

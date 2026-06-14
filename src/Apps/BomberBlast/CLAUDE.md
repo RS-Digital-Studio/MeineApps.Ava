@@ -128,10 +128,16 @@ Services → Services + Android-Doku. Security-Rules → `database.rules.bomberb
 
 ### Crash-Recovery + Splash-Version
 
-`OnFrameworkInitializationCompleted` inkrementiert `BomberBlast_AppCrashCount` VOR der Init;
-`RunLoadingAsync` setzt nach Pipeline-Erfolg auf 0. Bei ≥ 3 Crashes: Safe-Mode (optionale
-Services per Try/Catch übersprungen, App startet garantiert). `App.ResetCrashRecoveryCounter()`
-für Settings. Splash-Version aus `typeof(App).Assembly.GetName().Version` — Source-of-Truth ist
+`OnFrameworkInitializationCompleted` inkrementiert den Crash-Counter VOR der Init;
+`RunLoadingAsync` setzt ihn nach Pipeline-Erfolg auf 0. Der Counter liegt in einer eigenen
+Mini-Datei (`CrashCounter` → `crashcount.txt` im App-Daten-Ordner), NICHT in den Preferences —
+so wird vor dem DI-Build kein voller `PreferencesService`-Load (komplette `preferences.json`)
+nur für einen int erzwungen. Bei ≥ 3 Crashes: Safe-Mode (optionale Services per Try/Catch
+übersprungen, App startet garantiert). `App.ResetCrashRecoveryCounter()` für Settings.
+Optionale Services (Push/RemoteConfig) werden erst NACH dem ersten Frame in `RunLoadingAsync`
+(`InitializeOptionalServices`, off-UI-Thread via `Task.Run`) initialisiert — nicht mehr vor dem
+ersten Frame im Startup-kritischen Pfad. Splash-Version aus
+`typeof(App).Assembly.GetName().Version` — Source-of-Truth ist
 `<Version>` in `BomberBlast.Shared.csproj`, muss mit `ApplicationDisplayVersion` in
 `BomberBlast.Android.csproj` synchron bleiben. Detail → Shared-Composition-Root-Doku.
 

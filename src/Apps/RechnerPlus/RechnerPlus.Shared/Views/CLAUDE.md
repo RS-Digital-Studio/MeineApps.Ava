@@ -43,8 +43,13 @@ verhindert versehentliches Sofort-Wiederholen.
 
 ## Onboarding (`MainView.axaml.cs`)
 
-Startet nach `Splash.PreloadCompleted`, 500 ms verzögert. Drei Schritte (Display → Button-Grid →
-Mode-Selector), jeder als `OnboardingTooltip` an unterschiedlicher vertikaler Position.
+Startet nach dem ersten `LayoutUpdated` nach VM-Zuweisung (`OnDataContextChanged` armiert ein
+einmaliges `LayoutUpdated`, `_onboardingArmed`-Guard), 500 ms verzögert. Das DataContext wird von
+`App.RunLoadingAsync` nach Pipeline-Ende gesetzt (zeitgleich mit `splash.FadeOut()`). Früher hing
+der Trigger an `SplashOverlay.PreloadCompleted` — diese zweite Splash + ihr zweiter
+`ShaderPreloader`-Lauf sind entfernt (die Pipeline + `SkiaLoadingSplash` sind die einzige Splash).
+Drei Schritte (Display → Button-Grid → Mode-Selector), jeder als `OnboardingTooltip` an
+unterschiedlicher vertikaler Position.
 `Dismissed`-Event wird pro Schritt frisch an- und abgemeldet um Mehrfachauslösungen zu vermeiden.
 `_vm.IsOnboardingCompleted` wird abgefragt bevor der Flow beginnt; am Ende `MarkOnboardingCompleted()`.
 

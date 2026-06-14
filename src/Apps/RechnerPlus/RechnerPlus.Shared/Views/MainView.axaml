@@ -476,9 +476,6 @@
       </Grid>
     </Border>
 
-    <!-- Splash Overlay mit echtem Preloading -->
-    <controls:SplashOverlay x:Name="Splash"
-                             AppName="RechnerPlus" />
   </Panel>
 
 </UserControl>

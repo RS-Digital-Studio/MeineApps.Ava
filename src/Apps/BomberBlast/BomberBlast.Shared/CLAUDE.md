@@ -28,20 +28,22 @@ ConfigureServices() → BuildServiceProvider()
     → Statische Sinks setzen: ShaderEffects.Logger, PersistenceHealth.Logger
     → RewardedAdCooldownTracker.Preferences setzen (Restart-Bypass-Schutz)
     → GameLoopSettings.Initialize() (TargetFps 30/60 aus Prefs)
-    → Push.InitializeAsync() + RemoteConfig.InitializeAsync() (außer safeMode)
     → GameAssetService.Current setzen (statischer Accessor für Renderer ohne DI)
     → LocalizationService.Initialize() + LocalizationManager.Initialize()
     → SkiaThemeHelper.RefreshColors()
     → Lifetime-Branch: Desktop-Window / Android-Activity / SingleView
-    → RunLoadingAsync(splash)
+    → RunLoadingAsync(splash, safeMode)
 ```
+
+Push/RemoteConfig werden NICHT mehr hier (vor dem ersten Frame) initialisiert — sie wandern in
+`RunLoadingAsync` nach dem ersten Frame (siehe unten).
 
 **Android (`IActivityApplicationLifetime`)**: `MainViewFactory` baut `Panel(MainView + Splash)`,
 speichert Root in `_activityRoot`. `RunLoadingAsync` setzt DataContext auf `_activityRoot`
 (nicht auf `ISingleViewApplicationLifetime.MainView` — Avalonia 12 spiegelt
 `MainViewFactory` NICHT in `SingleView.MainView`).
 
-### `RunLoadingAsync(splash)`
+### `RunLoadingAsync(splash, safeMode)`
 
 ```
 BomberBlastLoadingPipeline.ExecuteAsync() (Progress → Splash)
@@ -49,11 +51,14 @@ BomberBlastLoadingPipeline.ExecuteAsync() (Progress → Splash)
     → DataContext = MainViewModel (UI-Thread, Dispatcher.Post)
     → splash.FadeOut()
     → mainVm.OnAppeared() ← NACH DataContext-Set (Game-Juice braucht View-Subscriber)
-    → CrashRecoveryCounter = 0 (Pipeline-Erfolg)
+    → CrashCounter.Reset() (Pipeline-Erfolg)
+    → InitializeOptionalServices(safeMode) via Task.Run ← NACH erstem Frame, off-UI-Thread
 ```
 
 **Fehler** → `FadeOut()` (kein Leerbildschirm). `MenuVm.OnAppearing()` (Daily-Reward,
-Feature-Unlocks) läuft in `OnAppeared()` try/catch-geschützt.
+Feature-Unlocks) läuft in `OnAppeared()` try/catch-geschützt. `InitializeOptionalServices`
+löst Push/RemoteConfig auf + startet deren `InitializeAsync()` (im Safe-Mode übersprungen) —
+bewusst erst nach dem ersten Frame, damit Service-Resolve + Netz-/IO-Init den Start nicht bremsen.
 
 ### `DisposeServices()`
 

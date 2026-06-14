@@ -30,7 +30,15 @@ public sealed class FinanzRechnerLoadingPipeline : LoadingPipelineBase
             ExecuteAsync = async () =>
             {
                 var dbTask = services.GetRequiredService<IExpenseService>().InitializeAsync();
-                var shaderTask = Task.Run(() => ShaderPreloader.PreloadAll());
+                // Nur die tatsächlich gerenderten Effekte preloaden: Shimmer (SkiaGradientRing +
+                // DonutChartVisualization + LinearProgressVisualization) und Glow (CardGlowRenderer
+                // auf Status-Karten). Wave/Fire/HeatShimmer/ElectricArc werden nicht gerendert —
+                // spart die Kompilierung von 4 ungenutzten Shader-Paaren beim Kaltstart.
+                var shaderTask = Task.Run(() =>
+                {
+                    ShaderPreloader.PreloadShimmer();
+                    ShaderPreloader.PreloadGlow();
+                });
                 // Käufe mit Google Play abgleichen (Geräte-/Datenwechsel → Premium-Status wiederherstellen)
                 var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();
                 // Neue Services parallel initialisieren

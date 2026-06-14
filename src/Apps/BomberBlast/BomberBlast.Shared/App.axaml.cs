@@ -86,11 +86,10 @@ public partial class App : Application
     }
 
     /// <summary>
-    ///.3 : Splash-Crash-Recovery Pref-Key.
-    /// Inkrementiert vor jedem Init-Versuch, dekrementiert nach erfolgreichem Splash-Abschluss.
-    /// Bei >= 3 Crashes in Folge wird der User zum Reset-Dialog geleitet.
+    ///.3 : Splash-Crash-Recovery Schwelle.
+    /// Inkrementiert vor jedem Init-Versuch, zurueckgesetzt nach erfolgreichem Splash-Abschluss.
+    /// Bei >= 3 Crashes in Folge wird der User zum Reset-Dialog geleitet (Safe-Mode).
     /// </summary>
-    private const string KeyCrashCount = "BomberBlast_AppCrashCount";
     private const int CrashRecoveryThreshold = 3;
 
     public override void OnFrameworkInitializationCompleted()
@@ -98,10 +97,10 @@ public partial class App : Application
         //.3 : Crash-Counter VOR der Init-Phase inkrementieren.
         // Wenn die App in den naechsten Schritten crasht, ueberlebt der Counter persistent —
         // beim 3. Try greift Safe-Mode-Recovery.
-        // Wir nutzen einen direkten PreferencesService weil DI noch nicht aufgebaut ist.
-        var crashRecoveryPrefs = new PreferencesService("BomberBlast");
-        int crashCount = crashRecoveryPrefs.Get(KeyCrashCount, 0) + 1;
-        crashRecoveryPrefs.Set(KeyCrashCount, crashCount);
+        // CrashCounter nutzt eine eigene Mini-Datei (crashcount.txt) statt eines vollen
+        // PreferencesService-Loads (der die komplette preferences.json synchron einliest, die der
+        // DI-PreferencesService gleich danach erneut laedt) — schlanker Startup-Pfad.
+        int crashCount = CrashCounter.Increment();
         bool safeModeRequested = crashCount >= CrashRecoveryThreshold;
 
         try
@@ -140,23 +139,10 @@ public partial class App : Application
         // GameLoopSettings: Persistierten TargetFps-Wert laden (30/60 FPS, default 30 Battery-Mode)
         GameLoopSettings.Initialize(Services.GetRequiredService<IPreferencesService>());
 
-        // Push-Notifications + RemoteConfig initialisieren. Crashlytics + Analytics raus.
-        // Safe-Mode skippt optionale Services damit die App garantiert startet wenn ein
-        // optionaler Service der Crash-Ursache war. Game-State + UI funktionieren weiterhin —
-        // User kommt ans Settings-Menue, kann Account-Delete oder Reset durchfuehren.
-        if (!safeMode)
-        {
-            try { _ = Services.GetRequiredService<IPushNotificationService>().InitializeAsync(); }
-            catch (Exception ex) { Services.GetService<ILogger<App>>()?.LogError(ex, "Push-Init fehlgeschlagen"); }
-
-            try { _ = Services.GetRequiredService<IRemoteConfigService>().InitializeAsync(); }
-            catch (Exception ex) { Services.GetService<ILogger<App>>()?.LogError(ex, "RemoteConfig-Init fehlgeschlagen"); }
-        }
-        else
-        {
-            Services.GetService<ILogger<App>>()?.LogWarning(
-                "Safe-Mode aktiv — optionale Services (Push/RemoteConfig) uebersprungen wegen wiederholter Crashes.");
-        }
+        // Push-Notifications + RemoteConfig werden NICHT mehr hier (vor dem ersten Frame) initialisiert,
+        // sondern erst nach dem ersten Frame in RunLoadingAsync (siehe InitializeOptionalServicesAsync).
+        // Beide loesen optionale Services auf + starten Netz-/IO-Init — das gehoert aus dem
+        // Startup-kritischen Pfad heraus. Der safeMode-Skip wandert mit.
 
         // Statischer Accessor für AI-Asset-Renderer (statische Klassen ohne DI)
         GameAssetService.Current = Services.GetRequiredService<IGameAssetService>();
@@ -180,7 +166,7 @@ public partial class App : Application
             panel.Children.Add(new MainView());
             panel.Children.Add(splash);
             desktop.MainWindow.Content = panel;
-            _ = RunLoadingAsync(splash);
+            _ = RunLoadingAsync(splash, safeMode);
 
             // Desktop: Beim Herunterfahren alle IDisposable-Singletons disposen
             desktop.ShutdownRequested += (_, _) => DisposeServices();
@@ -196,7 +182,7 @@ public partial class App : Application
                 panel.Children.Add(new MainView());
                 panel.Children.Add(splash);
                 _activityRoot = panel;
-                _ = RunLoadingAsync(splash);
+                _ = RunLoadingAsync(splash, safeMode);
                 return panel;
             };
         }
@@ -207,7 +193,7 @@ public partial class App : Application
             panel.Children.Add(new MainView());
             panel.Children.Add(splash);
             singleViewPlatform.MainView = panel;
-            _ = RunLoadingAsync(splash);
+            _ = RunLoadingAsync(splash, safeMode);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -235,7 +221,7 @@ public partial class App : Application
         return version is null ? "0.0.0" : version.ToString(3);
     }
 
-    private async Task RunLoadingAsync(SkiaLoadingSplash splash)
+    private async Task RunLoadingAsync(SkiaLoadingSplash splash, bool safeMode)
     {
         try
         {
@@ -282,12 +268,12 @@ public partial class App : Application
 
             //.3 : Pipeline-Erfolg → Crash-Counter zuruecksetzen.
             // Naechster Start beginnt sauber bei 1.
-            try
-            {
-                var prefs = Services.GetRequiredService<IPreferencesService>();
-                prefs.Set(KeyCrashCount, 0);
-            }
-            catch { /* Best-Effort */ }
+            CrashCounter.Reset();
+
+            // Optionale Services (Push/RemoteConfig) erst JETZT — nach dem ersten Frame —
+            // initialisieren, off-UI-Thread. Frueher liefen sie synchron in InitializeServicesAndUi
+            // VOR dem ersten Frame und verzoegerten den Start (Service-Resolve + Netz-/IO-Init).
+            _ = Task.Run(() => InitializeOptionalServices(safeMode));
         }
         catch (Exception ex)
         {
@@ -298,18 +284,37 @@ public partial class App : Application
     }
 
     /// <summary>
+    /// Initialisiert die optionalen Services (Push-Notifications + RemoteConfig) NACH dem ersten
+    /// Frame, off-UI-Thread. Crashlytics + Analytics sind ausgebaut.
+    ///
+    /// Safe-Mode skippt diese Services, damit die App garantiert startet, wenn ein optionaler
+    /// Service die Crash-Ursache war — Game-State + UI funktionieren weiter, der User kommt ans
+    /// Settings-Menue (Account-Delete / Reset). Jeder Service ist einzeln try/catch-gekapselt.
+    /// </summary>
+    private static void InitializeOptionalServices(bool safeMode)
+    {
+        if (safeMode)
+        {
+            Services.GetService<ILogger<App>>()?.LogWarning(
+                "Safe-Mode aktiv — optionale Services (Push/RemoteConfig) uebersprungen wegen wiederholter Crashes.");
+            return;
+        }
+
+        try { _ = Services.GetRequiredService<IPushNotificationService>().InitializeAsync(); }
+        catch (Exception ex) { Services.GetService<ILogger<App>>()?.LogError(ex, "Push-Init fehlgeschlagen"); }
+
+        try { _ = Services.GetRequiredService<IRemoteConfigService>().InitializeAsync(); }
+        catch (Exception ex) { Services.GetService<ILogger<App>>()?.LogError(ex, "RemoteConfig-Init fehlgeschlagen"); }
+    }
+
+    /// <summary>
     ///.3 : Public API fuer den Settings-Screen
     /// — der User kann manuell den Crash-Counter zuruecksetzen wenn er das Spiel
     /// neu starten will ohne dass der Safe-Mode getriggert wird.
     /// </summary>
     public static void ResetCrashRecoveryCounter()
     {
-        try
-        {
-            var prefs = Services?.GetService<IPreferencesService>();
-            prefs?.Set(KeyCrashCount, 0);
-        }
-        catch { /* Best-Effort */ }
+        CrashCounter.Reset();
     }
 
     /// <summary>

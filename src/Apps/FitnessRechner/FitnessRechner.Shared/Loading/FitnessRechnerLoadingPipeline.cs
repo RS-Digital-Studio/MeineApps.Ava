@@ -24,7 +24,11 @@ public sealed class FitnessRechnerLoadingPipeline : LoadingPipelineBase
             Weight = 45,
             ExecuteAsync = async () =>
             {
-                var shaderTask = Task.Run(() => ShaderPreloader.PreloadAll());
+                // Nur Shimmer preloaden: FitnessRechner rendert einzig den Shimmer-Effekt — indirekt
+                // über LinearProgressVisualization (ProgressView) bei animationTime>0. Glow/Wave/Fire/
+                // HeatShimmer/ElectricArc werden nicht gerendert (SkiaWaterGlass zeichnet seine Wellen
+                // manuell, ohne SkSL). Vermeidet die Kompilierung von 5 ungenutzten Shader-Paaren.
+                var shaderTask = Task.Run(ShaderPreloader.PreloadShimmer);
                 var vmTask = Task.Run(() => services.GetRequiredService<MainViewModel>());
                 // Käufe mit Google Play abgleichen (Geräte-/Datenwechsel → Premium-Status wiederherstellen)
                 var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();

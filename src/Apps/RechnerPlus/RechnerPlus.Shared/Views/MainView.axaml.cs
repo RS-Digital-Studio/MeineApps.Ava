@@ -5,7 +5,6 @@ using Avalonia.Labs.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
-using MeineApps.UI.SkiaSharp.Shaders;
 using RechnerPlus.Graphics;
 using RechnerPlus.ViewModels;
 using SkiaSharp;
@@ -34,6 +33,7 @@ public partial class MainView : UserControl
     private int _onboardingStep;
     private string[] _onboardingTexts = [];
     private VerticalAlignment[] _onboardingPositions = [];
+    private bool _onboardingArmed;
 
     public MainView()
     {
@@ -53,31 +53,6 @@ public partial class MainView : UserControl
         _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         _bgTimer.Tick += OnBackgroundTimerTick;
         _bgTimer.Start();
-
-        // Preloading-Tasks im SplashOverlay konfigurieren (Texte + Engine-Warmup kommen vom VM)
-        Splash.PreloadAction = async (reportProgress) =>
-        {
-            var vm = _vm;
-
-            // Schritt 1: SkSL-Shader vorab kompilieren (auf ThreadPool)
-            reportProgress(0.0f, vm?.LoadingShadersText ?? "Grafik-Engine wird vorbereitet...");
-            await Task.Run(() => ShaderPreloader.PreloadAll());
-
-            // Schritt 2: Calculator-Engine warm machen (erfolgt synchron im VM-Ctor — hier nur Progress-Text)
-            reportProgress(0.60f, vm?.LoadingCalculatorText ?? "Rechner wird initialisiert...");
-
-            // History ist bereits im Constructor geladen (LoadHistory() in CalculatorVM)
-            reportProgress(1.0f, "");
-        };
-
-        // Benannter Handler für sauberes Unsubscribe (HOCH-2)
-        Splash.PreloadCompleted += OnSplashPreloadCompleted;
-    }
-
-    private void OnSplashPreloadCompleted(object? sender, EventArgs e)
-    {
-        Splash.PreloadCompleted -= OnSplashPreloadCompleted;
-        Dispatcher.UIThread.Post(TryStartOnboarding);
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -89,7 +64,26 @@ public partial class MainView : UserControl
         _vm = DataContext as MainViewModel;
 
         if (_vm != null)
+        {
             _vm.PauseStateChanged += OnPauseStateChanged;
+
+            // Onboarding-Hook: Das DataContext wird von App.RunLoadingAsync NACH der Loading-Pipeline
+            // gesetzt (zeitgleich mit splash.FadeOut()). Früher hing der Trigger an
+            // SplashOverlay.PreloadCompleted — diese zweite Splash + ihr zweiter ShaderPreloader-Lauf
+            // sind entfernt (die Pipeline + SkiaLoadingSplash sind die einzige Splash). Wir warten auf
+            // das erste LayoutUpdated nach VM-Zuweisung, damit der Visual-Tree steht (Tooltip-Position).
+            if (!_onboardingArmed)
+            {
+                _onboardingArmed = true;
+                LayoutUpdated += OnFirstLayoutUpdatedForOnboarding;
+            }
+        }
+    }
+
+    private void OnFirstLayoutUpdatedForOnboarding(object? sender, EventArgs e)
+    {
+        LayoutUpdated -= OnFirstLayoutUpdatedForOnboarding;
+        Dispatcher.UIThread.Post(TryStartOnboarding);
     }
 
     /// <summary>

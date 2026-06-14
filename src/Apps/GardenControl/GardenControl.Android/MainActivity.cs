@@ -5,6 +5,7 @@ using Android.Widget;
 using Avalonia.Android;
 using GardenControl.Shared;
 using GardenControl.Shared.ViewModels;
+using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GardenControl.Android;
@@ -19,6 +20,7 @@ namespace GardenControl.Android;
 public class MainActivity : AvaloniaMainActivity
 {
     private MainViewModel? _mainVm;
+    private IAppLifecycleService? _lifecycle;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -31,6 +33,22 @@ public class MainActivity : AvaloniaMainActivity
             _mainVm.ExitHintRequested += msg =>
                 RunOnUiThread(() => Toast.MakeText(this, msg, ToastLength.Short)?.Show());
         }
+
+        // App-Lifecycle-Broker fuer Akku-Optimierung: das MainViewModel trennt bei Pause die
+        // SignalR-Verbindung und verbindet bei Resume neu (Pi steuert autonom 24/7 weiter).
+        _lifecycle = App.Services?.GetService<IAppLifecycleService>();
+    }
+
+    protected override void OnResume()
+    {
+        base.OnResume();
+        _lifecycle?.NotifyResumed();
+    }
+
+    protected override void OnPause()
+    {
+        base.OnPause();
+        _lifecycle?.NotifyPaused();
     }
 
     // OnBackPressed ist ab API 33 deprecated (OnBackInvokedCallback), wird aber von Avalonias

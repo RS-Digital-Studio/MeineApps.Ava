@@ -35,6 +35,10 @@ public class App : Application
         services.AddSingleton<IConnectionService, ConnectionService>();
         services.AddSingleton<IApiService, ApiService>();
 
+        // App-Lifecycle-Broker: Android speist NotifyPaused/Resumed; das MainViewModel trennt im
+        // Hintergrund die SignalR-Verbindung (Akku/Radio-Wakeups) und verbindet beim Resume neu.
+        services.AddSingleton<IAppLifecycleService, AppLifecycleService>();
+
         // ViewModels
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<DashboardViewModel>();

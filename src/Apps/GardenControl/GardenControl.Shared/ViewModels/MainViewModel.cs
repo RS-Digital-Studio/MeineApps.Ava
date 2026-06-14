@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using GardenControl.Core;
 using GardenControl.Core.DTOs;
 using GardenControl.Shared.Services;
+using MeineApps.Core.Ava.Async;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 
@@ -17,6 +18,7 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
     private readonly IConnectionService _connection;
     private readonly IApiService _api;
     private readonly IPreferencesService _prefs;
+    private readonly IAppLifecycleService _lifecycle;
     private readonly BackPressHelper _backPressHelper = new();
     // Aktuelles Server-Secret (persistiert, in beide Services injiziert vor Connect).
     private string _serverSecret;
@@ -43,6 +45,7 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
         IConnectionService connection,
         IApiService api,
         IPreferencesService prefs,
+        IAppLifecycleService lifecycle,
         DashboardViewModel dashboard,
         ZoneControlViewModel zoneControl,
         ScheduleViewModel schedule,
@@ -53,6 +56,7 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _connection = connection;
         _api = api;
         _prefs = prefs;
+        _lifecycle = lifecycle;
         // Persistiertes Server-Secret laden (Default-Dev-Secret falls noch nie gesetzt).
         _serverSecret = _prefs.Get(GardenAuth.ClientSecretPreferenceKey, GardenAuth.DefaultDevSecret);
 
@@ -74,7 +78,28 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
         // Settings-ViewModel kann URL + Secret ändern
         Settings.ServerUrlChanged += OnSettingsServerUrlChanged;
         Settings.ServerSecretChanged += OnSettingsServerSecretChanged;
+
+        // App-Pause → SignalR trennen (kein Hintergrund-Empfang, spart Radio-Wakeups);
+        // App-Resume → neu verbinden (der erste Push aktualisiert die Live-Werte sofort).
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
     }
+
+    /// <summary>
+    /// App ging in den Hintergrund: SignalR-Hub trennen. GardenControl ist reine Fernsteuerung/
+    /// Monitor — der Pi bewässert autonom 24/7 weiter, im Hintergrund braucht die App keine
+    /// offene Verbindung. Fire-and-forget (kein Blockieren im Lifecycle-Handler), Fehler werden
+    /// geloggt. Reconnect-Konfiguration (WithAutomaticReconnect) bleibt davon unberührt.
+    /// </summary>
+    private void OnAppPaused() =>
+        _connection.DisconnectAsync().Forget();
+
+    /// <summary>
+    /// App kam in den Vordergrund: neu verbinden. Über <see cref="ConnectAsync"/>, damit Secret +
+    /// Server-URL erneut injiziert werden und der Status korrekt in der UI erscheint. Fire-and-forget.
+    /// </summary>
+    private void OnAppResumed() =>
+        ConnectAsync().Forget();
 
     /// <summary>Verbindungsstatus-Update vom SignalR-Client (kommt auf Hintergrund-Thread).</summary>
     private void OnConnectionChanged(bool connected)
@@ -215,6 +240,8 @@ public partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _api.ErrorOccurred -= OnApiErrorOccurred;
         Settings.ServerUrlChanged -= OnSettingsServerUrlChanged;
         Settings.ServerSecretChanged -= OnSettingsServerSecretChanged;
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
 
         // Child-ViewModels abmelden (HistoryViewModel abonniert keine Events → kein IDisposable)
         Dashboard.Dispose();

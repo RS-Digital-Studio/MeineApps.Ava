@@ -18,6 +18,45 @@ public abstract class Scene
     /// </summary>
     public bool IsActive { get; internal set; }
 
+    // --- Bedarfs-Rendering (Akku-Optimierung) ---
+
+    /// <summary>
+    /// Gibt an, ob diese Szene jeden Frame neu gezeichnet werden muss (kontinuierliche
+    /// Animation: Partikel, Typewriter, Tweens, pulsierende/blinkende Elemente).
+    /// Standard ist bewusst <c>true</c> (sicherer Default) — eine Szene ohne laufende
+    /// Animation überschreibt dies mit <c>false</c> und löst bei jeder sichtbaren
+    /// Zustandsänderung (Cursor, Tab, Wert, Scroll) <see cref="RequestRedraw"/> aus,
+    /// damit ein einzelner Frame nachgezeichnet wird.
+    /// Die Spiellogik (Update) läuft unabhängig davon weiter — nur der teure Paint
+    /// wird bei statischen Szenen übersprungen.
+    /// </summary>
+    public virtual bool NeedsContinuousRender => true;
+
+    /// <summary>
+    /// Wird vom SceneManager pro Frame ausgewertet und danach zurückgesetzt: Eine statische
+    /// Szene setzt das Flag bei Input-/State-Änderung, um genau einen Frame zu erzwingen.
+    /// </summary>
+    internal bool RedrawRequested { get; private set; }
+
+    /// <summary>
+    /// Fordert das Nachzeichnen eines einzelnen Frames an (für Szenen mit
+    /// <see cref="NeedsContinuousRender"/> == false). Bei kontinuierlich gezeichneten
+    /// Szenen ohne Wirkung — sie werden ohnehin jeden Frame gezeichnet.
+    /// </summary>
+    protected void RequestRedraw() => RedrawRequested = true;
+
+    /// <summary>
+    /// Erzwingt von außen (SceneManager) das Nachzeichnen eines Frames, z.B. wenn ein Overlay
+    /// geschlossen wurde und die darunterliegende statische Szene neu gezeichnet werden muss.
+    /// </summary>
+    internal void RequestRedrawExternal() => RedrawRequested = true;
+
+    /// <summary>
+    /// Setzt das Redraw-Flag zurück. Wird ausschließlich vom SceneManager nach dem
+    /// Auswerten eines Frames aufgerufen.
+    /// </summary>
+    internal void ClearRedrawRequest() => RedrawRequested = false;
+
     // --- Lifecycle (wird vom SceneManager aufgerufen) ---
 
     /// <summary>

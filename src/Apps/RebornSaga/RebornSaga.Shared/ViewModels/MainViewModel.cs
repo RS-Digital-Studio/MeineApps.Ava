@@ -126,6 +126,13 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
+    /// Gibt an, ob dieser Frame tatsächlich neu gezeichnet werden muss (Akku-Optimierung).
+    /// Update läuft jeden Tick (Logik), aber der teure Paint wird bei statischen Szenen
+    /// ohne Animation und ohne anstehende Zustandsänderung übersprungen.
+    /// </summary>
+    public bool ShouldRender() => _sceneManager.ShouldRender();
+
+    /// <summary>
     /// Zeichnet den aktuellen Frame auf das SkiaSharp-Canvas.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds)

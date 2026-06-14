@@ -8,8 +8,8 @@ SkiaSharp-Gotchas → [MeineApps.UI/CLAUDE.md](../../../../UI/MeineApps.UI/CLAUD
 
 | Datei | Zweck |
 |-------|-------|
-| `Scene.cs` | Abstrakte Basisklasse: Lifecycle (`OnEnter/Exit/Pause/Resume`), Game-Loop (`Update/Render`), Input (`HandleInput/HandlePointerDown/Move/Up`), `ConsumesInput`-Property. |
-| `SceneManager.cs` | Scene-Stack + Overlays-Liste, Szenen-Wechsel mit Transitions, `ActivatorUtilities.CreateInstance<T>()` für Constructor Injection. |
+| `Scene.cs` | Abstrakte Basisklasse: Lifecycle (`OnEnter/Exit/Pause/Resume`), Game-Loop (`Update/Render`), Input (`HandleInput/HandlePointerDown/Move/Up`), `ConsumesInput`- und `NeedsContinuousRender`-Property, `RequestRedraw()`. |
+| `SceneManager.cs` | Scene-Stack + Overlays-Liste, Szenen-Wechsel mit Transitions, `ActivatorUtilities.CreateInstance<T>()` für Constructor Injection, `ShouldRender()` (Bedarfs-Rendering). |
 | `InputManager.cs` | Pointer-Events → `InputAction` (Tap, DoubleTap, Hold, Swipe, Back) → delegiert an aktive Szene. Desktop: Keyboard-Events via `OnKeyDown`. |
 | `Camera.cs` | Viewport-Kamera: Pan, Zoom, Screen-Shake. |
 | `InputAction.cs` | Enum: Tap, DoubleTap, Hold, Back, SwipeLeft/Right/Up/Down. |
@@ -43,6 +43,27 @@ Injection erstellt — kein `new Szene()`.
 
 **Re-Entrancy-Guard:** `ChangeScene`, `PushScene` und `PopScene` werden während einer laufenden
 Transition ignoriert (`IsTransitioning`-Check). Input wird während Transitions ebenfalls blockiert.
+
+## Bedarfs-Rendering (Akku)
+
+Der Game-Loop ruft `_vm.Update(dt)` jeden Tick (Logik läuft immer), aber `InvalidateSurface()`
+nur, wenn `SceneManager.ShouldRender()` true liefert. So sparen statische Szenen (Menüs, Listen)
+den teuren Paint, ohne dass Timer/Cooldowns stehenbleiben.
+
+- **`Scene.NeedsContinuousRender`** (virtual, Default **`true`** — sicherer Default): Szenen mit
+  kontinuierlicher Animation (Partikel, Typewriter, Tweens, Pulse) lassen ihn `true`. Statische
+  Szenen überschreiben mit `false`.
+- **`Scene.RequestRedraw()`** (protected): Eine `false`-Szene ruft das bei JEDER sichtbaren
+  Zustandsänderung (Cursor/Tab/Wert/Scroll/Slider-Drag), um genau einen Frame zu erzwingen —
+  sonst „klemmt" die Anzeige. Welche Szenen `false` sind → [Scenes/CLAUDE.md](../Scenes/CLAUDE.md).
+- **`SceneManager.ShouldRender()`** zeichnet immer bei laufender Transition oder aktiven Overlays
+  (konservativ); sonst nur, wenn die aktuelle Szene `NeedsContinuousRender` ist oder ein Redraw
+  angefordert wurde. Verbraucht das einmalige Redraw-Flag.
+- **`Scene.RequestRedrawExternal()`** (internal): Der SceneManager erzwingt damit zentral einen
+  Frame nach Szenen-Aktivierung (`ChangeScene`/`PushScene`), `PopScene`/`OnResume` und
+  `HideOverlay` — so muss keine statische Szene das selbst absichern, und ein geschlossenes
+  Overlay verschwindet zuverlässig. Overlays öffnen aktuell nur continuous Szenen (Overworld,
+  Dialogue, Battle), die statischen Szenen liegen nie unter einem Overlay.
 
 ## Transitions
 

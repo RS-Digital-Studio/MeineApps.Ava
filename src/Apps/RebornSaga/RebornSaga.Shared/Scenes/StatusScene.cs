@@ -17,6 +17,11 @@ using System.Linq;
 /// </summary>
 public class StatusScene : Scene
 {
+    // Reine Status-/Skill-/Equipment-Ansicht ohne kontinuierliche Animation (kein _time,
+    // keine Partikel, keine Pulse/Tweens) → Bedarfs-Rendering. Tab-Wechsel und Stat-Änderungen
+    // lösen RequestRedraw() aus.
+    public override bool NeedsContinuousRender => false;
+
     private readonly Player _player;
     private readonly SkillService _skillService;
     private readonly InventoryService _inventory;
@@ -168,6 +173,10 @@ public class StatusScene : Scene
         // Skill- und Equipment-Caches invalidieren bei Stat-Änderung
         _skillsCacheDirty = true;
         _equipCacheDirty = true;
+
+        // Statische Szene: sichtbare Werte haben sich geändert → einen Frame nachzeichnen
+        // (deckt OnEnter, Update-Wertänderung und Stat-Allokation ab).
+        RequestRedraw();
     }
 
     public override void Update(float deltaTime)
@@ -500,6 +509,7 @@ public class StatusScene : Scene
                 // Caches invalidieren beim Tab-Wechsel
                 _skillsCacheDirty = true;
                 _equipCacheDirty = true;
+                RequestRedraw(); // Tab-Inhalt wechselt
                 return;
             }
         }

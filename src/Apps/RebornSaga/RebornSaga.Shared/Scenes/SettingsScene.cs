@@ -13,6 +13,11 @@ using System;
 /// </summary>
 public class SettingsScene : Scene
 {
+    // Reines Einstellungs-Formular ohne kontinuierliche Animation → Bedarfs-Rendering.
+    // Toggle-/Speed-/Slider-Interaktionen lösen RequestRedraw() aus (Slider-Drag braucht
+    // pro Bewegung einen Frame, damit der Thumb dem Finger folgt).
+    public override bool NeedsContinuousRender => false;
+
     private readonly IAudioService _audioService;
     private readonly ILocalizationService _localization;
     private readonly MeineApps.Core.Ava.Services.IPreferencesService _preferences;
@@ -97,6 +102,7 @@ public class SettingsScene : Scene
         _audioService.BgmVolume = _preferences.Get("settings_bgm_volume", 0.7f);
         _audioService.SfxEnabled = _preferences.Get("settings_sfx_enabled", true);
         _audioService.BgmEnabled = _preferences.Get("settings_bgm_enabled", true);
+        RequestRedraw(); // Ersten Frame erzwingen (statische Szene)
     }
 
     /// <summary>Speichert alle Audio- und Text-Einstellungen in Preferences.</summary>
@@ -284,16 +290,19 @@ public class SettingsScene : Scene
             if (_sfxToggleRect.Contains(position))
             {
                 _audioService.SfxEnabled = !_audioService.SfxEnabled;
+                RequestRedraw(); // Toggle-Thumb wechselt Seite
                 return;
             }
             if (_bgmToggleRect.Contains(position))
             {
                 _audioService.BgmEnabled = !_audioService.BgmEnabled;
+                RequestRedraw();
                 return;
             }
             if (_vibrationToggleRect.Contains(position))
             {
                 _audioService.VibrationEnabled = !_audioService.VibrationEnabled;
+                RequestRedraw();
                 return;
             }
 
@@ -304,6 +313,7 @@ public class SettingsScene : Scene
                 {
                     _textSpeed = i;
                     _preferences.Set("settings_text_speed", i);
+                    RequestRedraw(); // ausgewählter Speed-Button hebt sich hervor
                     return;
                 }
             }
@@ -316,20 +326,29 @@ public class SettingsScene : Scene
         {
             _isDraggingSfx = true;
             UpdateSliderValue(position.X, _sfxSliderRect, v => _audioService.SfxVolume = v);
+            RequestRedraw(); // Slider-Thumb springt zur Tap-Position
         }
         else if (_bgmSliderRect.Contains(position))
         {
             _isDraggingBgm = true;
             UpdateSliderValue(position.X, _bgmSliderRect, v => _audioService.BgmVolume = v);
+            RequestRedraw();
         }
     }
 
     public override void HandlePointerMove(SKPoint position)
     {
+        // Während des Drags pro Bewegung neu zeichnen, damit Thumb + Prozent-Wert folgen.
         if (_isDraggingSfx)
+        {
             UpdateSliderValue(position.X, _sfxSliderRect, v => _audioService.SfxVolume = v);
+            RequestRedraw();
+        }
         else if (_isDraggingBgm)
+        {
             UpdateSliderValue(position.X, _bgmSliderRect, v => _audioService.BgmVolume = v);
+            RequestRedraw();
+        }
     }
 
     public override void HandlePointerUp(SKPoint position)

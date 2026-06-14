@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Labs.Controls;
 using Avalonia.Threading;
+using RebornSaga.Services;
 using RebornSaga.ViewModels;
 using SkiaSharp;
 using System;
@@ -13,6 +14,15 @@ namespace RebornSaga.Views;
 
 public partial class MainView : UserControl
 {
+    /// <summary>
+    /// Ziel-Frame-Intervall des Game-Loops: ~30fps (33ms) statt 60fps (16ms).
+    /// Halbiert die Render-Last verlustfrei, da das Spiel deltaTime-basiert ist
+    /// (siehe StartGameLoop: deltaTime kommt aus der echten verstrichenen Stopwatch-Zeit,
+    /// nicht hartkodiert) — Spielgeschwindigkeit und Animations-Timing bleiben identisch,
+    /// nur die Bildwiederholrate sinkt. Spart spürbar CPU/GPU und Akku auf Android-Mid-Tier.
+    /// </summary>
+    private const double FrameIntervalMs = 33.0;
+
     private MainViewModel? _vm;
     private DispatcherTimer? _gameLoopTimer;
     private readonly Stopwatch _stopwatch = new();
@@ -54,10 +64,14 @@ public partial class MainView : UserControl
             _vm.GameLoopResumeRequested += OnGameLoopResumeRequested;
         }
 
+        // Display-Pixelhöhe ermitteln und an die Sprite-Decode-Pipeline koppeln (Akku/RAM):
+        // Sprites werden beim Dekodieren auf die tatsächlich benötigte Auflösung verkleinert.
+        ConfigureSpriteTargetHeight();
+
         // Services initialisieren (Skills, Items, Purchases laden)
         _ = InitializeServicesAsync();
 
-        // Game-Loop starten (16ms = ~60fps)
+        // Game-Loop starten (~33ms = ~30fps, FrameIntervalMs)
         StartGameLoop();
     }
 
@@ -122,7 +136,51 @@ public partial class MainView : UserControl
     }
 
     /// <summary>
-    /// Game-Loop: Update + InvalidateSurface alle 16ms (~60fps).
+    /// Ermittelt die physische Display-Pixelhöhe (Portrait) und koppelt sie an die Sprite-Decode-
+    /// Pipeline (SpriteCache.SetTargetDisplayHeight): Sprites werden nie höher dekodiert als sie
+    /// je dargestellt werden können → spart RAM und Decode-Zeit ohne sichtbaren Qualitätsverlust.
+    /// Die physische Höhe = logische Screen-Höhe × RenderScaling. Für Portrait wird die längere
+    /// Kante als Höhe genommen (das Spiel läuft Hochformat). Bei Unsicherheit greift im SpriteCache
+    /// der konservative Default (volle Auflösung), daher ist jeder Fehlerpfad hier unkritisch.
+    /// </summary>
+    private void ConfigureSpriteTargetHeight()
+    {
+        try
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel == null)
+                return;
+
+            var scaling = topLevel.RenderScaling > 0 ? topLevel.RenderScaling : 1.0;
+
+            // Bevorzugt die echte Bildschirmgröße (physische Pixel), Fallback auf die
+            // logische Client-Größe × Scaling.
+            var screenSize = topLevel.Screens?.ScreenFromVisual(this)?.Bounds;
+            double physicalHeight;
+            if (screenSize is { } sb && sb.Height > 0 && sb.Width > 0)
+            {
+                // Screen.Bounds ist bereits in physischen Pixeln. Portrait → längere Kante = Höhe.
+                physicalHeight = Math.Max(sb.Width, sb.Height);
+            }
+            else
+            {
+                var logical = Math.Max(topLevel.ClientSize.Width, topLevel.ClientSize.Height);
+                physicalHeight = logical * scaling;
+            }
+
+            if (physicalHeight >= 1)
+                SpriteCache.SetTargetDisplayHeight((int)Math.Round(physicalHeight));
+        }
+        catch
+        {
+            // Display-Abfrage fehlgeschlagen → konservativer Default im SpriteCache greift.
+        }
+    }
+
+    /// <summary>
+    /// Game-Loop: Update jeden Tick (~33ms = ~30fps, FrameIntervalMs), Paint nur bei Bedarf.
+    /// Die Logik (Update) läuft immer weiter; das teure InvalidateSurface wird übersprungen,
+    /// wenn die aktive Szene statisch ist und keine Zustandsänderung anliegt (Bedarfs-Rendering).
     /// </summary>
     private void StartGameLoop()
     {
@@ -134,7 +192,7 @@ public partial class MainView : UserControl
 
         _gameLoopTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromMilliseconds(16)
+            Interval = TimeSpan.FromMilliseconds(FrameIntervalMs)
         };
         _gameLoopTimer.Tick += (_, _) =>
         {
@@ -154,8 +212,12 @@ public partial class MainView : UserControl
             if (deltaTime > 0.05f)
                 deltaTime = 0.05f;
 
+            // Logik immer aktualisieren (Timer, Cooldowns, Animations-Zustände laufen weiter).
             _vm?.Update(deltaTime);
-            GameCanvas.InvalidateSurface();
+
+            // Paint nur anstoßen, wenn tatsächlich etwas Neues zu zeichnen ist (Akku).
+            if (_vm == null || _vm.ShouldRender())
+                GameCanvas.InvalidateSurface();
         };
         _gameLoopTimer.Start();
     }

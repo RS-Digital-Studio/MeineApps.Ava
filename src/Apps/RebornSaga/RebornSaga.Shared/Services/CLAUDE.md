@@ -22,8 +22,8 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `TutorialService.cs` | `TutorialService` | Erstbesucher-Hints per `IPreferencesService`. `ShouldShow(key)` + `MarkSeen(key)`. |
 | `DailyService.cs` | `DailyService` | Login-Bonus (Gold), Prophezeiung (RESX-Keys Prophecy_0–13), Login-Streak. |
 | `EnemyLoader.cs` | `EnemyLoader` | **Statische Klasse** (kein DI-Singleton). Lazy-Load aus `enemies.json` beim ersten Zugriff, `GetById()` gibt geklonten Enemy zurück (defensive copy). |
-| `SpriteCache.cs` | `SpriteCache` | LRU-Cache (max 30 Bilder, max 80 MB), thread-safe (`lock`), `IDisposable`. `PeekPixels()` in `ComputeContentBounds()` vermeidet JNI-Overhead. Wird von `CharacterRenderer` + `BackgroundCompositor` genutzt. |
-| `AssetDeliveryService.cs` | `AssetDeliveryService` | Firebase Storage REST API, SHA256-Hash-Verifikation, Delta-Updates. Stream-basierter Download, Retry (3× exponentieller Backoff), temporäre Dateien. |
+| `SpriteCache.cs` | `SpriteCache` | LRU-Cache (max 30 Bilder, max 80 MB), thread-safe (`lock`), `IDisposable`. `PeekPixels()` in `ComputeContentBounds()` vermeidet JNI-Overhead. Decode-Downsampling via `MaxSpriteHeight` (Akku/RAM). Wird von `CharacterRenderer` + `BackgroundCompositor` genutzt. |
+| `AssetDeliveryService.cs` | `AssetDeliveryService` | Firebase Storage REST API, SHA256-Hash-Verifikation, Delta-Updates. Stream-basierter Download, Retry (3× exponentieller Backoff), temporäre Dateien. `LoadBitmap(path, maxHeight)` skaliert beim Dekodieren herunter (SKCodec + Resize). |
 | `IAssetDeliveryService.cs` | Interface | Trennt `AssetDownloadScene` von der konkreten Implementierung. |
 | `AudioService.cs` | `AudioService` | Desktop-Stub (kein Sound). Android-Override via `App.AudioServiceFactory` → `AndroidAudioService`. |
 
@@ -59,3 +59,25 @@ alliance_aria        (Fallback: Flags.Contains)
 `AssetManifest` beschreibt alle Packs (characters, backgrounds, enemies, items, scenes).
 Firebase-Bucket: `gs://rebornsaga-671b6.firebasestorage.app/assets/` (317 Dateien, 69,2 MB).
 Upload via `F:\AI\ComfyUI_workflows\upload_assets.py` (Uniform Bucket Access, kein `make_public()`).
+
+### Sprite-Downsampling beim Decode (Akku/RAM)
+
+`AssetDeliveryService.LoadBitmap(path, maxHeight)` dekodiert Sprites direkt auf die Zielhöhe
+herunter, statt die volle Auflösung (Original 1248×1824 ≈ 9 MB/Sprite) zu laden:
+
+- **Zweistufig:** `SKCodec.GetScaledDimensions(ratio)` liefert eine günstige subsampled-Decode-Stufe;
+  fällt diese unter die Zielhöhe, wird voll dekodiert. Danach exakte Feinskalierung per
+  `SKBitmap.Resize(SKImageInfo, SKSamplingOptions(Linear, Linear))`. **Nur Downscale, nie Upscale**
+  (Seitenverhältnis exakt erhalten). `maxHeight == 0` → volle Auflösung (Rückwärtskompatibilität).
+- **Zielhöhe:** `SpriteCache.MaxSpriteHeight` — von `MainView.ConfigureSpriteTargetHeight()` aus der
+  echten Display-Pixelhöhe gesetzt (`SetTargetDisplayHeight`, geclampt auf `[1280, 1920]`). Ohne
+  gesetzte Höhe greift `DefaultMaxSpriteHeight = 1920` > Original 1824 → kein Downscale (sicherer
+  Default). Wirkt nur auf künftige Cache-Misses.
+- **Content-Bounds bleiben transparent:** Charakter-Sprites (`characters/…`) werden vom
+  `CharacterRenderer`/`RenderSpeakerInPanel` über eine FESTE Referenz (1248×1824) positioniert.
+  `ComputeContentBounds` rechnet die im verkleinerten Bitmap gefundenen Bounds proportional auf
+  diesen Referenzraum zurück; `SpriteCharacterRenderer.CalculateDestRect` zeichnet auf
+  `Referenz × scale` (nicht Bitmap-Pixelgröße). So ist das Downsampling für die gesamte
+  Skalierungs-/Positionierungs-Logik unsichtbar. Selbstkonsistente Konsumenten (Enemy, Background,
+  Item-Icon, Map-Node) skalieren ohnehin über `bitmap.Width/Height` und brauchen keine Rückrechnung.
+- Der 80-MB-Cache-Cap und die LRU-Eviction arbeiten mit den (jetzt kleineren) Bitmap-Größen weiter.

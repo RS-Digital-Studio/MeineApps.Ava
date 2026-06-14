@@ -100,6 +100,8 @@ public class SceneManager
                 // Neue Szene aktivieren (OnEnter wurde bereits vor der Transition aufgerufen)
                 newScene.IsActive = true;
                 _sceneStack.Push(newScene);
+                // Garantiert mindestens einen Frame für statische Szenen (Bedarfs-Rendering).
+                newScene.RequestRedrawExternal();
             });
         }
         else
@@ -118,6 +120,8 @@ public class SceneManager
             newScene.IsActive = true;
             _sceneStack.Push(newScene);
             newScene.OnEnter();
+            // Garantiert mindestens einen Frame für statische Szenen (Bedarfs-Rendering).
+            newScene.RequestRedrawExternal();
         }
     }
 
@@ -145,6 +149,8 @@ public class SceneManager
                 // Neue Szene aktivieren (OnEnter wurde bereits vor der Transition aufgerufen)
                 newScene.IsActive = true;
                 _sceneStack.Push(newScene);
+                // Garantiert mindestens einen Frame für statische Szenen (Bedarfs-Rendering).
+                newScene.RequestRedrawExternal();
             });
         }
         else
@@ -154,6 +160,8 @@ public class SceneManager
             newScene.IsActive = true;
             _sceneStack.Push(newScene);
             newScene.OnEnter();
+            // Garantiert mindestens einen Frame für statische Szenen (Bedarfs-Rendering).
+            newScene.RequestRedrawExternal();
         }
     }
 
@@ -183,6 +191,8 @@ public class SceneManager
                 if (popped is IDisposable disposable)
                     disposable.Dispose();
                 CurrentScene?.OnResume();
+                // Wiederhergestellte (ggf. statische) Szene muss mindestens einen Frame zeichnen.
+                CurrentScene?.RequestRedrawExternal();
             });
         }
         else
@@ -193,6 +203,8 @@ public class SceneManager
             if (popped is IDisposable disposable)
                 disposable.Dispose();
             CurrentScene?.OnResume();
+            // Wiederhergestellte (ggf. statische) Szene muss mindestens einen Frame zeichnen.
+            CurrentScene?.RequestRedrawExternal();
         }
     }
 
@@ -222,6 +234,10 @@ public class SceneManager
             _overlays.Remove(overlay);
             if (overlay is IDisposable disposable)
                 disposable.Dispose();
+
+            // Darunterliegende (ggf. statische) Szene muss einen Frame nachzeichnen,
+            // damit das entfernte Overlay visuell verschwindet (Bedarfs-Rendering).
+            CurrentScene?.RequestRedrawExternal();
         }
     }
 
@@ -236,6 +252,9 @@ public class SceneManager
             overlay.OnExit();
             if (overlay is IDisposable disposable)
                 disposable.Dispose();
+
+            // Darunterliegende (ggf. statische) Szene muss einen Frame nachzeichnen.
+            CurrentScene?.RequestRedrawExternal();
         }
     }
 
@@ -265,6 +284,51 @@ public class SceneManager
         // Overlays updaten
         for (int i = 0; i < _overlays.Count; i++)
             _overlays[i].Update(deltaTime);
+    }
+
+    /// <summary>
+    /// Entscheidet, ob in diesem Frame tatsächlich neu gezeichnet werden muss (Akku-Optimierung).
+    /// Bedarfs-Rendering: Statische Szenen (NeedsContinuousRender == false) werden nur gezeichnet,
+    /// wenn ein Übergang läuft, ein Overlay aktiv ist, oder ein einzelner Redraw angefordert wurde.
+    /// Konservativ: Im Zweifel (laufende Transition / aktive Overlays) wird gezeichnet.
+    /// Setzt die einmaligen Redraw-Anforderungen von Szene und Overlays zurück.
+    /// </summary>
+    public bool ShouldRender()
+    {
+        // Laufender Übergang zeichnet alte + neue Szene animiert → immer rendern.
+        if (_activeTransition != null)
+            return true;
+
+        // Overlays (Toasts, Schadens-Zahlen, Pause-Menü, …) liegen transparent über der Szene
+        // und sind in der Regel animiert → sobald eines aktiv ist, jeden Frame zeichnen.
+        if (_overlays.Count > 0)
+        {
+            ConsumeRedrawRequests();
+            return true;
+        }
+
+        var scene = CurrentScene;
+        if (scene == null)
+            return true; // Kein Szenen-State → Fallback-Clear in der View zulassen.
+
+        // Kontinuierlich animierte Szene → immer zeichnen.
+        if (scene.NeedsContinuousRender)
+            return true;
+
+        // Statische Szene: nur zeichnen, wenn ein Frame explizit angefordert wurde.
+        var requested = scene.RedrawRequested;
+        scene.ClearRedrawRequest();
+        return requested;
+    }
+
+    /// <summary>
+    /// Setzt einmalige Redraw-Anforderungen von Szene und Overlays zurück (wenn ohnehin gezeichnet wird).
+    /// </summary>
+    private void ConsumeRedrawRequests()
+    {
+        CurrentScene?.ClearRedrawRequest();
+        for (int i = 0; i < _overlays.Count; i++)
+            _overlays[i].ClearRedrawRequest();
     }
 
     /// <summary>

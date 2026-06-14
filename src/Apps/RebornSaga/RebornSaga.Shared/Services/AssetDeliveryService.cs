@@ -234,7 +234,13 @@ public sealed class AssetDeliveryService : IAssetDeliveryService, IDisposable
     /// Lädt ein gecachtes Bild (WebP/PNG) als SKBitmap.
     /// Gibt null zurück wenn die Datei nicht existiert oder nicht gelesen werden kann.
     /// </summary>
-    public SKBitmap? LoadBitmap(string relativePath)
+    /// <param name="relativePath">Pfad des Assets relativ zum Cache-Ordner.</param>
+    /// <param name="maxHeight">
+    /// Obergrenze für die dekodierte Pixelhöhe (Akku/RAM). Sprites, die höher sind als diese
+    /// Grenze, werden beim Dekodieren proportional verkleinert (Seitenverhältnis exakt erhalten,
+    /// nur Downscale — NIE hochskaliert). <c>0</c> = keine Begrenzung (volle Auflösung).
+    /// </param>
+    public SKBitmap? LoadBitmap(string relativePath, int maxHeight = 0)
     {
         var fullPath = GetLocalPath(relativePath);
         if (!File.Exists(fullPath))
@@ -242,13 +248,105 @@ public sealed class AssetDeliveryService : IAssetDeliveryService, IDisposable
 
         try
         {
-            using var stream = File.OpenRead(fullPath);
-            return SKBitmap.Decode(stream);
+            // Ohne Grenze: direkter Decode in voller Auflösung (Rückwärtskompatibilität).
+            if (maxHeight <= 0)
+            {
+                using var fullStream = File.OpenRead(fullPath);
+                return SKBitmap.Decode(fullStream);
+            }
+
+            return DecodeDownsampled(fullPath, maxHeight);
         }
         catch (Exception)
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Dekodiert ein Bild und skaliert es dabei auf höchstens <paramref name="maxHeight"/> Pixel
+    /// Höhe herunter. Zweistufig: SKCodec liefert eine günstige Integer-Downscale-Stufe
+    /// (subsampled decode — spart Speicher und CPU), danach wird bei Bedarf einmalig per
+    /// Linear/Mipmap-Resampling auf die exakte Zielgröße verfeinert. Sprites, die bereits
+    /// kleiner als das Ziel sind, werden unverändert in voller Auflösung dekodiert (kein Upscale).
+    /// </summary>
+    private static SKBitmap? DecodeDownsampled(string fullPath, int maxHeight)
+    {
+        using var stream = File.OpenRead(fullPath);
+        using var codec = SKCodec.Create(stream);
+        if (codec == null)
+            return null;
+
+        var srcInfo = codec.Info;
+        int srcW = srcInfo.Width, srcH = srcInfo.Height;
+
+        // Bereits klein genug → unverändert in voller Auflösung dekodieren (NIE hochskalieren).
+        if (srcH <= maxHeight || srcH <= 0)
+            return DecodeFull(codec, srcInfo);
+
+        // Exakte Zielgröße (Seitenverhältnis erhalten, mindestens 1px).
+        var ratio = (float)maxHeight / srcH;
+        int targetW = Math.Max(1, (int)MathF.Round(srcW * ratio));
+        int targetH = Math.Max(1, maxHeight);
+
+        // Günstige Codec-Downscale-Stufe ermitteln (subsampled decode spart Speicher + CPU).
+        var scaledSize = codec.GetScaledDimensions(ratio);
+
+        // Die Decode-Stufe darf NICHT unter die Zielhöhe fallen (Leitplanke: lieber zu wenig
+        // downsamplen als weiche Sprites). Liefert der Codec eine zu kleine oder ungültige Stufe,
+        // wird voll dekodiert und exakt auf die Zielgröße herunterskaliert (beste Qualität).
+        SKBitmap decoded;
+        if (scaledSize.Width <= 0 || scaledSize.Height < targetH)
+        {
+            var full = DecodeFull(codec, srcInfo);
+            if (full == null)
+                return null;
+            decoded = full;
+        }
+        else
+        {
+            var decodeInfo = srcInfo.WithSize(scaledSize.Width, scaledSize.Height);
+            decoded = new SKBitmap(decodeInfo);
+            var result = codec.GetPixels(decodeInfo, decoded.GetPixels());
+
+            // GetPixels kann InvalidScale liefern, wenn der Codec die Stufe doch nicht unterstützt.
+            if (result != SKCodecResult.Success && result != SKCodecResult.IncompleteInput)
+            {
+                decoded.Dispose();
+                var full = DecodeFull(codec, srcInfo);
+                if (full == null)
+                    return null;
+                decoded = full;
+            }
+        }
+
+        // Schon auf Zielhöhe (oder darunter ist hier ausgeschlossen)? Dann kein Resample nötig.
+        if (decoded.Height <= targetH)
+            return decoded;
+
+        // Feinskalierung auf die exakte Zielgröße (qualitativ hochwertiges Linear/Mipmap-Sampling).
+        var sampling = new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear);
+        var resized = decoded.Resize(new SKImageInfo(targetW, targetH), sampling);
+
+        // Resize kann null liefern (z.B. zu wenig Speicher) → dann die größere Stufe behalten.
+        if (resized == null)
+            return decoded;
+
+        decoded.Dispose();
+        return resized;
+    }
+
+    /// <summary>Dekodiert das gesamte Bild in voller Auflösung aus einem bereits erstellten Codec.</summary>
+    private static SKBitmap? DecodeFull(SKCodec codec, SKImageInfo info)
+    {
+        var bitmap = new SKBitmap(info);
+        var result = codec.GetPixels(info, bitmap.GetPixels());
+        if (result != SKCodecResult.Success && result != SKCodecResult.IncompleteInput)
+        {
+            bitmap.Dispose();
+            return null;
+        }
+        return bitmap;
     }
 
     /// <summary>

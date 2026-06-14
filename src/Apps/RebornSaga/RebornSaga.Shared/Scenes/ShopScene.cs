@@ -17,6 +17,11 @@ using System.Linq;
 /// </summary>
 public class ShopScene : Scene
 {
+    // Reine Kauf-/Verkauf-Liste ohne kontinuierliche Animation (kein _time, keine Partikel,
+    // keine Pulse/Tweens) → Bedarfs-Rendering. Tab-/Selektion-/Kauf-/Gold-Änderungen lösen
+    // RequestRedraw() aus.
+    public override bool NeedsContinuousRender => false;
+
     private readonly InventoryService _inventory;
     private readonly GoldService _goldService;
     private readonly Player _player;
@@ -123,6 +128,7 @@ public class ShopScene : Scene
         // Detail- und Preis-Caches invalidieren bei Refresh
         _lastDetailItemId = null;
         Array.Clear(_lastPrices);
+        RequestRedraw(); // Sichtbare Änderung (Tab/Kauf/Verkauf) → einen Frame nachzeichnen
     }
 
     public override void Update(float deltaTime)
@@ -131,6 +137,7 @@ public class ShopScene : Scene
         {
             _lastGold = _player.Gold;
             _cachedGoldText = $"Gold: {_player.Gold:N0}";
+            RequestRedraw(); // Gold sichtbar geändert → einen Frame nachzeichnen
         }
     }
 
@@ -339,6 +346,7 @@ public class ShopScene : Scene
             if (UIRenderer.HitTest(_itemRects[i], position))
             {
                 _selectedIndex = i + _scrollOffset;
+                RequestRedraw(); // Auswahl-Highlight + Detail-Panel ändern sich
                 return;
             }
         }

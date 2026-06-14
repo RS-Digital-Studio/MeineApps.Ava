@@ -15,6 +15,11 @@ using System.Collections.Generic;
 /// </summary>
 public class CodexScene : Scene
 {
+    // Reine Listen-/Detail-Ansicht ohne kontinuierliche Animation (das _time-Feld wird im
+    // Render nicht verwendet) → Bedarfs-Rendering. Kategorie-/Eintrag-/Scroll-/Hover-Änderungen
+    // lösen RequestRedraw() aus.
+    public override bool NeedsContinuousRender => false;
+
     private readonly CodexService _codexService;
     private readonly ILocalizationService _localization;
     private float _time;
@@ -92,6 +97,7 @@ public class CodexScene : Scene
             _currentEntries = _codexService.GetUnlockedEntries();
         _scrollOffset = 0;
         _selectedEntry = -1;
+        RequestRedraw(); // Sichtbarer Wechsel (Kategorie/Eintrag) → einen Frame nachzeichnen
     }
 
     private void UpdateProgressText()
@@ -248,15 +254,18 @@ public class CodexScene : Scene
 
     public override void HandlePointerMove(SKPoint position)
     {
+        var previousHover = _hoveredEntry;
         _hoveredEntry = -1;
         for (int i = 0; i < _visibleEntryCount; i++)
         {
             if (UIRenderer.HitTest(_entryRects[i], position))
             {
                 _hoveredEntry = i;
-                return;
+                break;
             }
         }
+        if (_hoveredEntry != previousHover)
+            RequestRedraw(); // Hover-Highlight hat sich geändert
     }
 
     public override void HandleInput(InputAction action, SKPoint position)
@@ -268,7 +277,10 @@ public class CodexScene : Scene
                 if (UIRenderer.HitTest(_backButtonRect, position))
                 {
                     if (_selectedEntry >= 0)
+                    {
                         _selectedEntry = -1; // Zurück zur Liste
+                        RequestRedraw();
+                    }
                     else
                         SceneManager.PopScene();
                     return;
@@ -280,7 +292,7 @@ public class CodexScene : Scene
                     if (UIRenderer.HitTest(_categoryRects[i], position))
                     {
                         _selectedCategory = i;
-                        RefreshEntries();
+                        RefreshEntries(); // ruft RequestRedraw()
                         return;
                     }
                 }
@@ -291,6 +303,7 @@ public class CodexScene : Scene
                     if (UIRenderer.HitTest(_entryRects[i], position))
                     {
                         _selectedEntry = _scrollOffset + i;
+                        RequestRedraw(); // Detail-Ansicht öffnet sich
                         return;
                     }
                 }
@@ -298,19 +311,28 @@ public class CodexScene : Scene
 
             case InputAction.Back:
                 if (_selectedEntry >= 0)
+                {
                     _selectedEntry = -1;
+                    RequestRedraw();
+                }
                 else
                     SceneManager.PopScene();
                 break;
 
             case InputAction.SwipeUp:
                 if (_scrollOffset + _visibleEntryCount < _currentEntries.Count)
+                {
                     _scrollOffset++;
+                    RequestRedraw(); // Liste scrollt
+                }
                 break;
 
             case InputAction.SwipeDown:
                 if (_scrollOffset > 0)
+                {
                     _scrollOffset--;
+                    RequestRedraw(); // Liste scrollt
+                }
                 break;
         }
     }

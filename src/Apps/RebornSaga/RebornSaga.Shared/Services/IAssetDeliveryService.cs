@@ -24,8 +24,12 @@ public interface IAssetDeliveryService
     /// <summary>Lädt alle ausstehenden Assets herunter mit Fortschritts-Reporting.</summary>
     Task<bool> DownloadAssetsAsync(IProgress<AssetDownloadProgress> progress, CancellationToken ct = default);
 
-    /// <summary>Lädt ein gecachtes Bild (WebP/PNG) als SKBitmap.</summary>
-    SKBitmap? LoadBitmap(string relativePath);
+    /// <summary>
+    /// Lädt ein gecachtes Bild (WebP/PNG) als SKBitmap.
+    /// <paramref name="maxHeight"/> &gt; 0 begrenzt die dekodierte Pixelhöhe (proportionaler
+    /// Downscale beim Dekodieren, Seitenverhältnis erhalten, nie hochskaliert); 0 = volle Auflösung.
+    /// </summary>
+    SKBitmap? LoadBitmap(string relativePath, int maxHeight = 0);
 
     /// <summary>Gibt einen FileStream auf ein gecachtes Asset zurück.</summary>
     Stream? GetAssetStream(string relativePath);

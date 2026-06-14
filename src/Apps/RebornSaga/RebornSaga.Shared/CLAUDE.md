@@ -53,7 +53,7 @@ Einziger Ort, an dem Services + ViewModels verdrahtet werden (kein Service-Locat
 | Ordner | Inhalt | Doku |
 |--------|--------|------|
 | `ViewModels/` | MainViewModel — Render/Update/Input-Delegation, Back-Press-Flow | [ViewModels/CLAUDE.md](ViewModels/CLAUDE.md) |
-| `Views/` | MainView (SKCanvasView, 60fps Game-Loop, DPI-skalierte Touch-Koordinaten) | [Views/CLAUDE.md](Views/CLAUDE.md) |
+| `Views/` | MainView (SKCanvasView, ~30fps Game-Loop + Bedarfs-Rendering, DPI-skalierte Touch-Koordinaten) | [Views/CLAUDE.md](Views/CLAUDE.md) |
 | `Engine/` | Scene-Basisklasse, SceneManager (Stack + Overlays + Transitions), InputManager, Camera | [Engine/CLAUDE.md](Engine/CLAUDE.md) |
 | `Scenes/` | 12 konkrete Szenen (Title, Battle, Dialogue, Overworld, …) | [Scenes/CLAUDE.md](Scenes/CLAUDE.md) |
 | `Overlays/` | 10 Overlays (Pause, StatusWindow, LevelUp, GameOver, …) | [Overlays/CLAUDE.md](Overlays/CLAUDE.md) |

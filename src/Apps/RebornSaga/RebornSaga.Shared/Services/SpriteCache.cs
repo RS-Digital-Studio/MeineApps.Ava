@@ -26,6 +26,55 @@ public sealed class SpriteCache : IDisposable
     /// </summary>
     public const long MaxCacheSizeBytes = 80 * 1024 * 1024;
 
+    /// <summary>
+    /// Konservative Obergrenze für die dekodierte Sprite-Höhe, falls die echte Display-Höhe
+    /// (noch) nicht gesetzt wurde. 1920px deckt gängige Portrait-Mid-Tier-Displays großzügig ab
+    /// und liegt über der Original-Sprite-Höhe (1824) → ohne gesetzte Display-Höhe wird NICHT
+    /// herunterskaliert (sicherer Default, keine sichtbare Qualitätsverschlechterung).
+    /// </summary>
+    public const int DefaultMaxSpriteHeight = 1920;
+
+    /// <summary>
+    /// Ziel-Höhe (Pixel), auf die Sprites beim Dekodieren maximal verkleinert werden.
+    /// Wird von <see cref="MainView"/> aus der tatsächlichen Display-Pixelhöhe gesetzt
+    /// (Portrait), damit Sprites nie größer dekodiert werden als sie je dargestellt werden.
+    /// Konservativ nach unten begrenzt, damit ein fehlerhaft kleiner Wert keine weichen
+    /// Sprites erzeugt. Wirkt nur auf künftige Cache-Misses (bereits geladene Bitmaps bleiben).
+    /// </summary>
+    public static int MaxSpriteHeight { get; private set; } = DefaultMaxSpriteHeight;
+
+    /// <summary>
+    /// Untergrenze für <see cref="MaxSpriteHeight"/>: Selbst auf kleinen Displays werden Sprites
+    /// nicht unter diese Höhe dekodiert (Leitplanke gegen sichtbar weiche Charaktere).
+    /// </summary>
+    private const int MinAllowedSpriteHeight = 1280;
+
+    /// <summary>
+    /// Setzt die Ziel-Sprite-Höhe aus der echten Display-Pixelhöhe (von der View aufgerufen).
+    /// Greift nur, wenn der Wert plausibel ist; clampt gegen eine konservative Untergrenze
+    /// und die Original-Sprite-Höhe als Obergrenze (NIE über die Quelle hinaus → kein Upscale).
+    /// </summary>
+    public static void SetTargetDisplayHeight(int displayPixelHeight)
+    {
+        if (displayPixelHeight <= 0)
+            return;
+
+        // Nie über die Original-Auflösung hinaus (Upscale wäre sinnlos und kostet RAM),
+        // nie unter die Untergrenze (Schärfe-Schutz).
+        var clamped = Math.Clamp(displayPixelHeight, MinAllowedSpriteHeight, DefaultMaxSpriteHeight);
+        MaxSpriteHeight = clamped;
+    }
+
+    /// <summary>
+    /// Referenz-Pixelmaße der Charakter-Sprites nach Pipeline-Resize (1248×1824). Die
+    /// content-aware Skalierung im CharacterRenderer ist auf diesen Raum normiert. Wenn ein
+    /// Charakter-Sprite beim Dekodieren herunterskaliert wird, werden seine Content-Bounds auf
+    /// genau diesen Raum zurückgerechnet, damit die gesamte Positionierungs-Logik unverändert
+    /// weiterläuft (siehe ComputeContentBounds + GetSpriteContentBounds-Fallback).
+    /// </summary>
+    private const int CharacterReferenceWidth = 1248;
+    private const int CharacterReferenceHeight = 1824;
+
     private long _currentCacheSize;
 
     private readonly IAssetDeliveryService _assets;
@@ -131,8 +180,8 @@ public sealed class SpriteCache : IDisposable
             if (_contentBounds.TryGetValue(path, out var bounds))
                 return bounds;
         }
-        // Fallback: Gesamtes Sprite (wenn noch nicht geladen)
-        return new SKRectI(0, 0, 1248, 1824);
+        // Fallback: Gesamtes Sprite im Referenzraum (wenn noch nicht geladen)
+        return new SKRectI(0, 0, CharacterReferenceWidth, CharacterReferenceHeight);
     }
 
     /// <summary>
@@ -185,7 +234,9 @@ public sealed class SpriteCache : IDisposable
         if (!_assets.HasAsset(relativePath))
             return null;
 
-        var bitmap = _assets.LoadBitmap(relativePath);
+        // Beim Dekodieren auf die Ziel-Display-Höhe herunterskalieren (Akku/RAM).
+        // Sprites, die kleiner als das Ziel sind, bleiben unverändert (kein Upscale).
+        var bitmap = _assets.LoadBitmap(relativePath, MaxSpriteHeight);
         if (bitmap == null) return null;
 
         lock (_syncRoot)
@@ -217,9 +268,13 @@ public sealed class SpriteCache : IDisposable
                 }
             }
 
-            // Content-Bounds berechnen (einmal pro Sprite, für content-aware Rendering)
+            // Content-Bounds berechnen (einmal pro Sprite, für content-aware Rendering).
+            // Charakter-Sprites: Bounds auf den festen Referenzraum (1248×1824) zurückrechnen,
+            // falls das Bitmap beim Dekodieren verkleinert wurde — die Positionierungs-Logik
+            // im CharacterRenderer rechnet gegen diese Referenz und bleibt so unverändert.
             if (!_contentBounds.ContainsKey(relativePath))
-                _contentBounds[relativePath] = ComputeContentBounds(bitmap);
+                _contentBounds[relativePath] =
+                    ComputeContentBounds(bitmap, IsCharacterSpritePath(relativePath));
 
             // Neuen Eintrag hinzufuegen + Cache-Groesse tracken
             _currentCacheSize += bitmapSize;
@@ -230,12 +285,26 @@ public sealed class SpriteCache : IDisposable
     }
 
     /// <summary>
+    /// Prüft, ob ein Asset-Pfad zu einem Charakter-Sprite gehört (Referenzraum 1248×1824).
+    /// Nur diese Sprites werden über die content-aware Skalierung des CharacterRenderers
+    /// positioniert und brauchen daher die Bounds-Rückrechnung nach einem Decode-Downscale.
+    /// </summary>
+    private static bool IsCharacterSpritePath(string relativePath)
+        => relativePath.StartsWith("characters/", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Berechnet die Bounding Box des nicht-transparenten Bereichs (Content-Bounds).
     /// Sampling mit Schritt 4 für Performance (~142K statt 2.3M Pixel bei 1248x1824).
     /// Verwendet PeekPixels() für direkten Speicherzugriff (kein JNI-Overhead pro Pixel).
     /// Wird einmal pro Sprite beim ersten Load aufgerufen und gecacht.
     /// </summary>
-    private static SKRectI ComputeContentBounds(SKBitmap bitmap)
+    /// <param name="bitmap">Das (ggf. bereits herunterskalierte) Sprite-Bitmap.</param>
+    /// <param name="normalizeToCharacterReference">
+    /// Wenn true, werden die im Bitmap-Pixelraum gefundenen Bounds proportional auf den
+    /// Charakter-Referenzraum (1248×1824) hochgerechnet, damit Decode-Downsampling für die
+    /// nachgelagerte Positionierungs-Logik transparent bleibt.
+    /// </param>
+    private static SKRectI ComputeContentBounds(SKBitmap bitmap, bool normalizeToCharacterReference)
     {
         int w = bitmap.Width, h = bitmap.Height;
         int minX = w, minY = h, maxX = -1, maxY = -1;
@@ -277,14 +346,36 @@ public sealed class SpriteCache : IDisposable
             }
         }
 
-        // Kein Content gefunden → Fallback auf gesamtes Bitmap
-        if (maxX < 0) return new SKRectI(0, 0, w, h);
+        // Kein Content gefunden → Fallback auf gesamtes Bitmap (bzw. Referenzraum bei Charakteren)
+        if (maxX < 0)
+        {
+            return normalizeToCharacterReference
+                ? new SKRectI(0, 0, CharacterReferenceWidth, CharacterReferenceHeight)
+                : new SKRectI(0, 0, w, h);
+        }
 
         // Margin für Sampling-Lücken (step Pixel in jede Richtung)
-        return new SKRectI(
+        var bounds = new SKRectI(
             Math.Max(0, minX - step),
             Math.Max(0, minY - step),
             Math.Min(w, maxX + step + 1),
             Math.Min(h, maxY + step + 1));
+
+        // Charakter-Sprites: Bounds vom (ggf. verkleinerten) Bitmap-Raum auf den festen
+        // Referenzraum (1248×1824) hochrechnen, damit der CharacterRenderer unverändert rechnet.
+        if (normalizeToCharacterReference &&
+            (w != CharacterReferenceWidth || h != CharacterReferenceHeight) &&
+            w > 0 && h > 0)
+        {
+            float sx = (float)CharacterReferenceWidth / w;
+            float sy = (float)CharacterReferenceHeight / h;
+            bounds = new SKRectI(
+                (int)MathF.Floor(bounds.Left * sx),
+                (int)MathF.Floor(bounds.Top * sy),
+                Math.Min(CharacterReferenceWidth, (int)MathF.Ceiling(bounds.Right * sx)),
+                Math.Min(CharacterReferenceHeight, (int)MathF.Ceiling(bounds.Bottom * sy)));
+        }
+
+        return bounds;
     }
 }

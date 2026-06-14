@@ -28,6 +28,15 @@ public static class SpriteCharacterRenderer
     // --- Gepoolte SKPaint-Instanzen ---
     private static readonly SKPaint _spritePaint = new() { IsAntialias = true };
 
+    // --- Sprite-Referenz-Auflösung (Pipeline-Resize-Größe) ---
+    // Die Charakter-Skalierung aller Aufrufer (CharacterRenderer, RenderSpeakerInPanel) ist auf
+    // diese feste Referenz normiert. Das Ziel-Rect wird daher aus der Referenzgröße × scale
+    // berechnet, NICHT aus der echten Bitmap-Pixelgröße — so bleibt die Darstellung identisch,
+    // auch wenn der SpriteCache das Sprite beim Dekodieren herunterskaliert hat (verlustfrei:
+    // SKCanvas.DrawBitmap skaliert die kleinere Quelle in dasselbe Ziel-Rect).
+    private const float SpriteReferenceWidth = 1248f;
+    private const float SpriteReferenceHeight = 1824f;
+
     // --- Blinzel-Konstanten ---
     private const float BlinkDuration = 0.15f;
     private const float BlinkIntervalMin = 4.0f;
@@ -208,11 +217,14 @@ public static class SpriteCharacterRenderer
 
     /// <summary>
     /// Berechnet das Ziel-Rect für ein Sprite, zentriert auf (cx, cy).
+    /// Basiert auf der FESTEN Referenz-Auflösung (nicht der echten Bitmap-Pixelgröße), damit die
+    /// dargestellte Größe unabhängig von einem etwaigen Decode-Downsampling exakt gleich bleibt.
+    /// Das übergebene Bitmap dient nur als Quelle — DrawBitmap skaliert es in dieses Rect.
     /// </summary>
     private static SKRect CalculateDestRect(SKBitmap bitmap, float cx, float cy, float scale)
     {
-        var destW = bitmap.Width * scale;
-        var destH = bitmap.Height * scale;
+        var destW = SpriteReferenceWidth * scale;
+        var destH = SpriteReferenceHeight * scale;
         return new SKRect(
             cx - destW * 0.5f,
             cy - destH * 0.5f,

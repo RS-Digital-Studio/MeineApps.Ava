@@ -8,12 +8,13 @@ Generische MVVM-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 
 | Datei | Zweck |
 |-------|-------|
-| `MainViewModel.cs` | 60fps Game-Loop-Bridge (Update/Render), Input-Delegation, Back-Press-Flow, `ExitHintRequested`-Event. |
+| `MainViewModel.cs` | ~30fps Game-Loop-Bridge (Update/Render/`ShouldRender`), Input-Delegation, Back-Press-Flow, `ExitHintRequested`-Event. |
 
 ## MainViewModel — Verantwortlichkeiten
 
-`MainViewModel` ist bewusst dünn gehalten. Die View ruft `Update(dt)` und `Render(canvas, bounds)` pro Frame;
-alles andere liegt in `SceneManager` und den konkreten Szenen.
+`MainViewModel` ist bewusst dünn gehalten. Die View ruft `Update(dt)` jeden Tick und
+`Render(canvas, bounds)` nur wenn `ShouldRender()` true liefert (Bedarfs-Rendering → delegiert an
+`SceneManager.ShouldRender()`); alles andere liegt in `SceneManager` und den konkreten Szenen.
 
 ```csharp
 // Konstruktor: Asset-Download-Szene direkt setzen

@@ -28,7 +28,7 @@ RebornSaga.Desktop ┘                       ├─> MeineApps.Core.Premium.Ava 
 ```
 
 Composition-Flow: Host (`AndroidApp` / `Program.cs`) → `App.axaml.cs` (DI-Build, 18 Services +
-`MainViewModel`) → `MainView` (60fps `DispatcherTimer`) → `MainViewModel` (delegiert an
+`MainViewModel`) → `MainView` (~30fps `DispatcherTimer`, Bedarfs-Rendering) → `MainViewModel` (delegiert an
 `SceneManager`) → aktive `Scene` (Update/Render/Input). Details der Verdrahtung →
 [RebornSaga.Shared/CLAUDE.md](RebornSaga.Shared/CLAUDE.md).
 

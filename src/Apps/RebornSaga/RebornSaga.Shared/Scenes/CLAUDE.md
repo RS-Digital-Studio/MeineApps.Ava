@@ -38,6 +38,31 @@ Intro → PlayerTurn → SkillSelect | ItemSelect
 ```
 `BossPhaseChange` — Boss wechselt Phase (Mini-Cutscene, volle HP).
 
+## Bedarfs-Rendering (`NeedsContinuousRender`)
+
+Statische Szenen überschreiben `NeedsContinuousRender => false` und sparen so den Paint, solange
+keine sichtbare Änderung anliegt (Akku). Sie MÜSSEN bei jeder Zustandsänderung `RequestRedraw()`
+rufen. Mechanik → [Engine/CLAUDE.md](../Engine/CLAUDE.md).
+
+| Szene | Wert | Grund |
+|-------|------|-------|
+| `TitleScene` | `true` | Ambient-Partikel (`EmitContinuous`), Fade-In, pulsierender Titel-Glow (`Sin(_time)`). |
+| `AssetDownloadScene` | `true` | Kontinuierlich aufsteigende Ambient-Partikel, Fortschrittsbalken. |
+| `SaveSlotScene` | `true` | Animierter Hintergrund (`RenderBack/Front(_time)` mit ScanLines). |
+| `ClassSelectScene` | `true` | Pulsierender Kartenrand (`Sin(_time)`), Partikel, `systemVoid`-Hintergrund, `DrawFullBody(_time)`. |
+| `DialogueScene` | `true` | Typewriter, Glitch (ARIA), Kamera-Zoom/Shake, animierter Hintergrund, Sprite-Breathing/Blinzeln. |
+| `BattleScene` | `true` | Floating-Damage-Numbers, Flash/Shake, Phasen-Animationen, Sprite-Effekte. |
+| `OverworldScene` | `true` | Ambient-Partikel-Emission, Zoom-Interpolation, animierte Node-Map (`_animTime`). |
+| `InventoryScene` | **`false`** | Reine Grid-/Detail-Liste; kein `_time`, keine Partikel/Pulse. Redraw bei Tab/Selektion/Equip/Use/Gold. |
+| `CodexScene` | **`false`** | Listen-/Detail-Ansicht; `_time` wird im Render nicht genutzt. Redraw bei Kategorie/Eintrag/Scroll/Hover. |
+| `StatusScene` | **`false`** | Status-/Skill-/Equipment-Tabs; kein `_time`. Redraw bei Tab-Wechsel + Stat-Änderung (`UpdateCachedStrings`). |
+| `ShopScene` | **`false`** | Kauf-/Verkauf-Liste; kein `_time`. Redraw bei Tab/Selektion/Kauf/Verkauf/Gold (`RefreshDisplay`). |
+| `SettingsScene` | **`false`** | Formular; `Update` leer. Redraw bei Toggle/Speed/Slider-Drag (Drag braucht Redraw pro Move). |
+
+**Regel:** Im Zweifel `true` lassen. Eine `false`-Szene, die eine sichtbare Änderung ohne
+`RequestRedraw()` macht, friert ein. Overlays öffnen nur continuous Szenen — die `false`-Szenen
+liegen nie unter einem Overlay.
+
 ## Performance-Gotchas
 
 | Szene | Pattern |

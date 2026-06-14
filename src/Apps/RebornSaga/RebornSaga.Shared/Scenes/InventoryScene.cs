@@ -17,6 +17,11 @@ using System.Linq;
 /// </summary>
 public class InventoryScene : Scene
 {
+    // Reine Listen-/Detail-Ansicht ohne kontinuierliche Animation (keine Partikel, kein
+    // zeitabhängiger Hintergrund, keine Pulse/Tweens) → Bedarfs-Rendering. Jede sichtbare
+    // Zustandsänderung (Tab, Selektion, Equip/Use, Gold) ruft RequestRedraw().
+    public override bool NeedsContinuousRender => false;
+
     private readonly InventoryService _inventory;
     private readonly Player _player;
     private readonly SpriteCache? _spriteCache;
@@ -121,7 +126,7 @@ public class InventoryScene : Scene
 
     public override void OnEnter()
     {
-        RefreshItemList();
+        RefreshItemList(); // ruft RequestRedraw() → ersten Frame erzwingen (statische Szene)
     }
 
     private void RefreshItemList()
@@ -136,6 +141,7 @@ public class InventoryScene : Scene
         // Detail- und Listen-Caches invalidieren bei Refresh
         _lastDetailItemId = null;
         Array.Clear(_lastItemIds);
+        RequestRedraw(); // Sichtbare Änderung (Tab/Equip/Use) → einen Frame nachzeichnen
     }
 
     public override void Update(float deltaTime)
@@ -145,6 +151,7 @@ public class InventoryScene : Scene
         {
             _lastGold = _player.Gold;
             _cachedGoldText = $"Gold: {_player.Gold:N0}";
+            RequestRedraw(); // Gold sichtbar geändert → einen Frame nachzeichnen
         }
     }
 
@@ -405,6 +412,7 @@ public class InventoryScene : Scene
             if (UIRenderer.HitTest(_itemRects[i], position))
             {
                 _selectedItemIndex = i + _scrollOffset;
+                RequestRedraw(); // Auswahl-Highlight + Detail-Panel ändern sich
                 return;
             }
         }

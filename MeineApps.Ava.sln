@@ -177,6 +177,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppChecker", "tools\AppChec
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoreAssetGenerator", "tools\StoreAssetGenerator\StoreAssetGenerator.csproj", "{F7DD8F03-EFE3-4C2D-84F7-E8C1F2084E55}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GardenControl.Tests", "tests\GardenControl.Tests\GardenControl.Tests.csproj", "{38055384-615C-49E5-ADA3-6541D32EC539}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1031,6 +1033,18 @@ Global
 		{F7DD8F03-EFE3-4C2D-84F7-E8C1F2084E55}.Release|x64.Build.0 = Release|Any CPU
 		{F7DD8F03-EFE3-4C2D-84F7-E8C1F2084E55}.Release|x86.ActiveCfg = Release|Any CPU
 		{F7DD8F03-EFE3-4C2D-84F7-E8C1F2084E55}.Release|x86.Build.0 = Release|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Debug|x64.Build.0 = Debug|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Debug|x86.Build.0 = Debug|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Release|x64.ActiveCfg = Release|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Release|x64.Build.0 = Release|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Release|x86.ActiveCfg = Release|Any CPU
+		{38055384-615C-49E5-ADA3-6541D32EC539}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1118,6 +1132,7 @@ Global
 		{89BC99E3-69F4-443B-AA8B-64F3F3D16EDC} = {EC4E6CB9-D1A1-6E81-2CD9-36C39FBF9348}
 		{F8AC11C1-E65E-4580-AE75-401D88EB2ED5} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 		{F7DD8F03-EFE3-4C2D-84F7-E8C1F2084E55} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
+		{38055384-615C-49E5-ADA3-6541D32EC539} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EAAEA93B-578B-49A5-AAF0-F6B6A6D6CD31}

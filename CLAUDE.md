@@ -144,7 +144,7 @@ protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e
 
 ### Testbarkeit
 
-`tests/` enthält **13 Test-Projekte** — eines je App plus `MeineApps.CalcLib.Tests`. Stack:
+`tests/` enthält **14 Test-Projekte** — eines je App plus `MeineApps.CalcLib.Tests`. Stack:
 **xUnit v3** + NSubstitute (Mocks) + FluentAssertions + coverlet (Coverage). UI-nahe Tests
 laufen headless über `Avalonia.Headless` + `Avalonia.Headless.XUnit` (z.B. HandwerkerImperium,
 BomberBlast, RechnerPlus).
@@ -214,7 +214,7 @@ F:\Meine_Apps_Ava\
 │   ├── SoundForge/                      # Python — Audio-Generierung (+ lufs-mastering.sh)
 │   └── screenshot-mcp/                  # MCP-Server für Screenshots
 │
-└── tests/                               # xUnit v3 — 13 Projekte (je App + MeineApps.CalcLib)
+└── tests/                               # xUnit v3 — 14 Projekte (je App + MeineApps.CalcLib)
 ```
 
 ---

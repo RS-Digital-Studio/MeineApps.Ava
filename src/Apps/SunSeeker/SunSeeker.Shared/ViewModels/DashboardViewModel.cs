@@ -13,8 +13,12 @@ namespace SunSeeker.Shared.ViewModels;
 /// <summary>
 /// Übersichts-Tab: zeigt live Standort, Sonnenstand, Sonnenzeiten, die empfohlene
 /// Soll-Ausrichtung je Ziel/Panel und die Bifazial-Empfehlung je Untergrund.
+///
+/// Der Sekunden-Timer wird nur bei aktivem Tab betrieben (<see cref="Activate"/>/<see cref="Deactivate"/>)
+/// — spart Akku, wenn ein anderer Tab sichtbar ist. <see cref="Dispose"/> stoppt den Timer und meldet
+/// das LocationChanged-Abo ab. Analog zu <see cref="AlignViewModel"/>/<see cref="LivePowerViewModel"/>.
 /// </summary>
-public partial class DashboardViewModel : ObservableObject
+public partial class DashboardViewModel : ObservableObject, IDisposable
 {
     private static readonly string[] CompassPoints =
         ["N", "NNO", "NO", "ONO", "O", "OSO", "SO", "SSO", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
@@ -27,6 +31,7 @@ public partial class DashboardViewModel : ObservableObject
 
     private DispatcherTimer? _timer;
     private bool _initialized;
+    private bool _active;
     private DateOnly _dayArcDate;
 
     /// <summary>Wird vom Code-Behind abonniert, um das Sonnenbahn-Diagramm neu zu zeichnen.</summary>
@@ -108,22 +113,42 @@ public partial class DashboardViewModel : ObservableObject
         if (_location.Current is { } l)
             LocationText = FormatLocation(l);
 
-        _location.LocationChanged += (_, newLoc) =>
-            Dispatcher.UIThread.Post(() =>
-            {
-                LocationText = FormatLocation(newLoc);
-                _dayArcDate = default; // Sonnenbahn für den neuen Standort neu berechnen
-                Refresh();
-            });
+        _location.LocationChanged += OnLocationChanged;
 
         _initialized = true;
+        Refresh();
+
+        return Task.CompletedTask;
+    }
+
+    private void OnLocationChanged(object? sender, GeoLocation newLoc)
+        => Dispatcher.UIThread.Post(() =>
+        {
+            LocationText = FormatLocation(newLoc);
+            _dayArcDate = default; // Sonnenbahn für den neuen Standort neu berechnen
+            Refresh();
+        });
+
+    /// <summary>Tab wird sichtbar: Sekunden-Timer für die Live-Aktualisierung starten.</summary>
+    public void Activate()
+    {
+        if (_active) return;
+        _active = true;
+
         Refresh();
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _timer.Tick += (_, _) => Refresh();
         _timer.Start();
+    }
 
-        return Task.CompletedTask;
+    /// <summary>Tab wird verlassen: Sekunden-Timer stoppen (Akku sparen).</summary>
+    public void Deactivate()
+    {
+        if (!_active) return;
+        _active = false;
+        _timer?.Stop();
+        _timer = null;
     }
 
     partial void OnSelectedPanelChanged(PanelProfile value) => Refresh();
@@ -228,6 +253,13 @@ public partial class DashboardViewModel : ObservableObject
     {
         var idx = (int)Math.Round(SunMath.Normalize360(azimuth) / 22.5) % 16;
         return CompassPoints[idx];
+    }
+
+    public void Dispose()
+    {
+        Deactivate();
+        _location.LocationChanged -= OnLocationChanged;
+        SunPathRenderer.Dispose();
     }
 }
 

@@ -94,4 +94,10 @@ public partial class MainViewModel : ObservableObject
         if (value) Power.Activate();
         else Power.Deactivate();
     }
+
+    partial void OnIsDashboardActiveChanged(bool value)
+    {
+        if (value) Dashboard.Activate();
+        else Dashboard.Deactivate();
+    }
 }

@@ -160,6 +160,10 @@ public partial class App : Application
         services.AddSingleton<ILocalizationService>(sp =>
             new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));
 
+        // App-Lifecycle-Broker: Android speist NotifyPaused/Resumed; Konsumenten stoppen
+        // Render-Loops im Hintergrund (Akku).
+        services.AddSingleton<IAppLifecycleService, AppLifecycleService>();
+
         // App-Services
         services.AddSingleton<IFileDialogService, FileDialogService>();
         // Plattformspezifisch: Android setzt Factory, Desktop nutzt Default

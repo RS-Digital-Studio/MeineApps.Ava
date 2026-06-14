@@ -24,6 +24,7 @@ public class MainActivity : AvaloniaMainActivity
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
     private MainViewModel? _mainVm;
+    private IAppLifecycleService? _lifecycle;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -53,6 +54,9 @@ public class MainActivity : AvaloniaMainActivity
                 RunOnUiThread(() =>
                     Toast.MakeText(this, msg, ToastLength.Short)?.Show());
         }
+
+        // App-Lifecycle-Broker fuer Akku-Optimierung (Render-Loops im Hintergrund stoppen).
+        _lifecycle = App.Services.GetService<IAppLifecycleService>();
 
         // Google Mobile Ads initialisieren - Ads erst nach SDK-Callback laden
         AdMobHelper.Initialize(this, () =>
@@ -86,12 +90,14 @@ public class MainActivity : AvaloniaMainActivity
     protected override void OnResume()
     {
         base.OnResume();
+        _lifecycle?.NotifyResumed();
         _adMobHelper?.Resume();
         EnableImmersiveMode();
     }
 
     protected override void OnPause()
     {
+        _lifecycle?.NotifyPaused();
         _adMobHelper?.Pause();
         base.OnPause();
     }

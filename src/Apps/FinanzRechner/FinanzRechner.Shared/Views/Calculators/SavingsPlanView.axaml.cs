@@ -38,6 +38,7 @@ public partial class SavingsPlanView : UserControl
         {
             _vm = vm;
             _vm.PropertyChanged += OnVmPropertyChanged;
+            UpdateHeaderTimerState();
         }
     }
 
@@ -51,17 +52,35 @@ public partial class SavingsPlanView : UserControl
             case nameof(_vm.HasResult):
                 StackedAreaCanvas?.InvalidateSurface();
                 break;
+            case nameof(_vm.IsHeaderActive):
+                UpdateHeaderTimerState();
+                break;
         }
     }
 
     private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        StartHeaderTimer();
+        UpdateHeaderTimerState();
     }
 
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
         StopHeaderTimer();
+    }
+
+    /// <summary>
+    /// Koppelt den 60fps-Header-Timer an <see cref="SavingsPlanViewModel.IsHeaderActive"/>:
+    /// Er läuft nur, wenn genau dieser Rechner offen, sichtbar und die App im Vordergrund ist.
+    /// Analog zum HomeView-IsHomeActive-Muster — sonst tickten alle 6 Rechner-Header parallel
+    /// (Avalonia 12 detacht IsVisible=False-Elemente nicht aus dem Visual Tree).
+    /// </summary>
+    private void UpdateHeaderTimerState()
+    {
+        var shouldRun = _vm?.IsHeaderActive == true;
+        if (shouldRun && _headerTimer == null)
+            StartHeaderTimer();
+        else if (!shouldRun && _headerTimer != null)
+            StopHeaderTimer();
     }
 
     private void StartHeaderTimer()

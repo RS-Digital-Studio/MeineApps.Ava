@@ -28,6 +28,12 @@ public sealed partial class YieldViewModel : ViewModelBase, IDisposable
 
     public Action? GoBackAction { get; set; }
 
+    /// <summary>True nur wenn dieser Rechner offen, sichtbar und die App im Vordergrund ist —
+    /// gesetzt vom <c>MainViewModel</c>. Die View koppelt ihren 60fps-Header-Render-Loop daran
+    /// (kein Rendering im Hintergrund / auf inaktiven Tabs, Akku).</summary>
+    [ObservableProperty]
+    private bool _isHeaderActive;
+
     #region Localized Text Properties
 
     public string TitleText => _localizationService.GetString("CalcYield") ?? "Yield";

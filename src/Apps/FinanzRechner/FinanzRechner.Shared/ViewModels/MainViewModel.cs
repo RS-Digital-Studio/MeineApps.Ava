@@ -20,6 +20,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _localizationService;
     private readonly IExpenseService _expenseService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IAppLifecycleService _lifecycle;
+
+    /// <summary>True solange die App im Vordergrund ist. Steuert zusammen mit dem geöffneten
+    /// Rechner, ob dessen 60fps-Header-Render-Loop laufen darf (Akku im Hintergrund).</summary>
+    private bool _isAppForeground = true;
 
     [ObservableProperty]
     private bool _isAdBannerVisible;
@@ -32,6 +37,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// Wird ausgelöst um einen Hinweis anzuzeigen (z.B. Toast "Nochmal drücken zum Beenden").
     /// </summary>
     public event Action<string>? ExitHintRequested;
+
+    /// <summary>App-Pause/Resume (Android-Lifecycle). Die MainView stoppt darüber ihren
+    /// animierten Hintergrund-Render-Timer, wenn die App in den Hintergrund geht (Akku).</summary>
+    public event Action<bool>? PauseStateChanged;
 
     public ExpenseTrackerViewModel ExpenseTrackerViewModel { get; }
     public StatisticsViewModel StatisticsViewModel { get; }
@@ -85,7 +94,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         LoanViewModel loanViewModel,
         AmortizationViewModel amortizationViewModel,
         YieldViewModel yieldViewModel,
-        InflationViewModel inflationViewModel)
+        InflationViewModel inflationViewModel,
+        IAppLifecycleService lifecycle)
     {
         _purchaseService = purchaseService;
         _adService = adService;
@@ -93,7 +103,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _expenseService = expenseService;
         _rewardedAdService = rewardedAdService;
         _financialAnalysisService = financialAnalysisService;
+        _lifecycle = lifecycle;
         _rewardedAdService.AdUnavailable += OnAdUnavailable;
+
+        // App-Pause/Resume: Render-Loops gaten (MainView-Hintergrund + offener Rechner-Header).
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
 
         IsAdBannerVisible = _adService.BannerVisible;
         _adService.AdsStateChanged += OnAdsStateChanged;
@@ -396,6 +411,27 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(IsAmortizationActive));
         OnPropertyChanged(nameof(IsYieldActive));
         OnPropertyChanged(nameof(IsInflationActive));
+        UpdateCalculatorHeaderStates();
+    }
+
+    partial void OnIsCalculatorOpenChanged(bool value) => UpdateCalculatorHeaderStates();
+
+    /// <summary>
+    /// Setzt das <c>IsHeaderActive</c>-Flag jedes Rechner-VMs: nur der gerade geöffnete und
+    /// sichtbare Rechner darf bei App-Vordergrund seinen 60fps-Header-Render-Loop laufen lassen.
+    /// Damit ticken nicht alle 6 parallel im selben Overlay-Panel (Avalonia 12 entfernt
+    /// <c>IsVisible=False</c>-Elemente nicht aus dem Visual Tree → sonst liefen alle Header-Timer
+    /// gleichzeitig, auch auf Tracker-/Statistik-Tab). Gegenstück zum HomeView-IsHomeActive-Muster.
+    /// </summary>
+    private void UpdateCalculatorHeaderStates()
+    {
+        bool open = IsCalculatorOpen && _isAppForeground;
+        CompoundInterestViewModel.IsHeaderActive = open && ActiveCalculatorIndex == 0;
+        SavingsPlanViewModel.IsHeaderActive = open && ActiveCalculatorIndex == 1;
+        LoanViewModel.IsHeaderActive = open && ActiveCalculatorIndex == 2;
+        AmortizationViewModel.IsHeaderActive = open && ActiveCalculatorIndex == 3;
+        YieldViewModel.IsHeaderActive = open && ActiveCalculatorIndex == 4;
+        InflationViewModel.IsHeaderActive = open && ActiveCalculatorIndex == 5;
     }
 
     [RelayCommand]
@@ -618,6 +654,26 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private void OnExitHint(string msg)
         => ExitHintRequested?.Invoke(msg);
 
+    /// <summary>
+    /// App ging in den Hintergrund: alle Render-Loops anhalten. Der MainView-Hintergrund stoppt
+    /// über <see cref="PauseStateChanged"/>, der offene Rechner-Header über das neu berechnete
+    /// <c>IsHeaderActive</c> (mit <see cref="_isAppForeground"/>=false ist es immer false).
+    /// </summary>
+    private void OnAppPaused()
+    {
+        _isAppForeground = false;
+        UpdateCalculatorHeaderStates();
+        PauseStateChanged?.Invoke(true);
+    }
+
+    /// <summary>App kam in den Vordergrund: Render-Loops je nach sichtbarem Zustand wieder freigeben.</summary>
+    private void OnAppResumed()
+    {
+        _isAppForeground = true;
+        UpdateCalculatorHeaderStates();
+        PauseStateChanged?.Invoke(false);
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -630,6 +686,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _insightsCts?.Dispose();
         _insightsCts = null;
 
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
         _rewardedAdService.AdUnavailable -= OnAdUnavailable;
         _adService.AdsStateChanged -= OnAdsStateChanged;
         _expenseService.OnDataLoadError -= OnDataLoadError;

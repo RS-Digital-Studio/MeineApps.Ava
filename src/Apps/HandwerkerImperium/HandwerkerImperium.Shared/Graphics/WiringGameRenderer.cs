@@ -123,6 +123,10 @@ public sealed class WiringGameRenderer : IDisposable
     private readonly SKPath _cachedPath = new();
     private readonly SKFont _cachedFont = new(SKTypeface.Default, 11);
 
+    // Wiederverwendbarer SKPathMeasure fuer den Strom-Puls. Frueher new pro verbundenem Kabel
+    // pro Frame (nativer Handle + Heap) — per SetPath recycelt.
+    private readonly SKPathMeasure _pulseMeasure = new();
+
     // ═══════════════════════════════════════════════════════════════════
     // GECACHTE SHADER (nur bei Bounds-Aenderung neu erstellt)
     // Spart 4+ Shader-Allokationen/Frame bei 30fps
@@ -733,13 +737,13 @@ public sealed class WiringGameRenderer : IDisposable
 
     /// <summary>
     /// Zeichnet einen wandernden Strom-Puls entlang einer Bezier-Kurve.
-    /// SKPathMeasure muss lokal bleiben (abhaengig vom uebergebenen Path).
+    /// Nutzt den wiederverwendbaren _pulseMeasure (SetPath statt new pro Kabel pro Frame).
     /// </summary>
     private void DrawElectricPulse(SKCanvas canvas, SKPath bezierPath, SKColor wireColor, float t)
     {
         // Position auf der Bezier-Kurve bei t ermitteln
-        using var measure = new SKPathMeasure(bezierPath, false);
-        float totalLength = measure.Length;
+        _pulseMeasure.SetPath(bezierPath, false);
+        float totalLength = _pulseMeasure.Length;
         if (totalLength <= 0) return;
 
         // Zwei Pulse (vorderer und hinterer)
@@ -747,7 +751,7 @@ public sealed class WiringGameRenderer : IDisposable
         {
             float pulseT = (t + p * 0.5f) % 1.0f;
 
-            if (measure.GetPositionAndTangent(pulseT * totalLength, out var pos, out _))
+            if (_pulseMeasure.GetPositionAndTangent(pulseT * totalLength, out var pos, out _))
             {
                 // Leuchtpunkt
                 _fillPaintAA.Color = new SKColor(255, 255, 255, 220);
@@ -1004,6 +1008,7 @@ public sealed class WiringGameRenderer : IDisposable
         // sonst werden sie nach erstem Renderer-Dispose unbrauchbar.
         _cachedPath.Dispose();
         _cachedFont.Dispose();
+        _pulseMeasure.Dispose();
 
         // Gecachte statische Shader
         _wallShader?.Dispose();

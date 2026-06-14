@@ -34,6 +34,9 @@ public sealed class GuildHallSceneRenderer : IDisposable
     private IReadOnlyList<GuildBuildingDisplay>? _buildings;
     private int _hallLevel;
 
+    // Gecachter Level-String "Lv.X" (vermeidet Interpolation pro Frame — nur bei SetData neu).
+    private string _hallLevelText = "Lv.0";
+
     // Gecachte Paints
     private readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
@@ -62,7 +65,11 @@ public sealed class GuildHallSceneRenderer : IDisposable
     public void SetData(IReadOnlyList<GuildBuildingDisplay>? buildings, int hallLevel)
     {
         _buildings = buildings;
-        _hallLevel = hallLevel;
+        if (_hallLevel != hallLevel)
+        {
+            _hallLevel = hallLevel;
+            _hallLevelText = $"Lv.{hallLevel}";
+        }
         _terrainDirty = true;
     }
 
@@ -249,10 +256,10 @@ public sealed class GuildHallSceneRenderer : IDisposable
         _fillPaint.Color = new SKColor(0x38, 0x2C, 0x20);
         canvas.DrawRoundRect(cx - 10, cy - 24, 20, 24, 10, 0, _fillPaint);
 
-        // Level-Anzeige
+        // Level-Anzeige (gecachter String, nur bei SetData aktualisiert)
         _labelFont.Size = 10;
         _fillPaint.Color = new SKColor(0xFF, 0xD7, 0x00);
-        canvas.DrawText($"Lv.{_hallLevel}", cx, cy - bh - 24, SKTextAlign.Center, _labelFont, _fillPaint);
+        canvas.DrawText(_hallLevelText, cx, cy - bh - 24, SKTextAlign.Center, _labelFont, _fillPaint);
     }
 
     private void DrawWindowGlows(SKCanvas canvas, float originX, float originY)

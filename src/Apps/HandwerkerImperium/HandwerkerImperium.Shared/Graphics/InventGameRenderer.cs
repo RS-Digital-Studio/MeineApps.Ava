@@ -279,8 +279,11 @@ public sealed class InventGameRenderer : IDisposable
     };
     private readonly SKFont _progressFont = new() { Size = 11 };
 
-    // Scan-Linie (Shader aendert sich)
+    // Scan-Linie. Der Gradient ist konstant (feste Farben + feste 16px-Hoehe um die Scan-Y),
+    // nur die Y-Position wandert. Daher einmal um Y=0 cachen und per canvas.Translate(0, scanY)
+    // positionieren — eine reine Translation ist pixelidentisch (kein per-Frame-Shader mehr).
     private readonly SKPaint _scanShaderPaint = new() { IsAntialias = false };
+    private SKShader? _scanShaderCache;
 
     // Completion-Flash (Shader/Alpha aendert sich)
     private readonly SKPaint _flashShaderPaint = new() { IsAntialias = false };
@@ -1233,17 +1236,22 @@ public sealed class InventGameRenderer : IDisposable
         float progress = (_animTime % period) / period;
         float scanY = gridTop + progress * gridHeight;
 
-        // Perf: Shader aendert sich pro Frame (Position-abhaengig), nicht cachebar
-        using var scanShader = SKShader.CreateLinearGradient(
-            new SKPoint(bounds.Left, scanY - 8),
-            new SKPoint(bounds.Left, scanY + 8),
+        // Gradient einmal um Y=0 erzeugen (Farben + 16px-Hoehe konstant). Per Translate an scanY
+        // geschoben — reine Translation, pixelidentisch zum frueheren per-Frame-Shader.
+        _scanShaderCache ??= SKShader.CreateLinearGradient(
+            new SKPoint(0, -8),
+            new SKPoint(0, 8),
             new[] { SKColors.Transparent, NeonCyan.WithAlpha(60), NeonCyan.WithAlpha(100),
                     NeonCyan.WithAlpha(60), SKColors.Transparent },
             new[] { 0f, 0.3f, 0.5f, 0.7f, 1f },
             SKShaderTileMode.Clamp);
-        _scanShaderPaint.Shader = scanShader;
-        canvas.DrawRect(bounds.Left, scanY - 8, bounds.Width, 16, _scanShaderPaint);
+
+        canvas.Save();
+        canvas.Translate(0, scanY);
+        _scanShaderPaint.Shader = _scanShaderCache;
+        canvas.DrawRect(bounds.Left, -8, bounds.Width, 16, _scanShaderPaint);
         _scanShaderPaint.Shader = null;
+        canvas.Restore();
 
         // Heller Kern
         canvas.DrawLine(bounds.Left + 20, scanY, bounds.Right - 20, scanY, _scanCorePaint);
@@ -1938,6 +1946,7 @@ public sealed class InventGameRenderer : IDisposable
         _progressGlowPaint?.Dispose();
         _progressTextPaint?.Dispose();
         _scanShaderPaint?.Dispose();
+        _scanShaderCache?.Dispose();
         _flashShaderPaint?.Dispose();
         _flashBorderPaint?.Dispose();
         _numberShadowPaint?.Dispose();

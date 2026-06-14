@@ -217,9 +217,11 @@ public sealed class GameTabBarRenderer : IDisposable
 
             if (isLocked)
             {
-                // Gesperrte Tabs: SaveLayer für Dimm-Effekt, kleiner gezeichnet
+                // Gesperrte Tabs: kleiner gezeichnet + dunkles Overlay-Rect.
+                // Kein SaveLayer noetig — das Overlay wird einfach mit Alpha ueber das Icon
+                // gemalt (kein Group-Alpha/Blend auf den Layer), das Ergebnis ist identisch.
+                // SaveLayer alloziert auf Android-Skia einen Offscreen-Puffer pro Frame (teuer).
                 canvas.Save();
-                canvas.SaveLayer(null);
                 canvas.Translate(tabCenterX, iconCenterY);
                 canvas.Scale(0.8f);
                 canvas.Translate(-tabCenterX, -iconCenterY);
@@ -230,7 +232,6 @@ public sealed class GameTabBarRenderer : IDisposable
                 _fillPaint.Color = LockedOverlay;
                 _fillPaint.Shader = null;
                 canvas.DrawRect(tabCenterX - 25f, iconCenterY - 25f, 50f, 50f, _fillPaint);
-                canvas.Restore(); // SaveLayer
                 canvas.Restore(); // Save
 
                 // Schloss-Symbol (kleines Vorhängeschloss)

@@ -73,6 +73,14 @@ public sealed class ResearchTreeRenderer : IDisposable
     private static readonly float[] s_dashIntervals_8_5 = [8, 5];
     private static readonly float[] s_dashIntervals_4_4 = [4, 4];
 
+    // Gecachte Dash-PathEffects, gebucketet nach quantisierter Phase. Frueher pro gesperrter
+    // Edge bzw. Node pro Frame ein neues SKPathEffect (Heap + nativer Handle) — bei 24fps und
+    // vielen gesperrten Nodes hunderte Allokationen/s. Die Phase wird auf wenige diskrete Buckets
+    // quantisiert (13 fuer Edges = Dash-Periode 8+5, 8 fuer Nodes = Periode 4+4); die Animation
+    // bleibt fuers Auge fluessig. Lebensdauer: max 13 bzw. 8 Effekt-Objekte.
+    private readonly Dictionary<int, SKPathEffect> _edgeDashCache = new();
+    private readonly Dictionary<int, SKPathEffect> _nodeDashCache = new();
+
     static ResearchTreeRenderer()
     {
         for (int i = 0; i <= 100; i++)
@@ -311,12 +319,13 @@ public sealed class ResearchTreeRenderer : IDisposable
         }
         else if (fromResearched && toLocked)
         {
-            // Nächste gesperrt: Gestrichelt, pulsierend
+            // Nächste gesperrt: Gestrichelt, pulsierend (Marching-Ants)
             _stroke.Color = branchColor.WithAlpha(100);
             _stroke.StrokeWidth = 4f;
-            // Perf: Phase aendert sich pro Frame (_time * 15), nicht cachebar
-            using var dashEffect = SKPathEffect.CreateDash(s_dashIntervals_8_5, _time * 15 % 13);
-            _stroke.PathEffect = dashEffect;
+            // Phase auf 13 diskrete Buckets quantisiert (Dash-Periode 8+5) und Effekt gecacht
+            // statt pro Edge pro Frame neu zu allokieren.
+            int edgePhase = (int)(_time * 15) % 13;
+            _stroke.PathEffect = GetDashEffect(_edgeDashCache, s_dashIntervals_8_5, edgePhase);
             canvas.DrawPath(_connectionPath, _stroke);
             _stroke.PathEffect = null;
 
@@ -369,9 +378,10 @@ public sealed class ResearchTreeRenderer : IDisposable
         {
             _stroke.Color = LineLocked.WithAlpha(128);
             _stroke.StrokeWidth = 2f;
-            // Perf: Phase aendert sich pro Frame (_time * 5), nicht cachebar
-            using var dotEffect = SKPathEffect.CreateDash(s_dashIntervals_4_4, _time * 5 % 8);
-            _stroke.PathEffect = dotEffect;
+            // Phase auf 8 diskrete Buckets quantisiert (Dash-Periode 4+4) und Effekt gecacht
+            // statt pro gesperrtem Node pro Frame neu zu allokieren.
+            int nodePhase = (int)(_time * 5) % 8;
+            _stroke.PathEffect = GetDashEffect(_nodeDashCache, s_dashIntervals_4_4, nodePhase);
             canvas.DrawCircle(cx, cy, NodeSize / 2 + 3, _stroke);
             _stroke.PathEffect = null;
         }
@@ -609,6 +619,20 @@ public sealed class ResearchTreeRenderer : IDisposable
         _flowParticleCount = aliveCount;
     }
 
+    /// <summary>
+    /// Liefert ein gecachtes Dash-PathEffect fuer die gegebene quantisierte Phase. Erstellt das
+    /// Effekt-Objekt nur beim ersten Auftreten eines Buckets (max so viele wie Buckets existieren).
+    /// </summary>
+    private static SKPathEffect GetDashEffect(Dictionary<int, SKPathEffect> cache, float[] intervals, int phaseBucket)
+    {
+        if (!cache.TryGetValue(phaseBucket, out var effect))
+        {
+            effect = SKPathEffect.CreateDash(intervals, phaseBucket);
+            cache[phaseBucket] = effect;
+        }
+        return effect;
+    }
+
     private static float CubicBezierX(float p0, float p1, float p2, float p3, float t)
     {
         float u = 1 - t;
@@ -669,6 +693,11 @@ public sealed class ResearchTreeRenderer : IDisposable
         _connectionPath?.Dispose();
         _arrowPath?.Dispose();
         _progressBarShaderCache?.Dispose();
+
+        foreach (var effect in _edgeDashCache.Values) effect.Dispose();
+        _edgeDashCache.Clear();
+        foreach (var effect in _nodeDashCache.Values) effect.Dispose();
+        _nodeDashCache.Clear();
     }
 
     private struct FlowParticle

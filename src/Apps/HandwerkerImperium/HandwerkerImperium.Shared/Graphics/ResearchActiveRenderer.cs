@@ -63,6 +63,10 @@ public sealed class ResearchActiveRenderer : IDisposable
     // TruncateText-Cache (vermeidet binäre Suche pro Frame)
     private readonly Dictionary<(string, float), string> _truncateCache = new();
 
+    // Wiederverwendbares SKRoundRect fuer den Fluessigkeits-Clip (ClipRoundRect braucht zwingend
+    // ein Objekt). Frueher new SKRoundRect pro Frame — per SetRect/SetRectRadii recycelt.
+    private readonly SKRoundRect _clipRoundRect = new();
+
     // Gecachte Einzelzeichen-Strings für Countdown-Ziffern (vermeidet c.ToString() pro Frame)
     private static readonly string[] _charStrings = new string[128];
 
@@ -132,19 +136,19 @@ public sealed class ResearchActiveRenderer : IDisposable
 
     private static void DrawBackground(SKCanvas canvas, float x, float y, float w, float h, SKColor branchColor)
     {
-        // Dunkler Karten-Hintergrund
-        using var rect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 12);
+        // Dunkler Karten-Hintergrund (Overload ohne SKRoundRect-Objekt)
+        var rect = new SKRect(x, y, x + w, y + h);
         _fill.Color = CardBg;
-        canvas.DrawRoundRect(rect, _fill);
+        canvas.DrawRoundRect(rect, 12, 12, _fill);
 
         // Dezenter Branch-Schimmer
         _fill.Color = branchColor.WithAlpha(10);
-        canvas.DrawRoundRect(rect, _fill);
+        canvas.DrawRoundRect(rect, 12, 12, _fill);
 
         // Rahmen
         _stroke.Color = branchColor.WithAlpha(80);
         _stroke.StrokeWidth = 1;
-        canvas.DrawRoundRect(rect, _stroke);
+        canvas.DrawRoundRect(rect, 12, 12, _stroke);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -165,9 +169,8 @@ public sealed class ResearchActiveRenderer : IDisposable
         _stroke.StrokeWidth = 2;
         canvas.DrawRect(cx - neckW / 2, y, neckW, neckH, _stroke);
 
-        // Glas-Koerper (breiter unterer Teil, abgerundet)
-        using var bodyRect = new SKRoundRect(new SKRect(x, bodyTop, x + w, y + h), 4, 8);
-        canvas.DrawRoundRect(bodyRect, _stroke);
+        // Glas-Koerper (breiter unterer Teil, abgerundet; Overload ohne SKRoundRect-Objekt)
+        canvas.DrawRoundRect(new SKRect(x, bodyTop, x + w, y + h), 4, 8, _stroke);
 
         // Flüssigkeit (Füllstand basierend auf Fortschritt)
         float liquidH = bodyH * Math.Clamp(progress, 0.02f, 0.95f);
@@ -178,8 +181,9 @@ public sealed class ResearchActiveRenderer : IDisposable
         liquidTop += pulse;
 
         canvas.Save();
-        using var clipRect = new SKRoundRect(new SKRect(x + 1, bodyTop + 1, x + w - 1, y + h - 1), 3, 7);
-        canvas.ClipRoundRect(clipRect);
+        // Clip braucht ein SKRoundRect — wiederverwendetes Feld statt new pro Frame.
+        _clipRoundRect.SetRect(new SKRect(x + 1, bodyTop + 1, x + w - 1, y + h - 1), 3, 7);
+        canvas.ClipRoundRect(_clipRoundRect);
 
         // Flüssigkeits-Gradient (unten dunkler, oben heller)
         _fill.Color = branchColor.WithAlpha(200);
@@ -346,10 +350,9 @@ public sealed class ResearchActiveRenderer : IDisposable
             }
             else
             {
-                // Ziffern-Hintergrund
+                // Ziffern-Hintergrund (Overload ohne SKRoundRect-Objekt, bis zu 6 Ziffern/Frame)
                 _fill.Color = CountdownBg;
-                using var digitRect = new SKRoundRect(new SKRect(cx, y, cx + charW, y + charH), 3);
-                canvas.DrawRoundRect(digitRect, _fill);
+                canvas.DrawRoundRect(new SKRect(cx, y, cx + charW, y + charH), 3, 3, _fill);
 
                 // Trennlinie (Flip-Effekt)
                 _stroke.Color = new SKColor(0x30, 0x22, 0x1A);
@@ -373,18 +376,16 @@ public sealed class ResearchActiveRenderer : IDisposable
     private void DrawProgressBar(SKCanvas canvas, float x, float y, float w, float h,
         float progress, SKColor branchColor)
     {
-        // Hintergrund
+        // Hintergrund (Overload ohne SKRoundRect-Objekt)
         _fill.Color = new SKColor(0x18, 0x10, 0x0C);
-        using var bgRect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 2);
-        canvas.DrawRoundRect(bgRect, _fill);
+        canvas.DrawRoundRect(new SKRect(x, y, x + w, y + h), 2, 2, _fill);
 
         // Fortschritt
         float fillW = w * Math.Clamp(progress, 0, 1);
         if (fillW > 1)
         {
             _fill.Color = branchColor;
-            using var fillRect = new SKRoundRect(new SKRect(x, y, x + fillW, y + h), 2);
-            canvas.DrawRoundRect(fillRect, _fill);
+            canvas.DrawRoundRect(new SKRect(x, y, x + fillW, y + h), 2, 2, _fill);
 
             // Glow am Ende
             float glow = 0.5f + MathF.Sin(_time * 4f) * 0.5f;
@@ -500,5 +501,6 @@ public sealed class ResearchActiveRenderer : IDisposable
         _nameFont?.Dispose();
         _percentFont?.Dispose();
         _digitFont?.Dispose();
+        _clipRoundRect.Dispose();
     }
 }

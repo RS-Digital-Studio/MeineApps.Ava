@@ -65,14 +65,19 @@ public interface IFrameClock
 
 /// <summary>
 /// Frame-Tick-Argument mit Delta-Zeit und kumulierter Render-Zeit fuer Shader-Animationen.
+///
+/// Die Werte sind via internal-Setter mutierbar, damit <see cref="HandwerkerImperium.Services.FrameClockService"/>
+/// pro Subscriber genau EINE Instanz wiederverwenden kann (statt pro Tick eine neue zu allokieren).
+/// Das ist sicher, weil der Master-Tick synchron auf dem UI-Thread laeuft und kein Consumer die
+/// Instanz ueber den Handler-Aufruf hinaus festhaelt (alle lesen DeltaSeconds/ElapsedSeconds sofort).
 /// </summary>
 public sealed class FrameTickEventArgs : EventArgs
 {
     /// <summary>Sekunden seit dem letzten Tick fuer diesen Subscriber (Stopwatch-basiert).</summary>
-    public float DeltaSeconds { get; }
+    public float DeltaSeconds { get; internal set; }
 
     /// <summary>Kumulierte Sekunden seit Clock-Start (fuer Shader-Time-Uniform).</summary>
-    public float ElapsedSeconds { get; }
+    public float ElapsedSeconds { get; internal set; }
 
     public FrameTickEventArgs(float deltaSeconds, float elapsedSeconds)
     {

@@ -19,6 +19,9 @@ public sealed class MarketChartRenderer : IDisposable
     private const float Padding = 24f;
     private const float AxisHeight = 18f;
 
+    // Feste X-Achsen-Stunden-Labels (alle 6h). Konstant — vermeidet hr.ToString("00") 5x/Frame.
+    private static readonly string[] s_hourLabels = ["00", "06", "12", "18", "24"];
+
     // Farben
     private static readonly SKColor LineColor = new(0xF9, 0x73, 0x16);          // Craft-Orange (Markt-Akzent)
     private static readonly SKColor LineFillTop = new(0xF9, 0x73, 0x16, 110);   // Bezier-Fill oben (halbtransparent)
@@ -106,7 +109,7 @@ public sealed class MarketChartRenderer : IDisposable
         for (int hr = 0; hr <= 24; hr += 6)
         {
             float xPos = plot.Left + plot.Width * hr / 23f;
-            string label = hr == 24 ? "24" : hr.ToString("00");
+            string label = s_hourLabels[hr / 6]; // konstante Labels, kein ToString pro Frame
             float tw = _axisFont.MeasureText(label);
             canvas.DrawText(label, xPos - tw * 0.5f, plot.Bottom + AxisHeight, _axisFont, _fillPaint);
         }

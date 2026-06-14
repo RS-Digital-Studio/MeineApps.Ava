@@ -89,6 +89,13 @@ Views abonnieren den Bus direkt im Code-Behind (analog `IFrameClock`).
 `FrameClockService` als 30Hz-Render-Tick. Subscriber-Pattern (idempotent), Stopwatch-DeltaSeconds,
 Auto-Stop bei 0 Subscribern, Pause/Resume für App-Lifecycle.
 
+**GC-frei pro Tick**: Der Master-Tick allokiert nicht mehr pro Tick. Das Subscriber-Snapshot-Array
+wird nur bei Subscribe/Unsubscribe/UpdateInterval neu befüllt (Dirty-Flag statt `ToArray()`).
+`SubscriberEntry` ist eine Referenz-Klasse (Liste + Snapshot teilen dasselbe Objekt → keine
+Struct-Copy-Back-Suche). Jeder Eintrag hält EINE wiederverwendete `FrameTickEventArgs`-Instanz
+(internal-Setter, vor Invoke mutiert) statt pro Tick eine neue. Sicher, weil der Tick synchron auf
+dem UI-Thread läuft und kein Consumer die EventArgs über den Handler-Aufruf hinaus festhält.
+
 ---
 
 ## Gilde-Services (Firebase Realtime Database)

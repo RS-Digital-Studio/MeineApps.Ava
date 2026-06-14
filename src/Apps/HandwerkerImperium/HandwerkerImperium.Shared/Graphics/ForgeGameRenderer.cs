@@ -145,6 +145,13 @@ public sealed class ForgeGameRenderer : IDisposable
     // Temperatur-Bar Hintergrund (Position statisch)
     private SKShader? _tempBarBgShader;
 
+    // Hammer-Gradienten (Stiel + Kopf). Farbe UND Groesse sind konstant, nur die Position
+    // variiert pro Frame (Bounce/Schweben). Daher einmalig um den lokalen Ursprung (0,0) cachen
+    // und per canvas.Translate positionieren — eine reine Translation ist pixelidentisch zum
+    // direkten Zeichnen an variabler Position (kein Resampling). Spart 2 Shader/Frame = ~60/s.
+    private SKShader? _hammerHandleShader;
+    private SKShader? _hammerHeadShader;
+
     // Temperatur-Bar Zonen-Shader (gecacht, nur bei Positions-/Zonen-Aenderung neu)
     // Spart 2 Shader-Allokationen/Frame bei 30fps = ~60 Shader/s
     private SKShader? _goodZoneShader;
@@ -226,6 +233,22 @@ public sealed class ForgeGameRenderer : IDisposable
             new[] { new SKColor(0x20, 0x14, 0x08), new SKColor(0x30, 0x1E, 0x10) },
             null, SKShaderTileMode.Clamp);
 
+        // --- Hammer (Stiel + Kopf) ---
+        // Um lokalen Ursprung (0,0) erzeugt, da Farbe/Groesse konstant. In DrawHammer wird
+        // per canvas.Translate(hammerX, hammerY) an die animierte Position geschoben.
+        _hammerHandleShader?.Dispose();
+        _hammerHandleShader = SKShader.CreateLinearGradient(
+            new SKPoint(-4, 0),
+            new SKPoint(4, 0),
+            new[] { new SKColor(0xA6, 0x7C, 0x52), new SKColor(0x8B, 0x5A, 0x2B), new SKColor(0x6D, 0x44, 0x1E) },
+            new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp);
+
+        _hammerHeadShader?.Dispose();
+        _hammerHeadShader = SKShader.CreateLinearGradient(
+            new SKPoint(-18, -10),
+            new SKPoint(-18, 4),
+            new[] { new SKColor(0x80, 0x80, 0x80), new SKColor(0x50, 0x50, 0x50), new SKColor(0x3A, 0x3A, 0x3A) },
+            new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -595,36 +618,32 @@ public sealed class ForgeGameRenderer : IDisposable
 
         canvas.Save();
         canvas.RotateDegrees(rotation, hammerX, hammerY + 20);
+        // Lokaler Ursprung auf (hammerX, hammerY): danach relativ zeichnen, damit die
+        // gecachten Hammer-Shader (um (0,0) erstellt) ohne per-Frame-Neuerzeugung passen.
+        // Reine Translation nach dem Rotate ist pixelidentisch zum vorherigen Absolut-Zeichnen.
+        canvas.Translate(hammerX, hammerY);
 
-        // Stiel mit Holz-Gradient (Position dynamisch durch Animation)
-        SwapShader(HammerHandlePaint, SKShader.CreateLinearGradient(
-            new SKPoint(hammerX - 4, hammerY),
-            new SKPoint(hammerX + 4, hammerY),
-            new[] { new SKColor(0xA6, 0x7C, 0x52), new SKColor(0x8B, 0x5A, 0x2B), new SKColor(0x6D, 0x44, 0x1E) },
-            new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp));
-        canvas.DrawRoundRect(hammerX - 3.5f, hammerY + 2, 7, 42, 2, 2, HammerHandlePaint);
-        SwapShader(HammerHandlePaint, null);
+        // Stiel mit Holz-Gradient (gecachter Shader, per Translate positioniert)
+        HammerHandlePaint.Shader = _hammerHandleShader;
+        canvas.DrawRoundRect(-3.5f, 2, 7, 42, 2, 2, HammerHandlePaint);
+        HammerHandlePaint.Shader = null;
 
         // Stiel-Glanz (duenne helle Linie links)
         _fillPaint.Color = new SKColor(0xC8, 0xA0, 0x70, 120);
-        canvas.DrawRect(hammerX - 2, hammerY + 4, 1.5f, 38, _fillPaint);
+        canvas.DrawRect(-2, 4, 1.5f, 38, _fillPaint);
 
-        // Hammerkopf mit Metall-Gradient
-        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
-            new SKPoint(hammerX - 18, hammerY - 10),
-            new SKPoint(hammerX - 18, hammerY + 4),
-            new[] { new SKColor(0x80, 0x80, 0x80), new SKColor(0x50, 0x50, 0x50), new SKColor(0x3A, 0x3A, 0x3A) },
-            new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp));
-        canvas.DrawRoundRect(hammerX - 18, hammerY - 10, 36, 14, 2, 2, _fillPaint);
-        SwapShader(_fillPaint, null);
+        // Hammerkopf mit Metall-Gradient (gecachter Shader, per Translate positioniert)
+        _fillPaint.Shader = _hammerHeadShader;
+        canvas.DrawRoundRect(-18, -10, 36, 14, 2, 2, _fillPaint);
+        _fillPaint.Shader = null;
 
         // Kopf-Highlight (Metallglanz oben)
         _fillPaint.Color = new SKColor(0xB0, 0xB0, 0xB0, 160);
-        canvas.DrawRect(hammerX - 16, hammerY - 9, 32, 3, _fillPaint);
+        canvas.DrawRect(-16, -9, 32, 3, _fillPaint);
 
         // Kopf-Schatten (unten)
         _fillPaint.Color = new SKColor(0x25, 0x25, 0x25);
-        canvas.DrawRect(hammerX - 16, hammerY + 2, 32, 2, _fillPaint);
+        canvas.DrawRect(-16, 2, 32, 2, _fillPaint);
 
         canvas.Restore();
     }
@@ -1327,6 +1346,8 @@ public sealed class ForgeGameRenderer : IDisposable
         _coalBedShader?.Dispose();
         _bellowsShader?.Dispose();
         _tempBarBgShader?.Dispose();
+        _hammerHandleShader?.Dispose();
+        _hammerHeadShader?.Dispose();
 
         // Gecachte Temperatur-Bar-Zonen-Shader
         _goodZoneShader?.Dispose();

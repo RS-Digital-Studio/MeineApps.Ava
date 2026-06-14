@@ -105,14 +105,14 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
 
     private void DrawBackground(SKCanvas canvas, float x, float y, float w, float h, SKColor branchColor)
     {
-        // Dunkler Hintergrund
+        // Dunkler Hintergrund (Overload ohne SKRoundRect-Objekt)
+        var rect = new SKRect(x, y, x + w, y + h);
         _fill.Color = BgDark;
-        using var rect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 8);
-        canvas.DrawRoundRect(rect, _fill);
+        canvas.DrawRoundRect(rect, 8, 8, _fill);
 
         // Farbiger Gradient-Overlay (lebhafter)
         _fill.Color = branchColor.WithAlpha(35);
-        canvas.DrawRoundRect(rect, _fill);
+        canvas.DrawRoundRect(rect, 8, 8, _fill);
 
         // Subtiler horizontaler Gradient-Effekt (gecacht: Farbe + Bounds aendern sich selten)
         if (_bgShaderCache == null || _lastBgBranchColor != branchColor ||
@@ -128,13 +128,13 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
             _lastBgW = w; _lastBgH = h; _lastBgX = x; _lastBgY = y;
         }
         _fill.Shader = _bgShaderCache;
-        canvas.DrawRoundRect(rect, _fill);
+        canvas.DrawRoundRect(rect, 8, 8, _fill);
         _fill.Shader = null;
 
         // Rahmen (stärker)
         _stroke.Color = branchColor.WithAlpha(90);
         _stroke.StrokeWidth = 1.5f;
-        canvas.DrawRoundRect(rect, _stroke);
+        canvas.DrawRoundRect(rect, 8, 8, _stroke);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -377,10 +377,9 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
         float barW = w - 24;
         float barH = 6;
 
-        // Hintergrund
+        // Hintergrund (Overload ohne SKRoundRect-Objekt)
         _fill.Color = new SKColor(0x20, 0x15, 0x12);
-        using var bgRect = new SKRoundRect(new SKRect(barX, barY, barX + barW, barY + barH), 3);
-        canvas.DrawRoundRect(bgRect, _fill);
+        canvas.DrawRoundRect(new SKRect(barX, barY, barX + barW, barY + barH), 3, 3, _fill);
 
         // Fortschritt mit Gradient
         if (totalCount > 0)
@@ -406,8 +405,7 @@ public sealed class ResearchBranchBannerRenderer : IDisposable
                     _lastProgressBarX = barX;
                 }
                 _fill.Shader = _progressShaderCache;
-                using var fillRRect = new SKRoundRect(fillRect, 3);
-                canvas.DrawRoundRect(fillRRect, _fill);
+                canvas.DrawRoundRect(fillRect, 3, 3, _fill);
                 _fill.Shader = null;
             }
         }

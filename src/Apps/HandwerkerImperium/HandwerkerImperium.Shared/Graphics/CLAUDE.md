@@ -109,6 +109,25 @@ Gecachte Instanz- oder Klassenfelder statt `using var` pro Frame:
 
 **Shader-Cache-Pattern**: Nur bei Bounds-Änderung neu erstellen (`CraftTextures`, `ForgeGame`, `WiringGame`, `SawingGame`).
 
+**Translate-Cache-Pattern** (Shader mit konstanter Farbe+Form, nur Position variiert): Shader
+einmal um den lokalen Ursprung (0,0) cachen und per `canvas.Translate(...)` positionieren. Eine
+reine Translation ist pixelidentisch zum Neu-Erzeugen an variabler Position (kein Resampling) —
+im Gegensatz zu `Scale`. Genutzt von `ForgeGame` (Hammer-Stiel/-Kopf) und `InventGame` (Scan-Linie).
+Funktioniert NICHT bei variabler Größe (Feuer-Flammen in `ForgeGame`: variable Höhe → Skalierung
+nötig → bleibt per-Frame) oder variabler Farbe (Werkstück-Gradient: temperaturabhängig → bleibt per-Frame).
+
+**Dash-PathEffect-Bucket-Cache** (Marching-Ants): Animierte `SKPathEffect.CreateDash`-Phase auf
+wenige diskrete Buckets quantisieren (`(int)(_time*v) % period`) und Effekte in
+`Dictionary<int, SKPathEffect>` cachen (Lebensdauer = Bucket-Anzahl). `ResearchTree` (13/8 Buckets).
+Animation bleibt fürs Auge flüssig.
+
+**SKRoundRect vermeiden**: Für reines Zeichnen die `canvas.DrawRoundRect(rect, rx, ry, paint)`-Overload
+nutzen (kein SKRoundRect-Heap-Objekt). Wo Clipping zwingend ein SKRoundRect braucht (`ClipRoundRect`):
+wiederverwendbares Feld + `SetRect()`/`SetRectRadii()` statt `new` pro Frame (`ResearchActive`-Flask-Clip).
+
+**SKPathMeasure wiederverwenden**: Ein Feld + `SetPath(path, false)` statt `new SKPathMeasure(path, false)`
+pro Frame (`WiringGame` Strom-Puls).
+
 ---
 
 ## Scroll-Performance

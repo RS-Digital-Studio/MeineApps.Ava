@@ -22,6 +22,14 @@ public sealed class FrameClockService : IFrameClock, IDisposable
     private readonly DispatcherTimer _timer;
     private readonly Stopwatch _stopwatch = new();
     private readonly List<SubscriberEntry> _subscribers = new();
+
+    // Wiederverwendbarer Snapshot der Subscriber-Liste fuer lock-freies Iterieren im Tick.
+    // Frueher wurde pro Tick (30Hz) ein neues Array via ToArray() allokiert — groesster
+    // app-weiter GC-Posten. Jetzt nur bei Subscribe/Unsubscribe/UpdateInterval neu befuellt
+    // (Dirty-Flag). Da SubscriberEntry eine Referenz-Klasse ist, teilen Liste und Snapshot
+    // dieselben Objekte → LastTickSeconds-Mutation im Tick wirkt direkt, kein Rueck-Schreiben.
+    private SubscriberEntry[] _snapshot = [];
+    private bool _snapshotDirty = true;
     private bool _isPaused;
     private bool _disposed;
 
@@ -66,6 +74,7 @@ public sealed class FrameClockService : IFrameClock, IDisposable
                 Interval = interval ?? DefaultInterval,
                 LastTickSeconds = -1f, // Erste Tick fuert sofort
             });
+            _snapshotDirty = true;
 
             if (_subscribers.Count == 1 && !_isPaused)
             {
@@ -86,6 +95,7 @@ public sealed class FrameClockService : IFrameClock, IDisposable
                 if (_subscribers[i].Handler == handler)
                 {
                     _subscribers.RemoveAt(i);
+                    _snapshotDirty = true;
                     break;
                 }
             }
@@ -108,9 +118,8 @@ public sealed class FrameClockService : IFrameClock, IDisposable
             {
                 if (_subscribers[i].Handler == handler)
                 {
-                    var entry = _subscribers[i];
-                    entry.Interval = interval;
-                    _subscribers[i] = entry;
+                    // Referenz-Klasse: direkte Property-Mutation, kein Copy-Back noetig.
+                    _subscribers[i].Interval = interval;
                     return;
                 }
             }
@@ -145,10 +154,18 @@ public sealed class FrameClockService : IFrameClock, IDisposable
 
         // Snapshot der Subscriber-Liste (lock-frei iterieren) — Subscribe/Unsubscribe
         // waehrend Iteration ist OK, Aenderungen wirken naechsten Tick.
+        // Das Array wird nur bei Aenderung neu befuellt (kein ToArray() pro Tick).
         SubscriberEntry[] snapshot;
         lock (_subscribers)
         {
-            snapshot = _subscribers.ToArray();
+            if (_snapshotDirty)
+            {
+                if (_snapshot.Length != _subscribers.Count)
+                    _snapshot = new SubscriberEntry[_subscribers.Count];
+                _subscribers.CopyTo(_snapshot);
+                _snapshotDirty = false;
+            }
+            snapshot = _snapshot;
         }
 
         for (int i = 0; i < snapshot.Length; i++)
@@ -159,35 +176,21 @@ public sealed class FrameClockService : IFrameClock, IDisposable
             // Erster Tick fuer diesen Subscriber: sofort feuern (LastTickSeconds=-1)
             if (entry.LastTickSeconds < 0f)
             {
-                var args = new FrameTickEventArgs(0f, nowSeconds);
-                entry.Handler.Invoke(this, args);
-                UpdateLastTick(entry.Handler, nowSeconds);
+                entry.Args.DeltaSeconds = 0f;
+                entry.Args.ElapsedSeconds = nowSeconds;
+                entry.Handler.Invoke(this, entry.Args);
+                // Referenz-Klasse: Liste + Snapshot teilen das Objekt → direkte Mutation reicht.
+                entry.LastTickSeconds = nowSeconds;
                 continue;
             }
 
             var elapsedSinceLast = nowSeconds - entry.LastTickSeconds;
             if (elapsedSinceLast >= intervalSeconds)
             {
-                var args = new FrameTickEventArgs(elapsedSinceLast, nowSeconds);
-                entry.Handler.Invoke(this, args);
-                UpdateLastTick(entry.Handler, nowSeconds);
-            }
-        }
-    }
-
-    private void UpdateLastTick(EventHandler<FrameTickEventArgs> handler, float nowSeconds)
-    {
-        lock (_subscribers)
-        {
-            for (int i = 0; i < _subscribers.Count; i++)
-            {
-                if (_subscribers[i].Handler == handler)
-                {
-                    var entry = _subscribers[i];
-                    entry.LastTickSeconds = nowSeconds;
-                    _subscribers[i] = entry;
-                    return;
-                }
+                entry.Args.DeltaSeconds = elapsedSinceLast;
+                entry.Args.ElapsedSeconds = nowSeconds;
+                entry.Handler.Invoke(this, entry.Args);
+                entry.LastTickSeconds = nowSeconds;
             }
         }
     }
@@ -199,14 +202,27 @@ public sealed class FrameClockService : IFrameClock, IDisposable
         _timer.Stop();
         _timer.Tick -= OnTimerTick;
         _stopwatch.Stop();
-        lock (_subscribers) _subscribers.Clear();
+        lock (_subscribers)
+        {
+            _subscribers.Clear();
+            _snapshot = [];
+            _snapshotDirty = true;
+        }
     }
 
-    /// <summary>Interne Subscriber-Eintrag-Struktur. Mutable-Struct fuer In-Place-Update.</summary>
-    private struct SubscriberEntry
+    /// <summary>
+    /// Interner Subscriber-Eintrag. Referenz-Klasse (nicht Struct), damit Liste und Snapshot-Array
+    /// dasselbe Objekt teilen — so wirkt die LastTickSeconds-Mutation im Tick ohne Rueck-Schreiben.
+    /// </summary>
+    private sealed class SubscriberEntry
     {
-        public EventHandler<FrameTickEventArgs> Handler;
+        public required EventHandler<FrameTickEventArgs> Handler;
         public TimeSpan Interval;
         public float LastTickSeconds;
+
+        // Pro Subscriber genau EINE wiederverwendete EventArgs-Instanz (statt pro Tick eine neue).
+        // Felder werden vor jedem Invoke mutiert. Sicher, weil der Tick synchron laeuft und kein
+        // Consumer die Instanz ueber den Handler-Aufruf hinaus festhaelt.
+        public readonly FrameTickEventArgs Args = new(0f, 0f);
     }
 }

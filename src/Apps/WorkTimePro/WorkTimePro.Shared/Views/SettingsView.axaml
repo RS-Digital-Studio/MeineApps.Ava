@@ -347,33 +347,39 @@
 
           <!-- Morning -->
           <Grid ColumnDefinitions="Auto,*,Auto">
-            <ToggleSwitch AutomationProperties.AutomationId="Settings_TsMorningReminder" IsChecked="{Binding MorningReminderEnabled}" OnContent="" OffContent="" />
+            <ToggleSwitch AutomationProperties.AutomationId="Settings_TsMorningReminder" IsChecked="{Binding MorningReminderEnabled}" OnContent="" OffContent="" VerticalAlignment="Center" />
             <TextBlock Grid.Column="1"
                        Text="{loc:Translate MorningReminder}"
                        FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
+                       TextWrapping="Wrap"
+                       Margin="0,0,8,0"
                        VerticalAlignment="Center" />
             <TimePicker Grid.Column="2"
                        AutomationProperties.AutomationId="Settings_TpMorningReminder"
                        SelectedTime="{Binding MorningReminderTime}"
                        IsEnabled="{Binding MorningReminderEnabled}"
                        ClockIdentifier="24HourClock"
+                       MinWidth="0"
                        MinuteIncrement="5" />
           </Grid>
 
           <!-- Evening -->
           <Grid ColumnDefinitions="Auto,*,Auto">
-            <ToggleSwitch AutomationProperties.AutomationId="Settings_TsEveningReminder" IsChecked="{Binding EveningReminderEnabled}" OnContent="" OffContent="" />
+            <ToggleSwitch AutomationProperties.AutomationId="Settings_TsEveningReminder" IsChecked="{Binding EveningReminderEnabled}" OnContent="" OffContent="" VerticalAlignment="Center" />
             <TextBlock Grid.Column="1"
                        Text="{loc:Translate EveningReminder}"
                        FontSize="{StaticResource FontSizeBodyMd}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
+                       TextWrapping="Wrap"
+                       Margin="0,0,8,0"
                        VerticalAlignment="Center" />
             <TimePicker Grid.Column="2"
                        AutomationProperties.AutomationId="Settings_TpEveningReminder"
                        SelectedTime="{Binding EveningReminderTime}"
                        IsEnabled="{Binding EveningReminderEnabled}"
                        ClockIdentifier="24HourClock"
+                       MinWidth="0"
                        MinuteIncrement="5" />
           </Grid>
 

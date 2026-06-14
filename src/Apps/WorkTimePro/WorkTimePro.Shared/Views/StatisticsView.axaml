@@ -421,7 +421,7 @@
               <TextBlock Text="{loc:Translate WorkTimeTable}" Classes="SectionTitle" VerticalAlignment="Center" />
             </StackPanel>
             <Border Background="{DynamicResource PrimaryBrush}" Padding="6" CornerRadius="{StaticResource RadiusMd}" Margin="0,4,0,0">
-              <Grid ColumnDefinitions="2*,1.5*,Auto,Auto,Auto,Auto,Auto">
+              <Grid ColumnDefinitions="1.7*,1.6*,*,*,*,*,*">
                 <TextBlock Grid.Column="0" Text="{loc:Translate TableDate}" Foreground="{DynamicResource PrimaryContrastBrush}" FontSize="{StaticResource FontSizeLabelSm}" FontWeight="Bold" />
                 <TextBlock Grid.Column="1" Text="{loc:Translate TableStatus}" Foreground="{DynamicResource PrimaryContrastBrush}" FontSize="{StaticResource FontSizeLabelSm}" FontWeight="Bold" />
                 <TextBlock Grid.Column="2" Text="{loc:Translate TableCheckIn}" Foreground="{DynamicResource PrimaryContrastBrush}" FontSize="{StaticResource FontSizeLabelSm}" FontWeight="Bold" HorizontalAlignment="Center" />
@@ -435,7 +435,7 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:WorkDayTableItem">
                   <Border Padding="6,5" Background="{DynamicResource CardBrush}">
-                    <Grid ColumnDefinitions="2*,1.5*,Auto,Auto,Auto,Auto,Auto">
+                    <Grid ColumnDefinitions="1.7*,1.6*,*,*,*,*,*">
                       <TextBlock Grid.Column="0" Text="{Binding DateDisplay}" FontSize="{StaticResource FontSizeLabelSm}"
                                  Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">

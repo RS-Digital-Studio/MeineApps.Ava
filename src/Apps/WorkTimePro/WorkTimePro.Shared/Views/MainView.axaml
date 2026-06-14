@@ -200,6 +200,13 @@
 
         <!-- Tab Buttons -->
         <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*" Margin="0,6,0,8">
+          <!-- Tab-Buttons: horizontales Padding raus, damit das laengste Label
+               ("Einstellungen") in 1/5 Bildschirmbreite nicht abgeschnitten wird. -->
+          <Grid.Styles>
+            <Style Selector="Button.Text">
+              <Setter Property="Padding" Value="0,4" />
+            </Style>
+          </Grid.Styles>
 
           <!-- Today -->
           <Button Grid.Column="0" Classes="Text"

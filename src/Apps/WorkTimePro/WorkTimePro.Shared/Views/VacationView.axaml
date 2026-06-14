@@ -168,7 +168,8 @@
                        FontSize="{StaticResource FontSizeLabelMd}"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center"
-                       TextAlignment="Center" />
+                       TextAlignment="Center"
+                       TextWrapping="Wrap" />
             <Button Content="{loc:Translate UnlockPremium}"
                     AutomationProperties.AutomationId="Vacation_BtnUnlockPremium"
                     Classes="Primary"

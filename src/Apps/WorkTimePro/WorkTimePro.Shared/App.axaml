@@ -45,6 +45,14 @@
     <Style Selector="Border.ModalOverlay.open">
       <Setter Property="Opacity" Value="1" />
     </Style>
+
+    <!-- ToggleSwitch ohne Text-Content: die Fluent-Default-MinWidth (~154) reserviert sonst Platz
+         fuer einen Content-Bereich, der bei OnContent=""/OffContent="" leer ist. In engen Zeilen
+         (Toggle + Label + TimePicker) quetscht das das Label ab ("Arbeitsbeginn" -> "Arbeitsb").
+         MinWidth=0 laesst den Switch auf den Knopf schrumpfen; mit Content waechst er weiterhin. -->
+    <Style Selector="ToggleSwitch">
+      <Setter Property="MinWidth" Value="0" />
+    </Style>
   </Application.Styles>
 
 </Application>

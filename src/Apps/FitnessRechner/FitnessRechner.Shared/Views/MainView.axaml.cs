@@ -45,6 +45,7 @@ public partial class MainView : UserControl
         {
             _vm.FloatingTextRequested -= OnFloatingText;
             _vm.CelebrationRequested -= OnCelebration;
+            _vm.PauseStateChanged -= OnPauseStateChanged;
             _vm = null;
         }
     }
@@ -56,6 +57,7 @@ public partial class MainView : UserControl
         {
             _vm.FloatingTextRequested -= OnFloatingText;
             _vm.CelebrationRequested -= OnCelebration;
+            _vm.PauseStateChanged -= OnPauseStateChanged;
         }
 
         _vm = DataContext as MainViewModel;
@@ -65,10 +67,24 @@ public partial class MainView : UserControl
         {
             _vm.FloatingTextRequested += OnFloatingText;
             _vm.CelebrationRequested += OnCelebration;
+            _vm.PauseStateChanged += OnPauseStateChanged;
 
             // Render-Timer einmalig starten wenn VM verfügbar
             StartRenderTimer();
         }
+    }
+
+    /// <summary>
+    /// App-Pause/Resume (Android-Lifecycle via MainViewModel): den 30fps-Render-Loop
+    /// (Vollbild-5-Layer-Hintergrund + Tab-Bar + HomeView) im Hintergrund anhalten — niemand
+    /// sieht ihn bei gesperrtem Bildschirm/App im Hintergrund (Akku). Bei Resume wieder starten.
+    /// </summary>
+    private void OnPauseStateChanged(bool isPaused)
+    {
+        if (isPaused)
+            _renderTimer?.Stop();
+        else
+            _renderTimer?.Start();
     }
 
     // =====================================================================

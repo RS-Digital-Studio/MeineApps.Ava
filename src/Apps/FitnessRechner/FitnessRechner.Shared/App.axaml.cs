@@ -204,6 +204,10 @@ public partial class App : Application
         services.AddSingleton<IFastingService, FastingService>();
         services.AddSingleton<IActivityService, ActivityService>();
 
+        // App-Lifecycle-Broker: Android speist NotifyPaused/Resumed; Konsumenten (MainView-Render-Loop,
+        // Fasting-Countdown) stoppen Timer/Loops im Hintergrund (Akku).
+        services.AddSingleton<IAppLifecycleService, AppLifecycleService>();
+
         // Plattform-Services (Haptic, Sound, Reminders) (lazy, Avalonia-12-Factory-Timing)
         services.AddSingleton<IHapticService>(sp =>
             HapticServiceFactory?.Invoke() ?? ActivatorUtilities.CreateInstance<NoOpHapticService>(sp));

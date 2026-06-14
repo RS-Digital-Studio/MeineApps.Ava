@@ -32,6 +32,13 @@ public class BarcodeScannerActivity : AndroidX.AppCompat.App.AppCompatActivity
     private PreviewView? _previewView;
     private bool _barcodeDetected;
 
+    // Felder fuer deterministisches Cleanup in OnDestroy (sonst Thread-Leak pro Scan + ML-Kit-Scanner
+    // wird nur via GC-Finalizer geschlossen).
+    private IExecutorService? _analysisExecutor;
+    private ImageAnalysis? _imageAnalysis;
+    private BarcodeAnalyzer? _barcodeAnalyzer;
+    private ProcessCameraProvider? _cameraProvider;
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
@@ -169,13 +176,16 @@ public class BarcodeScannerActivity : AndroidX.AppCompat.App.AppCompatActivity
                 .Build()!;
 #pragma warning restore CS0618
 
-            var executor = Executors.NewSingleThreadExecutor()!;
-            imageAnalysis.SetAnalyzer(executor, new BarcodeAnalyzer(OnBarcodeFound));
+            _analysisExecutor = Executors.NewSingleThreadExecutor()!;
+            _barcodeAnalyzer = new BarcodeAnalyzer(OnBarcodeFound);
+            _imageAnalysis = imageAnalysis;
+            imageAnalysis.SetAnalyzer(_analysisExecutor, _barcodeAnalyzer);
 
             // Kamera binden
             var cameraSelector = CameraSelector.DefaultBackCamera!;
             cameraProvider.UnbindAll();
             cameraProvider.BindToLifecycle(this, cameraSelector, preview, imageAnalysis);
+            _cameraProvider = cameraProvider;
         }
         catch (Exception ex)
         {
@@ -198,6 +208,38 @@ public class BarcodeScannerActivity : AndroidX.AppCompat.App.AppCompatActivity
             SetResult(Result.Ok, resultIntent);
             Finish();
         });
+    }
+
+    /// <summary>
+    /// Deterministisches Cleanup: ML-Kit-Scanner und Analyse-Thread werden hier explizit
+    /// freigegeben statt erst beim GC-Finalizer. Ohne das leakt pro Scan ein
+    /// Single-Thread-Executor und der <see cref="IBarcodeScanner"/> bleibt offen.
+    /// Reihenfolge: erst den Analyzer abklemmen (keine neuen Frames mehr), dann Kamera lösen,
+    /// dann Analyzer schließen (Scanner.Close) und zuletzt den Executor herunterfahren.
+    /// </summary>
+    protected override void OnDestroy()
+    {
+        try
+        {
+            _imageAnalysis?.ClearAnalyzer();
+            _cameraProvider?.UnbindAll();
+
+            _barcodeAnalyzer?.Dispose();
+            _analysisExecutor?.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            global::Android.Util.Log.Warn("BarcodeScanner", $"Cleanup-Fehler: {ex.Message}");
+        }
+        finally
+        {
+            _barcodeAnalyzer = null;
+            _imageAnalysis = null;
+            _analysisExecutor = null;
+            _cameraProvider = null;
+        }
+
+        base.OnDestroy();
     }
 
     /// <summary>

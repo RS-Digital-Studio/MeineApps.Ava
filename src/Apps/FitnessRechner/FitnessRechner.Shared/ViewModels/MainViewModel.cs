@@ -31,6 +31,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly IChallengeService _challengeService;
     private readonly IHapticService _hapticService;
     private readonly IFitnessSoundService _soundService;
+    private readonly IAppLifecycleService _lifecycle;
 
     // Factories fuer Calculator-VMs (statt Service-Locator via App.Services)
     private readonly Func<BmiViewModel> _bmiVmFactory;
@@ -48,6 +49,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public event Action? CelebrationRequested;
     public event Action<string>? ExitHintRequested;
 
+    /// <summary>App-Pause/Resume (Android-Lifecycle). Die MainView stoppt darueber ihren
+    /// 30fps-Hintergrund-/Tab-Bar-Render-Loop im Hintergrund (Akku-Sparen).</summary>
+    public event Action<bool>? PauseStateChanged;
+
     public MainViewModel(
         IPurchaseService purchaseService,
         IAdService adService,
@@ -62,6 +67,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IChallengeService challengeService,
         IHapticService hapticService,
         IFitnessSoundService soundService,
+        IAppLifecycleService lifecycle,
         SettingsViewModel settingsViewModel,
         ProgressViewModel progressViewModel,
         FoodSearchViewModel foodSearchViewModel,
@@ -88,6 +94,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _challengeService = challengeService;
         _hapticService = hapticService;
         _soundService = soundService;
+        _lifecycle = lifecycle;
         _bmiVmFactory = bmiVmFactory;
         _caloriesVmFactory = caloriesVmFactory;
         _waterVmFactory = waterVmFactory;
@@ -137,7 +144,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _challengeService.ChallengeCompleted += OnChallengeCompleted;
 
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
+
+        // App-Pause/Resume an die MainView weiterreichen (stoppt deren Render-Loop im Hintergrund).
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
     }
+
+    private void OnAppPaused() => PauseStateChanged?.Invoke(true);
+    private void OnAppResumed() => PauseStateChanged?.Invoke(false);
 
     private void OnLanguageChanged()
     {
@@ -536,6 +550,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     {
         if (_disposed) return;
 
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
         _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
         SettingsViewModel.LanguageChanged -= OnLanguageChanged;
         _trackingService.EntryAdded -= RecordStreakActivity;

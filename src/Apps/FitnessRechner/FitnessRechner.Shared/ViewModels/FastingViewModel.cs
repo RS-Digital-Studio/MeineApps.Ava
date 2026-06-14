@@ -21,6 +21,7 @@ public sealed partial class FastingViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _localization;
     private readonly IHapticService _hapticService;
     private readonly IFitnessSoundService _soundService;
+    private readonly IAppLifecycleService _lifecycle;
     private DispatcherTimer? _countdownTimer;
 
     /// <summary>Navigation anfordern (z.B. ".." für zurück).</summary>
@@ -36,16 +37,23 @@ public sealed partial class FastingViewModel : ViewModelBase, IDisposable
         IFastingService fastingService,
         ILocalizationService localization,
         IHapticService hapticService,
-        IFitnessSoundService soundService)
+        IFitnessSoundService soundService,
+        IAppLifecycleService lifecycle)
     {
         _fastingService = fastingService;
         _localization = localization;
         _hapticService = hapticService;
         _soundService = soundService;
+        _lifecycle = lifecycle;
 
         // Events vom Service verdrahten
         _fastingService.FastingStarted += OnFastingStarted;
         _fastingService.FastingCompleted += OnFastingCompleted;
+
+        // App-Pause/Resume: der 1-Hz-Countdown-Timer laeuft sonst waehrend des gesamten
+        // Fastens (16-20h!) im Hintergrund weiter (Akku).
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
 
         // Initialen Zustand laden
         SelectedPlanIndex = (int)_fastingService.SelectedPlan;
@@ -54,6 +62,28 @@ public sealed partial class FastingViewModel : ViewModelBase, IDisposable
         LoadHistory();
 
         // Timer starten wenn bereits aktiv
+        if (_fastingService.IsActive)
+            StartCountdownTimer();
+    }
+
+    /// <summary>
+    /// App im Hintergrund: den 1-Hz-Countdown-Timer anhalten. Restzeit und der automatische
+    /// Fasten-Abschluss haengen an den persistierten UTC-Zeiten (<see cref="IFastingService"/>),
+    /// nicht am Timer-Tick — der Timer aktualisiert nur die Anzeige. Beim Resume wird der aktuelle
+    /// Stand sofort neu berechnet.
+    /// </summary>
+    private void OnAppPaused()
+    {
+        StopCountdownTimer();
+    }
+
+    private void OnAppResumed()
+    {
+        // Restzeit/Abschluss aus persistierten Zeiten neu bestimmen, dann ggf. Timer wieder starten.
+        _fastingService.CheckAndCompleteIfDone();
+        UpdateDisplay();
+        LoadHistory();
+
         if (_fastingService.IsActive)
             StartCountdownTimer();
     }
@@ -379,6 +409,8 @@ public sealed partial class FastingViewModel : ViewModelBase, IDisposable
         StopCountdownTimer();
         _fastingService.FastingStarted -= OnFastingStarted;
         _fastingService.FastingCompleted -= OnFastingCompleted;
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
     }
 
     #endregion

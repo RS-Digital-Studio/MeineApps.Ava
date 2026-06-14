@@ -27,6 +27,7 @@ public class MainActivity : AvaloniaMainActivity
     private RewardedAdHelper? _rewardedAdHelper;
     private AndroidBarcodeService? _barcodeService;
     private MainViewModel? _mainVm;
+    private IAppLifecycleService? _lifecycle;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -94,6 +95,9 @@ public class MainActivity : AvaloniaMainActivity
                 RunOnUiThread(() => Toast.MakeText(this, msg, ToastLength.Short)?.Show());
         }
 
+        // App-Lifecycle-Broker fuer Akku-Optimierung (Render-Loop + Fasting-Timer im Hintergrund stoppen).
+        _lifecycle = App.Services.GetService<IAppLifecycleService>();
+
         try
         {
             // Google Mobile Ads initialisieren - Ads erst nach SDK-Callback laden
@@ -143,12 +147,14 @@ public class MainActivity : AvaloniaMainActivity
     {
         base.OnResume();
         _adMobHelper?.Resume();
+        _lifecycle?.NotifyResumed();
         EnableImmersiveMode();
     }
 
     protected override void OnPause()
     {
         _adMobHelper?.Pause();
+        _lifecycle?.NotifyPaused();
         base.OnPause();
     }
 

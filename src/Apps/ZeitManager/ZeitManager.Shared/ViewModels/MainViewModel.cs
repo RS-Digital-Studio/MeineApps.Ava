@@ -18,6 +18,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly IAlarmSchedulerService _alarmScheduler;
     private readonly IHapticService _haptic;
     private readonly IPreferencesService _preferences;
+    private readonly IAppLifecycleService _lifecycle;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsTimerActive))]
@@ -60,6 +61,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     /// <summary>Wird ausgelöst um einen Exit-Hinweis anzuzeigen (z.B. Toast "Nochmal drücken zum Beenden").</summary>
     public event Action<string>? ExitHintRequested;
 
+    /// <summary>App-Pause/Resume (Android-Lifecycle). Die MainView stoppt darüber ihren
+    /// animierten Hintergrund-Render-Timer im Hintergrund (Akku-Sparen).</summary>
+    public event Action<bool>? PauseStateChanged;
+
     // Localized tab labels
     public string NavTimerText => _localization.GetString("Timer");
     public string NavStopwatchText => _localization.GetString("Stopwatch");
@@ -85,9 +90,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         StopwatchViewModel stopwatchViewModel,
         PomodoroViewModel pomodoroViewModel,
         AlarmViewModel alarmViewModel,
-        SettingsViewModel settingsViewModel)
+        SettingsViewModel settingsViewModel,
+        IAppLifecycleService lifecycle)
     {
         _localization = localization;
+        _lifecycle = lifecycle;
         _preferences = preferences;
         _timerService = timerService;
         _alarmScheduler = alarmScheduler;
@@ -101,6 +108,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         _localization.LanguageChanged += OnLanguageChanged;
         _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
+
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
 
         // Timer/Alarm Events verdrahten
         _timerService.TimerFinished += OnTimerFinished;
@@ -327,11 +337,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void NavigateToSettings() => SelectedTabIndex = 4;
 
+    private void OnAppPaused() => PauseStateChanged?.Invoke(true);
+    private void OnAppResumed() => PauseStateChanged?.Invoke(false);
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
 
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
         _localization.LanguageChanged -= OnLanguageChanged;
         _timerService.TimerFinished -= OnTimerFinished;
         _alarmScheduler.AlarmTriggered -= OnAlarmTriggered;

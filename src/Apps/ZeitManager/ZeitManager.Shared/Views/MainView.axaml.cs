@@ -86,6 +86,7 @@ public partial class MainView : UserControl
         {
             _vm.FloatingTextRequested -= OnFloatingText;
             _vm.CelebrationRequested -= OnCelebration;
+            _vm.PauseStateChanged -= OnPauseStateChanged;
         }
 
         _vm = DataContext as MainViewModel;
@@ -94,8 +95,21 @@ public partial class MainView : UserControl
         {
             _vm.FloatingTextRequested += OnFloatingText;
             _vm.CelebrationRequested += OnCelebration;
+            _vm.PauseStateChanged += OnPauseStateChanged;
             TryStartOnboarding();
         }
+    }
+
+    /// <summary>
+    /// App-Pause/Resume (Android-Lifecycle via MainViewModel): den ~5fps-Clockwork-Hintergrund
+    /// im Hintergrund anhalten — er ist rein dekorativ und niemand sieht ihn (Akku).
+    /// </summary>
+    private void OnPauseStateChanged(bool isPaused)
+    {
+        if (isPaused)
+            _renderTimer?.Stop();
+        else
+            _renderTimer?.Start();
     }
 
     private void OnFloatingText(string text, string category)

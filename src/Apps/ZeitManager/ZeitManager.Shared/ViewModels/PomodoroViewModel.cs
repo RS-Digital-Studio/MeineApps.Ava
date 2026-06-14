@@ -21,7 +21,13 @@ public sealed partial class PomodoroViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _localization;
     private readonly IPreferencesService _preferences;
     private readonly INotificationService _notificationService;
+    private readonly IAppLifecycleService _lifecycle;
     private Timer? _timer;
+
+    /// <summary>True solange die App im Vordergrund ist — die PomodoroView koppelt ihren
+    /// 30fps-Ring-Render-Loop daran (kein Rendering im Hintergrund, Akku).</summary>
+    [ObservableProperty]
+    private bool _isAppForeground = true;
 
     // Konfiguration (in Preferences gespeichert)
     [ObservableProperty]
@@ -207,14 +213,18 @@ public sealed partial class PomodoroViewModel : ViewModelBase, IDisposable
         IAudioService audioService,
         ILocalizationService localization,
         IPreferencesService preferences,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        IAppLifecycleService lifecycle)
     {
         _database = database;
         _audioService = audioService;
         _localization = localization;
         _preferences = preferences;
         _notificationService = notificationService;
+        _lifecycle = lifecycle;
         _localization.LanguageChanged += OnLanguageChanged;
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
 
         LoadConfig();
         ResetPhase();
@@ -627,12 +637,17 @@ public sealed partial class PomodoroViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(string.Empty);
     }
 
+    private void OnAppPaused() => IsAppForeground = false;
+    private void OnAppResumed() => IsAppForeground = true;
+
     public void Dispose()
     {
         _timer?.Stop();
         _timer?.Dispose();
         _timer = null;
         _localization.LanguageChanged -= OnLanguageChanged;
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
     }
 }
 

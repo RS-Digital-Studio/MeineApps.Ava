@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Avalonia.Threading;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using ZeitManager.Models;
 using ZeitManager.Services;
@@ -18,6 +19,7 @@ public sealed partial class AlarmViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _localization;
     private readonly IAudioService _audioService;
     private readonly IAlarmSchedulerService _alarmScheduler;
+    private readonly IAppLifecycleService _lifecycle;
 
     [ObservableProperty]
     private ObservableCollection<AlarmItem> _alarms = [];
@@ -154,7 +156,7 @@ public sealed partial class AlarmViewModel : ViewModelBase, IDisposable
 
     private void RefreshAvailableSounds() => AvailableSounds = _audioService.AvailableSounds;
 
-    public AlarmViewModel(IDatabaseService database, ILocalizationService localization, IAudioService audioService, IAlarmSchedulerService alarmScheduler, ShiftScheduleViewModel shiftScheduleViewModel)
+    public AlarmViewModel(IDatabaseService database, ILocalizationService localization, IAudioService audioService, IAlarmSchedulerService alarmScheduler, ShiftScheduleViewModel shiftScheduleViewModel, IAppLifecycleService lifecycle)
     {
         _database = database;
         _localization = localization;
@@ -162,7 +164,10 @@ public sealed partial class AlarmViewModel : ViewModelBase, IDisposable
         _alarmScheduler = alarmScheduler;
         _shiftScheduleViewModel = shiftScheduleViewModel;
         _availableSounds = _audioService.AvailableSounds;
+        _lifecycle = lifecycle;
         _localization.LanguageChanged += OnLanguageChanged;
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
         _initTask = InitializeAsync();
     }
 
@@ -435,6 +440,20 @@ public sealed partial class AlarmViewModel : ViewModelBase, IDisposable
         Dispatcher.UIThread.Post(UpdateNextAlarmCountdown);
     }
 
+    /// <summary>
+    /// App im Hintergrund: den 60s-Countdown-Timer anhalten — er aktualisiert nur das Label
+    /// "nächster Alarm in …" und stört sonst das Geräte-Doze. Die eigentliche Alarm-Auslösung
+    /// läuft unabhängig über den AlarmManager. Beim Resume sofort neu berechnen.
+    /// </summary>
+    private void OnAppPaused() => _countdownTimer?.Stop();
+
+    private void OnAppResumed()
+    {
+        if (_countdownTimer == null) return;
+        UpdateNextAlarmCountdown();
+        _countdownTimer.Start();
+    }
+
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         OnPropertyChanged(string.Empty);
@@ -450,6 +469,8 @@ public sealed partial class AlarmViewModel : ViewModelBase, IDisposable
         _disposed = true;
 
         _localization.LanguageChanged -= OnLanguageChanged;
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
         if (_countdownTimer != null)
         {
             _countdownTimer.Elapsed -= OnCountdownTimerElapsed;

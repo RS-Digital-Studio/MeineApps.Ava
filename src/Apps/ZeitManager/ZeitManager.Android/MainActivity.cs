@@ -72,12 +72,16 @@ public class MainActivity : AvaloniaMainActivity
             _mainVm.ExitHintRequested += msg =>
                 RunOnUiThread(() => Toast.MakeText(this, msg, ToastLength.Short)?.Show());
         }
+
+        // App-Lifecycle-Broker fuer Akku-Optimierung (Timer/Render-Loops im Hintergrund stoppen).
+        _lifecycle = App.Services?.GetService<IAppLifecycleService>();
     }
 
     protected override void OnResume()
     {
         base.OnResume();
         IsAppInForeground = true;
+        _lifecycle?.NotifyResumed();
         EnableImmersiveMode();
     }
 
@@ -85,6 +89,7 @@ public class MainActivity : AvaloniaMainActivity
     {
         base.OnPause();
         IsAppInForeground = false;
+        _lifecycle?.NotifyPaused();
     }
 
     /// <summary>
@@ -188,6 +193,7 @@ public class MainActivity : AvaloniaMainActivity
     }
 
     private MainViewModel? _mainVm;
+    private IAppLifecycleService? _lifecycle;
 
 #pragma warning disable CA1422 // OnBackPressed ab API 33 veraltet, aber notwendig für ältere API-Level
     public override void OnBackPressed()

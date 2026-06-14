@@ -80,7 +80,12 @@ public partial class PomodoroView : UserControl
             case nameof(vm.TodaySessions):
             case nameof(vm.DailyGoal):
                 PomodoroRingCanvas?.InvalidateSurface();
-                UpdateAnimation(vm.IsRunning);
+                UpdateAnimation(vm.IsRunning && vm.IsAppForeground);
+                break;
+
+            // App-Pause/Resume: Ring-Render-Loop anhalten/fortsetzen (Akku im Hintergrund).
+            case nameof(vm.IsAppForeground):
+                UpdateAnimation(vm.IsRunning && vm.IsAppForeground);
                 break;
 
             // Wochen-Balken → nur WeeklyBarsCanvas
@@ -98,16 +103,16 @@ public partial class PomodoroView : UserControl
                 PomodoroRingCanvas?.InvalidateSurface();
                 WeeklyBarsCanvas?.InvalidateSurface();
                 HeatmapCanvas?.InvalidateSurface();
-                UpdateAnimation(vm.IsRunning);
+                UpdateAnimation(vm.IsRunning && vm.IsAppForeground);
                 if (vm.IsStatisticsView)
                     StartBarAnimation();
                 break;
         }
     }
 
-    private void UpdateAnimation(bool isRunning)
+    private void UpdateAnimation(bool shouldAnimate)
     {
-        if (isRunning && _animTimer == null)
+        if (shouldAnimate && _animTimer == null)
         {
             _animStopwatch.Restart();
             _animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
@@ -118,7 +123,7 @@ public partial class PomodoroView : UserControl
             };
             _animTimer.Start();
         }
-        else if (!isRunning && _animTimer != null)
+        else if (!shouldAnimate && _animTimer != null)
         {
             _animTimer.Stop();
             _animTimer = null;

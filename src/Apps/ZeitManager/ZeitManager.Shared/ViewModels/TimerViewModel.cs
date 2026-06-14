@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using ZeitManager.Models;
 using ZeitManager.Services;
@@ -14,6 +15,12 @@ public sealed partial class TimerViewModel : ViewModelBase, IDisposable
     private readonly ITimerService _timerService;
     private readonly ILocalizationService _localization;
     private readonly IDatabaseService _database;
+    private readonly IAppLifecycleService _lifecycle;
+
+    /// <summary>True solange die App im Vordergrund ist — die TimerView koppelt ihren
+    /// 30fps-Render-Loop daran (kein Rendering im Hintergrund, Akku).</summary>
+    [ObservableProperty]
+    private bool _isAppForeground = true;
 
     [ObservableProperty]
     private ObservableCollection<TimerItem> _timers = [];
@@ -104,17 +111,23 @@ public sealed partial class TimerViewModel : ViewModelBase, IDisposable
 
     private TimerItem? _activeRunningTimer;
 
-    public TimerViewModel(ITimerService timerService, ILocalizationService localization, IDatabaseService database)
+    public TimerViewModel(ITimerService timerService, ILocalizationService localization, IDatabaseService database, IAppLifecycleService lifecycle)
     {
         _timerService = timerService;
         _localization = localization;
         _database = database;
+        _lifecycle = lifecycle;
         _localization.LanguageChanged += OnLanguageChanged;
         _timerService.TimersChanged += OnTimersChanged;
         _timerService.TimerTick += OnTimerTick;
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
 
         _initTask = InitializeAsync();
     }
+
+    private void OnAppPaused() => IsAppForeground = false;
+    private void OnAppResumed() => IsAppForeground = true;
 
     /// <summary>
     /// Wartet auf Abschluss der Initialisierung (Timer + Presets aus DB).
@@ -336,6 +349,8 @@ public sealed partial class TimerViewModel : ViewModelBase, IDisposable
         _localization.LanguageChanged -= OnLanguageChanged;
         _timerService.TimersChanged -= OnTimersChanged;
         _timerService.TimerTick -= OnTimerTick;
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
 
         GC.SuppressFinalize(this);
     }

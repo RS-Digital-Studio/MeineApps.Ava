@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using ZeitManager.Audio;
 using ZeitManager.Models;
@@ -14,6 +15,7 @@ public sealed partial class StopwatchViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly ILocalizationService _localization;
+    private readonly IAppLifecycleService _lifecycle;
     private readonly Stopwatch _stopwatch = new();
     private System.Timers.Timer? _uiTimer;
     private TimeSpan _offset = TimeSpan.Zero;
@@ -27,6 +29,11 @@ public sealed partial class StopwatchViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private bool _isRunning;
+
+    /// <summary>True solange die App im Vordergrund ist — die StopwatchView koppelt ihren
+    /// 30fps-Render-Loop daran (kein Rendering im Hintergrund, Akku).</summary>
+    [ObservableProperty]
+    private bool _isAppForeground = true;
 
     [ObservableProperty]
     private ObservableCollection<StopwatchLap> _laps = [];
@@ -58,10 +65,34 @@ public sealed partial class StopwatchViewModel : ViewModelBase, IDisposable
 
     public bool HasLaps => Laps.Count > 0;
 
-    public StopwatchViewModel(ILocalizationService localization)
+    public StopwatchViewModel(ILocalizationService localization, IAppLifecycleService lifecycle)
     {
         _localization = localization;
+        _lifecycle = lifecycle;
         _localization.LanguageChanged += OnLanguageChanged;
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
+    }
+
+    /// <summary>
+    /// App im Hintergrund: das 20Hz-Display-Update anhalten. Die gemessene Zeit läuft über
+    /// <see cref="_stopwatch"/> + <see cref="_offset"/> unabhängig weiter — nur das sichtbare
+    /// Repaint pausiert (Akku). Beim Resume ist die Anzeige sofort wieder exakt.
+    /// </summary>
+    private void OnAppPaused()
+    {
+        IsAppForeground = false;
+        _uiTimer?.Stop();
+        _uiTimer?.Dispose();
+        _uiTimer = null;
+    }
+
+    private void OnAppResumed()
+    {
+        IsAppForeground = true;
+        if (!IsRunning) return;
+        UpdateDisplay();   // sofort den aktuellen Stand zeigen
+        EnsureUiTimer();   // 20Hz-Update wieder aufnehmen
     }
 
     [RelayCommand]
@@ -214,6 +245,8 @@ public sealed partial class StopwatchViewModel : ViewModelBase, IDisposable
         _disposed = true;
 
         _localization.LanguageChanged -= OnLanguageChanged;
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
         _uiTimer?.Stop();
         _uiTimer?.Dispose();
         _uiTimer = null;

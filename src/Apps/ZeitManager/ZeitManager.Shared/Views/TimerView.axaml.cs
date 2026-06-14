@@ -47,10 +47,10 @@ public partial class TimerView : UserControl
     {
         if (sender is not TimerViewModel vm) return;
 
-        if (args.PropertyName is nameof(vm.ShowVisualization))
+        if (args.PropertyName is nameof(vm.ShowVisualization) or nameof(vm.IsAppForeground))
         {
-            // Render-Loop starten/stoppen je nach Sichtbarkeit
-            if (vm.ShowVisualization)
+            // Render-Loop nur bei sichtbarer Visualisierung UND App im Vordergrund (Akku).
+            if (vm.ShowVisualization && vm.IsAppForeground)
                 StartRenderLoop();
             else
                 StopRenderLoop();

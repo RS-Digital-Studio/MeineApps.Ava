@@ -142,6 +142,10 @@ public partial class App : Application
         services.AddSingleton<IShakeDetectionService, DesktopShakeDetectionService>();
         services.AddSingleton<IHapticService, NoOpHapticService>();
 
+        // App-Lifecycle-Broker: Android speist NotifyPaused/Resumed; Konsumenten stoppen
+        // Timer/Render-Loops im Hintergrund (Akku).
+        services.AddSingleton<IAppLifecycleService, AppLifecycleService>();
+
         // Platform-specific services (Android registers AndroidNotificationService, Desktop uses default)
         if (ConfigurePlatformServices != null)
             ConfigurePlatformServices(services);

@@ -50,13 +50,18 @@ public partial class StopwatchView : UserControl
         if (args.PropertyName is nameof(vm.TotalElapsedSeconds) or nameof(vm.IsRunning) or nameof(vm.Laps))
         {
             StopwatchCanvas?.InvalidateSurface();
-            UpdateAnimation(vm.IsRunning);
+            UpdateAnimation(vm.IsRunning && vm.IsAppForeground);
+        }
+        else if (args.PropertyName == nameof(vm.IsAppForeground))
+        {
+            // App-Pause/Resume: den 30fps-Render-Loop anhalten/fortsetzen (Akku im Hintergrund).
+            UpdateAnimation(vm.IsRunning && vm.IsAppForeground);
         }
     }
 
-    private void UpdateAnimation(bool isRunning)
+    private void UpdateAnimation(bool shouldAnimate)
     {
-        if (isRunning && _animTimer == null)
+        if (shouldAnimate && _animTimer == null)
         {
             _animStopwatch.Restart();
             _animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
@@ -67,7 +72,7 @@ public partial class StopwatchView : UserControl
             };
             _animTimer.Start();
         }
-        else if (!isRunning && _animTimer != null)
+        else if (!shouldAnimate && _animTimer != null)
         {
             _animTimer.Stop();
             _animTimer = null;

@@ -25,6 +25,14 @@ public partial class App : Application
     public static IServiceProvider Services { get; private set; } = null!;
 
     /// <summary>
+    /// Aktuelles Android-Root-Panel — wird vom IActivityApplicationLifetime.MainViewFactory gesetzt.
+    /// RunLoadingAsync greift darauf zu, um den DataContext nach Pipeline-Abschluss zu setzen.
+    /// Avalonia 12 hat keinen direkten "View"-Getter auf IActivityApplicationLifetime und spiegelt
+    /// MainViewFactory NICHT in ISingleViewApplicationLifetime.MainView.
+    /// </summary>
+    private static Control? _activityRoot;
+
+    /// <summary>
     /// Versionsnummer aus Assembly lesen (statt hardcoded)
     /// </summary>
     private static string GetAppVersion()
@@ -95,6 +103,24 @@ public partial class App : Application
             desktop.MainWindow.Content = panel;
             _ = RunLoadingAsync(splash);
         }
+        else if (ApplicationLifetime is IActivityApplicationLifetime activity)
+        {
+            // Android (Avalonia 12): IActivityApplicationLifetime.MainViewFactory ist der voll
+            // unterstuetzte Render-Pfad. ISingleViewApplicationLifetime.MainView wird von Avalonia
+            // selbst als "not fully supported on Android" gewarnt. MainViewFactory wird pro Activity
+            // aufgerufen; die Loading-Pipeline laeuft beim ersten Aufruf (Singleton-Graph).
+            // Referenz-Pattern: BomberBlast.
+            activity.MainViewFactory = () =>
+            {
+                var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = $"v{GetAppVersion()}", Renderer = new WorkTimeProSplashRenderer() };
+                var panel = new Panel();
+                panel.Children.Add(new MainView());
+                panel.Children.Add(splash);
+                _activityRoot = panel;
+                _ = RunLoadingAsync(splash);
+                return panel;
+            };
+        }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
             var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = $"v{GetAppVersion()}", Renderer = new WorkTimeProSplashRenderer() };
@@ -140,6 +166,13 @@ public partial class App : Application
                 {
                     desktop.MainWindow.DataContext = mainVm;
                 }
+                // Android (IActivityApplicationLifetime): DataContext auf das von MainViewFactory
+                // erzeugte Panel (_activityRoot) — Avalonia spiegelt MainViewFactory NICHT in
+                // ISingleViewApplicationLifetime.MainView (das waere hier null).
+                else if (_activityRoot != null)
+                {
+                    _activityRoot.DataContext = mainVm;
+                }
                 else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform
                          && singleViewPlatform.MainView != null)
                 {
@@ -165,6 +198,8 @@ public partial class App : Application
                         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
                             && desktop.MainWindow != null)
                             desktop.MainWindow.DataContext = mainVm;
+                        else if (_activityRoot != null)
+                            _activityRoot.DataContext = mainVm;
                         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView
                                  && singleView.MainView != null)
                             singleView.MainView.DataContext = mainVm;

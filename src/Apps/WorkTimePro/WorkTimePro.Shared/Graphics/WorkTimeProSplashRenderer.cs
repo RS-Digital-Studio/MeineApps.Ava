@@ -13,7 +13,6 @@ public sealed class WorkTimeProSplashRenderer : SplashRendererBase
 {
     public WorkTimeProSplashRenderer()
     {
-        _titleFont = new SKFont(_titleTypeface) { Size = 26f };
     }
 
     // --- Farb-Konstanten ---
@@ -57,9 +56,13 @@ public sealed class WorkTimeProSplashRenderer : SplashRendererBase
     private readonly SKPaint _stampPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = StampColor };
     private readonly SKPaint _particlePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
 
-    // --- Gecachte Fonts + Typefaces ---
-    private readonly SKTypeface _titleTypeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold);
-    private readonly SKFont _titleFont;
+    // --- Gecachte Fonts ---
+    // Default-Typeface mit synthetischem Fett (Embolden) statt SKTypeface.FromFamilyName("Arial"):
+    // "Arial" existiert auf Android nicht → FromFamilyName liefert dort einen unbrauchbaren/null
+    // Typeface, dessen MeasureText/DrawText im ersten Splash-Render den Render-Thread blockiert
+    // (Avalonia committet nie die erste Frame → App haengt im System-Splash). Default-Font ist
+    // plattformrobust (gleiche Loesung wie HandwerkerImperiumSplashRenderer).
+    private readonly SKFont _titleFont = new() { Embolden = true, Size = 26f };
 
     protected override void OnUpdate(float deltaTime)
     {
@@ -376,6 +379,5 @@ public sealed class WorkTimeProSplashRenderer : SplashRendererBase
         _stampPaint.Dispose();
         _particlePaint.Dispose();
         _titleFont.Dispose();
-        _titleTypeface.Dispose();
     }
 }

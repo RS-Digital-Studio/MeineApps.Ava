@@ -117,6 +117,8 @@ public partial class MainView : UserControl
         DataContextChanged -= OnDataContextChanged;
         KeyDown -= OnKeyDown;
         SizeChanged -= OnMainViewSizeChanged;
+        // Falls der Indikator noch auf das erste Layout wartet: Handler abmelden (kein Leak bei Re-Attach)
+        LayoutUpdated -= OnLayoutUpdatedForIndicator;
     }
 
     private void OnMainViewSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -208,6 +210,10 @@ public partial class MainView : UserControl
         }
     }
 
+    // Merkt sich den Ziel-Tab, falls der Indikator vor dem ersten Layout positioniert werden
+    // soll (Bounds noch 0). Nach dem ersten gültigen Layout wird er einmalig nachgezogen.
+    private int _pendingIndicatorTab = -1;
+
     /// <summary>
     /// Bewegt den Tab-Indikator zum aktiven Tab (via translateX)
     /// </summary>
@@ -221,19 +227,42 @@ public partial class MainView : UserControl
         var tabBar = indicator.Parent;
         if (tabBar == null) return;
 
-        // Offset berechnen: Canvas-Breite / 5 * activeTab + Zentrierung
-        // Die Berechnung erfolgt bei LayoutUpdated falls Breite noch 0 ist
         var totalWidth = Bounds.Width;
         if (totalWidth < 10)
         {
-            // Verzögert ausführen wenn noch nicht gelayoutet
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => UpdateTabIndicator(activeTab), Avalonia.Threading.DispatcherPriority.Render);
+            // Bounds noch nicht bekannt (Aufruf aus OnAttachedToVisualTree, vor dem ersten
+            // Layout-Pass). NICHT auf DispatcherPriority.Render reposten: ein vor der ersten
+            // Frame geposteter Render-Prioritäts-Job verklemmt auf Android (Avalonia 12) die
+            // Erstellung der TopLevel-SurfaceView → kein Compositor-Tick → erste Frame wird nie
+            // committed → App haengt deterministisch im System-Splash (Layout + Loading-Pipeline
+            // laufen durch, aber nichts wird gerendert). Da Bounds.Width ohne Render nie >= 10
+            // wird, repostet sich der Render-Job zudem endlos und haelt den Render-Pfad besetzt.
+            // Stattdessen einmalig auf das nächste LayoutUpdated warten (idiomatisch, deadlock-frei).
+            _pendingIndicatorTab = activeTab;
+            LayoutUpdated -= OnLayoutUpdatedForIndicator;
+            LayoutUpdated += OnLayoutUpdatedForIndicator;
             return;
         }
 
         var tabWidth = totalWidth / 5.0;
         var offset = tabWidth * activeTab + (tabWidth - 48) / 2.0;
         indicator.RenderTransform = new TranslateTransform(offset, 0);
+    }
+
+    /// <summary>
+    /// Zieht den Tab-Indikator nach, sobald nach dem Attach das erste gültige Layout vorliegt.
+    /// Meldet sich nach dem ersten erfolgreichen Lauf selbst wieder ab (Einmal-Trigger).
+    /// </summary>
+    private void OnLayoutUpdatedForIndicator(object? sender, EventArgs e)
+    {
+        if (Bounds.Width < 10) return; // noch kein gültiges Layout — auf nächstes Update warten
+        LayoutUpdated -= OnLayoutUpdatedForIndicator;
+        if (_pendingIndicatorTab >= 0)
+        {
+            var tab = _pendingIndicatorTab;
+            _pendingIndicatorTab = -1;
+            UpdateTabIndicator(tab);
+        }
     }
 
     // === Keyboard Shortcuts (Desktop) ===

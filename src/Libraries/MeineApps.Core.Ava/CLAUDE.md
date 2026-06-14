@@ -323,6 +323,20 @@ spezifisches → [MeineApps.UI](../../UI/MeineApps.UI/CLAUDE.md), Monetarisierun
   Folge: Avalonia kommt nie zur ersten Frame, App hängt dauerhaft im Android-System-Splash (kein
   Crash, Prozess lebt). Fix: vor `InvokeAsync` `Dispatcher.UIThread.CheckAccess()` prüfen → direkt
   ausführen (Init-Pfad), sonst dispatchen (Background-Thread wie `System.Timers.Timer`).
+- **`Dispatcher.UIThread.Post(..., DispatcherPriority.Render)` vor der ersten Frame verklemmt den
+  Render-Pfad auf Android.** Ein Control, das in `OnAttachedToVisualTree` (also vor dem ersten
+  Layout-Pass, `Bounds == 0`) etwas auf **`DispatcherPriority.Render`** postet — typisch ein
+  Self-Repost-Muster "noch nicht gelayoutet → später erneut versuchen" —, blockiert auf Android
+  (Avalonia 12) die Erstellung der TopLevel-`SurfaceView`: kein Compositor-Tick → die erste Frame
+  wird nie committed → die App hängt **deterministisch im Android-System-Splash** (Layout-Pass und
+  Loading-Pipeline laufen vollständig durch, es wird nur nie gerendert; kein Crash, kein ANR, kein
+  Log). Verschärfend: ohne Render bleiben die Bounds 0, der Render-Job repostet sich endlos und hält
+  die Render-Queue dauerhaft besetzt. Das Symptom ist **timing-abhängig** (mal gewinnt die
+  Surface-Erstellung das Rennen, mal der Render-Post) — gleicher Code kann an einem Tag laufen und am
+  nächsten hängen. Fix: NICHT auf `DispatcherPriority.Render` reposten, um auf gültige Bounds zu
+  warten — stattdessen einmalig das **`LayoutUpdated`**-Event abonnieren (idiomatisch, deadlock-frei,
+  kein Busy-Repost) und sich nach dem ersten gültigen Layout wieder abmelden. Reference-Case:
+  WorkTimePro `MainView.UpdateTabIndicator` (Tab-Indikator-Positionierung vor erstem Layout).
 - **Startup-Last bei vielen Child-VMs:** spät freigeschaltete VMs als `Lazy<T>` injizieren
   (`AddLazyResolution()`), in `EnsureXxxVm()` beim ersten Navigations-Ziel instanziieren +
   verdrahten. Public Property `XxxViewModel?` (`[ObservableProperty]`) feuert dann das Binding;

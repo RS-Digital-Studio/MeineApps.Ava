@@ -234,12 +234,15 @@ TradingServiceBase (abstrakt)
 ### Cross-Sectional-Momentum-Modus (`EngineMode.CrossSectional`)
 
 **Zweite, market-neutrale Engine NEBEN dem Scalper** (opt-in, kein Eingriff in TradingServiceBase). Long die
-staerksten / short die schwaechsten Symbole nach vol-bereinigtem Momentum, monatlicher Wall-Clock-Rebalance, 1x.
+staerksten / short die schwaechsten Symbole nach vol-bereinigtem Momentum, ~woechentlicher Wall-Clock-Rebalance, 2x.
 Backtest-validiert phasen-robust (Details → `tools/BingXBacktestLab/CLAUDE.md` + Memory `bingxbot.md`).
 
 **Validiertes Live-Profil (Defaults in `CrossSectionalSettings`): Top-50 inkl. TradFi, 3L-3S,
-L120/R21d/radj/lev1.** Auf Top-100 ist KEINE Config phasen-robust, und OHNE TradFi kippt auch
-Top-50 — die Cross-Asset-Dispersion (Gold/Indizes/Forex) traegt den Edge. Betriebs-Mechanik:
+L60/R9d/radj/lev2** (4-Phasen-Screen Top-50/154 USDT: min +28,3 %, Σ +297 %). Das fruehere
+L120/R21d-Profil ist auf demselben Universum nur 2/4 Phasen positiv (min −50,6 %); 2L-2S hat die
+beste Rendite, aber ~69 % MaxDD in der juengsten Phase (Konzentrationsrisiko) und scheidet aus.
+Auf Top-100 ist KEINE Config phasen-robust, und OHNE TradFi kippt auch Top-50 — die Cross-Asset-
+Dispersion (Gold/Indizes/Forex) traegt den Edge. Betriebs-Mechanik:
 - **Paper startet immer frisch** (kein State-Adopt — die SimulatedExchange ist nach Restart leer);
   State-Datei pro Modus (`xsec-state-paper.json` / `xsec-state-live.json`, keine Kontamination).
 - **Paper-Trades werden via `BotDatabaseService` persistiert** (Mode=Paper in der Trades-Tabelle);

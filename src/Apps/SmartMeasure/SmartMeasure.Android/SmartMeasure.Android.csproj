@@ -10,6 +10,7 @@
 
     <!-- Min-API 26 (Android 8.0) — deckt NotificationChannel, FileProvider, PendingIntent.Immutable ab. -->
     <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
 
     <!-- Mapsui + NetTopologySuite nutzen Reflection die unter AOT/Trimmer fehlschlagen.
          AOT deaktivieren: Kein JIT-Crash, kein Trimmer-Problem mit NTS-Geometrien -->

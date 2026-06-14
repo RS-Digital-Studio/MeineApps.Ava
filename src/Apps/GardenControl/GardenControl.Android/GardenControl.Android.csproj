@@ -9,6 +9,7 @@
     <Version>1.0.0</Version>
     <!-- Avalonia 12 + AndroidX-Lifecycle-Runtime fordern minSdk 23 -->
     <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>

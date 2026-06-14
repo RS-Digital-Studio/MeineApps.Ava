@@ -18,6 +18,7 @@ MeineApps.Core.Ava/
 ├── Services/
 │   ├── IPreferencesService + PreferencesService           # JSON, debounced (500ms), Suspend/Resume/Flush
 │   ├── IHapticService + NoOpHapticService                 # Vibrations-Abstraktion (Desktop = NoOp)
+│   ├── IAppLifecycleService + AppLifecycleService         # App-Vordergrund/Hintergrund-Broker (Akku)
 │   ├── BackPressHelper                                     # Double-Back-to-Exit (Android)
 │   ├── ICalculationHistoryService + CalculationHistoryService  # History pro Rechner (Calculator-Apps)
 │   ├── IUnitConverterService + UnitConverterService        # Länge/Fläche/Volumen/Gewicht (Metrisch/Imperial)
@@ -86,6 +87,50 @@ _haptic.Tick();        // Leicht  (Ziffern, Tab-Wechsel)
 _haptic.Click();       // Mittel  (Speichern, CheckIn/CheckOut)
 _haptic.HeavyClick();  // Stark   (Berechnung, Achievement, Alarm-Dismiss)
 ```
+
+### `IAppLifecycleService` / `AppLifecycleService`
+
+Zentraler App-Vordergrund/Hintergrund-Broker für **Akku-Optimierung**: Konsumenten stoppen Timer,
+Render-Loops, Sensoren und Netzwerk-Verbindungen, sobald die App in den Hintergrund geht.
+
+```csharp
+public interface IAppLifecycleService
+{
+    bool IsForeground { get; }   // Startwert true
+    event Action? Resumed;       // App wieder im Vordergrund
+    event Action? Paused;        // App im Hintergrund
+    void NotifyResumed();        // Plattform-Hook (Android OnResume)
+    void NotifyPaused();         // Plattform-Hook (Android OnPause)
+}
+```
+
+**Warum nötig:** Avalonia detacht Views beim App-Backgrounding **nicht** (kein
+`OnDetachedFromVisualTree`), und `Window.Deactivated` existiert auf Android nicht. Außerdem lassen
+opacity-basierte Tab-Umschaltungen (`Border.TabContent`-Pattern) `IsEffectivelyVisible` der Kinder
+`true`. Ohne diesen Broker laufen `DispatcherTimer`/Render-Loops/Polls im Hintergrund weiter und
+halten das Gerät aus dem Doze (Radio-/CPU-Wakeups).
+
+**Verdrahtung (Pflicht-Muster, Referenz-Implementierung: ZeitManager):**
+1. DI: `services.AddSingleton<IAppLifecycleService, AppLifecycleService>();`.
+2. Android `MainActivity`: `_lifecycle = App.Services?.GetService<IAppLifecycleService>();` in
+   `OnCreate`; `OnResume` → `NotifyResumed()`, `OnPause` → `NotifyPaused()`.
+3. **Desktop speist den Broker bewusst NICHT** (kein Akku-Thema; `Window.Deactivated` würde bei
+   bloßem Fokusverlust falsch auslösen und sichtbares Rendering stoppen). Auf Desktop bleibt
+   `IsForeground` dauerhaft `true`.
+4. Konsumenten: VMs mit Timer/Sensor/Connection injizieren den Service per Constructor, abonnieren
+   `Paused`/`Resumed` (Stopp im Hintergrund, sofortiges Update/Reconnect bei Resume), melden in
+   `Dispose()` ab. Views mit eigenem Render-Loop bekommen das Signal über eine VM-Property
+   (`[ObservableProperty] bool IsAppForeground`, View koppelt ihren Loop daran) oder — für die
+   MainView — ein VM-Event (`event Action<bool>? PauseStateChanged`); **kein Service-Locator in der View**.
+
+**Korrektheit:** Nur Anzeige/Render/Polling pausiert — die fachliche Zeitbasis (Stopwatch,
+persistierte UTC-Timestamps, Offline-Berechnung, DB) läuft unabhängig weiter und wird bei Resume
+sofort exakt dargestellt. Flankengetriggert (kein Doppel-Feuern bei wiederholtem OnResume); ein
+werfender Handler blockiert die übrigen nicht (wichtig im OnPause-Pfad vor OS-Kill).
+
+> HandwerkerImperium nutzt diesen Broker **nicht** — es hat ein eigenes, äquivalentes
+> `MainViewModel.PauseGameLoopAsync()`/`PauseStateChanged`-System (mit synchronem Save vor OS-Kill).
+> BomberBlast hat ebenfalls ein eigenes `LifecycleHub`-System. Neue Apps nutzen `IAppLifecycleService`.
 
 ### `BackPressHelper`
 

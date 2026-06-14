@@ -293,6 +293,19 @@ _childVM.NavigationRequested += route => CurrentPage = route;
 `_backPressHelper.HandleDoubleBack(msg)`. `MainActivity.OnBackPressed()` delegiert an
 `_mainVm.HandleBackPressed()`. WorkTimePro nutzt `FloatingTextRequested` statt `ExitHintRequested`.
 
+### Android App-Pause Pattern (Akku) — `IAppLifecycleService`
+
+Timer, Render-Loops, Sensoren und Netzwerk-Verbindungen müssen im **Hintergrund stoppen** — Avalonia
+detacht Views beim Backgrounding nicht, und opacity-basierte Tab-Umschaltung lässt
+`IsEffectivelyVisible` `true`. `MainActivity.OnPause/OnResume` speisen den zentralen
+`IAppLifecycleService` (Core.Ava) mit `NotifyPaused()`/`NotifyResumed()`; VMs/Services konsumieren
+`Paused`/`Resumed`, Views über eine VM-`IsAppForeground`-Property bzw. ein `PauseStateChanged`-Event
+(kein Service-Locator in der View). Nur Anzeige/Render pausiert — die fachliche Zeitbasis (Stopwatch,
+UTC-Timestamps, Offline-Berechnung) läuft weiter und ist bei Resume sofort exakt. Desktop speist den
+Broker bewusst nicht. Referenz: ZeitManager. Pflicht-Muster + Begründung →
+[Core.Ava-CLAUDE.md](src/Libraries/MeineApps.Core.Ava/CLAUDE.md) (`IAppLifecycleService`).
+HandwerkerImperium und BomberBlast haben eigene äquivalente Pause-Systeme.
+
 ### DateTime Pattern
 
 - **Persistenz:** immer `DateTime.UtcNow` (nie `DateTime.Now`).

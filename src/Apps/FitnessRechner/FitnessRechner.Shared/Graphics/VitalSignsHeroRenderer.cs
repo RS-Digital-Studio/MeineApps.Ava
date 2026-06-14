@@ -107,6 +107,42 @@ public sealed class VitalSignsHeroRenderer : IDisposable
     };
 
     // =====================================================================
+    // EKG-Ring Trail-Gradient: Farben + Positionen sind konstant (nur die Rotation
+    // sweepDeg ändert sich pro Frame). Daher Arrays einmalig statt pro Frame allozieren.
+    // =====================================================================
+
+    private static readonly SKColor[] EkgTrailColors =
+    {
+        MedicalColors.Cyan.WithAlpha(0),     // Startpunkt (vor dem Sweep)
+        MedicalColors.Cyan.WithAlpha(20),     // 25% herum
+        MedicalColors.Cyan.WithAlpha(80),     // 50% herum
+        MedicalColors.Cyan.WithAlpha(200),    // 75% herum - fast beim Sweep
+        MedicalColors.Cyan,                    // Am Sweep-Punkt
+        MedicalColors.Cyan.WithAlpha(0),      // Direkt nach dem Sweep
+    };
+
+    private static readonly float[] EkgTrailPositions = { 0f, 0.25f, 0.5f, 0.85f, 0.95f, 1f };
+
+    // =====================================================================
+    // Gecachte Wert-Strings (nur bei Wertänderung neu formatieren, ~6-7/Frame gespart)
+    // =====================================================================
+
+    private float _cachedWeight = float.NaN;
+    private string _weightText = "";
+    private float _cachedBmi = float.NaN;
+    private string _bmiText = "";
+    private float _cachedWaterMl = float.NaN;
+    private string _waterText = "";
+    private float _cachedCalories = float.NaN;
+    private string _caloriesText = "";
+    private int _cachedScore = int.MinValue;
+    private string _scoreText = "";
+
+    // BMI-Kategorie-Farbe (ToLowerInvariant nur bei Kategorie-Wechsel)
+    private string? _cachedBmiCategory;
+    private SKColor _cachedBmiCategoryColor = MedicalColors.TextMuted;
+
+    // =====================================================================
     // Update (vom Timer aufgerufen)
     // =====================================================================
 
@@ -294,16 +330,8 @@ public sealed class VitalSignsHeroRenderer : IDisposable
         // CreateSweepGradient(center, colors, positions, tileMode, startAngle, endAngle)
         using var trailShader = SKShader.CreateSweepGradient(
             new SKPoint(cx, cy),
-            new SKColor[]
-            {
-                MedicalColors.Cyan.WithAlpha(0),     // Startpunkt (vor dem Sweep)
-                MedicalColors.Cyan.WithAlpha(20),     // 25% herum
-                MedicalColors.Cyan.WithAlpha(80),     // 50% herum
-                MedicalColors.Cyan.WithAlpha(200),    // 75% herum - fast beim Sweep
-                MedicalColors.Cyan,                    // Am Sweep-Punkt
-                MedicalColors.Cyan.WithAlpha(0),      // Direkt nach dem Sweep
-            },
-            new float[] { 0f, 0.25f, 0.5f, 0.85f, 0.95f, 1f },
+            EkgTrailColors,
+            EkgTrailPositions,
             SKShaderTileMode.Clamp,
             // Rotation: Der Sweep-Punkt ist bei sweepDeg, also rotieren wir so
             // dass der Gradient-Start direkt nach dem Sweep liegt
@@ -434,11 +462,16 @@ public sealed class VitalSignsHeroRenderer : IDisposable
         // Icon (kleine Waage)
         DrawScaleIcon(canvas, qx, qy - 14f * scale, 10f * scale, MedicalColors.WeightPurple);
 
-        // Gewichtswert
+        // Gewichtswert (nur bei Wertänderung neu formatieren)
+        if (state.Weight != _cachedWeight)
+        {
+            _weightText = state.Weight.ToString("F1");
+            _cachedWeight = state.Weight;
+        }
         _textPaint.Color = MedicalColors.TextPrimary;
         _textFont.Size = 18f * scale;
         _textFont.Embolden = true;
-        canvas.DrawText(state.Weight.ToString("F1"), qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
+        canvas.DrawText(_weightText, qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
 
         // "kg" Label
         _textPaint.Color = MedicalColors.TextMuted;
@@ -475,14 +508,24 @@ public sealed class VitalSignsHeroRenderer : IDisposable
         // Icon (kleines Gauge)
         DrawGaugeIcon(canvas, qx, qy - 14f * scale, 10f * scale, MedicalColors.BmiBlue);
 
-        // BMI-Wert
+        // BMI-Wert (nur bei Wertänderung neu formatieren)
+        if (state.Bmi != _cachedBmi)
+        {
+            _bmiText = state.Bmi.ToString("F1");
+            _cachedBmi = state.Bmi;
+        }
         _textPaint.Color = MedicalColors.TextPrimary;
         _textFont.Size = 18f * scale;
         _textFont.Embolden = true;
-        canvas.DrawText(state.Bmi.ToString("F1"), qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
+        canvas.DrawText(_bmiText, qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
 
-        // Kategorie-Text (farbcodiert)
-        SKColor categoryColor = GetBmiCategoryColor(state.BmiCategory);
+        // Kategorie-Text (farbcodiert). ToLowerInvariant nur bei Kategorie-Wechsel.
+        if (state.BmiCategory != _cachedBmiCategory)
+        {
+            _cachedBmiCategoryColor = GetBmiCategoryColor(state.BmiCategory);
+            _cachedBmiCategory = state.BmiCategory;
+        }
+        SKColor categoryColor = _cachedBmiCategoryColor;
         _textPaint.Color = categoryColor;
         _textFont.Size = 10f * scale;
         _textFont.Embolden = false;
@@ -502,17 +545,19 @@ public sealed class VitalSignsHeroRenderer : IDisposable
         // Icon (kleiner Tropfen)
         DrawDropIcon(canvas, qx, qy - 14f * scale, 10f * scale, MedicalColors.WaterGreen);
 
-        // Wasser-Wert formatieren
-        string waterText;
-        if (state.WaterMl >= 1000f)
-            waterText = (state.WaterMl / 1000f).ToString("F1") + "L";
-        else
-            waterText = state.WaterMl.ToString("F0") + "ml";
+        // Wasser-Wert formatieren (nur bei Wertänderung)
+        if (state.WaterMl != _cachedWaterMl)
+        {
+            _waterText = state.WaterMl >= 1000f
+                ? (state.WaterMl / 1000f).ToString("F1") + "L"
+                : state.WaterMl.ToString("F0") + "ml";
+            _cachedWaterMl = state.WaterMl;
+        }
 
         _textPaint.Color = MedicalColors.TextPrimary;
         _textFont.Size = 18f * scale;
         _textFont.Embolden = true;
-        canvas.DrawText(waterText, qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
+        canvas.DrawText(_waterText, qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
 
         // Mini-Arc fuer Fortschritt
         float progress = state.WaterGoalMl > 0 ? Math.Clamp(state.WaterMl / state.WaterGoalMl, 0f, 1f) : 0f;
@@ -530,11 +575,16 @@ public sealed class VitalSignsHeroRenderer : IDisposable
         // Icon (kleine Flamme)
         DrawFlameIcon(canvas, qx, qy - 14f * scale, 10f * scale, MedicalColors.CalorieAmber);
 
-        // Kalorien-Wert
+        // Kalorien-Wert (nur bei Wertänderung neu formatieren)
+        if (state.Calories != _cachedCalories)
+        {
+            _caloriesText = state.Calories.ToString("F0");
+            _cachedCalories = state.Calories;
+        }
         _textPaint.Color = MedicalColors.TextPrimary;
         _textFont.Size = 18f * scale;
         _textFont.Embolden = true;
-        canvas.DrawText(state.Calories.ToString("F0"), qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
+        canvas.DrawText(_caloriesText, qx, qy + 4f * scale, SKTextAlign.Center, _textFont, _textPaint);
 
         // "kcal" Label
         _textPaint.Color = MedicalColors.TextMuted;
@@ -572,12 +622,17 @@ public sealed class VitalSignsHeroRenderer : IDisposable
         _centerRingPaint.Color = MedicalColors.Cyan.WithAlpha(180);
         canvas.DrawCircle(cx, cy, centerR, _centerRingPaint);
 
-        // Score-Zahl
+        // Score-Zahl (nur bei Wertänderung neu formatieren)
+        if (state.DailyScore != _cachedScore)
+        {
+            _scoreText = state.DailyScore.ToString();
+            _cachedScore = state.DailyScore;
+        }
         float scale = halfSize / 140f;
         _textPaint.Color = MedicalColors.TextPrimary;
         _textFont.Size = 24f * scale;
         _textFont.Embolden = true;
-        canvas.DrawText(state.DailyScore.ToString(), cx, cy + 3f * scale, SKTextAlign.Center, _textFont, _textPaint);
+        canvas.DrawText(_scoreText, cx, cy + 3f * scale, SKTextAlign.Center, _textFont, _textPaint);
 
         // "Score" Label darunter
         _textPaint.Color = MedicalColors.TextMuted;

@@ -30,6 +30,25 @@ public static class PomodoroVisualization
     private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
     private static readonly SKMaskFilter _pulseGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8f);
 
+    // Gecachte Pfade (Rewind statt new pro Frame). Sicher als static, da Stoppuhr/Timer/
+    // Pomodoro nie gleichzeitig rendern (je eigener Tab + eigener Render-Loop).
+    private static readonly SKPath _glowPath = new();
+    private static readonly SKPath _arcPath = new();
+    private static readonly SKPath _segPath = new();
+    private static readonly SKPath _segGlowPath = new();
+    private static readonly SKPath _sessionPath = new();
+
+    // Gecachte Gradient-Stops (konstant) + Farb-Arrays (nur bei Farb-Wechsel neu befüllt)
+    private static readonly float[] _gradientStops = { 0f, 1f };
+    private static readonly SKColor[] _sweepColors = new SKColor[2];
+    private static SKColor _cachedPhaseColor;
+    private static bool _sweepColorsValid;
+
+    // Wochen-Balken-Gradient: WorkColor ist konstant, daher Farben einmalig vorberechenbar.
+    // Lazy befüllt, da WorkColor ein static-Feld dieser Klasse ist (Init-Reihenfolge sicher).
+    private static readonly SKColor[] _barColors = new SKColor[2];
+    private static bool _barColorsValid;
+
     /// <summary>
     /// Bestimmt die Farbe für eine Pomodoro-Phase.
     /// </summary>
@@ -97,26 +116,34 @@ public static class PomodoroVisualization
                 _glowPaint.Color = phaseColor.WithAlpha((byte)(70 * pulse));
                 _glowPaint.MaskFilter = _glowFilter;
 
-                using var glowPath = new SKPath();
-                glowPath.AddArc(arcRect, -90f, sweepAngle);
-                canvas.DrawPath(glowPath, _glowPaint);
+                _glowPath.Rewind();
+                _glowPath.AddArc(arcRect, -90f, sweepAngle);
+                canvas.DrawPath(_glowPath, _glowPaint);
                 _glowPaint.MaskFilter = null;
             }
 
-            // Gradient-Arc
-            var endColor = SkiaThemeHelper.AdjustBrightness(phaseColor, 1.4f);
+            // Gradient-Arc. Farb-Array nur bei Phasenwechsel neu befüllen (der Sweep-Winkel
+            // ändert sich pro Frame, daher Shader weiterhin pro Frame neu erstellt).
+            if (!_sweepColorsValid || _cachedPhaseColor != phaseColor)
+            {
+                _sweepColors[0] = phaseColor;
+                _sweepColors[1] = SkiaThemeHelper.AdjustBrightness(phaseColor, 1.4f);
+                _cachedPhaseColor = phaseColor;
+                _sweepColorsValid = true;
+            }
+            var endColor = _sweepColors[1];
             _arcPaint.StrokeWidth = strokeW;
             _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = SKShader.CreateSweepGradient(
                 new SKPoint(cx, cy),
-                new[] { phaseColor, endColor },
-                new[] { 0f, 1f },
+                _sweepColors,
+                _gradientStops,
                 SKShaderTileMode.Clamp, -90f, -90f + sweepAngle);
             _arcPaint.Color = SKColors.White;
 
-            using var arcPath = new SKPath();
-            arcPath.AddArc(arcRect, -90f, sweepAngle);
-            canvas.DrawPath(arcPath, _arcPaint);
+            _arcPath.Rewind();
+            _arcPath.AddArc(arcRect, -90f, sweepAngle);
+            canvas.DrawPath(_arcPath, _arcPaint);
             _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = null;
 
@@ -133,16 +160,11 @@ public static class PomodoroVisualization
         if (todaySessions > 0 || todayGoal > 0)
             DrawSessionRing(canvas, cx, cy, radius, todaySessions, todayGoal, animTime);
 
-        // 5. Zentrale Zeitanzeige
+        // 5. Zentrale Zeitanzeige (DrawText zentriert selbst, kein Mess-TextBlob nötig)
         _textPaint.Color = SkiaThemeHelper.TextPrimary;
         _timeFont.Size = Math.Max(28f, radius * 0.38f);
-
-        using var timeBlob = SKTextBlob.Create(remainingFormatted, _timeFont);
-        if (timeBlob != null)
-        {
-            canvas.DrawText(remainingFormatted, cx, cy + _timeFont.Size * 0.15f,
-                SKTextAlign.Center, _timeFont, _textPaint);
-        }
+        canvas.DrawText(remainingFormatted, cx, cy + _timeFont.Size * 0.15f,
+            SKTextAlign.Center, _timeFont, _textPaint);
 
         // 6. Phasen-Label unter der Zeit
         _textPaint.Color = phaseColor;
@@ -201,9 +223,9 @@ public static class PomodoroVisualization
             var segRect = new SKRect(cx - actualRadius, cy - actualRadius,
                 cx + actualRadius, cy + actualRadius);
 
-            using var segPath = new SKPath();
-            segPath.AddArc(segRect, angle - 180f, sweep);
-            canvas.DrawPath(segPath, _trackPaint);
+            _segPath.Rewind();
+            _segPath.AddArc(segRect, angle - 180f, sweep);
+            canvas.DrawPath(_segPath, _trackPaint);
 
             // Glow auf aktivem Segment wenn laufend
             if (isCurrentSegment && isRunning)
@@ -212,9 +234,9 @@ public static class PomodoroVisualization
                 _glowPaint.Color = PhaseToColor(phase).WithAlpha((byte)(40 * (0.5f + 0.5f * MathF.Sin(animTime * 4f * MathF.PI))));
                 _glowPaint.MaskFilter = _pulseGlowFilter;
 
-                using var glowPath = new SKPath();
-                glowPath.AddArc(segRect, angle - 180f, sweep);
-                canvas.DrawPath(glowPath, _glowPaint);
+                _segGlowPath.Rewind();
+                _segGlowPath.AddArc(segRect, angle - 180f, sweep);
+                canvas.DrawPath(_segGlowPath, _glowPaint);
                 _glowPaint.MaskFilter = null;
             }
         }
@@ -265,9 +287,9 @@ public static class PomodoroVisualization
                 _sessionRingPaint.StrokeWidth = sessionW + (isLatest ? 1f : 0f);
                 _sessionRingPaint.Color = sessionColor;
 
-                using var sesPath = new SKPath();
-                sesPath.AddArc(sessionRect, ang, sw);
-                canvas.DrawPath(sesPath, _sessionRingPaint);
+                _sessionPath.Rewind();
+                _sessionPath.AddArc(sessionRect, ang, sw);
+                canvas.DrawPath(_sessionPath, _sessionRingPaint);
             }
             else
             {
@@ -275,9 +297,9 @@ public static class PomodoroVisualization
                 _sessionRingPaint.StrokeWidth = sessionW;
                 _sessionRingPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Border, 20);
 
-                using var emptyPath = new SKPath();
-                emptyPath.AddArc(sessionRect, ang, sw);
-                canvas.DrawPath(emptyPath, _sessionRingPaint);
+                _sessionPath.Rewind();
+                _sessionPath.AddArc(sessionRect, ang, sw);
+                canvas.DrawPath(_sessionPath, _sessionRingPaint);
             }
         }
 
@@ -343,12 +365,19 @@ public static class PomodoroVisualization
                 float barTop = chartBottom - barH;
                 var barRect = new SKRect(barLeft, barTop, barLeft + barMaxW, chartBottom);
 
-                // Gradient: Phase-Rot nach heller
+                // Gradient: Phase-Rot nach heller. WorkColor ist konstant → Farb-Array einmalig
+                // vorberechnen (Y-Koordinaten ändern sich pro Balken, daher Shader pro Balken neu).
+                if (!_barColorsValid)
+                {
+                    _barColors[0] = SkiaThemeHelper.AdjustBrightness(WorkColor, 1.2f);
+                    _barColors[1] = WorkColor;
+                    _barColorsValid = true;
+                }
                 _barPaint.Shader?.Dispose();
                 _barPaint.Shader = SKShader.CreateLinearGradient(
                     new SKPoint(barCx, barTop),
                     new SKPoint(barCx, chartBottom),
-                    new[] { SkiaThemeHelper.AdjustBrightness(WorkColor, 1.2f), WorkColor },
+                    _barColors,
                     null, SKShaderTileMode.Clamp);
 
                 float cornerR = Math.Min(6f, barMaxW / 2f);

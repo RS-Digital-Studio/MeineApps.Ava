@@ -42,8 +42,25 @@ public static class FinanceDashboardRenderer
     // --- Initialisierungs-Flag ---
     private static bool _initialized;
 
+    // --- Gradient-Mesh: Stops konstant, Farben theme-abhängig (zur Render-Zeit konstant) ---
+    private static readonly float[] MeshStops = { 0f, 0.33f, 0.66f, 1f };
+    private static readonly SKColor[] MeshColors = new SKColor[4];
+    private static bool _meshColorsValid;
+
     // --- Verfügbare Symbole ---
     private static readonly char[] Symbols = { '\u20AC', '$', '%', '\u2191', '\u2193' };
+
+    // --- Vorberechnete Symbol-Strings (aus Symbols abgeleitet → codepoint-identisch).
+    //     Vermeidet char.ToString()-Allokation pro Partikel pro Frame (bis 960/s). ---
+    private static readonly string[] SymbolStrings = BuildSymbolStrings();
+
+    private static string[] BuildSymbolStrings()
+    {
+        var arr = new string[Symbols.Length];
+        for (var i = 0; i < Symbols.Length; i++)
+            arr[i] = Symbols[i].ToString();
+        return arr;
+    }
 
     // --- Gecachte SKPaints ---
     private static readonly SKPaint GradientPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -202,16 +219,26 @@ public static class FinanceDashboardRenderer
         var endX = cx + MathF.Cos(angle + MathF.PI) * radius;
         var endY = cy + MathF.Sin(angle + MathF.PI) * radius;
 
-        // Theme-Farben mit sehr niedriger Opacity (5-8%)
-        var primary = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Primary, 18);   // ~7%
-        var secondary = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Secondary, 15); // ~6%
-        var accent = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Accent, 13);     // ~5%
+        // Theme-Farben mit sehr niedriger Opacity (5-8%). Theme-Farben sind zur Render-Zeit
+        // konstant (RefreshColors läuft einmalig beim Start) → Farb-Array einmalig befüllen.
+        // Nur Start-/Endpunkt rotieren pro Frame, daher Shader weiterhin pro Frame neu.
+        if (!_meshColorsValid)
+        {
+            var primary = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Primary, 18);   // ~7%
+            var secondary = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Secondary, 15); // ~6%
+            var accent = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Accent, 13);     // ~5%
+            MeshColors[0] = primary;
+            MeshColors[1] = secondary;
+            MeshColors[2] = accent;
+            MeshColors[3] = primary;
+            _meshColorsValid = true;
+        }
 
         using var shader = SKShader.CreateLinearGradient(
             new SKPoint(startX, startY),
             new SKPoint(endX, endY),
-            new[] { primary, secondary, accent, primary },
-            new[] { 0f, 0.33f, 0.66f, 1f },
+            MeshColors,
+            MeshStops,
             SKShaderTileMode.Clamp);
 
         GradientPaint.Shader = shader;
@@ -300,11 +327,22 @@ public static class FinanceDashboardRenderer
             SymbolPaint.Color = symbolColor;
 
             SymbolFont.Size = p.Size;
-            var symbolStr = p.Symbol.ToString();
+            var symbolStr = SymbolToString(p.Symbol);
 
             // Zentriert zeichnen
             var textWidth = SymbolFont.MeasureText(symbolStr);
             canvas.DrawText(symbolStr, px - textWidth * 0.5f, py + p.Size * 0.35f, SymbolFont, SymbolPaint);
         }
+    }
+
+    /// <summary>
+    /// Mappt ein Partikel-Symbol auf seinen vorberechneten String (kein char.ToString() pro Frame).
+    /// </summary>
+    private static string SymbolToString(char symbol)
+    {
+        for (var i = 0; i < Symbols.Length; i++)
+            if (Symbols[i] == symbol)
+                return SymbolStrings[i];
+        return symbol.ToString(); // Fallback (sollte nie erreicht werden)
     }
 }

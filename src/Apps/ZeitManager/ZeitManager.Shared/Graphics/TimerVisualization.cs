@@ -24,6 +24,27 @@ public static class TimerVisualization
     private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
     private static readonly SKMaskFilter _countdownGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 10f);
 
+    // Gecachte Pfade (Rewind statt new pro Frame). Sicher als static, da Stoppuhr/Timer/
+    // Pomodoro nie gleichzeitig rendern (je eigener Tab + eigener Render-Loop).
+    private static readonly SKPath _glowPath = new();
+    private static readonly SKPath _arcPath = new();
+    private static readonly SKPath _clipPath = new();
+    private static readonly SKPath _wavePath = new();
+    private static readonly SKPath _checkPath = new();
+
+    // Gecachte Gradient-Stops (konstant) + Sweep-Farb-Array (nur bei Farb-Wechsel neu befüllt)
+    private static readonly float[] _gradientStops = { 0f, 1f };
+    private static readonly SKColor[] _sweepColors = new SKColor[2];
+    private static readonly SKColor[] _fillColors = new SKColor[2];
+    private static SKColor _cachedSweepColor;
+    private static bool _sweepColorsValid;
+    private static SKColor _cachedFillColor;
+    private static bool _fillColorsValid;
+
+    // Gecachte Countdown-Ziffer (1-5, ändert sich nur sekündlich)
+    private static int _cachedDigitValue = -1;
+    private static string _cachedDigit = "";
+
     // Tropfen-Partikel System (einfaches Array, kein Heap-Alloc)
     private const int MaxDrops = 8;
     private static readonly float[] _dropX = new float[MaxDrops];
@@ -71,6 +92,11 @@ public static class TimerVisualization
         Array.Clear(_burstColors);
         _burstActive = false;
         _burstTime = 0f;
+
+        // Farb- und String-Caches invalidieren (neuer Timer kann andere Startfarbe haben)
+        _sweepColorsValid = false;
+        _fillColorsValid = false;
+        _cachedDigitValue = -1;
     }
 
     /// <summary>
@@ -130,29 +156,36 @@ public static class TimerVisualization
                 _glowPaint.Color = color.WithAlpha((byte)(60 * pulse));
                 _glowPaint.MaskFilter = _glowFilter;
 
-                using var glowPath = new SKPath();
-                glowPath.AddArc(arcRect, -90f, sweepAngle);
-                canvas.DrawPath(glowPath, _glowPaint);
+                _glowPath.Rewind();
+                _glowPath.AddArc(arcRect, -90f, sweepAngle);
+                canvas.DrawPath(_glowPath, _glowPaint);
                 _glowPaint.MaskFilter = null;
             }
 
-            // Fortschrittsring
-            var endColor = SkiaThemeHelper.AdjustBrightness(color, 1.3f);
+            // Fortschrittsring. Farb-Array nur bei Farbwechsel neu befüllen (der Sweep-Winkel
+            // ändert sich pro Frame, daher Shader weiterhin pro Frame neu erstellt).
+            if (!_sweepColorsValid || _cachedSweepColor != color)
+            {
+                _sweepColors[0] = color;
+                _sweepColors[1] = SkiaThemeHelper.AdjustBrightness(color, 1.3f);
+                _cachedSweepColor = color;
+                _sweepColorsValid = true;
+            }
             _arcPaint.StrokeWidth = strokeW;
             _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = null;
             // Shader in lokaler Variable erstellen um Leak bei Exception zu verhindern
             using var sweepShader = SKShader.CreateSweepGradient(
                 new SKPoint(cx, cy),
-                new[] { color, endColor },
-                new[] { 0f, 1f },
+                _sweepColors,
+                _gradientStops,
                 SKShaderTileMode.Clamp, -90f, -90f + sweepAngle);
             _arcPaint.Shader = sweepShader;
             _arcPaint.Color = SKColors.White;
 
-            using var arcPath = new SKPath();
-            arcPath.AddArc(arcRect, -90f, sweepAngle);
-            canvas.DrawPath(arcPath, _arcPaint);
+            _arcPath.Rewind();
+            _arcPath.AddArc(arcRect, -90f, sweepAngle);
+            canvas.DrawPath(_arcPath, _arcPaint);
             _arcPaint.Shader = null;
             // sweepShader wird durch using-Block automatisch disposed
         }
@@ -225,7 +258,13 @@ public static class TimerVisualization
         // Opacity-Fade innerhalb jeder Sekunde
         float alpha = Math.Min(1f, 1.3f - subSecond);
 
-        string digit = secondsLeft.ToString();
+        // Ziffer nur bei Sekundenwechsel formatieren (1-5, nicht pro Frame)
+        if (secondsLeft != _cachedDigitValue)
+        {
+            _cachedDigit = secondsLeft.ToString();
+            _cachedDigitValue = secondsLeft;
+        }
+        string digit = _cachedDigit;
 
         // Glow-Schatten
         _countdownPaint.Color = color.WithAlpha((byte)(40 * alpha));
@@ -370,16 +409,24 @@ public static class TimerVisualization
 
         // Clip auf den Kreis
         canvas.Save();
-        using var clipPath = new SKPath();
-        clipPath.AddCircle(cx, cy, radius);
-        canvas.ClipPath(clipPath);
+        _clipPath.Rewind();
+        _clipPath.AddCircle(cx, cy, radius);
+        canvas.ClipPath(_clipPath);
 
-        // Füllung mit Gradient
+        // Füllung mit Gradient. Farb-Array nur bei Farbwechsel neu befüllen (fillTop ändert
+        // sich pro Frame, daher Shader weiterhin pro Frame neu).
+        if (!_fillColorsValid || _cachedFillColor != color)
+        {
+            _fillColors[0] = color.WithAlpha(40);
+            _fillColors[1] = color.WithAlpha(20);
+            _cachedFillColor = color;
+            _fillColorsValid = true;
+        }
         _fillPaint.Shader?.Dispose();
         _fillPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx, fillTop),
             new SKPoint(cx, cy + radius),
-            new[] { color.WithAlpha(40), color.WithAlpha(20) },
+            _fillColors,
             null, SKShaderTileMode.Clamp);
         canvas.DrawRect(cx - radius, fillTop, radius * 2, cy + radius - fillTop, _fillPaint);
         _fillPaint.Shader?.Dispose();
@@ -388,24 +435,24 @@ public static class TimerVisualization
         // Welleneffekt an der Oberfläche (nur bei laufend)
         if (isRunning && fraction > 0.02f && fraction < 0.98f)
         {
-            using var wavePath = new SKPath();
+            _wavePath.Rewind();
             float waveAmplitude = 3f;
             float waveFreq = 0.06f;
             float waveSpeed = animTime * 2.5f;
 
-            wavePath.MoveTo(cx - radius, fillTop);
+            _wavePath.MoveTo(cx - radius, fillTop);
             for (float x = cx - radius; x <= cx + radius; x += 2f)
             {
                 float wave = MathF.Sin((x - cx) * waveFreq + waveSpeed) * waveAmplitude
                            + MathF.Sin((x - cx) * waveFreq * 1.5f + waveSpeed * 0.7f) * waveAmplitude * 0.5f;
-                wavePath.LineTo(x, fillTop + wave);
+                _wavePath.LineTo(x, fillTop + wave);
             }
-            wavePath.LineTo(cx + radius, cy + radius);
-            wavePath.LineTo(cx - radius, cy + radius);
-            wavePath.Close();
+            _wavePath.LineTo(cx + radius, cy + radius);
+            _wavePath.LineTo(cx - radius, cy + radius);
+            _wavePath.Close();
 
             _wavePaint.Color = color.WithAlpha(30);
-            canvas.DrawPath(wavePath, _wavePaint);
+            canvas.DrawPath(_wavePath, _wavePaint);
         }
 
         canvas.Restore();
@@ -416,14 +463,14 @@ public static class TimerVisualization
     /// </summary>
     private static void DrawCheckmark(SKCanvas canvas, float cx, float cy, float size, SKColor color)
     {
-        using var checkPath = new SKPath();
-        checkPath.MoveTo(cx - size * 0.5f, cy);
-        checkPath.LineTo(cx - size * 0.1f, cy + size * 0.4f);
-        checkPath.LineTo(cx + size * 0.5f, cy - size * 0.35f);
+        _checkPath.Rewind();
+        _checkPath.MoveTo(cx - size * 0.5f, cy);
+        _checkPath.LineTo(cx - size * 0.1f, cy + size * 0.4f);
+        _checkPath.LineTo(cx + size * 0.5f, cy - size * 0.35f);
 
         _trackPaint.StrokeWidth = 3f;
         _trackPaint.Color = color;
         _trackPaint.StrokeCap = SKStrokeCap.Round;
-        canvas.DrawPath(checkPath, _trackPaint);
+        canvas.DrawPath(_checkPath, _trackPaint);
     }
 }

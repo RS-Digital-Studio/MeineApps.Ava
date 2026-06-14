@@ -72,6 +72,13 @@ public sealed class MedicalBackgroundRenderer : IDisposable
     private float _lastW, _lastH;
 
     // =====================================================================
+    // Grid-Picture-Cache (statisches EKG-Grid einmalig aufnehmen)
+    // =====================================================================
+
+    private SKPicture? _gridPicture;
+    private float _gridLeft, _gridTop, _gridRight, _gridBottom;
+
+    // =====================================================================
     // Vorberechnete Grid-Farben (vermeidet Allokation pro Frame)
     // =====================================================================
 
@@ -171,24 +178,54 @@ public sealed class MedicalBackgroundRenderer : IDisposable
 
     private void RenderGrid(SKCanvas canvas, SKRect bounds)
     {
+        // Statisches Grid (~39 DrawLine) nur einmal pro Bounds in ein SKPicture aufnehmen,
+        // danach pro Frame nur noch das Picture zeichnen (GPU-Cache, 1 statt ~39 Draw-Calls).
+        if (_gridPicture == null
+            || MathF.Abs(bounds.Left - _gridLeft) > 0.5f
+            || MathF.Abs(bounds.Top - _gridTop) > 0.5f
+            || MathF.Abs(bounds.Right - _gridRight) > 0.5f
+            || MathF.Abs(bounds.Bottom - _gridBottom) > 0.5f)
+        {
+            RecordGrid(bounds);
+        }
+
+        canvas.DrawPicture(_gridPicture);
+    }
+
+    /// <summary>
+    /// Nimmt das statische Grid in ein SKPicture auf (identische Zeichenlogik wie zuvor).
+    /// </summary>
+    private void RecordGrid(SKRect bounds)
+    {
         float left = bounds.Left;
         float top = bounds.Top;
         float right = bounds.Right;
         float bottom = bounds.Bottom;
 
+        _gridPicture?.Dispose();
+
+        using var recorder = new SKPictureRecorder();
+        var rec = recorder.BeginRecording(bounds);
+
         // Feine Linien alle 40px
         _gridPaintFine.Color = _gridColorFine;
         for (float x = left; x <= right; x += 40f)
-            canvas.DrawLine(x, top, x, bottom, _gridPaintFine);
+            rec.DrawLine(x, top, x, bottom, _gridPaintFine);
         for (float y = top; y <= bottom; y += 40f)
-            canvas.DrawLine(left, y, right, y, _gridPaintFine);
+            rec.DrawLine(left, y, right, y, _gridPaintFine);
 
         // Dickere Linien alle 200px
         _gridPaintThick.Color = _gridColorThick;
         for (float x = left; x <= right; x += 200f)
-            canvas.DrawLine(x, top, x, bottom, _gridPaintThick);
+            rec.DrawLine(x, top, x, bottom, _gridPaintThick);
         for (float y = top; y <= bottom; y += 200f)
-            canvas.DrawLine(left, y, right, y, _gridPaintThick);
+            rec.DrawLine(left, y, right, y, _gridPaintThick);
+
+        _gridPicture = recorder.EndRecording();
+        _gridLeft = bounds.Left;
+        _gridTop = bounds.Top;
+        _gridRight = bounds.Right;
+        _gridBottom = bounds.Bottom;
     }
 
     // =====================================================================
@@ -531,5 +568,6 @@ public sealed class MedicalBackgroundRenderer : IDisposable
 
         _bgShader?.Dispose();
         _vignetteShader?.Dispose();
+        _gridPicture?.Dispose();
     }
 }

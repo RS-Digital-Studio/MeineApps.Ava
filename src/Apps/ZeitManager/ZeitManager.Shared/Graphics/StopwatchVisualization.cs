@@ -24,6 +24,24 @@ public static class StopwatchVisualization
     private static readonly SKMaskFilter _needleGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
     private static readonly SKFont _smallFont = new() { Size = 10f };
 
+    // Gecachte Pfade (Rewind statt new pro Frame). Sicher als static, da Stoppuhr/Timer/
+    // Pomodoro nie gleichzeitig rendern (je eigener Tab + eigener Render-Loop).
+    private static readonly SKPath _glowPath = new();
+    private static readonly SKPath _arcPath = new();
+    private static readonly SKPath _sectorPath = new();
+    private static readonly SKPath _minutePath = new();
+
+    // Gecachte Gradient-Stops (konstant) + Farb-Array (nur bei Akzent-Wechsel neu befüllt)
+    private static readonly float[] _sweepStops = { 0f, 1f };
+    private static readonly SKColor[] _sweepColors = new SKColor[2];
+    private static SKColor _cachedAccent;
+    private static bool _sweepColorsValid;
+
+    // Gecachte Zeit-Strings (mm:ss nur bei Sekundenwechsel neu formatieren)
+    private static int _cachedTotalSeconds = -1;
+    private static string _cachedMainTime = "00:00";
+    private static float _cachedMainWidth = -1f;
+
     // Runden-Sektoren Farben (verschiedene Farben pro Runde)
     private static readonly SKColor[] LapColors =
     {
@@ -92,26 +110,33 @@ public static class StopwatchVisualization
                 _glowPaint.Color = accent.WithAlpha((byte)(80 * pulseAlpha));
                 _glowPaint.MaskFilter = _glowFilter;
 
-                using var glowPath = new SKPath();
-                glowPath.AddArc(arcRect, -90f, sweepAngle);
-                canvas.DrawPath(glowPath, _glowPaint);
+                _glowPath.Rewind();
+                _glowPath.AddArc(arcRect, -90f, sweepAngle);
+                canvas.DrawPath(_glowPath, _glowPaint);
                 _glowPaint.MaskFilter = null;
             }
 
-            // Gradient-Arc (Cyan → helles Cyan)
-            var endColor = SkiaThemeHelper.AdjustBrightness(accent, 1.3f);
+            // Gradient-Arc (Cyan → helles Cyan). Farb-Array nur bei Akzent-Wechsel neu befüllen
+            // (der Sweep-Winkel ändert sich pro Frame, also Shader weiterhin pro Frame neu).
+            if (!_sweepColorsValid || _cachedAccent != accent)
+            {
+                _sweepColors[0] = accent;
+                _sweepColors[1] = SkiaThemeHelper.AdjustBrightness(accent, 1.3f);
+                _cachedAccent = accent;
+                _sweepColorsValid = true;
+            }
             _arcPaint.StrokeWidth = strokeW;
             _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = SKShader.CreateSweepGradient(
                 new SKPoint(cx, cy),
-                new[] { accent, endColor },
-                new[] { 0f, 1f },
+                _sweepColors,
+                _sweepStops,
                 SKShaderTileMode.Clamp, -90f, -90f + sweepAngle);
             _arcPaint.Color = SKColors.White;
 
-            using var arcPath = new SKPath();
-            arcPath.AddArc(arcRect, -90f, sweepAngle);
-            canvas.DrawPath(arcPath, _arcPaint);
+            _arcPath.Rewind();
+            _arcPath.AddArc(arcRect, -90f, sweepAngle);
+            canvas.DrawPath(_arcPath, _arcPaint);
             _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = null;
         }
@@ -247,9 +272,9 @@ public static class StopwatchVisualization
             _trackPaint.StrokeWidth = sectorW;
             _trackPaint.Color = color.WithAlpha(100);
 
-            using var sectorPath = new SKPath();
-            sectorPath.AddArc(sectorRect, currentAngle, sweep - 1f); // -1f Gap
-            canvas.DrawPath(sectorPath, _trackPaint);
+            _sectorPath.Rewind();
+            _sectorPath.AddArc(sectorRect, currentAngle, sweep - 1f); // -1f Gap
+            canvas.DrawPath(_sectorPath, _trackPaint);
 
             currentAngle += sweep;
         }
@@ -265,9 +290,9 @@ public static class StopwatchVisualization
                 _trackPaint.StrokeWidth = sectorW;
                 _trackPaint.Color = color.WithAlpha(160);
 
-                using var currentPath = new SKPath();
-                currentPath.AddArc(sectorRect, currentAngle, sweep);
-                canvas.DrawPath(currentPath, _trackPaint);
+                _sectorPath.Rewind();
+                _sectorPath.AddArc(sectorRect, currentAngle, sweep);
+                canvas.DrawPath(_sectorPath, _trackPaint);
             }
         }
     }
@@ -320,9 +345,9 @@ public static class StopwatchVisualization
             _arcPaint.Shader = null;
             _arcPaint.Color = accent.WithAlpha(160);
 
-            using var minutePath = new SKPath();
-            minutePath.AddArc(subRect, -90f, minuteSweep);
-            canvas.DrawPath(minutePath, _arcPaint);
+            _minutePath.Rewind();
+            _minutePath.AddArc(subRect, -90f, minuteSweep);
+            canvas.DrawPath(_minutePath, _arcPaint);
 
             // Endpunkt
             float endAngle = (-90f + minuteSweep) * MathF.PI / 180f;
@@ -412,24 +437,30 @@ public static class StopwatchVisualization
         int seconds = totalSeconds % 60;
         int centiseconds = (int)((elapsedSeconds - totalSeconds) * 100);
 
-        string mainTime = $"{minutes:D2}:{seconds:D2}";
-        string msTime = $".{centiseconds:D2}";
+        // mm:ss + Breite nur bei Sekundenwechsel neu berechnen (Font-Size konstant 44f).
+        // Breite weiterhin aus SKTextBlob.Bounds.Width für pixelidentische Positionierung.
+        // Die Centisekunden ändern sich pro Frame und werden weiter pro Frame formatiert.
+        _timeFont.Size = 44f;
+        if (totalSeconds != _cachedTotalSeconds)
+        {
+            _cachedMainTime = $"{minutes:D2}:{seconds:D2}";
+            using var newBlob = SKTextBlob.Create(_cachedMainTime, _timeFont);
+            _cachedMainWidth = newBlob?.Bounds.Width ?? -1f;
+            _cachedTotalSeconds = totalSeconds;
+        }
+
+        string mainTime = _cachedMainTime;
+        float mainW = _cachedMainWidth;
+        if (mainW < 0f) return;
 
         // Hauptzeit (groß)
         _textPaint.Color = SkiaThemeHelper.TextPrimary;
-        _timeFont.Size = 44f;
+        float mainX = cx - mainW / 2f - 10f; // Etwas nach links für die Centisekunden
+        canvas.DrawText(mainTime, mainX, cy + 16f, SKTextAlign.Left, _timeFont, _textPaint);
 
-        using var mainBlob = SKTextBlob.Create(mainTime, _timeFont);
-        if (mainBlob != null)
-        {
-            float mainW = mainBlob.Bounds.Width;
-            float mainX = cx - mainW / 2f - 10f; // Etwas nach links für die Centisekunden
-            canvas.DrawText(mainTime, mainX, cy + 16f, SKTextAlign.Left, _timeFont, _textPaint);
-
-            // Centisekunden (kleiner, rechts)
-            _textPaint.Color = SkiaThemeHelper.TextMuted;
-            _msFont.Size = 16f;
-            canvas.DrawText(msTime, mainX + mainW + 2f, cy + 16f, SKTextAlign.Left, _msFont, _textPaint);
-        }
+        // Centisekunden (kleiner, rechts)
+        _textPaint.Color = SkiaThemeHelper.TextMuted;
+        _msFont.Size = 16f;
+        canvas.DrawText($".{centiseconds:D2}", mainX + mainW + 2f, cy + 16f, SKTextAlign.Left, _msFont, _textPaint);
     }
 }

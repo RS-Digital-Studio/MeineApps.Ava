@@ -31,6 +31,37 @@ public static class FunctionGraphVisualization
     private static float[] _xValues = Array.Empty<float>();
     private static float[] _yValues = Array.Empty<float>();
 
+    // Gecachte Kurven-/Füllgeometrie (Rewind statt new pro Frame). Wird nur neu aufgebaut wenn
+    // sich Funktion, Funktionsname oder Plot-Bounds ändern (Dirty-Erkennung). Sicher als static,
+    // da der Graph nur an genau einer Stelle (ein Canvas) gerendert wird.
+    private static readonly SKPath _curvePath = new();
+    private static readonly SKPath _fillPath = new();
+
+    // Gradient-Füllung unter der Kurve: Farben hängen nur von SkiaThemeHelper.Primary ab
+    // (zur Render-Zeit konstant) → einmalig befüllen statt pro Frame new[].
+    private static readonly SKColor[] _fillColors = new SKColor[2];
+    private static bool _fillColorsValid;
+
+    // Dirty-State: alles was die Kurvengeometrie + Achsen-Skalierung bestimmt.
+    private static Func<float, float>? _cachedFunction;
+    private static string? _cachedFunctionName;
+    private static float _cachedPlotLeft, _cachedPlotTop, _cachedPlotW, _cachedPlotH;
+    private static float _geomMinX, _geomMaxX, _geomMinY, _geomMaxY, _geomXStep, _geomYStep;
+    private static bool _geometryValid;
+
+    // Gecachte Achsen-Labels (frame-konstant: hängen nur von der Geometrie ab).
+    // Parallele Arrays für X- und Y-Achsen-Labels: Text + Bildschirm-Position.
+    private static readonly List<(string Text, float Px)> _xLabels = new();
+    private static readonly List<(string Text, float Py)> _yLabels = new();
+    private static string? _cachedDisplayName;
+    private static bool _labelsValid;
+
+    // Gecachter Tooltip am aktuellen Punkt (frame-konstant: hängt nur von currentX + Funktion ab).
+    private static float _cachedTooltipX = float.NaN;
+    private static Func<float, float>? _cachedTooltipFunc;
+    private static string _cachedTooltipText = "";
+    private static float _cachedTooltipWidth;
+
     // Vorgefertigte Funktions-Bereiche
     private static readonly Dictionary<string, (float minX, float maxX)> _functionRanges = new()
     {
@@ -86,6 +117,54 @@ public static class FunctionGraphVisualization
         _gridPaint.StrokeWidth = 1f;
         canvas.DrawRoundRect(bounds, 8f, 8f, _gridPaint);
 
+        // Kurvengeometrie + Y-Skalierung + Achsen-Steps + Pfade nur neu aufbauen wenn sich
+        // Funktion, Funktionsname oder Plot-Dimensionen geändert haben. Im Animations-Fall
+        // (nur Glow-Pulse + currentPoint variieren) bleibt alles aus dem Cache → pixelidentisch.
+        if (!_geometryValid
+            || !ReferenceEquals(function, _cachedFunction)
+            || functionName != _cachedFunctionName
+            || plotLeft != _cachedPlotLeft || plotTop != _cachedPlotTop
+            || plotW != _cachedPlotW || plotH != _cachedPlotH)
+        {
+            RebuildGeometry(function, functionName, plotLeft, plotTop, plotW, plotH);
+        }
+
+        float minX = _geomMinX, maxX = _geomMaxX, minY = _geomMinY, maxY = _geomMaxY;
+        float xStep = _geomXStep, yStep = _geomYStep;
+
+        // Clip auf Plot-Bereich
+        canvas.Save();
+        canvas.ClipRect(new SKRect(plotLeft - 1, plotTop - 1, plotRight + 1, plotBottom + 1));
+
+        // Grid-Linien zeichnen (vorberechnete Steps übergeben)
+        DrawGrid(canvas, plotLeft, plotTop, plotW, plotH, minX, maxX, minY, maxY, xStep, yStep);
+
+        // Achsen zeichnen
+        DrawAxes(canvas, plotLeft, plotTop, plotW, plotH, minX, maxX, minY, maxY);
+
+        // Funktionskurve zeichnen (gecachte Pfade, nur Glow-Pulse variiert pro Frame)
+        DrawCurve(canvas, animTime);
+
+        canvas.Restore();
+
+        // Achsen-Labels (außerhalb des Clips, vorberechnete Steps übergeben)
+        DrawLabels(canvas, plotLeft, plotTop, plotW, plotH, plotBottom, minX, maxX, minY, maxY, functionName, xStep, yStep);
+
+        // Aktuellen Punkt markieren
+        if (currentX.HasValue)
+        {
+            DrawCurrentPoint(canvas, plotLeft, plotTop, plotW, plotH,
+                minX, maxX, minY, maxY, function, currentX.Value, animTime);
+        }
+    }
+
+    /// <summary>
+    /// Baut die Kurvengeometrie neu auf: Abtastung, Y-Auto-Skalierung, Achsen-Steps und die
+    /// gecachten Kurven-/Füllpfade. Wird nur bei Funktions-/Bounds-Änderung aufgerufen.
+    /// </summary>
+    private static void RebuildGeometry(Func<float, float> function, string functionName,
+        float plotLeft, float plotTop, float plotW, float plotH)
+    {
         // Bereich ermitteln
         var (minX, maxX) = GetRange(functionName);
 
@@ -149,30 +228,20 @@ public static class FunctionGraphVisualization
         float xStep = CalculateStep(maxX - minX);
         float yStep = CalculateStep(maxY - minY);
 
-        // Clip auf Plot-Bereich
-        canvas.Save();
-        canvas.ClipRect(new SKRect(plotLeft - 1, plotTop - 1, plotRight + 1, plotBottom + 1));
+        // Kurven- und Füllpfade aufbauen (gecacht via Rewind)
+        BuildCurvePaths(plotLeft, plotTop, plotW, plotH, xValues, yValues, minY, maxY);
 
-        // Grid-Linien zeichnen (vorberechnete Steps übergeben)
-        DrawGrid(canvas, plotLeft, plotTop, plotW, plotH, minX, maxX, minY, maxY, xStep, yStep);
+        // Geometrie-State + Dirty-Keys merken
+        _geomMinX = minX; _geomMaxX = maxX; _geomMinY = minY; _geomMaxY = maxY;
+        _geomXStep = xStep; _geomYStep = yStep;
+        _cachedFunction = function;
+        _cachedFunctionName = functionName;
+        _cachedPlotLeft = plotLeft; _cachedPlotTop = plotTop;
+        _cachedPlotW = plotW; _cachedPlotH = plotH;
+        _geometryValid = true;
 
-        // Achsen zeichnen
-        DrawAxes(canvas, plotLeft, plotTop, plotW, plotH, minX, maxX, minY, maxY);
-
-        // Funktionskurve zeichnen
-        DrawCurve(canvas, plotLeft, plotTop, plotW, plotH, xValues, yValues, minY, maxY, animTime);
-
-        canvas.Restore();
-
-        // Achsen-Labels (außerhalb des Clips, vorberechnete Steps übergeben)
-        DrawLabels(canvas, plotLeft, plotTop, plotW, plotH, plotBottom, minX, maxX, minY, maxY, functionName, xStep, yStep);
-
-        // Aktuellen Punkt markieren
-        if (currentX.HasValue)
-        {
-            DrawCurrentPoint(canvas, plotLeft, plotTop, plotW, plotH,
-                minX, maxX, minY, maxY, function, currentX.Value, animTime);
-        }
+        // Achsen-Labels neu vorberechnen (siehe DrawLabels-Cache)
+        _labelsValid = false;
     }
 
     /// <summary>
@@ -226,17 +295,14 @@ public static class FunctionGraphVisualization
     }
 
     /// <summary>
-    /// Zeichnet die Funktionskurve mit Glow und Gradient-Füllung.
+    /// Baut die gecachten Kurven- und Füllpfade auf (Rewind statt new). Wird nur bei
+    /// Funktions-/Bounds-Änderung aus RebuildGeometry aufgerufen.
     /// </summary>
-    private static void DrawCurve(SKCanvas canvas, float left, float top,
-        float w, float h, float[] xValues, float[] yValues,
-        float minY, float maxY, float animTime)
+    private static void BuildCurvePaths(float left, float top, float w, float h,
+        float[] xValues, float[] yValues, float minY, float maxY)
     {
-        var curveColor = SkiaThemeHelper.Primary;
-
-        // Gradient-Füllung unter der Kurve erstellen
-        using var fillPath = new SKPath();
-        using var curvePath = new SKPath();
+        _curvePath.Rewind();
+        _fillPath.Rewind();
 
         bool inPath = false;
         bool fillStarted = false;
@@ -253,8 +319,8 @@ public static class FunctionGraphVisualization
                 // Lücke (Asymptote) - Pfad unterbrechen
                 if (fillStarted)
                 {
-                    fillPath.LineTo(lastPx, zeroY);
-                    fillPath.Close();
+                    _fillPath.LineTo(lastPx, zeroY);
+                    _fillPath.Close();
                     fillStarted = false;
                 }
                 inPath = false;
@@ -267,16 +333,16 @@ public static class FunctionGraphVisualization
 
             if (!inPath)
             {
-                curvePath.MoveTo(px, py);
-                fillPath.MoveTo(px, zeroY);
-                fillPath.LineTo(px, py);
+                _curvePath.MoveTo(px, py);
+                _fillPath.MoveTo(px, zeroY);
+                _fillPath.LineTo(px, py);
                 inPath = true;
                 fillStarted = true;
             }
             else
             {
-                curvePath.LineTo(px, py);
-                fillPath.LineTo(px, py);
+                _curvePath.LineTo(px, py);
+                _fillPath.LineTo(px, py);
             }
 
             lastPx = px;
@@ -285,19 +351,36 @@ public static class FunctionGraphVisualization
 
         if (fillStarted)
         {
-            fillPath.LineTo(lastPx, zeroY);
-            fillPath.Close();
+            _fillPath.LineTo(lastPx, zeroY);
+            _fillPath.Close();
         }
+    }
 
-        // Gradient-Füllung (transparenter Verlauf unter der Kurve)
+    /// <summary>
+    /// Zeichnet die gecachte Funktionskurve mit Glow und Gradient-Füllung.
+    /// Nur der Glow-Pulse variiert pro Frame; die Geometrie kommt aus dem Cache.
+    /// </summary>
+    private static void DrawCurve(SKCanvas canvas, float animTime)
+    {
+        var curveColor = SkiaThemeHelper.Primary;
+
+        // Gradient-Füllung (transparenter Verlauf unter der Kurve). Farben hängen nur von
+        // Primary ab (zur Render-Zeit konstant) → Array einmalig befüllen. Der Shader nutzt
+        // die gecachten Plot-Koordinaten und bleibt damit über Frames identisch.
+        if (!_fillColorsValid)
+        {
+            _fillColors[0] = curveColor.WithAlpha(25);
+            _fillColors[1] = curveColor.WithAlpha(5);
+            _fillColorsValid = true;
+        }
         // Alten Shader disposen bevor neuer zugewiesen wird (Native Memory Leak)
         _fillPaint.Shader?.Dispose();
         _fillPaint.Shader = SKShader.CreateLinearGradient(
-            new SKPoint(left, top),
-            new SKPoint(left, top + h),
-            new[] { curveColor.WithAlpha(25), curveColor.WithAlpha(5) },
+            new SKPoint(_cachedPlotLeft, _cachedPlotTop),
+            new SKPoint(_cachedPlotLeft, _cachedPlotTop + _cachedPlotH),
+            _fillColors,
             null, SKShaderTileMode.Clamp);
-        canvas.DrawPath(fillPath, _fillPaint);
+        canvas.DrawPath(_fillPath, _fillPaint);
         _fillPaint.Shader?.Dispose();
         _fillPaint.Shader = null;
 
@@ -306,12 +389,12 @@ public static class FunctionGraphVisualization
         _glowPaint.Color = curveColor.WithAlpha((byte)(pulse * 30));
         _glowPaint.StrokeWidth = 6f;
         _glowPaint.MaskFilter = _curveGlowFilter; // Statisches Filter-Objekt, kein Leak
-        canvas.DrawPath(curvePath, _glowPaint);
+        canvas.DrawPath(_curvePath, _glowPaint);
         _glowPaint.MaskFilter = null;
 
         // Kurve selbst
         _curvePaint.Color = curveColor;
-        canvas.DrawPath(curvePath, _curvePaint);
+        canvas.DrawPath(_curvePath, _curvePaint);
     }
 
     /// <summary>
@@ -321,42 +404,57 @@ public static class FunctionGraphVisualization
         float w, float h, float plotBottom, float minX, float maxX, float minY, float maxY,
         string functionName, float xStep, float yStep)
     {
+        // Label-Strings + Positionen sind frame-konstant (hängen nur von der Geometrie ab) →
+        // nur bei Geometrie-Wechsel neu berechnen. RebuildGeometry invalidiert _labelsValid.
+        if (!_labelsValid)
+        {
+            _xLabels.Clear();
+            float xStart = MathF.Ceiling(minX / xStep) * xStep;
+            for (float gx = xStart; gx <= maxX; gx += xStep)
+            {
+                float px = left + (gx - minX) / (maxX - minX) * w;
+                _xLabels.Add((FormatAxisValue(gx), px));
+            }
+
+            _yLabels.Clear();
+            float yStart = MathF.Ceiling(minY / yStep) * yStep;
+            for (float gy = yStart; gy <= maxY; gy += yStep)
+            {
+                float py = top + h - (gy - minY) / (maxY - minY) * h;
+                _yLabels.Add((FormatAxisValue(gy), py));
+            }
+
+            _cachedDisplayName = string.IsNullOrEmpty(functionName)
+                ? null
+                : functionName switch
+                {
+                    "x²" => "f(x) = x²",
+                    "x³" => "f(x) = x³",
+                    "sqrt" => "f(x) = √x",
+                    "1/x" => "f(x) = 1/x",
+                    "abs" => "f(x) = |x|",
+                    _ => $"f(x) = {functionName}(x)"
+                };
+            _labelsValid = true;
+        }
+
         _textPaint.Color = SkiaThemeHelper.TextMuted;
         _labelFont.Size = 8f;
 
         // X-Achsen-Labels (unten)
-        float xStart = MathF.Ceiling(minX / xStep) * xStep;
-        for (float gx = xStart; gx <= maxX; gx += xStep)
-        {
-            float px = left + (gx - minX) / (maxX - minX) * w;
-            string label = FormatAxisValue(gx);
-            canvas.DrawText(label, px, plotBottom + 10f, SKTextAlign.Center, _labelFont, _textPaint);
-        }
+        for (int i = 0; i < _xLabels.Count; i++)
+            canvas.DrawText(_xLabels[i].Text, _xLabels[i].Px, plotBottom + 10f, SKTextAlign.Center, _labelFont, _textPaint);
 
         // Y-Achsen-Labels (links)
-        float yStart = MathF.Ceiling(minY / yStep) * yStep;
-        for (float gy = yStart; gy <= maxY; gy += yStep)
-        {
-            float py = top + h - (gy - minY) / (maxY - minY) * h;
-            string label = FormatAxisValue(gy);
-            canvas.DrawText(label, left - 4f, py + 3f, SKTextAlign.Right, _labelFont, _textPaint);
-        }
+        for (int i = 0; i < _yLabels.Count; i++)
+            canvas.DrawText(_yLabels[i].Text, left - 4f, _yLabels[i].Py + 3f, SKTextAlign.Right, _labelFont, _textPaint);
 
         // Funktionsname (oben links)
-        if (!string.IsNullOrEmpty(functionName))
+        if (_cachedDisplayName != null)
         {
             _textPaint.Color = SkiaThemeHelper.Primary;
             _valueFont.Size = 11f;
-            string displayName = functionName switch
-            {
-                "x²" => "f(x) = x²",
-                "x³" => "f(x) = x³",
-                "sqrt" => "f(x) = √x",
-                "1/x" => "f(x) = 1/x",
-                "abs" => "f(x) = |x|",
-                _ => $"f(x) = {functionName}(x)"
-            };
-            canvas.DrawText(displayName, left + 4f, top - 6f, SKTextAlign.Left, _valueFont, _textPaint);
+            canvas.DrawText(_cachedDisplayName, left + 4f, top - 6f, SKTextAlign.Left, _valueFont, _textPaint);
         }
     }
 
@@ -411,10 +509,18 @@ public static class FunctionGraphVisualization
         canvas.DrawLine(px, py, px, zeroY, _gridPaint);
         _gridPaint.PathEffect = null;
 
-        // Wertanzeige (Tooltip über dem Punkt)
-        string valueText = $"({FormatValue(currentX)}, {FormatValue(currentY)})";
+        // Wertanzeige (Tooltip über dem Punkt). String + Breite nur neu berechnen wenn sich
+        // currentX oder die Funktion ändern (currentY ist deterministisch). Sonst frame-konstant.
         _valueFont.Size = 9f;
-        float textWidth = _valueFont.MeasureText(valueText, out _);
+        if (currentX != _cachedTooltipX || !ReferenceEquals(function, _cachedTooltipFunc))
+        {
+            _cachedTooltipText = $"({FormatValue(currentX)}, {FormatValue(currentY)})";
+            _cachedTooltipWidth = _valueFont.MeasureText(_cachedTooltipText, out _);
+            _cachedTooltipX = currentX;
+            _cachedTooltipFunc = function;
+        }
+        string valueText = _cachedTooltipText;
+        float textWidth = _cachedTooltipWidth;
 
         // Tooltip-Position (über dem Punkt, oder darunter wenn zu nah am oberen Rand)
         float tooltipX = px;

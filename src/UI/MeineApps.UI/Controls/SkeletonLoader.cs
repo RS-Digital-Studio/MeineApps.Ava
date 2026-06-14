@@ -15,6 +15,7 @@ public class SkeletonLoader : StackPanel
     private DispatcherTimer? _timer;
     private double _opacity = 0.3;
     private bool _increasing = true;
+    private bool _isAttached;
 
     public static readonly StyledProperty<int> LinesProperty =
         AvaloniaProperty.Register<SkeletonLoader, int>(nameof(Lines), 3);
@@ -45,14 +46,30 @@ public class SkeletonLoader : StackPanel
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        _isAttached = true;
         BuildLines();
-        StartShimmer();
+        if (IsVisible) StartShimmer();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        _isAttached = false;
         StopShimmer();
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        // Dokumentierter Vertrag: Statt den Loader zu entfernen lieber IsVisible=False setzen —
+        // der 20fps-Shimmer-Timer wird dann intern gestoppt (Akku). Beim Sichtbar-Werden neu starten.
+        if (change.Property == IsVisibleProperty)
+        {
+            if (change.GetNewValue<bool>() && _isAttached)
+                StartShimmer();
+            else
+                StopShimmer();
+        }
     }
 
     private void BuildLines()
@@ -91,6 +108,7 @@ public class SkeletonLoader : StackPanel
 
     private void StartShimmer()
     {
+        if (_timer != null) return; // bereits aktiv — keinen zweiten Timer anlegen
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
         _timer.Tick += OnShimmerTick;
         _timer.Start();
@@ -98,6 +116,9 @@ public class SkeletonLoader : StackPanel
 
     private void OnShimmerTick(object? sender, EventArgs e)
     {
+        // Kein Aufwand, wenn ein Vorfahre unsichtbar ist (IsEffectivelyVisible deckt die Kette ab).
+        if (!IsEffectivelyVisible) return;
+
         // Pulsieren: 0.15 ↔ 0.45
         if (_increasing)
         {

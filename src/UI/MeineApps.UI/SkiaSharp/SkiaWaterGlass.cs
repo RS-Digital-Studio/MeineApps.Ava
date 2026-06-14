@@ -74,6 +74,8 @@ public class SkiaWaterGlass : Control
             g.UpdateAnimationTimer();
         });
         WaveEnabledProperty.Changed.AddClassHandler<SkiaWaterGlass>((g, _) => g.UpdateAnimationTimer());
+        // Bei eigenem Sichtbarkeits-Wechsel (IsVisible=False) Animation stoppen/wieder starten (Akku).
+        IsVisibleProperty.Changed.AddClassHandler<SkiaWaterGlass>((g, _) => g.UpdateAnimationTimer());
         ShowDropsProperty.Changed.AddClassHandler<SkiaWaterGlass>((g, _) =>
         {
             if (g.ShowDrops)
@@ -99,34 +101,49 @@ public class SkiaWaterGlass : Control
 
     private void UpdateAnimationTimer()
     {
-        bool needsAnimation = WaveEnabled || ShowDrops || _dropCooldown > 0;
+        // Sichtbarkeit ins Gating aufnehmen: ein unsichtbares Glas braucht keinen 30fps-Render-Loop.
+        bool needsAnimation = (WaveEnabled || ShowDrops || _dropCooldown > 0) && IsVisible;
 
         if (needsAnimation && _animationTimer == null)
         {
             _animationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
-            _animationTimer.Tick += (_, _) =>
-            {
-                _time += 0.033f;
-                _dropCooldown -= 0.033f;
-
-                // Tropfen spawnen während Cooldown
-                if (_dropCooldown > 0 && _time % 0.1f < 0.035f)
-                {
-                    var waterSk = SkiaThemeHelper.ToSKColor(WaterColor);
-                    _dropParticles.Add(SkiaParticlePresets.CreateWaterDrop(Random.Shared, 0, 0, waterSk));
-                }
-
-                if (_dropCooldown <= 0 && !WaveEnabled && !ShowDrops)
-                {
-                    _animationTimer?.Stop();
-                    _animationTimer = null;
-                }
-
-                _dropParticles.Update(0.033f);
-                InvalidateCanvas();
-            };
+            _animationTimer.Tick += OnAnimationTick;
             _animationTimer.Start();
         }
+        else if (!needsAnimation && _animationTimer != null)
+        {
+            _animationTimer.Stop();
+            _animationTimer.Tick -= OnAnimationTick;
+            _animationTimer = null;
+        }
+    }
+
+    private void OnAnimationTick(object? sender, EventArgs e)
+    {
+        // Sicherheitsnetz fuer den Vorfahren-Fall (ein Parent ist via IsVisible unsichtbar):
+        // kein Per-Frame-Aufwand, wenn nicht effektiv sichtbar.
+        if (!IsEffectivelyVisible) return;
+
+        _time += 0.033f;
+        _dropCooldown -= 0.033f;
+
+        // Tropfen spawnen während Cooldown
+        if (_dropCooldown > 0 && _time % 0.1f < 0.035f)
+        {
+            var waterSk = SkiaThemeHelper.ToSKColor(WaterColor);
+            _dropParticles.Add(SkiaParticlePresets.CreateWaterDrop(Random.Shared, 0, 0, waterSk));
+        }
+
+        // Selbst-Stop, sobald weder Dauer-Wellen noch Tropfen mehr nötig sind.
+        if (_dropCooldown <= 0 && !WaveEnabled && !ShowDrops)
+        {
+            _animationTimer?.Stop();
+            if (_animationTimer != null) _animationTimer.Tick -= OnAnimationTick;
+            _animationTimer = null;
+        }
+
+        _dropParticles.Update(0.033f);
+        InvalidateCanvas();
     }
 
     private void OnPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -301,10 +318,21 @@ public class SkiaWaterGlass : Control
 
     private static float Lerp(float a, float b, float t) => a + (b - a) * t;
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        // Beim (Wieder-)Einhaengen Animation neu bewerten (WaveEnabled ist per Default true).
+        UpdateAnimationTimer();
+    }
+
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        _animationTimer?.Stop();
-        _animationTimer = null;
+        if (_animationTimer != null)
+        {
+            _animationTimer.Stop();
+            _animationTimer.Tick -= OnAnimationTick;
+            _animationTimer = null;
+        }
     }
 }

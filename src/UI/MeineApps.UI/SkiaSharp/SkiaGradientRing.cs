@@ -111,6 +111,9 @@ public class SkiaGradientRing : Control
         StrokeWidthProperty.Changed.AddClassHandler<SkiaGradientRing>((r, _) => r.InvalidateCanvas());
         IsPulsingProperty.Changed.AddClassHandler<SkiaGradientRing>((r, _) => r.UpdateAnimationTimer());
         ParticlesEnabledProperty.Changed.AddClassHandler<SkiaGradientRing>((r, _) => r.UpdateAnimationTimer());
+        // Bei Sichtbarkeits-Wechsel (eigenes IsVisible=False, z.B. inaktiver Tab) Animation
+        // stoppen/wieder starten — ein unsichtbarer Ring braucht keinen 30fps-Render-Loop (Akku).
+        IsVisibleProperty.Changed.AddClassHandler<SkiaGradientRing>((r, _) => r.UpdateAnimationTimer());
     }
 
     protected override Size ArrangeOverride(Size finalSize)
@@ -132,24 +135,32 @@ public class SkiaGradientRing : Control
 
     private void UpdateAnimationTimer()
     {
-        bool needsAnimation = IsPulsing || ParticlesEnabled;
+        // Sichtbarkeit ins Gating aufnehmen: ein unsichtbares Control (eigenes IsVisible=False)
+        // braucht keinen laufenden 30fps-Timer.
+        bool needsAnimation = (IsPulsing || ParticlesEnabled) && IsVisible;
 
         if (needsAnimation && _animationTimer == null)
         {
             _animationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
-            _animationTimer.Tick += (_, _) =>
-            {
-                _time += 0.033f;
-                InvalidateCanvas();
-            };
+            _animationTimer.Tick += OnAnimationTick;
             _animationTimer.Start();
         }
         else if (!needsAnimation && _animationTimer != null)
         {
             _animationTimer.Stop();
+            _animationTimer.Tick -= OnAnimationTick;
             _animationTimer = null;
             _particles.Clear();
         }
+    }
+
+    private void OnAnimationTick(object? sender, EventArgs e)
+    {
+        // Sicherheitsnetz fuer den Vorfahren-Fall (ein Parent ist via IsVisible unsichtbar):
+        // IsEffectivelyVisible deckt die gesamte Visual-Kette ab — kein Paint, wenn nicht sichtbar.
+        if (!IsEffectivelyVisible) return;
+        _time += 0.033f;
+        InvalidateCanvas();
     }
 
     private void OnPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -292,10 +303,22 @@ public class SkiaGradientRing : Control
         }
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        // Beim (Wieder-)Einhaengen Animation neu bewerten — IsPulsing/ParticlesEnabled koennen
+        // vor dem Attach gesetzt worden sein.
+        UpdateAnimationTimer();
+    }
+
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        _animationTimer?.Stop();
-        _animationTimer = null;
+        if (_animationTimer != null)
+        {
+            _animationTimer.Stop();
+            _animationTimer.Tick -= OnAnimationTick;
+            _animationTimer = null;
+        }
     }
 }

@@ -50,7 +50,7 @@ App-Überblick → [../../CLAUDE.md](../../CLAUDE.md).
 
 | Service | Beschreibung |
 |---------|-------------|
-| `IFirebaseService` / `FirebaseService` | Anonymous-Auth, Realtime-DB (Liga/Cloud-Save). Bearer-Header statt URL-Query-Token. `IDisposable`. |
+| `IFirebaseService` / `FirebaseService` | Anonymous-Auth, Realtime-DB (Liga/Cloud-Save). Bearer-Header statt URL-Query-Token. Auth-Cooldown (5 min, `_authCooldownUntil`) gegen Refresh+SignUp-Sturm bei dauerhaftem Offline/Captive-Portal. `IDisposable`. |
 | `ILeagueService` / `LeagueService` | 5 Tiers, 14-Tage-Saisons, NPC-Backfill bei < 20 echten Spielern, Profanity-Filter (Unicode-NFKD). |
 | `IClanService` / `FirebaseClanService` | Create/Join/Leave, 30s-Pull-Chat. Firebase-RTDB via `IFirebaseService`. |
 | `IPlayGamesService` / `NullPlayGamesService` | Google Play Games v2 (Leaderboards, Online-Achievements). Android-Override via Factory. |

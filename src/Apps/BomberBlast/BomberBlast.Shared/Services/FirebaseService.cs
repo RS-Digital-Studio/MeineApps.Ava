@@ -44,6 +44,10 @@ public sealed class FirebaseService : IFirebaseService
     private string? _idToken;
     private string? _refreshToken;
     private DateTime _tokenExpiry = DateTime.MinValue;
+    // Auth-Cooldown: nach dauerhaft fehlgeschlagenem Auth (Offline/Captive-Portal) nicht bei
+    // JEDEM Firebase-Aufruf erneut Refresh+SignUp versuchen — sonst zwei fehlschlagende
+    // Auth-Requests pro DB-Call (Bandbreite/Batterie). Nach 5 min wird erneut versucht.
+    private DateTime _authCooldownUntil = DateTime.MinValue;
 
     public string? Uid => _uid;
     public bool IsOnline { get; private set; }
@@ -66,6 +70,14 @@ public sealed class FirebaseService : IFirebaseService
             // Token noch gültig?
             if (_idToken != null && DateTime.UtcNow < _tokenExpiry)
                 return;
+
+            // Auth-Cooldown — nach dauerhaft fehlgeschlagenem Auth nicht bei jedem Request erneut
+            // Refresh+SignUp versuchen (Offline/Captive-Portal). Nach 5 min wieder freigegeben.
+            if (DateTime.UtcNow < _authCooldownUntil)
+            {
+                IsOnline = false;
+                return;
+            }
 
             // Gespeicherte Credentials laden. Memory-First: bereits geladene In-Memory-Credentials
             // haben Vorrang vor Preferences. So überlebt die UID ein _preferences.Clear() während der
@@ -95,10 +107,12 @@ public sealed class FirebaseService : IFirebaseService
             catch (HttpRequestException)
             {
                 IsOnline = false;
+                _authCooldownUntil = DateTime.UtcNow.AddMinutes(5);
             }
             catch (TaskCanceledException)
             {
                 IsOnline = false; // Timeout (5s) — Captive Portal oder Offline
+                _authCooldownUntil = DateTime.UtcNow.AddMinutes(5);
             }
         }
         finally

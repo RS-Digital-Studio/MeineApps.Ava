@@ -379,12 +379,17 @@ public sealed partial class GameLoopService : IGameLoopService, IDisposable
                         // pro Workshop, OHNE globale Multiplikatoren (Events, Prestige, Rush etc.).
                         // So bleibt die Workshop-Statistik vergleichbar und inflationsfrei.
                         ws.TotalEarned += grossInc;
+                        // BaseIncomePerWorker ist Loop-invariant (haengt nur an Level+Type) — einmal
+                        // pro Workshop lesen statt pro Worker. Vermeidet pro Worker einen Math.Pow +
+                        // die Milestone-Schleife. Bit-identisch: gleicher decimal-Wert, gleiche
+                        // Multiplikations-Reihenfolge.
+                        decimal baseIncomePerWorker = ws.BaseIncomePerWorker;
                         for (int wi = 0; wi < ws.Workers.Count; wi++)
                         {
                             var worker = ws.Workers[wi];
                             if (!worker.IsWorking) continue;
                             // LevelFitFactor beruecksichtigen (Workshop-Level-Malus fuer niedrige Tiers)
-                            worker.TotalEarned += ws.BaseIncomePerWorker * worker.EffectiveEfficiency * ws.GetWorkerLevelFitFactor(worker);
+                            worker.TotalEarned += baseIncomePerWorker * worker.EffectiveEfficiency * ws.GetWorkerLevelFitFactor(worker);
                         }
                     }
                 }

@@ -15,23 +15,29 @@ public sealed class AscensionService : IAscensionService
     private readonly ISaveGameService _saveGameService;
     private readonly IAudioService _audioService;
     private readonly IAnalyticsService? _analyticsService;
+    // Optional — nur um den Manager-Bonus-Cache nach dem In-place-Manager-Reset zu invalidieren
+    // (Ascension löscht state.Managers ohne State-Swap, daher feuert StateLoaded hier nicht).
+    private readonly IManagerService? _managerService;
 
     /// <summary>Gecachte Perk-Definitionen (statisch, ändert sich nicht zur Laufzeit).</summary>
     private static readonly List<AscensionPerk> AllPerks = AscensionPerk.GetAll();
 
     public event EventHandler? AscensionCompleted;
 
-    // Hinweis: Kein StateLoaded-Handler nötig - AscensionService hat keine lokalen Caches.
+    // Hinweis: Kein StateLoaded-Handler nötig - AscensionService hat keine eigenen Caches
+    // (der Manager-Cache liegt im ManagerService und wird unten gezielt invalidiert).
     public AscensionService(
         IGameStateService gameStateService,
         ISaveGameService saveGameService,
         IAudioService audioService,
-        IAnalyticsService? analyticsService = null)
+        IAnalyticsService? analyticsService = null,
+        IManagerService? managerService = null)
     {
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
         _audioService = audioService;
         _analyticsService = analyticsService;
+        _managerService = managerService;
     }
 
     // ===================================================================
@@ -278,6 +284,7 @@ public sealed class AscensionService : IAscensionService
 
         // Manager komplett weg
         state.Managers.Clear();
+        _managerService?.InvalidateBonusCache(); // In-place-Reset → Manager-Bonus-Cache invalidieren
 
         // Equipment komplett weg
         state.EquipmentInventory.Clear();

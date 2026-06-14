@@ -248,10 +248,14 @@ public sealed class WorkerService : IWorkerService
     public void UpdateWorkerStates(double deltaSeconds)
     {
         // State-Mutation + Events trennen, Events ausserhalb Lock feuern.
-        var moodWarningWorkers = new List<Worker>();
-        var levelUpWorkers = new List<Worker>();
-        var promotionReadyWorkers = new List<Worker>();
-        var quitWorkers = new List<(Worker worker, WorkshopType workshopType)>();
+        // Lazy-Init (analog GameLoopService.PeriodicChecks.cs): Diese Listen werden in ~99% der
+        // Ticks nie gebraucht (kein Level-Up/Mood-Warning/Promotion/Kuendigung pro Tick). Erst beim
+        // tatsaechlichen Ereignis allokieren — spart pro Tick 4 List<>-Allokationen ohne Effekt zu
+        // aendern (Semantik identisch, nur die Allokation ist aufgeschoben).
+        List<Worker>? moodWarningWorkers = null;
+        List<Worker>? levelUpWorkers = null;
+        List<Worker>? promotionReadyWorkers = null;
+        List<(Worker worker, WorkshopType workshopType)>? quitWorkers = null;
 
         _gameState.ExecuteWithLock(() =>
         {
@@ -296,7 +300,7 @@ public sealed class WorkerService : IWorkerService
 
                     // Level-Up-Event sammeln (statt direkt feuern)
                     if (worker.ExperienceLevel > levelBefore)
-                        levelUpWorkers.Add(worker);
+                        (levelUpWorkers ??= new List<Worker>()).Add(worker);
 
                     // v2.1.0: Praktikanten-Training — aktive Ticks akkumulieren, Promotion bei 86400.
                     if (worker.IsIntern && !worker.InternAwaitingPromotion && !worker.IsResting)
@@ -306,7 +310,7 @@ public sealed class WorkerService : IWorkerService
                         if (worker.InternProgressTicks >= promotionThreshold)
                         {
                             worker.InternAwaitingPromotion = true;
-                            promotionReadyWorkers.Add(worker);
+                            (promotionReadyWorkers ??= new List<Worker>()).Add(worker);
                         }
                     }
 
@@ -316,7 +320,7 @@ public sealed class WorkerService : IWorkerService
                         if (worker.QuitDeadline == null)
                         {
                             worker.QuitDeadline = DateTime.UtcNow.AddHours(24);
-                            moodWarningWorkers.Add(worker);
+                            (moodWarningWorkers ??= new List<Worker>()).Add(worker);
                         }
                         else if (DateTime.UtcNow >= worker.QuitDeadline)
                         {
@@ -335,29 +339,34 @@ public sealed class WorkerService : IWorkerService
             {
                 ws.Workers.Remove(worker);
                 state.Statistics.TotalWorkersFired++;
-                quitWorkers.Add((worker, ws.Type));
+                (quitWorkers ??= new List<(Worker worker, WorkshopType workshopType)>()).Add((worker, ws.Type));
             }
         });
 
-        // Events ausserhalb des Locks feuern (Deadlock-Praevention)
-        foreach (var w in levelUpWorkers)
-            WorkerLevelUp?.Invoke(this, w);
-        foreach (var w in moodWarningWorkers)
-            WorkerMoodWarning?.Invoke(this, w);
-        foreach (var w in promotionReadyWorkers)
-            InternReadyForPromotion?.Invoke(this, w);
-        foreach (var (w, wsType) in quitWorkers)
-        {
-            WorkerQuit?.Invoke(this, w);
-            // Mood-Quit ist Retention-relevantes Signal.
-            _analyticsService?.TrackEvent(AnalyticsEvents.WorkerQuit, new Dictionary<string, object?>
+        // Events ausserhalb des Locks feuern (Deadlock-Praevention).
+        // Null-Checks: Die Listen bleiben null wenn kein entsprechendes Ereignis eintrat (Lazy-Init).
+        if (levelUpWorkers != null)
+            foreach (var w in levelUpWorkers)
+                WorkerLevelUp?.Invoke(this, w);
+        if (moodWarningWorkers != null)
+            foreach (var w in moodWarningWorkers)
+                WorkerMoodWarning?.Invoke(this, w);
+        if (promotionReadyWorkers != null)
+            foreach (var w in promotionReadyWorkers)
+                InternReadyForPromotion?.Invoke(this, w);
+        if (quitWorkers != null)
+            foreach (var (w, wsType) in quitWorkers)
             {
-                ["worker_id"] = w.Id,
-                ["tier"] = w.Tier.ToString(),
-                ["mood"] = (int)w.Mood,
-                ["workshop"] = wsType.ToString()
-            });
-        }
+                WorkerQuit?.Invoke(this, w);
+                // Mood-Quit ist Retention-relevantes Signal.
+                _analyticsService?.TrackEvent(AnalyticsEvents.WorkerQuit, new Dictionary<string, object?>
+                {
+                    ["worker_id"] = w.Id,
+                    ["tier"] = w.Tier.ToString(),
+                    ["mood"] = (int)w.Mood,
+                    ["workshop"] = wsType.ToString()
+                });
+            }
     }
 
     private static void UpdateResting(Worker worker, decimal deltaHours, Building? canteen)

@@ -32,4 +32,11 @@ public interface IManagerService
     /// Berechnet den Gesamtbonus aller globalen Manager (ohne Workshop-Bindung) für eine Fähigkeit.
     /// </summary>
     decimal GetGlobalManagerBonus(ManagerAbility ability);
+
+    /// <summary>
+    /// Invalidiert den internen Bonus-Summen-Cache. MUSS aufgerufen werden, wenn die
+    /// Manager-Liste in-place geändert wird (Prestige-/Ascension-Reset löscht oder
+    /// resettet Manager OHNE State-Swap, daher feuert <c>StateLoaded</c> dort nicht).
+    /// </summary>
+    void InvalidateBonusCache();
 }

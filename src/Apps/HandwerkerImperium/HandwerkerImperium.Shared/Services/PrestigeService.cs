@@ -17,6 +17,9 @@ public sealed partial class PrestigeService : IPrestigeService
     private readonly IAscensionService _ascensionService;
     // Telemetrie: optional, damit das Spiel auch ohne Firebase-Verbindung funktioniert.
     private readonly IAnalyticsService? _analyticsService;
+    // Optional — nur um den Manager-Bonus-Cache nach dem In-place-Manager-Reset zu invalidieren
+    // (Prestige löscht/resettet state.Managers ohne State-Swap, daher feuert StateLoaded hier nicht).
+    private readonly IManagerService? _managerService;
 
     // Gecachte Prestige-Shop-Effekte (invalidiert bei Shop-Kauf und State-Load)
     private bool _effectCacheDirty = true;
@@ -43,12 +46,14 @@ public sealed partial class PrestigeService : IPrestigeService
         IGameStateService gameStateService,
         ISaveGameService saveGameService,
         IAscensionService ascensionService,
-        IAnalyticsService? analyticsService = null)
+        IAnalyticsService? analyticsService = null,
+        IManagerService? managerService = null)
     {
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
         _ascensionService = ascensionService;
         _analyticsService = analyticsService;
+        _managerService = managerService;
 
         // Bei State-Wechsel (Load/Import/Reset/Prestige) Cache invalidieren
         _gameStateService.StateLoaded += (_, _) => _effectCacheDirty = true;
@@ -901,6 +906,9 @@ public sealed partial class PrestigeService : IPrestigeService
                 mgr.Level = 1;
             }
         }
+        // In-place-Reset (Clear ODER Level→1) → Manager-Bonus-Cache invalidieren (kein State-Swap,
+        // also feuert StateLoaded hier nicht).
+        _managerService?.InvalidateBonusCache();
 
         // Legende-Worker werden bereits VOR dem Workshop-Reset gesichert (s.o.)
         // und beim Workshop-Unlock via GetOrCreateWorkshop() angewendet.

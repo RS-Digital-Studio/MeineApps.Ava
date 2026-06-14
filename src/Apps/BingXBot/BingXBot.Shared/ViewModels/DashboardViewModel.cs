@@ -579,7 +579,7 @@ public partial class DashboardViewModel : ViewModelBase, IDisposable
 
         _accountUpdateCts?.Cancel();
         _accountUpdateCts?.Dispose();
-        _equityTimer?.Dispose();
+        StopEquitySnapshotTimer();   // cancelt + disposed _equityCts UND _equityTimer (CTS-Handle-Leak)
         _accountUpdateTimer?.Dispose();
         BtcTicker.Dispose();
         Activity.Dispose();

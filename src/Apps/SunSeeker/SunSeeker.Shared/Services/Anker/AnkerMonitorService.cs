@@ -33,6 +33,7 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
     private List<AnkerDevice> _devices = [];
     private AnkerMqttInfo? _mqttInfo;
     private System.Timers.Timer? _triggerTimer;
+    private System.Security.Cryptography.X509Certificates.X509Certificate2? _clientCert;
     private System.Timers.Timer? _reconnectTimer;
     private int _reconnectAttempts;
     private bool _demoActive;
@@ -138,7 +139,11 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
         if (string.IsNullOrWhiteSpace(_mqttInfo.EndpointAddr) || string.IsNullOrWhiteSpace(_mqttInfo.CertificatePem))
             throw new AnkerCloudException(0, "Keine MQTT-Zugangsdaten erhalten (get_user_mqtt_info leer)");
 
+        // Altes Client-Zertifikat (vorheriger Connect/Reconnect) freigeben — natives Krypto-Handle,
+        // das sonst erst beim GC-Finalizer schliesst und ueber haeufige Reconnects akkumuliert.
+        _clientCert?.Dispose();
         var clientCert = LoadClientCertificate(_mqttInfo);
+        _clientCert = clientCert;
 
         var clientId = $"{_mqttInfo.ThingName}_{Random.Shared.Next(0, 99999):D5}";
         var optionsBuilder = new MqttClientOptionsBuilder()
@@ -339,6 +344,10 @@ public sealed class AnkerMonitorService : IAnkerMonitorService, IDisposable
             client.Dispose();
             _mqtt = null;
         }
+
+        // Client-Zertifikat (natives Handle) nach dem MQTT-Client freigeben.
+        _clientCert?.Dispose();
+        _clientCert = null;
 
         _dcWattsBySn.Clear();
         CurrentSolarWatts = 0;

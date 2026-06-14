@@ -324,7 +324,7 @@ public sealed class AndroidAudioService : IAudioService
                 var manager = new RingtoneManager(context);
                 manager.SetType(type);
 
-                var cursor = manager.Cursor;
+                using var cursor = manager.Cursor;
                 if (cursor == null) continue;
 
                 while (cursor.MoveToNext())

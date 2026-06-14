@@ -15,6 +15,9 @@ public static class LinearProgressVisualization
     private static readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _textPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKFont _font = new() { Size = 10f };
+    // Statisch gecacht — die anderen Skia-Helfer der Library cachen den Blur-Filter ebenso
+    // (SkiaGradientRing, SkiaGauge); pro-Frame-CreateBlur wuerde sonst nativen Speicher allokieren.
+    private static readonly SKMaskFilter _glowBlur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
 
     /// <summary>
     /// Rendert einen linearen Fortschrittsbalken.
@@ -78,7 +81,7 @@ public static class LinearProgressVisualization
             if (glowEnabled && fillW > 5f)
             {
                 _glowPaint.Color = SkiaThemeHelper.WithAlpha(endColor, 60);
-                _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+                _glowPaint.MaskFilter = _glowBlur;
                 canvas.DrawCircle(fillRight - 2f, barTop + barH / 2f, barH / 2f + 2f, _glowPaint);
                 _glowPaint.MaskFilter = null;
             }

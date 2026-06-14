@@ -52,9 +52,23 @@ public class CircularProgress : Control
         set => SetValue(TrackBrushProperty, value);
     }
 
+    // Gecachte Pens — nur neu gebaut, wenn sich Stroke-Parameter aendern. Nicht bei reiner
+    // Value-Aenderung, die im Timer-/Stoppuhr-Takt pro Sekunde (oder pro Frame) feuert.
+    private Pen? _trackPen;
+    private Pen? _progressPen;
+
     static CircularProgress()
     {
         AffectsRender<CircularProgress>(ValueProperty, StrokeWidthProperty, StrokeBrushProperty, TrackBrushProperty);
+        StrokeWidthProperty.Changed.AddClassHandler<CircularProgress>((c, _) => c.InvalidatePens());
+        StrokeBrushProperty.Changed.AddClassHandler<CircularProgress>((c, _) => c.InvalidatePens());
+        TrackBrushProperty.Changed.AddClassHandler<CircularProgress>((c, _) => c.InvalidatePens());
+    }
+
+    private void InvalidatePens()
+    {
+        _trackPen = null;
+        _progressPen = null;
     }
 
     public override void Render(DrawingContext context)
@@ -72,20 +86,20 @@ public class CircularProgress : Control
         var trackBrush = TrackBrush;
         if (trackBrush != null)
         {
-            var trackPen = new Pen(trackBrush, strokeWidth, lineCap: PenLineCap.Round);
-            context.DrawEllipse(null, trackPen, center, radius, radius);
+            _trackPen ??= new Pen(trackBrush, strokeWidth, lineCap: PenLineCap.Round);
+            context.DrawEllipse(null, _trackPen, center, radius, radius);
         }
 
         // Fortschritts-Ring
         var value = Math.Clamp(Value, 0.0, 1.0);
         if (value <= 0 || StrokeBrush == null) return;
 
-        var progressPen = new Pen(StrokeBrush, strokeWidth, lineCap: PenLineCap.Round);
+        _progressPen ??= new Pen(StrokeBrush, strokeWidth, lineCap: PenLineCap.Round);
 
         if (value >= 1.0)
         {
             // Vollständiger Kreis
-            context.DrawEllipse(null, progressPen, center, radius, radius);
+            context.DrawEllipse(null, _progressPen, center, radius, radius);
             return;
         }
 
@@ -110,6 +124,6 @@ public class CircularProgress : Control
                 SweepDirection.Clockwise);
         }
 
-        context.DrawGeometry(null, progressPen, geometry);
+        context.DrawGeometry(null, _progressPen, geometry);
     }
 }

@@ -171,20 +171,22 @@ public static class SkiaParticlePresets
     /// <summary>
     /// Konfetti-Partikel für Celebrations (verschiedene Farben, Schwerkraft, Rotation).
     /// </summary>
+    // Statische Konfetti-Palette — vermeidet eine 8er-Array-Allokation pro Spawn
+    // (AddBurst(80, ...) wuerde sonst 80 Wegwerf-Arrays pro Celebration erzeugen).
+    private static readonly SKColor[] ConfettiColors =
+    [
+        new SKColor(0xEF, 0x44, 0x44), // Rot
+        new SKColor(0xF5, 0x9E, 0x0B), // Amber
+        new SKColor(0x22, 0xC5, 0x5E), // Grün
+        new SKColor(0x3B, 0x82, 0xF6), // Blau
+        new SKColor(0xA7, 0x8B, 0xFA), // Violett
+        new SKColor(0x22, 0xD3, 0xEE), // Cyan
+        new SKColor(0xEC, 0x48, 0x99), // Pink
+        new SKColor(0xFF, 0xD7, 0x00), // Gold
+    ];
+
     public static SkiaParticle CreateConfetti(Random rng, float x, float y)
     {
-        var colors = new[]
-        {
-            new SKColor(0xEF, 0x44, 0x44), // Rot
-            new SKColor(0xF5, 0x9E, 0x0B), // Amber
-            new SKColor(0x22, 0xC5, 0x5E), // Grün
-            new SKColor(0x3B, 0x82, 0xF6), // Blau
-            new SKColor(0xA7, 0x8B, 0xFA), // Violett
-            new SKColor(0x22, 0xD3, 0xEE), // Cyan
-            new SKColor(0xEC, 0x48, 0x99), // Pink
-            new SKColor(0xFF, 0xD7, 0x00), // Gold
-        };
-
         float angle = (float)(rng.NextDouble() * Math.PI * 2);
         float speed = 80f + (float)rng.NextDouble() * 160f;
 
@@ -197,7 +199,7 @@ public static class SkiaParticlePresets
             Life = 1.2f + (float)rng.NextDouble() * 0.8f,
             MaxLife = 2f,
             Size = 3f + (float)rng.NextDouble() * 3f,
-            Color = colors[rng.Next(colors.Length)],
+            Color = ConfettiColors[rng.Next(ConfettiColors.Length)],
             Rotation = (float)rng.NextDouble() * 360f,
             RotationSpeed = -180f + (float)rng.NextDouble() * 360f,
             Gravity = 200f

@@ -28,6 +28,10 @@ public sealed class SvgIcon : ContentControl
     private static ResourceDictionary? _iconResources;
     private static readonly object _initLock = new();
 
+    // Wiederverwendeter Path-Subtree — vermeidet Neuaufbau von Viewbox + Path samt Re-Layout
+    // bei reiner Foreground-Aenderung (z.B. DynamicResource/Hover in Listen mit vielen Icons).
+    private Avalonia.Controls.Shapes.Path? _path;
+
     /// <summary>Name des Icons (entspricht Key <c>Icon_{Kind}</c> im AppIcons.axaml).</summary>
     public static readonly StyledProperty<string> KindProperty =
         AvaloniaProperty.Register<SvgIcon, string>(nameof(Kind));
@@ -96,18 +100,29 @@ public sealed class SvgIcon : ContentControl
         if (geometry == null)
         {
             Content = null;
+            _path = null;
+            return;
+        }
+
+        // Subtree wiederverwenden: bei reiner Foreground-Aenderung nur Fill/Data setzen, statt
+        // Viewbox + Path samt Re-Layout des Subtrees komplett neu aufzubauen.
+        if (_path != null && Content is Viewbox)
+        {
+            _path.Data = geometry;
+            _path.Fill = Foreground ?? Brushes.Black;
             return;
         }
 
         // ViewBox-aequivalent: 24x24-Path skaliert auf Width/Height via Stretch=Uniform
+        _path = new Avalonia.Controls.Shapes.Path
+        {
+            Data = geometry,
+            Fill = Foreground ?? Brushes.Black,
+        };
         Content = new Viewbox
         {
             Stretch = Stretch.Uniform,
-            Child = new Avalonia.Controls.Shapes.Path
-            {
-                Data = geometry,
-                Fill = Foreground ?? Brushes.Black,
-            }
+            Child = _path
         };
     }
 }

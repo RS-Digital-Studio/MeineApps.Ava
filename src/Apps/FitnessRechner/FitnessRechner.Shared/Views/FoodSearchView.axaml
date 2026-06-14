@@ -15,7 +15,6 @@
              Background="Transparent">
 
   <UserControl.Resources>
-    <conv:IsNotNullConverter x:Key="IsNotNullConverter" />
     <coreConv:BoolToStringConverter x:Key="FavoriteIconConverter"
                                     TrueValue="StarFace"
                                     FalseValue="StarOutline" />

@@ -45,7 +45,7 @@ löst die 19 Calculator-Views auf.
 | Domänen-Modelle & CraftEngine | 19 Berechnungsalgorithmen, Result-Records, Plausibilitäts-Bounds | [Shared/Models](HandwerkerRechner.Shared/Models/CLAUDE.md) |
 | SkiaSharp-Renderer (23) | 21 Visualisierungen + Splash-Renderer + BlueprintBackground | [Shared/Graphics](HandwerkerRechner.Shared/Graphics/CLAUDE.md) |
 | Startup-Pipeline | `HandwerkerRechnerLoadingPipeline`, Shader-Preload, VM-Instanziierung | [Shared/Loading](HandwerkerRechner.Shared/Loading/CLAUDE.md) |
-| XAML-Converter | `IsNotNullConverter`, `IntEqualsConverter` | [Shared/Converters](HandwerkerRechner.Shared/Converters/CLAUDE.md) |
+| XAML-Converter | `IntEqualsConverter` | [Shared/Converters](HandwerkerRechner.Shared/Converters/CLAUDE.md) |
 
 Reine Asset-/Ressourcen-Ordner ohne eigene Doku: `Shared/Themes/` (AppPalette, Blau #3B82F6),
 `Shared/Resources/Strings/` (AppStrings.resx, 6 Sprachen), `Shared/Assets/`.

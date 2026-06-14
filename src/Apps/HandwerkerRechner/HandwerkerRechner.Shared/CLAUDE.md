@@ -62,7 +62,7 @@ Detail-Doku je Unterordner → [App-CLAUDE.md Doku-Karte](../CLAUDE.md).
 | `Models/` | CraftEngine (Domänen-Berechnungen), Project, Quote, CalculatorCategory |
 | `Graphics/` | 21 Visualisierungen + HandwerkerRechnerSplashRenderer + BlueprintBackgroundRenderer (23 Dateien) |
 | `Loading/` | HandwerkerRechnerLoadingPipeline |
-| `Converters/` | IsNotNullConverter, IntEqualsConverter |
+| `Converters/` | IntEqualsConverter |
 
 Reine Asset-/Ressourcen-Ordner (keine eigene Doku): `Themes/` (`AppPalette.axaml`, Blau #3B82F6),
 `Resources/Strings/` (`AppStrings.resx`, 6 Sprachen), `Assets/` (Bild-Assets).

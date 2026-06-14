@@ -13,7 +13,6 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `TabColorConverters.cs` | `TabColorConverters` (static), `TabBackgroundConverter`, `TabTextConverter` | Tab-Hintergrund (aktiv = ~20 % Opacity des Theme-Brush, inaktiv = transparent) + Tab-Text (aktiv = `TextPrimaryBrush`, inaktiv = `TextMutedBrush`) |
 | `FoodCategoryConverters.cs` | `FoodCategoryToIconConverter`, `FoodCategoryToColorConverter` | `FoodCategory` → `MaterialIconKind` bzw. `IBrush` für Kategorie-Icons in der Lebensmittel-Liste; beide mit statischer `.Instance`-Property |
 | `LocalizeKeyConverter.cs` | `LocalizeKeyConverter` | RESX-Key → lokalisierten String via `ILocalizationService` |
-| `IsNotNullConverter.cs` | `IsNotNullConverter` | `object? → bool` (null → false) |
 | `StringToBoolConverter.cs` | `StringToBoolConverter` | Leerer String → false, sonst true |
 
 ---

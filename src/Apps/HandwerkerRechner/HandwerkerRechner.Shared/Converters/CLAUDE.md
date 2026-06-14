@@ -7,7 +7,6 @@ für XAML-Bindings. Generische Conventions → [Haupt-CLAUDE.md](../../../../../
 
 | Datei | Klasse | Zweck |
 |-------|--------|-------|
-| `IsNotNullConverter.cs` | `IsNotNullConverter` | `value != null` → `bool`. Vorhanden, aktuell aber ungenutzt — Views verwenden stattdessen `{x:Static StringConverters.IsNotNullOrEmpty}`. |
 | `IntEqualsConverter.cs` | `IntEqualsConverter` | `int` == `ConverterParameter` → `bool`. Für Sub-View-Selektion in Multi-Rechner-Views. Singleton (`Instance`). |
 
 ## Registrierung

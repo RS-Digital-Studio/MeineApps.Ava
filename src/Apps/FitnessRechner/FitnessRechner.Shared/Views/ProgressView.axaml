@@ -13,7 +13,6 @@
              Background="Transparent">
 
   <UserControl.Resources>
-    <conv:IsNotNullConverter x:Key="IsNotNullConverter" />
     <coreConv:BoolToStringConverter x:Key="BmiBodyFatConverter" TrueValue="BMI" FalseValue="{loc:Translate BodyFat}" />
 
     <!-- Wiederverwendbares Mahlzeit-Item Template - Medical-Styling -->
@@ -409,7 +408,7 @@
                       </StackPanel>
                       <TextBlock Grid.Column="1" Text="{Binding Note}" Classes="Caption"
                                  VerticalAlignment="Center"
-                                 IsVisible="{Binding Note, Converter={StaticResource IsNotNullConverter}}" />
+                                 IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
                       <TextBlock Grid.Column="2"
                                  Text="{Binding Value, StringFormat='{}{0:F1} kg'}"
                                  FontSize="18" FontWeight="Bold"
@@ -608,7 +607,7 @@
                         </StackPanel>
                         <TextBlock Grid.Column="1" Text="{Binding Note}" Classes="Caption"
                                    VerticalAlignment="Center"
-                                   IsVisible="{Binding Note, Converter={StaticResource IsNotNullConverter}}" />
+                                   IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
                         <TextBlock Grid.Column="2"
                                    Text="{Binding Value, StringFormat='{}{0:F1}'}"
                                    FontSize="18" FontWeight="Bold"
@@ -748,7 +747,7 @@
                         </StackPanel>
                         <TextBlock Grid.Column="1" Text="{Binding Note}" Classes="Caption"
                                    VerticalAlignment="Center"
-                                   IsVisible="{Binding Note, Converter={StaticResource IsNotNullConverter}}" />
+                                   IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
                         <TextBlock Grid.Column="2"
                                    Text="{Binding Value, StringFormat='{}{0:F1}%'}"
                                    FontSize="18" FontWeight="Bold"

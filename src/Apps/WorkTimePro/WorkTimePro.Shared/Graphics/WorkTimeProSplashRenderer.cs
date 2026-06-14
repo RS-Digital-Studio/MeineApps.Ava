@@ -11,10 +11,6 @@ namespace WorkTimePro.Graphics;
 /// </summary>
 public sealed class WorkTimeProSplashRenderer : SplashRendererBase
 {
-    public WorkTimeProSplashRenderer()
-    {
-    }
-
     // --- Farb-Konstanten ---
     private static readonly SKColor BgTop = SKColor.Parse("#202630");
     private static readonly SKColor BgBottom = SKColor.Parse("#141820");

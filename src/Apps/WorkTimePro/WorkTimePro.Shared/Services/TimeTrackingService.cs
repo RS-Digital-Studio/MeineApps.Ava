@@ -225,7 +225,7 @@ public sealed class TimeTrackingService : ITimeTrackingService
     /// Berücksichtigt Mitternachts-Übergang bei Nachtarbeit (bis zu 3 Tage rückwärts).
     /// Vorher: bis zu 8 separate DB-Queries (4 Tage × 2). Jetzt: 1 Range-Query + 1 Last-Entry-Query.
     /// </summary>
-    private async Task<WorkDay> GetActiveWorkDayAsync()
+    public async Task<WorkDay> GetActiveWorkDayAsync()
     {
         var today = await _database.GetOrCreateWorkDayAsync(DateTime.Today);
         var lastEntry = await _database.GetLastTimeEntryAsync(today.Id);

@@ -519,12 +519,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             // Load status
             await _timeTracking.LoadStatusAsync();
 
-            // Today
-            var today = await _timeTracking.GetTodayAsync();
+            // Aktiven Arbeitstag laden (bei über Mitternacht laufender Nachtschicht der Vortag
+            // mit dem offenen Check-In) — so passen Einträge, Zeiten und Datum zur laufenden
+            // Schicht statt einen leeren neuen Tag zu zeigen, während der Live-Timer schon läuft.
+            var today = await _timeTracking.GetActiveWorkDayAsync();
 
-            // Datum aktualisieren (auch für Mitternachts-Rollover-Reload)
+            // _trackedDate bleibt der Kalendertag (Mitternachts-Rollover-Trigger in
+            // UpdateLiveDataAsync); die Anzeige zeigt das Datum des aktiven Tages.
             _trackedDate = DateTime.Today;
-            TodayDateDisplay = DateTime.Today.ToString("D");
+            TodayDateDisplay = today.Date.ToString("D");
 
             // Load entries
             var entries = await _database.GetTimeEntriesAsync(today.Id);
@@ -703,6 +706,22 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
             // Eintrag löschen
             await _database.DeleteTimeEntryAsync(entryToDelete.Id);
+
+            // Wird ein Check-Out rückgängig gemacht, der beim Auschecken eine laufende Pause
+            // beendet hat (CheckOutAsync setzt deren EndTime auf den Check-Out-Zeitpunkt), die
+            // Pause wieder öffnen — sonst meldet LoadStatusAsync "arbeitend" statt "in Pause"
+            // (die Pause ging beim Undo sonst stillschweigend verloren).
+            if (entryToDelete.Type == EntryType.CheckOut)
+            {
+                var pauses = await _database.GetPauseEntriesAsync(entryToDelete.WorkDayId);
+                var pauseEndedByCheckOut = pauses.FirstOrDefault(p =>
+                    p.EndTime != null && Math.Abs((p.EndTime.Value - entryToDelete.Timestamp).TotalSeconds) < 1);
+                if (pauseEndedByCheckOut != null)
+                {
+                    pauseEndedByCheckOut.EndTime = null;
+                    await _database.SavePauseEntryAsync(pauseEndedByCheckOut);
+                }
+            }
 
             // WorkDay neu berechnen
             var workDay = await _database.GetWorkDayAsync(entryToDelete.Timestamp.Date);

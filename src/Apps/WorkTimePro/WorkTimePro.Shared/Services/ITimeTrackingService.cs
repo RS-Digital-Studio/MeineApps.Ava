@@ -48,6 +48,13 @@ public interface ITimeTrackingService
     Task<WorkDay> GetTodayAsync();
 
     /// <summary>
+    /// Liefert den aktiven Arbeitstag: normalerweise heute, bei einer über Mitternacht
+    /// laufenden (offenen) Nachtschicht jedoch den Tag des offenen Check-In (bis zu 3 Tage
+    /// rückwärts). Für die Today-Ansicht, damit Einträge/Datum zur laufenden Schicht passen.
+    /// </summary>
+    Task<WorkDay> GetActiveWorkDayAsync();
+
+    /// <summary>
     /// Get current work time (today, running)
     /// </summary>
     Task<TimeSpan> GetCurrentWorkTimeAsync();

@@ -241,6 +241,10 @@ public partial class App : Application
         services.AddSingleton<ILocalizationService>(sp =>
             new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));
 
+        // App-Lifecycle-Broker: Android speist NotifyPaused/Resumed; Konsumenten stoppen
+        // Timer/Render-Loops im Hintergrund (Akku).
+        services.AddSingleton<IAppLifecycleService, AppLifecycleService>();
+
         // Plattformspezifisch: Android setzt Factory, Desktop nutzt Default
         // lazy, Avalonia-12-Factory-Timing
         services.AddSingleton<IFileShareService>(sp =>

@@ -33,6 +33,7 @@ public class MainActivity : AvaloniaMainActivity
 {
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
+    private IAppLifecycleService? _lifecycle;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -55,6 +56,9 @@ public class MainActivity : AvaloniaMainActivity
 
         // Immersive Fullscreen aktivieren
         EnableImmersiveMode();
+
+        // App-Lifecycle-Broker fuer Akku-Optimierung (Render-/DB-Timer im Hintergrund stoppen).
+        _lifecycle = App.Services?.GetService<IAppLifecycleService>();
 
         // POST_NOTIFICATIONS Permission (Android 13+ / API 33). OperatingSystem-Guard,
         // damit der CA1416-Analyzer den API-33-Konstantenzugriff als geschützt erkennt.
@@ -160,12 +164,14 @@ public class MainActivity : AvaloniaMainActivity
     {
         base.OnResume();
         _adMobHelper?.Resume();
+        _lifecycle?.NotifyResumed();
         EnableImmersiveMode();
     }
 
     protected override void OnPause()
     {
         _adMobHelper?.Pause();
+        _lifecycle?.NotifyPaused();
         base.OnPause();
     }
 

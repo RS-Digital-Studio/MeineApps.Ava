@@ -29,6 +29,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private readonly IAdService _adService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IHapticService _haptic;
+    private readonly IAppLifecycleService _lifecycle;
 
     private System.Timers.Timer? _updateTimer;
     private bool _disposed;
@@ -83,6 +84,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public event Action<string, string>? FloatingTextRequested;
     public event Action? CelebrationRequested;
 
+    /// <summary>App-Pause/Resume (Android-Lifecycle). Die MainView stoppt darüber ihren
+    /// animierten Hintergrund-Render-Timer im Hintergrund (Akku-Sparen). true = pausiert.</summary>
+    public event Action<bool>? PauseStateChanged;
+
     public MainViewModel(
         ITimeTrackingService timeTracking,
         ICalculationService calculation,
@@ -101,7 +106,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         VacationViewModel vacationVm,
         ShiftPlanViewModel shiftPlanVm,
         IRewardedAdService rewardedAdService,
-        IHapticService haptic)
+        IHapticService haptic,
+        IAppLifecycleService lifecycle)
     {
         _timeTracking = timeTracking;
         _calculation = calculation;
@@ -112,6 +118,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _adService = adService;
         _rewardedAdService = rewardedAdService;
         _haptic = haptic;
+        _lifecycle = lifecycle;
         _rewardedAdService.AdUnavailable += OnAdUnavailable;
 
         IsAdBannerVisible = _adService.BannerVisible;
@@ -158,6 +165,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Event handler
         _timeTracking.StatusChanged += OnStatusChanged;
         _localization.LanguageChanged += OnLanguageChanged;
+
+        // App-Pause/Resume (Android-Lifecycle): den sekündlichen Live-Snapshot-Timer im
+        // Hintergrund stoppen + den dekorativen Render-Loop der MainView via PauseStateChanged.
+        _lifecycle.Paused += OnAppPaused;
+        _lifecycle.Resumed += OnAppResumed;
 
         // Timer for live updates (1 second) - only started when tracking is active
         _updateTimer = new System.Timers.Timer(1000);
@@ -822,6 +834,40 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         });
     }
 
+    /// <summary>
+    /// App ging in den Hintergrund: den sekündlichen Live-Snapshot-Timer anhalten (er feuert
+    /// sonst stundenlang weiter, solange eingestempelt ist — eine SQLite-Query pro Sekunde
+    /// ohne Zuschauer). Die Arbeitszeit selbst hängt NICHT am Timer: sie wird aus den
+    /// persistierten CheckIn/CheckOut-Timestamps berechnet — der Timer aktualisiert nur die
+    /// Live-Anzeige. Zusätzlich den dekorativen Render-Loop der MainView pausieren.
+    /// </summary>
+    private void OnAppPaused()
+    {
+        _updateTimer?.Stop();
+        PauseStateChanged?.Invoke(true);
+    }
+
+    /// <summary>
+    /// App kam in den Vordergrund: Render-Loop wieder freigeben, die Anzeige einmal frisch
+    /// laden (deckt auch einen Mitternachts-Rollover während der Pause ab — UpdateLiveDataAsync
+    /// lädt bei Datumswechsel den neuen Tag neu) und den 1s-Timer nur wieder starten, wenn
+    /// getrackt wird. Idle bleibt timerlos (bestehende OnStatusChanged-Semantik).
+    /// </summary>
+    private void OnAppResumed()
+    {
+        PauseStateChanged?.Invoke(false);
+        if (CurrentStatus == TrackingStatus.Idle) return;
+
+        // Sofort den aktuellen Stand zeigen (läuft hier auf dem UI-Thread → CheckAccess greift,
+        // kein Re-Dispatch). Danach den sekündlichen Timer wieder aufnehmen.
+        ForgetExtensions.RunForget(async () =>
+        {
+            await UpdateLiveDataAsync();
+            if (!_disposed && CurrentStatus != TrackingStatus.Idle)
+                _updateTimer?.Start();
+        });
+    }
+
     private void UpdateStatusDisplay()
     {
         switch (CurrentStatus)
@@ -989,6 +1035,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _noteDebouncer.Dispose();
         _timeTracking.StatusChanged -= OnStatusChanged;
         _localization.LanguageChanged -= OnLanguageChanged;
+        _lifecycle.Paused -= OnAppPaused;
+        _lifecycle.Resumed -= OnAppResumed;
         _rewardedAdService.AdUnavailable -= OnAdUnavailable;
         _adService.AdsStateChanged -= OnAdsStateChanged;
         _trialService.TrialStatusChanged -= OnTrialStatusChanged;

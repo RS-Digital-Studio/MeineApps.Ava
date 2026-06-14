@@ -71,8 +71,10 @@ public partial class MainView : UserControl
 
         // Desktop-Lifecycle: Timer pausieren wenn Fenster nicht aktiv (Fokus weg / minimiert).
         // Spart Akku/CPU — Renderer läuft sonst weiter obwohl niemand das Pixel sieht.
-        // Auf Android existiert kein direktes "Window Deactivated"-Event auf TopLevel-Ebene;
-        // dort übernimmt die Activity-Lifecycle-Pause im Manifest die Drosselung.
+        // Auf Android existiert kein "Window Deactivated"-Event auf TopLevel-Ebene; dort kommt
+        // die Hintergrund-Drosselung über MainViewModel.PauseStateChanged (Activity.OnPause/
+        // OnResume → IAppLifecycleService), siehe OnPauseStateChanged. _hostWindow bleibt
+        // null → der Desktop-Pfad unten greift nur auf dem Desktop.
         _hostWindow = TopLevel.GetTopLevel(this) as Window;
         if (_hostWindow != null)
         {
@@ -111,6 +113,7 @@ public partial class MainView : UserControl
             _vm.CelebrationRequested -= OnCelebration;
             _vm.MessageRequested -= OnMessage;
             _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm.PauseStateChanged -= OnPauseStateChanged;
             _vm = null;
         }
 
@@ -151,6 +154,20 @@ public partial class MainView : UserControl
         _bgTimer?.Stop();
     }
 
+    /// <summary>
+    /// App-Pause/Resume (Android-Lifecycle via MainViewModel.PauseStateChanged): den ~5fps-
+    /// Hintergrund-Render-Loop anhalten, solange die App im Hintergrund ist — er ist rein
+    /// dekorativ und niemand sieht ihn (Akku). Auf Android greift der Desktop-Deactivated-Pfad
+    /// nicht (kein TopLevel-Window), daher übernimmt dieser Hook dort die Drosselung.
+    /// </summary>
+    private void OnPauseStateChanged(bool isPaused)
+    {
+        if (isPaused)
+            _bgTimer?.Stop();
+        else
+            _bgTimer?.Start();
+    }
+
     private void OnBackgroundPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
@@ -167,6 +184,7 @@ public partial class MainView : UserControl
             _vm.CelebrationRequested -= OnCelebration;
             _vm.MessageRequested -= OnMessage;
             _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm.PauseStateChanged -= OnPauseStateChanged;
         }
 
         _vm = DataContext as MainViewModel;
@@ -178,6 +196,7 @@ public partial class MainView : UserControl
             _vm.CelebrationRequested += OnCelebration;
             _vm.MessageRequested += OnMessage;
             _vm.PropertyChanged += OnVmPropertyChanged;
+            _vm.PauseStateChanged += OnPauseStateChanged;
         }
     }
 

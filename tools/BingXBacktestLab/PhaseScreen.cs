@@ -38,13 +38,15 @@ internal sealed record StrategyRow(string Strategy, PhaseCell[] Cells)
 
 internal static class PhaseScreen
 {
-    /// <summary>4 disjunkte Phasen ~1 Jahr (BingX-Perps ab ~April 2022): Bear/Recovery/Bull/Recent.</summary>
+    /// <summary>4 disjunkte Phasen ~1 Jahr (BingX-Perps ab ~April 2022): Bear/Recovery/Bull/Recent.
+    /// Die Recent-Phase laeuft bewusst bis <c>UtcNow.Date</c> (selbst-aktualisierend), damit die
+    /// juengsten Marktwochen bei jedem Rebalance-Ritual ohne Code-Edit mitbacktestet werden.</summary>
     public static Phase[] DefaultPhases() =>
     [
         new("2022-Bear",     U(2022, 6, 1),  U(2023, 6, 1)),
         new("2023-Recovery", U(2023, 6, 1),  U(2024, 6, 1)),
         new("2024-Bull",     U(2024, 6, 1),  U(2025, 6, 1)),
-        new("2025-Recent",   U(2025, 6, 1),  U(2026, 5, 31)),
+        new("2025-Recent",   U(2025, 6, 1),  DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc)),
     ];
 
     /// <summary>Default-Strategie-Set: bestehende TrendFollow-Familie + MeanReversion (alles aus StrategyFactory).</summary>

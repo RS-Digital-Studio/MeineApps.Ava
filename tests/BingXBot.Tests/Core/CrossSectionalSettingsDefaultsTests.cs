@@ -5,8 +5,9 @@ using Xunit;
 namespace BingXBot.Tests.Core;
 
 // Guard-Test gegen versehentliche Default-Drift der Cross-Sectional-Momentum-Strategie.
-// Diese Werte sind backtest-validiert: in ALLEN 4 Marktphasen positiv bei L120 / ~monatlichem
-// Rebalance / risk-adjusted auf dem Top-50-Universum INKL. TradFi mit 3L-3S.
+// Diese Werte sind backtest-validiert (Fein-Sweep 13.06.2026): in ALLEN 4 Marktphasen positiv bei
+// L60 / 9-Tage-Rebalance / risk-adjusted auf dem Top-50-Universum INKL. TradFi mit 3L-3S — robust
+// ueber Top-50 UND Top-80 sowie lev1/lev2 (Plateau, kein Peak).
 // Eine unbeabsichtigte Aenderung (z.B. LeverageCap auf 5 oder Top-100) macht die Strategie
 // phasen-instabil — der Test schlaegt dann bewusst fehl und zwingt zur Re-Validierung.
 public class CrossSectionalSettingsDefaultsTests
@@ -23,7 +24,7 @@ public class CrossSectionalSettingsDefaultsTests
         // positiv (Σ +548 % vs. +250 % bei 1x); ab 3x kippt Recovery (−12 %), 5x Lotterie (−36 %).
         s.LeverageCap.Should().Be(2, "Hebel-Sweep auf dem Live-Profil: 2x robust, 3x+ phasen-instabil");
         s.IncludeTradFi.Should().BeTrue("ohne TradFi-Dispersion kippt auch Top-50 in keiner Config");
-        s.LookbackCandles.Should().Be(120, "L120 ≈ 20 Tage Momentum-Fenster (validiert)");
-        s.RebalanceDays.Should().Be(21, "≈ monatlicher Rebalance");
+        s.LookbackCandles.Should().Be(60, "L60 ≈ 10 Tage Momentum-Fenster (Fein-Sweep-Optimum 13.06.2026)");
+        s.RebalanceDays.Should().Be(9, "9-Tage-Rebalance (R54-Kerzen-Optimum, robust ueber beide Universen)");
     }
 }

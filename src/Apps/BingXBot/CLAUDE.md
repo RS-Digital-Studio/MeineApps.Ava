@@ -238,7 +238,10 @@ staerksten / short die schwaechsten Symbole nach vol-bereinigtem Momentum, monat
 Backtest-validiert phasen-robust (Details → `tools/BingXBacktestLab/CLAUDE.md` + Memory `bingxbot.md`).
 
 **Validiertes Live-Profil (Defaults in `CrossSectionalSettings`): Top-50 inkl. TradFi, 3L-3S,
-L120/R21d/radj/lev1.** Auf Top-100 ist KEINE Config phasen-robust, und OHNE TradFi kippt auch
+L60/R9d/radj/lev2** (Fein-Sweep-Optimum 13.06.2026 — robust ueber Top-50 UND Top-80, lev1/lev2;
+loeste L120/R21d ab; Code-Defaults + Bootstrap-Migration seit 13.07.2026: ein alt-persistierter
+120/21-Block wird in `ApplySettingsToSingletons` einmalig auf 60/9 gehoben, andere Tunings bleiben).
+Auf Top-100 ist KEINE Config phasen-robust, und OHNE TradFi kippt auch
 Top-50 — die Cross-Asset-Dispersion (Gold/Indizes/Forex) traegt den Edge. Betriebs-Mechanik:
 - **Paper startet immer frisch** (kein State-Adopt — die SimulatedExchange ist nach Restart leer);
   State-Datei pro Modus (`xsec-state-paper.json` / `xsec-state-live.json`, keine Kontamination).

@@ -40,7 +40,8 @@ Gotchas (Google-OAuth-Passwort, a6-TLV, mTLS) → [Anker/CLAUDE.md](Anker/CLAUDE
 
 - **Sonnenstand**: NOAA/Meeus, `SolarPositionService` — Julian Day → Deklination + Zeitgleichung →
   Stundenwinkel → Zenit/Elevation/Azimut (+ Refraktion). `GetDayArc` für die Sonnenbahn.
-- **Soll-Tilt** (DE-Faustformeln): Jahr `lat·0,76+3,1`, Winter `lat·0,875+19,2`, Heute `90−Mittagselevation`,
+- **Soll-Tilt** (DE-Faustformeln): Jahr `lat·0,76+3,1`, Saison Apr–Okt `lat·0,94−17,0` (2:1-Mittel
+  Sommer-/Übergangsformel), Winter `lat·0,875+19,2`, Heute `90−Mittagselevation`,
   Jetzt = Zenitwinkel der aktuellen Sonne. Azimut = äquatorwärts.
 - **AOI**: `cos(AOI)=sin(elev)·cos(tilt)+cos(elev)·sin(tilt)·cos(sonnenAz−panelAz)`. Direkt-Ertrag ∝ cos(AOI).
 - **Bifazial**: Albedo dominiert; Gain als BEREICH (`albedo·0,20`…`albedo·0,45`, Deckel 0,30),

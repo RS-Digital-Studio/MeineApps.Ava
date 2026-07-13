@@ -104,6 +104,7 @@ und ruft `Render(canvas, LocalClipBounds, …)` im `PaintSurface`-Handler (Handl
 |-------|------------------|
 | `NowMaximum` | Direkt auf die aktuelle Sonne (Azimut = Sonnen-Azimut, Neigung = Zenitwinkel). Für mobiles Panel. |
 | `TodayYield` | Süd, Neigung senkrecht zur heutigen Mittagssonne. |
+| `SeasonYield` | Süd, flacher Saisonwinkel fürs Sommerhalbjahr (April–Oktober, Panel bleibt die Saison stehen). |
 | `AnnualYield` | Süd, flacher Festwinkel (Jahresoptimum). |
 | `WinterYield` | Süd, steiler Winterwinkel. |
 

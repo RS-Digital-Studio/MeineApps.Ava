@@ -13,6 +13,10 @@ public enum AlignmentGoal
     /// <summary>Bester Festwinkel für den heutigen Tag: Süd, Neigung = Zenitwinkel der Mittagssonne.</summary>
     TodayYield,
 
+    /// <summary>Bester Festwinkel fürs Sommerhalbjahr (Nordhalbkugel: April–Oktober) — Panel wird
+    /// einmal aufgestellt und bleibt die ganze Saison stehen: Süd, flacher als das Jahresoptimum.</summary>
+    SeasonYield,
+
     /// <summary>Bester Festwinkel für den Jahresertrag (quasi-feste Aufstellung): Süd, flacher Winkel.</summary>
     AnnualYield,
 

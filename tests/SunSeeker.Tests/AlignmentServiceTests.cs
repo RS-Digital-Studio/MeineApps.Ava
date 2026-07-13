@@ -40,6 +40,18 @@ public class AlignmentServiceTests
     }
 
     [Fact]
+    public void SeasonYield_FlacherAlsAnnual_ZeigtNachSueden()
+    {
+        var season = _align.GetRecommendation(Berlin, Noon, AlignmentGoal.SeasonYield, PanelProfile.Generic);
+        var annual = _align.GetRecommendation(Berlin, Noon, AlignmentGoal.AnnualYield, PanelProfile.Generic);
+
+        season.TargetAzimuth.Should().Be(180);
+        season.TargetTilt.Should().BeLessThan(annual.TargetTilt);
+        // 52.52 * 0.94 - 17.0 = 32.4
+        season.TargetTilt.Should().BeApproximately(32.4, 0.5);
+    }
+
+    [Fact]
     public void NowMaximum_ZeigtAufDieAktuelleSonne()
     {
         var sun = _solar.GetPosition(Berlin, Noon);

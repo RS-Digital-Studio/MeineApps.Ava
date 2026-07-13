@@ -74,11 +74,13 @@
   <data name="CardBifacial" xml:space="preserve"><value>SUPERFÍCIE &amp; GANHO BIFACIAL</value></data>
   <data name="GoalNowMaximum" xml:space="preserve"><value>Máximo agora (móvel)</value></data>
   <data name="GoalTodayYield" xml:space="preserve"><value>Produção diária hoje</value></data>
+  <data name="GoalSeasonYield" xml:space="preserve"><value>Temporada abr–out (fixo)</value></data>
   <data name="GoalAnnualYield" xml:space="preserve"><value>Produção anual (fixo)</value></data>
   <data name="GoalWinterYield" xml:space="preserve"><value>Operação invernal (inclinado)</value></data>
   <data name="ExplNowMaximum" xml:space="preserve"><value>Orientado diretamente para o sol atual — potência máxima agora.</value></data>
   <data name="ExplNowNight" xml:space="preserve"><value>Sol abaixo do horizonte — valor de referência para o dia seguinte.</value></data>
   <data name="ExplTodayYield" xml:space="preserve"><value>Sul, inclinação perpendicular ao sol do meio-dia de hoje — melhor produção diária.</value></data>
+  <data name="ExplSeasonYield" xml:space="preserve"><value>Sul, ângulo sazonal suave para um painel fixo de abril a outubro.</value></data>
   <data name="ExplAnnualYield" xml:space="preserve"><value>Sul, ângulo fixo suave para a maior produção anual.</value></data>
   <data name="ExplWinterYield" xml:space="preserve"><value>Sul, ângulo de inverno acentuado para o sol baixo no horizonte.</value></data>
   <data name="GroundGrass" xml:space="preserve"><value>Erva / Relvado</value></data>

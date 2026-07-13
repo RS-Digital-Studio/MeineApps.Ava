@@ -74,11 +74,13 @@
   <data name="CardBifacial" xml:space="preserve"><value>SOL &amp; GAIN BIFACIAL</value></data>
   <data name="GoalNowMaximum" xml:space="preserve"><value>Maximum maintenant (mobile)</value></data>
   <data name="GoalTodayYield" xml:space="preserve"><value>Rendement journalier</value></data>
+  <data name="GoalSeasonYield" xml:space="preserve"><value>Saison avr–oct (fixe)</value></data>
   <data name="GoalAnnualYield" xml:space="preserve"><value>Rendement annuel (fixe)</value></data>
   <data name="GoalWinterYield" xml:space="preserve"><value>Utilisation hivernale (incliné)</value></data>
   <data name="ExplNowMaximum" xml:space="preserve"><value>Orienté directement vers le soleil actuel — puissance maximale maintenant.</value></data>
   <data name="ExplNowNight" xml:space="preserve"><value>Soleil sous l'horizon — valeur indicative pour le lendemain.</value></data>
   <data name="ExplTodayYield" xml:space="preserve"><value>Sud, inclinaison perpendiculaire au soleil de midi d'aujourd'hui — meilleur rendement journalier.</value></data>
+  <data name="ExplSeasonYield" xml:space="preserve"><value>Sud, angle de saison modéré pour un panneau laissé en place d'avril à octobre.</value></data>
   <data name="ExplAnnualYield" xml:space="preserve"><value>Sud, angle fixe modéré pour le rendement annuel maximal.</value></data>
   <data name="ExplWinterYield" xml:space="preserve"><value>Sud, angle hivernal élevé pour un soleil bas sur l'horizon.</value></data>
   <data name="GroundGrass" xml:space="preserve"><value>Herbe / Gazon</value></data>

@@ -59,6 +59,7 @@ public partial class DashboardViewModel : ObservableObject
         [
             new(AlignmentGoal.NowMaximum, loc.GetString("GoalNowMaximum")),
             new(AlignmentGoal.TodayYield, loc.GetString("GoalTodayYield")),
+            new(AlignmentGoal.SeasonYield, loc.GetString("GoalSeasonYield")),
             new(AlignmentGoal.AnnualYield, loc.GetString("GoalAnnualYield")),
             new(AlignmentGoal.WinterYield, loc.GetString("GoalWinterYield")),
         ]);
@@ -208,6 +209,7 @@ public partial class DashboardViewModel : ObservableObject
     {
         AlignmentGoal.NowMaximum => isDaylight ? "ExplNowMaximum" : "ExplNowNight",
         AlignmentGoal.TodayYield => "ExplTodayYield",
+        AlignmentGoal.SeasonYield => "ExplSeasonYield",
         AlignmentGoal.WinterYield => "ExplWinterYield",
         _ => "ExplAnnualYield",
     };

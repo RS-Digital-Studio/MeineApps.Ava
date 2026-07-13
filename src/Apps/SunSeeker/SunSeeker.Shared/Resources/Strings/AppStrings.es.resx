@@ -74,11 +74,13 @@
   <data name="CardBifacial" xml:space="preserve"><value>SUPERFICIE &amp; GANANCIA BIFACIAL</value></data>
   <data name="GoalNowMaximum" xml:space="preserve"><value>Máximo ahora (móvil)</value></data>
   <data name="GoalTodayYield" xml:space="preserve"><value>Rendimiento de hoy</value></data>
+  <data name="GoalSeasonYield" xml:space="preserve"><value>Temporada abr–oct (fijo)</value></data>
   <data name="GoalAnnualYield" xml:space="preserve"><value>Rendimiento anual (fijo)</value></data>
   <data name="GoalWinterYield" xml:space="preserve"><value>Uso en invierno (empinado)</value></data>
   <data name="ExplNowMaximum" xml:space="preserve"><value>Apuntado directamente al sol actual — máxima potencia ahora.</value></data>
   <data name="ExplNowNight" xml:space="preserve"><value>El sol está bajo el horizonte — valor de referencia para mañana.</value></data>
   <data name="ExplTodayYield" xml:space="preserve"><value>Sur, inclinación perpendicular al sol del mediodía de hoy — mejor rendimiento diario.</value></data>
+  <data name="ExplSeasonYield" xml:space="preserve"><value>Sur, ángulo de temporada suave para un panel fijo de abril a octubre.</value></data>
   <data name="ExplAnnualYield" xml:space="preserve"><value>Sur, ángulo fijo suave para el mayor rendimiento anual.</value></data>
   <data name="ExplWinterYield" xml:space="preserve"><value>Sur, ángulo de invierno empinado para el sol bajo.</value></data>
   <data name="GroundGrass" xml:space="preserve"><value>Hierba / Césped</value></data>

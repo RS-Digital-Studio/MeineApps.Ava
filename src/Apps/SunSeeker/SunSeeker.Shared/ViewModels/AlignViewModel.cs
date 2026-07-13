@@ -49,6 +49,7 @@ public partial class AlignViewModel : ObservableObject, IDisposable
         [
             new(AlignmentGoal.NowMaximum, loc.GetString("GoalNowMaximum")),
             new(AlignmentGoal.TodayYield, loc.GetString("GoalTodayYield")),
+            new(AlignmentGoal.SeasonYield, loc.GetString("GoalSeasonYield")),
             new(AlignmentGoal.AnnualYield, loc.GetString("GoalAnnualYield")),
             new(AlignmentGoal.WinterYield, loc.GetString("GoalWinterYield")),
         ]);

@@ -77,12 +77,14 @@
   <!-- Ziele -->
   <data name="GoalNowMaximum" xml:space="preserve"><value>Jetzt maximal (mobil)</value></data>
   <data name="GoalTodayYield" xml:space="preserve"><value>Heutiger Tagesertrag</value></data>
+  <data name="GoalSeasonYield" xml:space="preserve"><value>Saison Apr–Okt (fest)</value></data>
   <data name="GoalAnnualYield" xml:space="preserve"><value>Jahresertrag (fest)</value></data>
   <data name="GoalWinterYield" xml:space="preserve"><value>Winterbetrieb (steil)</value></data>
   <!-- Erklärungen je Ziel -->
   <data name="ExplNowMaximum" xml:space="preserve"><value>Direkt auf die aktuelle Sonne ausgerichtet — maximale Leistung jetzt.</value></data>
   <data name="ExplNowNight" xml:space="preserve"><value>Sonne steht unter dem Horizont — Richtwert für den nächsten Tag.</value></data>
   <data name="ExplTodayYield" xml:space="preserve"><value>Süd, Neigung senkrecht zur heutigen Mittagssonne — bester Tagesertrag.</value></data>
+  <data name="ExplSeasonYield" xml:space="preserve"><value>Süd, flacher Saisonwinkel für ein Panel, das von April bis Oktober fest stehen bleibt.</value></data>
   <data name="ExplAnnualYield" xml:space="preserve"><value>Süd, flacher Festwinkel für den höchsten Jahresertrag.</value></data>
   <data name="ExplWinterYield" xml:space="preserve"><value>Süd, steiler Winterwinkel für die tiefstehende Sonne.</value></data>
   <!-- Untergrund -->

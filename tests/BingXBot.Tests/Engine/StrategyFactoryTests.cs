@@ -33,6 +33,20 @@ public class StrategyFactoryTests
     }
 
     [Theory]
+    [InlineData("Level-Bounce")]
+    [InlineData("Level-Bounce-Trend")]
+    [InlineData("Level-Retest")]
+    public void Create_LevelFamily_ShouldReturnCloneableStrategy(string name)
+    {
+        var strategy = StrategyFactory.Create(name);
+        strategy.Should().BeAssignableTo<IStrategy>();
+        strategy.Name.Should().Be(name, "der Strategie-Name muss die Factory-Variante widerspiegeln");
+        var clone = strategy.Clone();
+        clone.Should().NotBeSameAs(strategy);
+        clone.Name.Should().Be(strategy.Name);
+    }
+
+    [Theory]
     [InlineData("CryptoTrendPro")]
     [InlineData("Trend-Following")]
     [InlineData("EMA Cross")]

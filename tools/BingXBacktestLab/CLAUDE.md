@@ -181,7 +181,11 @@ Universen identisch robust (min +30.1% beide), dämpft die Universums-Varianz (L
 
 **Weitere Strategie-Klassen getestet (`--xsec-grid strategies`, `--pairs`, `--funding-carry`):** Reversal,
 Low-Vol-market-neutral, Inverse-Vol-Gewichtung, Skip-Period, Pairs-Trading (Distance/Gatev), Funding-Harvest —
-**alle NEGATIV/nicht-robust**. Long-only-Momentum/LowVol + Momentum+Carry-Combo-long-only robust, aber
+**alle NEGATIV/nicht-robust**. **Level-Familie (13.07.2026, `--phase-screen`, Live-Settings):** S/R-Level aus
+geclusterten Swing-Pivots (`Level-Bounce`/`-Bounce-Trend`/`-Retest`, `LevelStrategy` in BingXBot.Engine,
+Lab-only) — alle Phasen-Renditen −5..−22 % (Bounce-Trend 1/4 positiv, Rest 0/4), Report
+`reports/phase-screen-level-screen-live.md`. Auch explizites Level-Trading falsifiziert die
+Keine-direktionale-Strategie-These NICHT. Long-only-Momentum/LowVol + Momentum+Carry-Combo-long-only robust, aber
 survivorship-bias-verdächtig (Bear-Phase aufgebläht). Funding-Carry-Faktor (long high/short low) standalone
 nicht robust. **Fazit: reines Cross-Sectional-Momentum L60/R54/3L-3S bleibt die beste bias-robuste Wahl.**
 

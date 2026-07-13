@@ -74,11 +74,13 @@
   <data name="CardBifacial" xml:space="preserve"><value>GROUND &amp; BIFACIAL EXTRA YIELD</value></data>
   <data name="GoalNowMaximum" xml:space="preserve"><value>Max now (mobile)</value></data>
   <data name="GoalTodayYield" xml:space="preserve"><value>Today's daily yield</value></data>
+  <data name="GoalSeasonYield" xml:space="preserve"><value>Season Apr–Oct (fixed)</value></data>
   <data name="GoalAnnualYield" xml:space="preserve"><value>Annual yield (fixed)</value></data>
   <data name="GoalWinterYield" xml:space="preserve"><value>Winter mode (steep)</value></data>
   <data name="ExplNowMaximum" xml:space="preserve"><value>Aimed directly at the current sun — maximum power right now.</value></data>
   <data name="ExplNowNight" xml:space="preserve"><value>Sun is below the horizon — reference value for the next day.</value></data>
   <data name="ExplTodayYield" xml:space="preserve"><value>South, tilt perpendicular to today's noon sun — best daily yield.</value></data>
+  <data name="ExplSeasonYield" xml:space="preserve"><value>South, flat season angle for a panel left in place from April to October.</value></data>
   <data name="ExplAnnualYield" xml:space="preserve"><value>South, flat fixed angle for the highest annual yield.</value></data>
   <data name="ExplWinterYield" xml:space="preserve"><value>South, steep winter angle for the low-lying sun.</value></data>
   <data name="GroundGrass" xml:space="preserve"><value>Grass / Lawn</value></data>

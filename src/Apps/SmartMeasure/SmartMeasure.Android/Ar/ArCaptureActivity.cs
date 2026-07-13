@@ -3005,10 +3005,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     /// in Reihenfolge ihrer Tap-Erfassung.</summary>
     private readonly List<(float screenX, float screenY)> _projectedTapeMeasureBuilder = [];
 
-    /// <summary>Boden-Raster: projizierte Linien-Segmente (x1,y1,x2,y2,depth) auf der
-    /// erkannten Ground-Plane. Verankert die AR-Szene visuell im Raum (3D-Tiefenwirkung).
-    /// GL-Thread-only, wird pro Frame in <see cref="ProjectGroundGrid"/> neu gefuellt.</summary>
-    private readonly List<(float x1, float y1, float x2, float y2, float depth)> _projectedGroundGridBuilder = [];
+    /// <summary>Boden-Raster: projizierte Linien-Segmente (x1,y1,x2,y2,dist) auf der
+    /// erkannten Ground-Plane. dist = Welt-Distanz zur Kamera (Tiefen-Fade). Verankert die
+    /// AR-Szene visuell im Raum. GL-Thread-only, pro Frame in <see cref="ProjectGroundGrid"/> neu gefuellt.</summary>
+    private readonly List<(float x1, float y1, float x2, float y2, float dist)> _projectedGroundGridBuilder = [];
     private bool _showGroundGrid = true;
 
     /// <summary>Reusable Builder fuer Site-Marker (Plan-Kap. 5.2) — projizierte Earth-
@@ -4041,8 +4041,20 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         catch { /* Deklination optional — 0 ist besser als Crash */ }
     }
 
+    /// <summary>Glättungsfaktor (EMA) der Boden-Y-Referenz. Klein genug, dass ein einzelner
+    /// Frame mit abweichender Plane die Referenz kaum verschiebt, groß genug für echte Korrektur
+    /// über einige Sekunden (Update läuft ~1×/s).</summary>
+    private const float GroundPlaneEmaAlpha = 0.2f;
+
+    /// <summary>Einzel-Sample, das weiter als dieser Betrag von der aktuellen Referenz entfernt
+    /// liegt, gilt als andere Fläche / Tracking-Glitch und wird verworfen (kein EMA-Beitrag).
+    /// Schützt vor dem Hochreißen durch eine kurz erkannte erhöhte Plane (Tisch/Terrasse) ebenso
+    /// wie vor einem einzelnen tiefen Ausreißer. Echte Bodenwechsel kommen über die Re-Seedung
+    /// nach Tracking-Verlust (siehe <see cref="CheckTrackingTransition"/>).</summary>
+    private const float GroundPlaneOutlierMeters = 0.75f;
+
     /// <summary>
-    /// Aktualisiert die Ground-Plane-Y-Referenz alle 30 Frames (~1x/sek).
+    /// Aktualisiert die Ground-Plane-Y-Referenz alle 30 Frames (~1x/sek) geglättet (EMA).
     /// Die größte horizontale Plane = wahrscheinlichster Boden.
     /// </summary>
     private void UpdateGroundPlaneReference()
@@ -4053,18 +4065,24 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
         if (_arSession == null) return;
         var y = ArPrecisionHelpers.FindGroundPlaneY(_arSession);
-        if (y.HasValue)
+        if (!y.HasValue) return;
+
+        // Erstes Sample seedet die Referenz direkt.
+        if (!_groundPlaneYSet)
         {
-            // Den TIEFSTEN (niedrigsten Y) erkannten Boden über die Session behalten — das ist
-            // typisch der echte Boden (Rasen), nicht eine erhöhte Plane (Terrasse/Tisch). Vorher
-            // wurde der Wert alle 30 Frames mit der gerade GRÖSSTEN Plane überschrieben → die
-            // Höhenreferenz sprang, sobald eine andere Plane die größte wurde.
-            if (!_groundPlaneYSet || y.Value < _groundPlaneYValue)
-            {
-                _groundPlaneYValue = y.Value;
-                _groundPlaneYSet = true;
-            }
+            _groundPlaneYValue = y.Value;
+            _groundPlaneYSet = true;
+            return;
         }
+
+        // Ausreißer verwerfen (andere Fläche / Tracking-Glitch / kurz erkannte erhöhte Plane).
+        if (MathF.Abs(y.Value - _groundPlaneYValue) > GroundPlaneOutlierMeters) return;
+
+        // Geglättet nachziehen statt hart setzen — dämpft Frame-zu-Frame-Rauschen und ersetzt die
+        // frühere Min-über-Session-Logik, die monoton nach unten driftete und sich nie erholte
+        // (jeder Punkt bekam dadurch über die Zeit einen immer längeren Höhen-Stab, das Boden-
+        // Raster sank unter den echten Boden).
+        _groundPlaneYValue += (y.Value - _groundPlaneYValue) * GroundPlaneEmaAlpha;
     }
 
     /// <summary>Thread-safe getter für Ground-Plane-Y (null wenn noch nicht erkannt).</summary>
@@ -5727,7 +5745,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private void CheckTrackingTransition(bool isTracking)
     {
         if (_wasTrackingLastFrame && !isTracking)
+        {
             VibrateWarning();
+            // Boden-Y-Referenz verwerfen: nach Tracking-Verlust kann ARCore das Welt-Koordinaten-
+            // system bei der Re-Lokalisierung verschieben → eine alte Referenz wäre danach falsch.
+            // UpdateGroundPlaneReference seedet bei Wiederaufnahme frisch.
+            _groundPlaneYSet = false;
+        }
         _wasTrackingLastFrame = isTracking;
     }
 

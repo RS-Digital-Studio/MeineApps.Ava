@@ -51,6 +51,14 @@ public sealed class AlignmentService(ISolarPositionService solarPosition) : IAli
                 break;
             }
 
+            case AlignmentGoal.SeasonYield:
+                // Sommerhalbjahr (April-Oktober): ertragsgewichtetes Mittel (2:1) aus der Sommer-
+                // (lat*0,92-24,3) und der Frühjahr/Herbst-Formel (lat*0,98-2,3) von solarpaneltilt.com
+                // — die Sommermonate liefern rund zwei Drittel des Saison-Ertrags.
+                targetAzimuth = southAzimuth;
+                targetTilt = Math.Clamp(absLat * 0.94 - 17.0, 0.0, 90.0);
+                break;
+
             case AlignmentGoal.WinterYield:
                 targetAzimuth = southAzimuth;
                 targetTilt = Math.Clamp(absLat * 0.875 + 19.2, 0.0, 90.0);

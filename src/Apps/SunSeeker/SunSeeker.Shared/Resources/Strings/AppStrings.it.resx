@@ -74,11 +74,13 @@
   <data name="CardBifacial" xml:space="preserve"><value>SUPERFICIE &amp; GUADAGNO BIFACCIALE</value></data>
   <data name="GoalNowMaximum" xml:space="preserve"><value>Massimo ora (mobile)</value></data>
   <data name="GoalTodayYield" xml:space="preserve"><value>Resa giornaliera odierna</value></data>
+  <data name="GoalSeasonYield" xml:space="preserve"><value>Stagione apr–ott (fisso)</value></data>
   <data name="GoalAnnualYield" xml:space="preserve"><value>Resa annuale (fisso)</value></data>
   <data name="GoalWinterYield" xml:space="preserve"><value>Uso invernale (ripido)</value></data>
   <data name="ExplNowMaximum" xml:space="preserve"><value>Puntato direttamente sul sole attuale — potenza massima ora.</value></data>
   <data name="ExplNowNight" xml:space="preserve"><value>Il sole è sotto l'orizzonte — valore di riferimento per il giorno successivo.</value></data>
   <data name="ExplTodayYield" xml:space="preserve"><value>Sud, inclinazione perpendicolare al sole di mezzogiorno odierno — migliore resa giornaliera.</value></data>
+  <data name="ExplSeasonYield" xml:space="preserve"><value>Sud, angolo stagionale ridotto per un pannello fisso da aprile a ottobre.</value></data>
   <data name="ExplAnnualYield" xml:space="preserve"><value>Sud, angolo fisso ridotto per la massima resa annuale.</value></data>
   <data name="ExplWinterYield" xml:space="preserve"><value>Sud, angolo invernale ripido per il sole basso.</value></data>
   <data name="GroundGrass" xml:space="preserve"><value>Erba / Prato</value></data>

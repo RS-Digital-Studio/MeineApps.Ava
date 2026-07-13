@@ -38,6 +38,15 @@ public static class StrategyFactory
         // zwangsliquidierter Retail-Trader. Standard-Params festgenagelt (Overfitting-Schutz).
         "MeanReversion" => new MeanReversionStrategy(),
 
+        // Level-Familie-Falsifikationsexperiment (NICHT in AvailableStrategies — nur Lab-Test).
+        // Handel an geclusterten Swing-Pivot-S/R-Levels: Bounce (Level hält) bzw. Retest
+        // (Role-Reversal nach frischem Breakout). Market-Entry zum Close, SL hinter dem Level,
+        // TP an Gegen-Levels. Standard-Params festgenagelt (Overfitting-Schutz).
+        "Level-Bounce" => new LevelStrategy(),
+        // Bounce nur in EMA-50-Trendrichtung (Pullback-auf-Level im Trend statt Gegen-Trend-Fade).
+        "Level-Bounce-Trend" => new LevelStrategy(emaTrendPeriod: 50),
+        "Level-Retest" => new LevelStrategy(mode: LevelEntryMode.Retest),
+
         _ => throw new ArgumentException($"Unbekannte Strategie: {name}")
     };
 }

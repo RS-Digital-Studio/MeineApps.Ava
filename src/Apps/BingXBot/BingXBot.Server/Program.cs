@@ -518,6 +518,17 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     // Korb-Config bei jedem Server-Restart auf die Code-Defaults zurueck).
     xsec.LookbackCandles = saved.CrossSectional.LookbackCandles;
     xsec.RebalanceDays = saved.CrossSectional.RebalanceDays;
+    // Einmalige Profil-Migration (13.07.2026): Das alte validierte Profil L120/R21d wurde vom
+    // Lab-Fein-Sweep (13.06.2026) durch L60/R9d abgeloest (robust ueber Top-50 UND Top-80, lev1/lev2).
+    // Ein alt-persistierter Block wuerde die neuen Code-Defaults sonst bei jedem Restart still
+    // zuruedrehen (Gotcha 13.06.2026: stale 1x-Hebel). NUR das exakte Alt-Paar wird gehoben —
+    // jede andere (bewusst getunte) Kombination bleibt unangetastet. Nebenwirkung: exakt 120/21
+    // ist als persistente Config nicht mehr waehlbar (wird beim Restart wieder auf 60/9 gehoben).
+    if (xsec.LookbackCandles == 120 && xsec.RebalanceDays == 21)
+    {
+        xsec.LookbackCandles = 60;
+        xsec.RebalanceDays = 9;
+    }
     xsec.LongK = saved.CrossSectional.LongK;
     xsec.ShortK = saved.CrossSectional.ShortK;
     xsec.RiskAdjusted = saved.CrossSectional.RiskAdjusted;

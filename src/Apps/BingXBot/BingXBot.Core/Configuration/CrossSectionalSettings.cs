@@ -2,21 +2,21 @@ namespace BingXBot.Core.Configuration;
 
 /// <summary>
 /// Parameter der Cross-Sectional-Momentum-Strategie (market-neutral: long staerkste / short schwaechste
-/// Symbole, periodischer Rebalance). Backtest-validiert: in ALLEN 4 Marktphasen positiv bei
-/// <c>L60/R9d/radj/2x</c> auf dem Top-50-Universum INKL. TradFi mit 3L-3S (min +28,3 %,
-/// Σ +297 % ueber 4 Phasen bei 154 USDT). Das fruehere L120/R21-Profil ist auf demselben Universum
-/// nur 2/4 Phasen positiv (min −50,6 %); das kuerzere 10-Tage-Lookback / ~woechentliche Rebalance
-/// deckt sich mit der Momentum-Literatur. Vol-Targeting verschlechtert das Top-50-Profil (vt30 senkt
-/// die schwaechste Phase auf +7,8 %) — daher NICHT als Feld aufgenommen. Wichtig: Auf Top-100 ist
-/// KEINE Config phasen-robust und OHNE TradFi kippt auch Top-50 — die Cross-Asset-Dispersion
-/// (Gold/Indizes/Forex) traegt den Edge. Persistierbar analog <see cref="RiskSettings"/>.
+/// Symbole, periodischer Rebalance). Backtest-validiert (Fein-Sweep 13.06.2026): das robusteste Profil
+/// ist <c>L60/R9d/radj</c> (10-Tage-Momentum, 9-Tage-Rebalance) auf dem Top-50-Universum INKL. TradFi
+/// mit 3L-3S — in ALLEN 4 Marktphasen positiv, ueber Top-50 UND Top-80 sowie lev1/lev2 stabil (Plateau,
+/// kein Peak; bei lev2 min +34,9 %/+8,9 %). Das aeltere Profil L120/R21d war nur auf Top-50 4/4.
+/// Vol-Targeting verschlechtert das Top-50-Profil (vt30 senkt die schwaechste Phase auf +7,8 %) — daher
+/// NICHT als Feld aufgenommen. Wichtig: Auf Top-100 ist KEINE Config phasen-robust (5L-5S dort
+/// min −17,2 %) und OHNE TradFi kippt auch Top-50 — die Cross-Asset-Dispersion (Gold/Indizes/Forex)
+/// traegt den Edge. Persistierbar analog <see cref="RiskSettings"/>.
 /// </summary>
 public sealed class CrossSectionalSettings
 {
-    /// <summary>Momentum-Lookback in Nav-Kerzen (H4). 60 ≈ 10 Tage (validiertes Optimum; L120 nur 2/4 Phasen).</summary>
+    /// <summary>Momentum-Lookback in Nav-Kerzen (H4). 60 ≈ 10 Tage (validiertes Optimum 13.06.2026).</summary>
     public int LookbackCandles { get; set; } = 60;
 
-    /// <summary>Rebalance-Intervall in TAGEN (Wall-Clock, robust gegen Pi-Downtime). 9 ≈ woechentlich (validiert).</summary>
+    /// <summary>Rebalance-Intervall in TAGEN (Wall-Clock, robust gegen Pi-Downtime). 9 ≈ woechentlich (R54-Kerzen-Optimum, validiert).</summary>
     public int RebalanceDays { get; set; } = 9;
 
     /// <summary>Anzahl Long-Slots (staerkste Momentum-Symbole). Top-50-Universum → 3 (phasen-robustestes Profil).</summary>

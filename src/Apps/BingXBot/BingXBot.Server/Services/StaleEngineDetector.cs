@@ -56,6 +56,22 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
     private DateTime _lastPushUtc = DateTime.MinValue;
     private int _consecutiveAlertsWithoutRecovery;
 
+    // Auto-Restart-Recovery: Ein gescheiterter Auto-Restart hinterliess die Engine im Error-State,
+    // und CheckStale steigt bei state != Running sofort aus → es gab NIE einen zweiten Versuch
+    // (live 26.07.2026: Stop schloss den Korb bis auf ein am Wochenende pausiertes TradFi-Symbol,
+    // der Start scheiterte an dieser Restposition, Bot stand 40 h). Diese Felder halten den
+    // ausstehenden Versuch fest und planen ihn mit Backoff neu.
+    private bool _restartPending;
+    private int _failedRestartAttempts;
+    private DateTime _nextRestartAttemptUtc = DateTime.MinValue;
+    private int _restartInFlight;   // Interlocked-Guard gegen parallele Restart-Tasks
+
+    /// <summary>Backoff-Staffel fuer erneute Auto-Restart-Versuche (danach dauerhaft der letzte Wert).</summary>
+    private static readonly TimeSpan[] RestartBackoff =
+    [
+        TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(40), TimeSpan.FromMinutes(60)
+    ];
+
     private Timer? _timer;
     private readonly object _gate = new();
 
@@ -118,6 +134,17 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
                 _consecutiveAlertsWithoutRecovery = 0;
                 _lastScanCycleUtc = null;
                 _lastScanCycleError = null;
+                _restartPending = false;
+                _failedRestartAttempts = 0;
+            }
+            else if (dto.State == BotState.Stopped && Volatile.Read(ref _restartInFlight) == 0)
+            {
+                // Manuell gestoppt — der User will keinen Auto-Restart, Wiedervorlage verwerfen.
+                // Der In-Flight-Guard ist Pflicht: der Auto-Restart stoppt selbst als Zwischenschritt,
+                // und ohne ihn wuerde dieser Stop den Backoff-Zaehler bei jedem Retry auf 0 setzen
+                // (Dauerschleife im 10-min-Takt statt wachsender Abstaende).
+                _restartPending = false;
+                _failedRestartAttempts = 0;
             }
         }
     }
@@ -147,6 +174,7 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
         DateTime? lastCycle;
         string? lastError;
         int alertsBefore;
+        bool retryDue;
 
         lock (_gate)
         {
@@ -156,6 +184,15 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
             lastCycle = _lastScanCycleUtc;
             lastError = _lastScanCycleError;
             alertsBefore = _consecutiveAlertsWithoutRecovery;
+            retryDue = _restartPending && DateTime.UtcNow >= _nextRestartAttemptUtc;
+        }
+
+        // Recovery-Pfad VOR dem Running-Guard: nach einem gescheiterten Auto-Restart steht die
+        // Engine nicht auf Running, und ohne diesen Zweig sah sie der Detector nie wieder an.
+        if (retryDue)
+        {
+            _ = TryAutoRestartAsync(alertsBefore, isRetry: true);
+            return;
         }
 
         if (state != BotState.Running) return;
@@ -224,14 +261,21 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
         }
     }
 
-    private async Task TryAutoRestartAsync(int alertCount)
+    private async Task TryAutoRestartAsync(int alertCount, bool isRetry = false)
     {
+        // Nur ein Restart gleichzeitig — der 10-min-Timer darf keinen zweiten Versuch anstossen,
+        // waehrend der erste noch in Stop/Start haengt (LocalBotControlService serialisiert zwar
+        // per _lifecycleLock, aber ein Doppel-Start wuerde den Backoff-Zaehler verfaelschen).
+        if (Interlocked.Exchange(ref _restartInFlight, 1) == 1) return;
         try
         {
-            _logger.LogError(
-                "Auto-Restart: {Alerts}× Stale-Alert in Folge ohne Recovery — Engine wird neu gestartet (Stop → Start). " +
-                "Opt-out via BotSettings.EnableAutoRestartOnStale=false.",
-                alertCount);
+            if (isRetry)
+                _logger.LogWarning("Auto-Restart: erneuter Versuch #{Attempt} nach Backoff.", _failedRestartAttempts + 1);
+            else
+                _logger.LogError(
+                    "Auto-Restart: {Alerts}× Stale-Alert in Folge ohne Recovery — Engine wird neu gestartet (Stop → Start). " +
+                    "Opt-out via BotSettings.EnableAutoRestartOnStale=false.",
+                    alertCount);
 
             var lastMode = _botSettings.LastMode;
             var activeTfs = new List<TimeFrame>();
@@ -260,17 +304,41 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
                     _consecutiveAlertsWithoutRecovery = 0;
                     _lastActivityUtc = DateTime.UtcNow;
                     _lastPushUtc = DateTime.MinValue; // Damit naechster Alert nicht 12 h blockiert ist
+                    _restartPending = false;
+                    _failedRestartAttempts = 0;
                 }
             }
             else
             {
-                _logger.LogError("Auto-Restart fehlgeschlagen. State={State}, LastError={Error}.",
-                    status.State, status.LastError ?? "(kein Fehler)");
+                var next = ScheduleRestartRetry();
+                _logger.LogError(
+                    "Auto-Restart fehlgeschlagen. State={State}, LastError={Error}. Naechster Versuch {Next:HH:mm} UTC.",
+                    status.State, status.LastError ?? "(kein Fehler)", next);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Auto-Restart wurde von Exception unterbrochen — manueller Eingriff noetig.");
+            var next = ScheduleRestartRetry();
+            _logger.LogError(ex, "Auto-Restart wurde von Exception unterbrochen. Naechster Versuch {Next:HH:mm} UTC.", next);
+        }
+        finally { Interlocked.Exchange(ref _restartInFlight, 0); }
+    }
+
+    /// <summary>
+    /// Plant den naechsten Auto-Restart-Versuch nach der Backoff-Staffel. Gibt den Zeitpunkt zurueck.
+    /// Ohne diese Wiedervorlage blieb die Engine nach EINEM gescheiterten Restart dauerhaft tot —
+    /// transiente Ursachen (BingX-Outage, am Wochenende pausiertes TradFi-Symbol) heilen aber von
+    /// selbst und brauchen nur einen weiteren Anlauf.
+    /// </summary>
+    private DateTime ScheduleRestartRetry()
+    {
+        lock (_gate)
+        {
+            var delay = RestartBackoff[Math.Min(_failedRestartAttempts, RestartBackoff.Length - 1)];
+            _failedRestartAttempts++;
+            _restartPending = true;
+            _nextRestartAttemptUtc = DateTime.UtcNow + delay;
+            return _nextRestartAttemptUtc;
         }
     }
 }

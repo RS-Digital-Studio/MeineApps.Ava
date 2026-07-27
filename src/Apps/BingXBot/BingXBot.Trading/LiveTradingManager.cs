@@ -140,7 +140,17 @@ public class LiveTradingManager : IDisposable
         // Scanner-Flag wird an den tatsächlich durchgesetzten Hedge-Status gekoppelt: Bei One-Way
         // würde TradFi zwar scannen, aber jede Order würde von BingX rejected werden (Log-Spam +
         // verschwendete API-Calls). Nur bei echtem Hedge-Modus TradFi scannen.
-        var isHedge = await _restClient.IsHedgeModeAsync();
+        // Erkennungs-Fehler darf den Scalper-Start NICHT reissen (er handelt auch One-Way, nur ohne
+        // TradFi) — anders als Cross-Sectional, der ohne gesicherten Hedge gar nicht laufen kann.
+        // Defensiv auf false: lieber eine Session ohne TradFi als Orders mit falschem positionSide.
+        bool isHedge;
+        try { isHedge = await _restClient.IsHedgeModeAsync(); }
+        catch (Exception hedgeEx)
+        {
+            isHedge = false;
+            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Engine",
+                $"Position-Modus nicht ermittelbar ({hedgeEx.Message}) — TradFi bleibt fuer diese Session deaktiviert."));
+        }
         if (!isHedge)
         {
             if (positions.Count == 0)

@@ -119,6 +119,13 @@ public class BingXRestClient : IExchangeClient
     /// Erkennt ob der Account im Hedge-Mode (Dual Position) oder One-Way-Mode ist.
     /// Wird beim ersten Aufruf gecacht. Thread-safe.
     /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Der Modus konnte nicht ermittelt werden (BingX-Fehler nach allen Retries). Bewusst ein Wurf
+    /// statt eines <c>false</c>-Fallbacks: ein bool kann "unbekannt" nicht ausdruecken, und jeder
+    /// Aufrufer las das fruehere <c>false</c> als gesichertes "One-Way". Live 26.07.2026 brach der
+    /// Cross-Sectional-Start deshalb mit "BingX steht auf One-Way" ab, obwohl nur die Erkennung an
+    /// einem Timestamp-Fehler gescheitert war — die Fehldiagnose kostete 40 h Stillstand.
+    /// </exception>
     public async Task<bool> IsHedgeModeAsync()
     {
         if (_isHedgeMode.HasValue) return _isHedgeMode.Value;
@@ -156,10 +163,11 @@ public class BingXRestClient : IExchangeClient
             catch (Exception ex)
             {
                 // NICHT cachen bei Fehler: Nächster Aufruf soll erneut versuchen.
-                // Fehlerhafte Erkennung führt zu falschen positionSide-Werten (BOTH vs LONG/SHORT)
+                // Fehlerhafte Erkennung führt zu falschen positionSide-Werten (BOTH vs LONG/SHORT).
                 _logger.LogWarning("Position-Modus-Erkennung fehlgeschlagen: {Error}. Wird erneut versucht.", ex.Message);
                 _isHedgeMode = null;
-                return false; // Temporärer Fallback, wird beim nächsten Aufruf erneut geprüft
+                throw new InvalidOperationException(
+                    $"Position-Modus (Hedge/One-Way) konnte nicht von BingX gelesen werden: {ex.Message}", ex);
             }
 
             _logger.LogInformation("Position-Modus erkannt: {Mode}", _isHedgeMode.Value ? "Hedge (Dual)" : "One-Way");

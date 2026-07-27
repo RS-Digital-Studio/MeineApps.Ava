@@ -59,6 +59,14 @@ public sealed class CrossSectionalTradingService : IDisposable
     private const int DriftConfirmTicks = 2;
     private Dictionary<string, int> _driftMissCounter = new();
 
+    /// <summary>
+    /// Per-Tick-Hard-Cap (Watchdog). Ein voller Rebalance (Klines fuer Top-50+TradFi + bis zu
+    /// LongK+ShortK Close/Open-Orders) liegt typisch bei 1-3 min; 10 min laesst reichlich Luft,
+    /// bleibt aber unter dem 30-min-Tick-Intervall und weit unter der 90-min-Stale-Schwelle des
+    /// <c>StaleEngineDetector</c> — ein haengender Tick kostet damit ein Intervall statt Stunden.
+    /// </summary>
+    private static readonly TimeSpan TickTimeout = TimeSpan.FromMinutes(10);
+
     public bool IsRunning { get; private set; }
     public IReadOnlyDictionary<string, Side> CurrentBasket => _currentBasket;
 
@@ -139,8 +147,24 @@ public sealed class CrossSectionalTradingService : IDisposable
     {
         while (!ct.IsCancellationRequested)
         {
-            try { await TickAsync(ct).ConfigureAwait(false); }
-            catch (OperationCanceledException) { break; }
+            var tickStart = DateTime.UtcNow;
+            // Per-Tick-Hard-Cap analog TradingServiceBase.ScanIterationTimeout: ein Sub-Await, der
+            // weder respondiert noch ct respektiert, fror den Loop sonst bis zum Stale-Detector ein
+            // (live 25.07.2026: 13.7 h ohne Tick, danach Auto-Restart am pausierten TradFi-Symbol
+            // gescheitert → Engine 40 h tot). Nach dem Cap wird der Tick hart gecancelled und im
+            // naechsten Intervall neu versucht.
+            using var tickCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            tickCts.CancelAfter(TickTimeout);
+
+            try { await TickAsync(tickCts.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { break; }
+            catch (OperationCanceledException)
+            {
+                // Per-Tick-Timeout ausgeloest (tickCts hat ct nicht) — Loop lebt weiter.
+                Log(LogLevel.Error, "Engine",
+                    $"Cross-Sectional-Tick Timeout nach {(DateTime.UtcNow - tickStart).TotalSeconds:F0}s "
+                    + $"(Hard-Cap {TickTimeout.TotalMinutes:F0} min) — Hard-Cancel, naechster Versuch im normalen Tick.");
+            }
             catch (Exception ex) { Log(LogLevel.Error, "Engine", $"Cross-Sectional-Tick-Fehler: {ex.Message}"); }
             // Liveness-Marker NACH dem Tick-Versuch (Success oder Failure) — der Loop lebt.
             LastTickUtc = DateTime.UtcNow;

@@ -192,4 +192,64 @@ public class BingXRestClientTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             => Task.FromResult(_func(request));
     }
+
+    // === Position-Modus-Erkennung (Hedge vs. One-Way) ===
+
+    /// <summary>
+    /// Regression 26.07.2026: Die Erkennung gab bei API-Fehlern <c>false</c> zurück — für jeden
+    /// Aufrufer nicht von einem gesicherten "One-Way" zu unterscheiden. Der Cross-Sectional-Start
+    /// brach dadurch mit "BingX steht auf One-Way" ab, obwohl nur die Abfrage gescheitert war.
+    /// </summary>
+    [Fact]
+    public async Task IsHedgeMode_ApiFehler_WirftStattFalseZuMelden()
+    {
+        var handler = new KonstanteFehlerHandler(HttpStatusCode.ServiceUnavailable);
+        var client = ErstelleClient(handler);
+
+        var act = async () => await client.IsHedgeModeAsync();
+
+        await act.Should().ThrowAsync<InvalidOperationException>(
+            "ein unbekannter Position-Modus darf nicht als One-Way durchgehen");
+    }
+
+    [Fact]
+    public async Task IsHedgeMode_FehlerDannErfolg_WirdNichtNegativGecacht()
+    {
+        // Erster Aufruf scheitert dauerhaft, danach antwortet BingX korrekt mit Hedge=true.
+        var scheitern = true;
+        var handler = new LambdaHandler(_ => scheitern
+            ? new HttpResponseMessage(HttpStatusCode.ServiceUnavailable) { Content = new StringContent("Error") }
+            : new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{"code":0,"msg":"OK","data":{"dualSidePosition":"true"}}""",
+                    Encoding.UTF8, "application/json")
+            });
+        var client = ErstelleClient(handler);
+
+        await client.Invoking(c => c.IsHedgeModeAsync()).Should().ThrowAsync<InvalidOperationException>();
+
+        scheitern = false;
+        var isHedge = await client.IsHedgeModeAsync();
+
+        isHedge.Should().BeTrue("nach einem Fehler darf kein negatives Ergebnis gecacht sein");
+    }
+
+    [Theory]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    public async Task IsHedgeMode_StringAntwort_WirdKorrektGeparst(string dualSide, bool erwartet)
+    {
+        // BingX liefert dualSidePosition je nach API-Version als String ODER als Boolean.
+        var handler = new LambdaHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                "{\"code\":0,\"msg\":\"OK\",\"data\":{\"dualSidePosition\":\"" + dualSide + "\"}}",
+                Encoding.UTF8, "application/json")
+        });
+        var client = ErstelleClient(handler);
+
+        var isHedge = await client.IsHedgeModeAsync();
+
+        isHedge.Should().Be(erwartet);
+    }
 }

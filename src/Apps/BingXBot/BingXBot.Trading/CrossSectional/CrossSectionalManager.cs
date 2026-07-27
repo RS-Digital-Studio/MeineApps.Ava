@@ -4,7 +4,9 @@ using BingXBot.Core.Enums;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
 using BingXBot.Exchange;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using LogLevel = BingXBot.Core.Enums.LogLevel;
 
 namespace BingXBot.Trading.CrossSectional;
 
@@ -26,6 +28,10 @@ public sealed class CrossSectionalManager : IDisposable
     // Optional: persistiert Paper-Trades in die DB (Trades-Tabelle, Mode=Paper). Ohne sie waeren
     // Paper-Laeufe nach einem Restart unauswertbar (EventBus-Subscriber halten Trades nur im RAM).
     private readonly BotDatabaseService? _dbService;
+    // Logger fuer den REST-Client. Frueher stand hier NullLogger.Instance — dadurch war z.B. die
+    // Warnung "Position-Modus-Erkennung fehlgeschlagen" unsichtbar und die Ursache eines
+    // Start-Abbruchs im journal nicht nachvollziehbar (live 26.07.2026).
+    private readonly ILogger<BingXRestClient> _restLogger;
 
     private CrossSectionalTradingService? _service;
     private SimulatedExchange? _paperExchange;
@@ -50,8 +56,10 @@ public sealed class CrossSectionalManager : IDisposable
         BotEventBus eventBus,
         BotSettings botSettings,
         string? stateFilePath = null,
-        BotDatabaseService? dbService = null)
+        BotDatabaseService? dbService = null,
+        ILogger<BingXRestClient>? restLogger = null)
     {
+        _restLogger = restLogger ?? NullLogger<BingXRestClient>.Instance;
         _secureStorage = secureStorage;
         _marketData = marketData;
         _risk = risk;
@@ -127,10 +135,13 @@ public sealed class CrossSectionalManager : IDisposable
         var creds = await _secureStorage.LoadCredentialsAsync().ConfigureAwait(false)
             ?? throw new InvalidOperationException("API-Keys konnten nicht entschluesselt werden.");
 
-        _httpClient ??= new HttpClient();
+        // Expliziter Timeout: der .NET-Default (100 s) gilt PRO Request, und der BingXRestClient-Ctor
+        // setzt seine 30 s nur bei InfiniteTimeSpan — ein zaeher BingX-Endpoint blockierte einen Tick
+        // damit minutenlang (Klines fuer Top-50+TradFi laufen sequenziell durch denselben Client).
+        _httpClient ??= new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         _rateLimiter ??= new RateLimiter();
         _restClient = new BingXRestClient(creds.ApiKey, creds.ApiSecret, _httpClient, _rateLimiter,
-            NullLogger<BingXRestClient>.Instance);
+            _restLogger);
 
         await _restClient.SyncServerTimeAsync().ConfigureAwait(false);
         await _restClient.InitializeSymbolInfoAsync().ConfigureAwait(false);

@@ -221,7 +221,11 @@ Live-Parität): `ExitRankBuffer` (Rank-Hysterese gegen Turnover) und `ClusterDiv
 Asset-Cluster/Seite) — beide verbessern die Worst-Phase NICHT robust → nicht übernommen. Asymmetrische
 Slots (3L-2S…4L-2S): Recovery/Recent-Booster, aber Bear schlechter → nicht übernommen. Konsequenz für
 künftige Xsec-Entscheidungen: **immer über mehrere Universums-Schnitte validieren** (`unicheck`-Muster),
-ein einzelner Top-N-Snapshot genügt nicht.
+ein einzelner Top-N-Snapshot genügt nicht. **Fee-/Konto-Hebel quantifiziert (29.07.2026):** Maker- statt
+Taker-Fees (0.02 statt 0.05 %) heben Σ nur um ~5 pp (bei ~+400 %) und lassen die Worst-Phase unverändert
+→ Limit-Order-Rebalancing lohnt die Komplexität nicht. Konto-Größe 158/500/1000/5000 USDT: %-Performance
+praktisch identisch → Min-Order-Fragmentierung ist beim Top-50-Profil KEIN Bremsklotz, mehr Kapital
+ändert die Prozent-Zahlen nicht.
 
 **Weitere Strategie-Klassen getestet (`--xsec-grid strategies`, `--pairs`, `--funding-carry`):** Reversal,
 Low-Vol-market-neutral, Inverse-Vol-Gewichtung, Skip-Period, Pairs-Trading (Distance/Gatev), Funding-Harvest —

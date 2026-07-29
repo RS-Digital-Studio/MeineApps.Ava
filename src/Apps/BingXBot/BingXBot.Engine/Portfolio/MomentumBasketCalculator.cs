@@ -1,4 +1,5 @@
 using BingXBot.Core.Enums;
+using BingXBot.Core.Helpers;
 using BingXBot.Core.Models;
 using BingXBot.Engine.Indicators;
 
@@ -49,6 +50,27 @@ public static class MomentumBasketCalculator
     public static Dictionary<string, Side> ComputeBasket(
         IEnumerable<(string Symbol, IReadOnlyList<Candle> Candles)> universe,
         int lookback, int longK, int shortK, bool riskAdjusted, int skip = 0)
+        => ComputeBasket(universe, lookback, longK, shortK, riskAdjusted, skip,
+            currentBasket: null, exitRankBuffer: 0, clusterDiversify: false);
+
+    /// <summary>
+    /// Erweiterte Korb-Bildung mit zwei optionalen Struktur-Mechanismen (beide neutral bei
+    /// Default-Werten — der 3-Parameter-Basispfad bleibt bit-identisch):
+    /// <list type="bullet">
+    /// <item><b>Rank-Buffer/Hysterese</b> (<paramref name="exitRankBuffer"/> &gt; 0 + <paramref name="currentBasket"/>):
+    ///   ein bereits gehaltenes Symbol behaelt seinen Slot, solange es noch innerhalb der
+    ///   Top-(K+Buffer) seiner Seite rankt (und das Momentum-Vorzeichen stimmt) — klassische
+    ///   Momentum-Turnover-Senkung, spart Fees/Slippage bei jedem Rebalance.</item>
+    /// <item><b>Cluster-Diversifikation</b> (<paramref name="clusterDiversify"/>): max. 1 NEUES Symbol je
+    ///   <see cref="AssetCluster"/> pro Seite (gehaltene Symbole werden nicht zwangsgetauscht, zaehlen
+    ///   aber als belegtes Cluster). Verhindert 3 Longs mit identischem Beta (z.B. 3× AltL1).
+    ///   Reichen die Cluster nicht fuer K Slots, wird nach Rang aufgefuellt (Exposure-Paritaet).</item>
+    /// </list>
+    /// </summary>
+    public static Dictionary<string, Side> ComputeBasket(
+        IEnumerable<(string Symbol, IReadOnlyList<Candle> Candles)> universe,
+        int lookback, int longK, int shortK, bool riskAdjusted, int skip,
+        IReadOnlyDictionary<string, Side>? currentBasket, int exitRankBuffer, bool clusterDiversify)
     {
         var ranked = universe
             .Select(u => (u.Symbol, Mom: Momentum(u.Candles, lookback, riskAdjusted, skip)))
@@ -57,10 +79,58 @@ public static class MomentumBasketCalculator
             .ToList();
 
         var basket = new Dictionary<string, Side>();
-        foreach (var x in ranked.Where(x => x.Mom!.Value > 0m).Take(longK))
-            basket[x.Symbol] = Side.Buy;
-        foreach (var x in ranked.Where(x => x.Mom!.Value < 0m).OrderBy(x => x.Mom!.Value).Take(shortK))
-            basket[x.Symbol] = Side.Sell;
+        SelectSide(ranked.Where(x => x.Mom!.Value > 0m).Select(x => x.Symbol).ToList(),
+            longK, Side.Buy, currentBasket, exitRankBuffer, clusterDiversify, basket);
+        SelectSide(ranked.Where(x => x.Mom!.Value < 0m).OrderBy(x => x.Mom!.Value).Select(x => x.Symbol).ToList(),
+            shortK, Side.Sell, currentBasket, exitRankBuffer, clusterDiversify, basket);
         return basket;
+    }
+
+    /// <summary>Slot-Auswahl EINER Seite: erst Hysterese (gehaltene im Buffer-Fenster), dann Rang-Reihenfolge.</summary>
+    private static void SelectSide(
+        List<string> sideRanked, int k, Side side,
+        IReadOnlyDictionary<string, Side>? currentBasket, int exitRankBuffer, bool clusterDiversify,
+        Dictionary<string, Side> basket)
+    {
+        if (k <= 0 || sideRanked.Count == 0) return;
+        var picked = new List<string>(k);
+        var usedClusters = new HashSet<AssetCluster>();
+
+        // 1. Hysterese: gehaltene Symbole innerhalb Top-(K+Buffer) behalten (kein unnoetiger Tausch).
+        if (currentBasket is not null && exitRankBuffer > 0)
+        {
+            var window = Math.Min(sideRanked.Count, k + exitRankBuffer);
+            for (var i = 0; i < window && picked.Count < k; i++)
+            {
+                var sym = sideRanked[i];
+                if (currentBasket.TryGetValue(sym, out var heldSide) && heldSide == side)
+                {
+                    picked.Add(sym);
+                    if (clusterDiversify) usedClusters.Add(AssetClusterClassifier.Classify(sym));
+                }
+            }
+        }
+
+        // 2. Rest-Slots streng nach Rang; bei ClusterDiversify max. 1 Symbol je Cluster (Other blockt nie).
+        foreach (var sym in sideRanked)
+        {
+            if (picked.Count >= k) break;
+            if (picked.Contains(sym)) continue;
+            if (clusterDiversify)
+            {
+                var cluster = AssetClusterClassifier.Classify(sym);
+                if (cluster != AssetCluster.Other && !usedClusters.Add(cluster)) continue;
+            }
+            picked.Add(sym);
+        }
+
+        // 3. Fallback: reichen die Cluster nicht fuer K Slots, nach Rang auffuellen (Exposure-Paritaet).
+        foreach (var sym in sideRanked)
+        {
+            if (picked.Count >= k) break;
+            if (!picked.Contains(sym)) picked.Add(sym);
+        }
+
+        foreach (var sym in picked) basket[sym] = side;
     }
 }

@@ -47,11 +47,15 @@ public enum XsecMode
 ///   (0 = aus). Skaliert die GESAMT-Exposure zeitvariabel (Ziel/realisiert, gekappt 0.25..2.0) — in
 ///   ruhigen Phasen hoch, in volatilen runter. Anders als InverseVolWeight (within-basket): das hier
 ///   ist die zeitvariable Gesamt-Exposure (Literatur: hebt TSMOM-Sharpe ~3x, aber conditional).</param>
+/// <param name="ExitRankBuffer">Rank-Buffer/Hysterese: gehaltenes Symbol behaelt seinen Slot, solange es
+///   noch in den Top-(K+Buffer) seiner Seite rankt (0 = aus). Senkt den Turnover → Fees/Slippage.</param>
+/// <param name="ClusterDiversify">Max. 1 neues Symbol je Asset-Cluster pro Seite (verhindert 3 Longs mit
+///   identischem Beta). Fallback nach Rang, wenn Cluster nicht fuer K Slots reichen.</param>
 public readonly record struct XsecParams(
     int LookbackCandles, int RebalanceEveryCandles, int LongK, int ShortK,
     bool RiskAdjusted, decimal AtrStopMultiplier, int LeverageCap = 0,
     XsecMode Mode = XsecMode.Momentum, bool InverseVolWeight = false, int SkipCandles = 0,
-    decimal VolTargetAnnualPct = 0m)
+    decimal VolTargetAnnualPct = 0m, int ExitRankBuffer = 0, bool ClusterDiversify = false)
 {
     public int Slots => LongK + ShortK;
     public string Label =>
@@ -62,6 +66,8 @@ public readonly record struct XsecParams(
         + $"{(InverseVolWeight ? "/ivw" : "")}"
         + $"{(VolTargetAnnualPct > 0 ? $"/vt{VolTargetAnnualPct:0}" : "")}"
         + $"{(AtrStopMultiplier > 0 ? $"/stop{AtrStopMultiplier:0.0}" : "")}"
+        + $"{(ExitRankBuffer > 0 ? $"/buf{ExitRankBuffer}" : "")}"
+        + $"{(ClusterDiversify ? "/cdiv" : "")}"
         + $"{(LeverageCap > 0 ? $"/lev{LeverageCap}" : "")}";
 }
 
@@ -185,10 +191,16 @@ public sealed class CrossSectionalMomentumEngine(
             .Select(s => (s.Symbol, (IReadOnlyList<Candle>)s.ContextSlice(p.LookbackCandles + p.SkipCandles + 20)))
             .ToList();
         if (universe.Count == 0) return;
-        var target = BuildTargetBasket(universe, p);
+
+        // Ist-Korb VOR der Ziel-Bildung erfassen — der Rank-Buffer (Hysterese) braucht die aktuell
+        // gehaltenen Symbole, um sie innerhalb des Buffer-Fensters im Slot zu lassen.
+        var positions = await sim.GetPositionsAsync().ConfigureAwait(false);
+        var currentBasket = new Dictionary<string, Side>();
+        foreach (var pos in positions) currentBasket[pos.Symbol] = pos.Side;
+
+        var target = BuildTargetBasket(universe, p, currentBasket);
 
         // 3. Bestehende Positionen, die NICHT (mehr) zum Ziel-Korb passen (Symbol raus ODER Seite gedreht), schliessen.
-        var positions = await sim.GetPositionsAsync().ConfigureAwait(false);
         foreach (var pos in positions)
         {
             if (!target.TryGetValue(pos.Symbol, out var wantSide) || wantSide != pos.Side)
@@ -240,10 +252,12 @@ public sealed class CrossSectionalMomentumEngine(
     /// hoechste ATR%-Vol (Betting-against-Beta).
     /// </summary>
     private static Dictionary<string, Side> BuildTargetBasket(
-        List<(string Symbol, IReadOnlyList<Candle> Candles)> universe, XsecParams p)
+        List<(string Symbol, IReadOnlyList<Candle> Candles)> universe, XsecParams p,
+        IReadOnlyDictionary<string, Side> currentBasket)
     {
         if (p.Mode == XsecMode.Momentum)
-            return MomentumBasketCalculator.ComputeBasket(universe, p.LookbackCandles, p.LongK, p.ShortK, p.RiskAdjusted, p.SkipCandles);
+            return MomentumBasketCalculator.ComputeBasket(universe, p.LookbackCandles, p.LongK, p.ShortK,
+                p.RiskAdjusted, p.SkipCandles, currentBasket, p.ExitRankBuffer, p.ClusterDiversify);
 
         if (p.Mode == XsecMode.Reversal)
         {

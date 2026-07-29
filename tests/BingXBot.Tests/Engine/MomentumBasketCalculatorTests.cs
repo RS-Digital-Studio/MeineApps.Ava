@@ -83,6 +83,91 @@ public class MomentumBasketCalculatorTests
     }
 
     [Fact]
+    public void ComputeBasket_RankBuffer_HaeltGehaltenesSymbolImFenster()
+    {
+        // Rang: S0 > S1 > S2 > S3 > S4 (alle positiv). Gehalten: S3 (Rang-Index 3).
+        // longK=2, Buffer=2 → Fenster = Top-4 → S3 bleibt im Slot, nur 1 Slot wird neu (S0) besetzt.
+        var universe = Enumerable.Range(0, 5)
+            .Select(i => ($"S{i}", (IReadOnlyList<Candle>)Series(0.010m - i * 0.001m)))
+            .ToArray();
+        var held = new Dictionary<string, Side> { ["S3"] = Side.Buy };
+
+        var basket = MomentumBasketCalculator.ComputeBasket(universe, lookback: 30, longK: 2, shortK: 0,
+            riskAdjusted: false, skip: 0, currentBasket: held, exitRankBuffer: 2, clusterDiversify: false);
+
+        basket.Should().HaveCount(2);
+        basket.Should().ContainKey("S3");   // Hysterese: innerhalb Top-(K+Buffer) gehalten
+        basket.Should().ContainKey("S0");   // bester Neuzugang fuellt den Rest-Slot
+        basket.Should().NotContainKey("S1"); // verdraengt durch die gehaltene S3
+    }
+
+    [Fact]
+    public void ComputeBasket_RankBuffer_TauschtAusserhalbDesFensters()
+    {
+        // Gehalten: S4 (Rang-Index 4). longK=2, Buffer=1 → Fenster = Top-3 → S4 fliegt raus.
+        var universe = Enumerable.Range(0, 5)
+            .Select(i => ($"S{i}", (IReadOnlyList<Candle>)Series(0.010m - i * 0.001m)))
+            .ToArray();
+        var held = new Dictionary<string, Side> { ["S4"] = Side.Buy };
+
+        var basket = MomentumBasketCalculator.ComputeBasket(universe, lookback: 30, longK: 2, shortK: 0,
+            riskAdjusted: false, skip: 0, currentBasket: held, exitRankBuffer: 1, clusterDiversify: false);
+
+        basket.Keys.Should().BeEquivalentTo("S0", "S1"); // strenges Ranking, S4 ausserhalb des Buffers
+    }
+
+    [Fact]
+    public void ComputeBasket_ClusterDiversify_MaxEinSymbolJeCluster()
+    {
+        // SOL und AVAX sind beide CryptoAltL1 — mit cdiv darf nur das staerkere (SOL) rein,
+        // der zweite Long-Slot geht an DOGE (CryptoMeme) statt an AVAX.
+        var universe = new (string, IReadOnlyList<Candle>)[]
+        {
+            ("SOL-USDT", Series(0.010m)),
+            ("AVAX-USDT", Series(0.008m)),
+            ("DOGE-USDT", Series(0.006m)),
+            ("UNI-USDT", Series(0.004m)),
+        };
+
+        var basket = MomentumBasketCalculator.ComputeBasket(universe, lookback: 30, longK: 2, shortK: 0,
+            riskAdjusted: false, skip: 0, currentBasket: null, exitRankBuffer: 0, clusterDiversify: true);
+
+        basket.Keys.Should().BeEquivalentTo("SOL-USDT", "DOGE-USDT");
+    }
+
+    [Fact]
+    public void ComputeBasket_ClusterDiversify_FallbackFuelltNachRangAuf()
+    {
+        // Nur EIN Cluster (AltL1) verfuegbar → strikte Cluster-Regel liefert nur 1 Slot,
+        // der Fallback fuellt nach Rang auf volle K auf (Exposure-Paritaet zur Baseline).
+        var universe = new (string, IReadOnlyList<Candle>)[]
+        {
+            ("SOL-USDT", Series(0.010m)),
+            ("AVAX-USDT", Series(0.008m)),
+            ("NEAR-USDT", Series(0.006m)),
+        };
+
+        var basket = MomentumBasketCalculator.ComputeBasket(universe, lookback: 30, longK: 2, shortK: 0,
+            riskAdjusted: false, skip: 0, currentBasket: null, exitRankBuffer: 0, clusterDiversify: true);
+
+        basket.Keys.Should().BeEquivalentTo("SOL-USDT", "AVAX-USDT");
+    }
+
+    [Fact]
+    public void ComputeBasket_NeutraleParameter_IdentischZumBasispfad()
+    {
+        var universe = Enumerable.Range(0, 8)
+            .Select(i => ($"S{i}", (IReadOnlyList<Candle>)Series(0.008m - i * 0.002m)))
+            .ToArray();
+
+        var basePath = MomentumBasketCalculator.ComputeBasket(universe, lookback: 30, longK: 3, shortK: 3, riskAdjusted: false);
+        var extended = MomentumBasketCalculator.ComputeBasket(universe, lookback: 30, longK: 3, shortK: 3,
+            riskAdjusted: false, skip: 0, currentBasket: null, exitRankBuffer: 0, clusterDiversify: false);
+
+        extended.Should().BeEquivalentTo(basePath);
+    }
+
+    [Fact]
     public void Momentum_ZuWenigKerzen_GibtNull()
     {
         var shortSeries = Series(0.01m, count: 20);

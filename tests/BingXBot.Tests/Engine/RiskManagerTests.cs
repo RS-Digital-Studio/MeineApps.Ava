@@ -103,6 +103,18 @@ public class RiskManagerTests
     }
 
     [Fact]
+    public void ValidateTrade_TotalDrawdownNull_IstDeaktiviert()
+    {
+        // Foot-Gun-Fix: 0 bedeutet AUS (wie MaxDailyDrawdownPercent). Vorher blockierte
+        // "totalDrawdown 0 >= 0" JEDEN Trade ab dem ersten Tick (Dauer-Freeze).
+        var settings = CreateTestSettings(s => s.MaxTotalDrawdownPercent = 0m);
+        var risk = new RiskManager(settings, NullLogger<RiskManager>.Instance);
+        var signal = new SignalResult(Signal.Long, 0.8m, 50000m, 49000m, 52000m, "Test");
+        var result = risk.ValidateTrade(signal, CreateContext());
+        result.IsAllowed.Should().BeTrue();
+    }
+
+    [Fact]
     public void CalculatePositionSize_WithStopLoss_ShouldCalculate()
     {
         var settings = CreateTestSettings(s => { s.MaxPositionSizePercent = 2m; s.MaxLeverage = 10m; });

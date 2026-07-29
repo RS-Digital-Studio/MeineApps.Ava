@@ -379,8 +379,9 @@ public class RiskManager : IRiskManager
         if (_settings.MaxDailyDrawdownPercent > 0 && dailyDrawdownPercent >= _settings.MaxDailyDrawdownPercent)
             return new RiskCheckResult(false, $"Tages-Drawdown {dailyDrawdownPercent:F1}% >= {_settings.MaxDailyDrawdownPercent}%", 0m);
 
-        // 10. Gesamt-Drawdown pruefen
-        if (totalDrawdownPercent >= _settings.MaxTotalDrawdownPercent)
+        // 10. Gesamt-Drawdown pruefen. 0 = deaktiviert (wie MaxDailyDrawdownPercent) — ohne den
+        // Guard wuerde 0 wegen "0 >= 0" JEDEN Trade ab dem ersten Tick blockieren (Dauer-Freeze).
+        if (_settings.MaxTotalDrawdownPercent > 0 && totalDrawdownPercent >= _settings.MaxTotalDrawdownPercent)
             return new RiskCheckResult(false, $"Gesamt-Drawdown {totalDrawdownPercent:F1}% >= {_settings.MaxTotalDrawdownPercent}%", 0m);
 
         return new RiskCheckResult(true, null, posSize);

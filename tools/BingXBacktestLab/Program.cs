@@ -134,21 +134,21 @@ if (GetArg(argMap, "xsec", null) != null)
     var parallelism = Math.Max(1, int.Parse(GetArg(argMap, "sweep-parallel", Environment.ProcessorCount.ToString())!, CultureInfo.InvariantCulture));
     var memData = new MemoryKlineCache(dataClient);
     var symbolInfo = await BingXSymbolInfoProvider.LoadAsync(Path.Combine(toolDir, ".symbolinfo-cache"));
-    // --xsec-levs "1,2,3,5": Leverage-Sweep auf dem Live-Profil (L120/R126/3L-3S/radj) statt
-    // des Default-Config-Sets — isoliert den Hebel-Effekt auf der produktiven Config.
+    // --xsec-levs "1,2,3,5": Leverage-Sweep auf dem Live-Profil (L60/R54/3L-3S/radj, seit 13.07.2026)
+    // statt des Default-Config-Sets — isoliert den Hebel-Effekt auf der produktiven Config.
     // --xsec-stops "0,2,3,4": ATR-Stop-Sweep auf dem Live-Profil (lev2) — prueft, ob ein
     // Per-Position-Stop zwischen den Rebalances das Tail-Risiko senkt ohne den Edge zu fressen.
     var configs = GetArg(argMap, "xsec-levs", null) is { Length: > 0 } levList
         ? levList.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(l => new BingXBot.Backtest.Portfolio.XsecParams(
-                LookbackCandles: 120, RebalanceEveryCandles: 126, LongK: 3, ShortK: 3,
+                LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3,
                 RiskAdjusted: true, AtrStopMultiplier: 0m,
                 LeverageCap: int.Parse(l, CultureInfo.InvariantCulture)))
             .ToArray()
         : GetArg(argMap, "xsec-stops", null) is { Length: > 0 } stopList
         ? stopList.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(s => new BingXBot.Backtest.Portfolio.XsecParams(
-                LookbackCandles: 120, RebalanceEveryCandles: 126, LongK: 3, ShortK: 3,
+                LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3,
                 RiskAdjusted: true,
                 AtrStopMultiplier: decimal.Parse(s, CultureInfo.InvariantCulture),
                 LeverageCap: 2))
@@ -159,6 +159,12 @@ if (GetArg(argMap, "xsec", null) != null)
         ? XsecScreen.StrategyConfigs()
         : GetArg(argMap, "xsec-grid", null) is "fine"
         ? XsecScreen.FineConfigs()
+        : GetArg(argMap, "xsec-grid", null) is "asym"
+        ? XsecScreen.AsymConfigs()
+        : GetArg(argMap, "xsec-grid", null) is "reval"
+        ? XsecScreen.RevalidationConfigs()
+        : GetArg(argMap, "xsec-grid", null) is "unicheck"
+        ? XsecScreen.UniCheckConfigs()
         : GetArg(argMap, "xsec-grid", null) is "final"
         ? XsecScreen.FinalConfigs()
         : XsecScreen.DefaultConfigs();
@@ -241,6 +247,29 @@ if (GetArg(argMap, "axis", null) != null)
     var (title, variants) = BuildAxisVariants(axis, valuesArg);
     return await Sweep.AxisAsync(title, variants, symbols, tfs, from, to, botSettings, memData,
         parallelism, outDir, label);
+}
+
+// --- Entry-Sweep: variiert Donchian/EMA/ADX + Chop-/BO-Filter ueber das EINE gemeinsame Konto. ---
+//     Gegenstueck zum --portfolio-sweep (der die Exits drehte): Exits bleiben FIX auf Live
+//     (SL2.75/RRR1.5-3.0, BE/TP1 aus Settings), die ENTRY-Achsen drehen. Top-Kandidaten werden
+//     automatisch ueber die 4 Marktphasen gegengeprueft (Anti-Bull-Overfitting).
+if (GetArg(argMap, "entry-sweep", null) != null)
+{
+    var balance = decimal.Parse(GetArg(argMap, "balance", "158")!, CultureInfo.InvariantCulture);
+    var navTf = tfs.Count > 0 ? tfs[0] : TimeFrame.H4;
+    var scope = (GetArg(argMap, "sweep-grid", "full") ?? "full").ToLowerInvariant();
+    var parallelism = Math.Max(1, int.Parse(GetArg(argMap, "sweep-parallel", Environment.ProcessorCount.ToString())!, CultureInfo.InvariantCulture));
+    var entryMinTrades = int.Parse(GetArg(argMap, "entry-min-trades", "100")!, CultureInfo.InvariantCulture);
+    var phaseTopK = int.Parse(GetArg(argMap, "entry-phase-top", "5")!, CultureInfo.InvariantCulture);
+
+    // Live-Spiegel-Vorfilter (GAP 11 + GAP 4): standardmaessig AN, per Flag abschaltbar (Diagnose).
+    botSettings.Backtest.EnableScannerPrefilter = GetArg(argMap, "scanner-filter", "true") != "false";
+    botSettings.Backtest.EnableBtcHealthScale = GetArg(argMap, "btc-health", "true") != "false";
+
+    var memData = new MemoryKlineCache(dataClient);
+    var symbolInfo = await BingXSymbolInfoProvider.LoadAsync(Path.Combine(toolDir, ".symbolinfo-cache"));
+    return await EntrySweep.RunAsync(symbols, navTf, from, to, botSettings, memData, symbolInfo,
+        balance, scope, parallelism, entryMinTrades, phaseTopK, outDir, label);
 }
 
 // --- Portfolio-Sweep: variiert SL/BE/TP-RRR/TP1-Split ueber das EINE gemeinsame Konto. ---

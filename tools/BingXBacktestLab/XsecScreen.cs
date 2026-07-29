@@ -114,6 +114,99 @@ internal static class XsecScreen
     }
 
     /// <summary>
+    /// Asymmetrische Slot-Verteilungen um das Live-Profil L60/R54/3L-3S/lev2 — der letzte im
+    /// Fein-Sweep NICHT variierte Einstiegs-Hebel (dort nur symmetrische K). Prueft, ob eine
+    /// Long-/Short-Schieflage (z.B. 4L-3S: mehr Long-Dispersion nutzen) das Profil robust schlaegt.
+    /// Live-Baseline ist als erste Config enthalten (direkter Vergleich).
+    /// </summary>
+    public static XsecParams[] AsymConfigs() =>
+    [
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 2, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 2, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 4, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 4, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 4, ShortK: 2, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 2, ShortK: 4, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+    ];
+
+    /// <summary>
+    /// Voll-Re-Validierung des Live-Profils (L60/R54/3L-3S/radj/lev2) auf aktuellem Datenstand:
+    /// ALLE frueher optimierten Achsen + ALLE verworfenen Extras noch einmal gegen die Baseline.
+    /// Enthaelt: L/R-OFAT-Nachbarn auf lev2 (der Fein-Sweep lief auf lev1), symmetrische und
+    /// asymmetrische Slot-Verteilungen, Hebel-Achse (1/3), Vol-Targeting (20/30/50), ATR-Stops
+    /// (2/3/4) sowie die verworfenen Modi Reversal/LowVol/InverseVol/Skip. Universums-Achse
+    /// (Top-N/TradFi) laeuft separat pro Aufruf (--top-coins/--include-tradfi/--exclude-stocks).
+    /// </summary>
+    public static XsecParams[] RevalidationConfigs()
+    {
+        var list = new List<XsecParams>
+        {
+            // Baseline = Live-Profil.
+            new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        };
+
+        // Asymmetrische Slots (im Fein-Sweep nie variiert).
+        foreach (var (l, s) in new[] { (3, 2), (2, 3), (4, 3), (3, 4), (4, 2), (2, 4) })
+            list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: l, ShortK: s, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2));
+
+        // Symmetrische K-Nachbarn.
+        foreach (var k in new[] { 2, 4, 5 })
+            list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: k, ShortK: k, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2));
+
+        // L/R-OFAT-Nachbarn auf lev2 (Fein-Grid lief auf lev1 — Plateau auf Live-Hebel bestaetigen).
+        foreach (var lb in new[] { 48, 72, 84, 96, 120 })
+            list.Add(new(LookbackCandles: lb, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2));
+        foreach (var rb in new[] { 30, 42, 66, 126 })
+            list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: rb, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2));
+
+        // Hebel-Achse (2 = Baseline; 3 kippte frueher die Recovery-Phase).
+        foreach (var lev in new[] { 1, 3 })
+            list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: lev));
+
+        // Verworfen-Extras: Vol-Targeting (verschlechterte frueher die Worst-Phase auf Top-50).
+        foreach (var vt in new[] { 20m, 30m, 50m })
+            list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, VolTargetAnnualPct: vt));
+
+        // Verworfen-Extras: ATR-Stops zwischen Rebalances.
+        foreach (var stop in new[] { 2m, 3m, 4m })
+            list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: stop, LeverageCap: 2));
+
+        // Verworfen-Extras: alternative Modi/Gewichtungen auf der Live-Geometrie.
+        list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, Mode: XsecMode.Reversal));
+        list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, Mode: XsecMode.LowVol));
+        list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, InverseVolWeight: true));
+        list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, SkipCandles: 6));
+
+        // NEU (nie getestet): Rank-Buffer/Hysterese — Turnover-/Fee-Senkung ohne Ranking-Aenderung.
+        foreach (var buf in new[] { 2, 4, 6 })
+            list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, ExitRankBuffer: buf));
+
+        // NEU (nie getestet): Cluster-Diversifikation der Slots (max. 1 je Asset-Cluster/Seite) — solo + mit Buffer.
+        list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, ClusterDiversify: true));
+        list.Add(new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, ExitRankBuffer: 4, ClusterDiversify: true));
+
+        return [.. list];
+    }
+
+    /// <summary>
+    /// Universums-Sensitivitaets-Check (Befund 29.07.2026: die Juni-4/4-Validierung des Live-Profils
+    /// reproduziert auf dem heutigen Top-50-Schnitt NICHT — 2022-Bear kippt von +35 % auf −54 %).
+    /// Kleiner Config-Satz (Live-Profil + die besten Worst-Phase-Kandidaten der Re-Validierung +
+    /// das alte Live-Profil L120/R126), der ueber MEHRERE Universums-Schnitte (Top-40/50/60,
+    /// may-live-Preset) gefahren wird: nur ein Kandidat, der ueber ALLE Schnitte besser bleibt als
+    /// die Baseline, ist eine echte Verbesserung — alles andere ist Snapshot-Rauschen.
+    /// </summary>
+    public static XsecParams[] UniCheckConfigs() =>
+    [
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 126, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 120, RebalanceEveryCandles: 126, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 42, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 72, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+    ];
+
+    /// <summary>
     /// Finale Bestaetigung des Fein-Gewinners L60/R54/3L-3S: lev1 vs lev2 (Live-Hebel) + Vol-Targeting-
     /// Varianten (Ziel-Jahres-Vol 30/50/70%) + 2L-2S/4L-4S-Nachbarn zur Plateau-Bestaetigung.
     /// </summary>

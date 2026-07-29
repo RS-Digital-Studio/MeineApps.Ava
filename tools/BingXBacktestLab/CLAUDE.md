@@ -139,6 +139,35 @@ dreht irgendeine ins Plus?). Top-10 in der Console.
 Priorität: explizite `strategyFactory` (Tests) > `trendFollowOverride` (Sweep) > `StrategyFactory.Create` (Default).
 Ohne Override unverändert → bestehende `--portfolio`-Läufe bit-identisch (`PortfolioVsSingleRegressionTest`).
 
+**Befund (29.07.2026, 4 Jahre 2022-06..2026-06, no-freeze):** KEINE der 135 Exit-Kombis ist positiv
+(beste SL3.5/BE1.5/TP1×0.3 = −73 %, Live-Baseline Rang 70/135 mit −94 %). Gegenprobe Konto-Größe:
+auch mit 1000 statt 158 USDT bleibt die Baseline bei −98.5 % (PF 0.59, Sharpe −3.28, n=1014) — der
+negative Edge ist **intrinsisch**, kein Min-Order-/Mini-Konto-Artefakt.
+
+## Entry-Sweep (`--entry-sweep`) — die ENTRY-Seite auf dem EINEN Konto
+
+Gegenstück zum `--portfolio-sweep` (Exits): Exits bleiben FIX auf Live (SL2.75/RRR1.5-3.0, BE/TP1 aus
+Settings), variiert werden **Donchian/EMA/ADX + die Entry-Filter** `RequireRisingAdx` (Chop) und
+`MinBreakoutAtr` (BO) — beide seit 29.07.2026 Teil von `TrendFollowParams` (additiv, Defaults neutral).
+Grid `full` = 4×3×4×2×3 = 288 Kombis, `focused` = 16. Nach dem Voll-Zeitraum-Ranking werden die Top-K
+(`--entry-phase-top`, Default 5; MinTrades-Guard `--entry-min-trades`, Default 100) + Baseline automatisch
+über die 4 Marktphasen gegengeprüft (Anti-Bull-Overfitting). Report `reports/entry-sweep-{label}.md`/`.json`.
+
+```bash
+dotnet run --project tools/BingXBacktestLab -c Release -- \
+  --entry-sweep --sweep-grid full --preset may-live --tfs H4 \
+  --from 2022-06-01 --to 2026-06-01 --balance 158 --settings pilive-nofreeze.json --label entry-4y
+```
+
+**Befund (29.07.2026, 288 Kombis, 4 Jahre, no-freeze):** KEINE Entry-Kombination dreht den
+TrendFollow-Fast-Portfolio-Mirror ins Plus (beste −79.6 %, Baseline Don10/EMA34/ADX18 = Rang 253/288
+mit −94.3 %, alle 4 Phasen negativ bei allen Kandidaten). Konsistente Richtungs-Signale: BO 0.5×ATR
+und höheres ADX (22–25) verbessern IMMER, reichen aber nie Richtung profitabel → **keine Übernahme,
+Scalper-Entry-Optimierung ist ausgereizt** (deckt sich mit dem Phasen-Screen-Befund zu direktionalen
+Strategien). Freeze-Hinweis: mit Live-Settings (`MaxTotalDrawdownPercent=10`) friert das 4-Jahres-Konto
+nach 7 Trades dauerhaft ein — Edge-Messung daher mit `pilive-nofreeze.json` (=100; **nicht 0** — 0 heißt
+seit dem RiskManager-Fix „deaktiviert", davor bedeutete es „sofortiger Dauer-Freeze").
+
 ## Phasen-Robustheit (`--phase-screen`) — Strategie in JEDER Marktphase profitabel?
 
 Testet jede Strategie über **4 disjunkte ~1-Jahres-Phasen** (Bear/Recovery/Bull/Recent, `PhaseScreen.DefaultPhases`)
@@ -178,6 +207,21 @@ Deckt sich mit der Literatur (10–14d Lookback, ~weekly Rebalance; survivorship
 **Portfolio-Vol-Targeting** (`XsecParams.VolTargetAnnualPct`, zeitvariable Gesamt-Exposure nach realisierter
 Equity-Vol — NICHT zu verwechseln mit `InverseVolWeight` = within-basket): `vt30` macht L60/R54 über beide
 Universen identisch robust (min +30.1% beide), dämpft die Universums-Varianz (Lit.: conditional Sharpe-Gewinn).
+
+**Voll-Re-Validierung (29.07.2026, `--xsec-grid reval`/`unicheck`) — Juni-Befund reproduziert NICHT:**
+Alle optimierten Achsen + alle verworfenen Extras erneut über die 4 Phasen, auf dem **heutigen**
+Top-50-Schnitt: das Live-Profil `L60/R54/3L-3S/lev2` fällt auf 2/4 (Bear −54 %, Bull −32 %), und KEINE
+der 36 Configs ist noch 4/4-positiv — obwohl die 2022er-Kerzen identisch sind. Ursache: **Universums-Drift**
+(heutige Top-50 ≠ Juni-Top-50; 20/50 TradFi). Der `unicheck`-Quervergleich über 4 Schnitte
+(Top-40/50/60 + may-live-Preset) zeigt: die Phasen-Ergebnisse sind snapshot-sensitiv, Parameter-Rankings
+würfeln — mit EINER Ausnahme: **`L60/R42` (7-Tage-Rebalance) hat auf ALLEN 4 Schnitten die beste (bzw.
+gleichauf beste) Worst-Phase** (−17..−35 % vs. Live −44..−62 %), opfert dafür Σ-PnL in der Recent-Phase
+(Top-50: +185 % vs. +398 %). Neue Struktur-Mechanismen (beide im geteilten `MomentumBasketCalculator`,
+Live-Parität): `ExitRankBuffer` (Rank-Hysterese gegen Turnover) und `ClusterDiversify` (max. 1 Symbol je
+Asset-Cluster/Seite) — beide verbessern die Worst-Phase NICHT robust → nicht übernommen. Asymmetrische
+Slots (3L-2S…4L-2S): Recovery/Recent-Booster, aber Bear schlechter → nicht übernommen. Konsequenz für
+künftige Xsec-Entscheidungen: **immer über mehrere Universums-Schnitte validieren** (`unicheck`-Muster),
+ein einzelner Top-N-Snapshot genügt nicht.
 
 **Weitere Strategie-Klassen getestet (`--xsec-grid strategies`, `--pairs`, `--funding-carry`):** Reversal,
 Low-Vol-market-neutral, Inverse-Vol-Gewichtung, Skip-Period, Pairs-Trading (Distance/Gatev), Funding-Harvest —

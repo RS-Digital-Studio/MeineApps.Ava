@@ -4,12 +4,17 @@ namespace BingXBot.Core.Configuration;
 /// Parameter der Cross-Sectional-Momentum-Strategie (market-neutral: long staerkste / short schwaechste
 /// Symbole, periodischer Rebalance). Backtest-validiert (Fein-Sweep 13.06.2026): das robusteste Profil
 /// ist <c>L60/R9d/radj</c> (10-Tage-Momentum, 9-Tage-Rebalance) auf dem Top-50-Universum INKL. TradFi
-/// mit 3L-3S — in ALLEN 4 Marktphasen positiv, ueber Top-50 UND Top-80 sowie lev1/lev2 stabil (Plateau,
-/// kein Peak; bei lev2 min +34,9 %/+8,9 %). Das aeltere Profil L120/R21d war nur auf Top-50 4/4.
-/// Vol-Targeting verschlechtert das Top-50-Profil (vt30 senkt die schwaechste Phase auf +7,8 %) — daher
-/// NICHT als Feld aufgenommen. Wichtig: Auf Top-100 ist KEINE Config phasen-robust (5L-5S dort
-/// min −17,2 %) und OHNE TradFi kippt auch Top-50 — die Cross-Asset-Dispersion (Gold/Indizes/Forex)
-/// traegt den Edge. Persistierbar analog <see cref="RiskSettings"/>.
+/// mit 3L-3S — damals in ALLEN 4 Marktphasen positiv, ueber Top-50 UND Top-80 sowie lev1/lev2 stabil.
+/// Vol-Targeting verschlechterte das Top-50-Profil — daher NICHT als Feld aufgenommen. OHNE TradFi
+/// kippt auch Top-50 — die Cross-Asset-Dispersion (Gold/Indizes/Forex) traegt den Edge.
+/// Persistierbar analog <see cref="RiskSettings"/>.
+///
+/// <para><b>Konfidenz-Abstufung (Re-Validierung 29.07.2026, `--xsec-grid reval`/`unicheck`):</b> Die
+/// 4/4-Phasen-Robustheit reproduziert auf dem HEUTIGEN Top-N-Schnitt nicht mehr (Bear-Phase kippt allein
+/// durch Universums-Drift von +35 % auf −54 %) — die Phasen-Validierung ist snapshot-sensitiv. Einziger
+/// ueber 4 Universums-Schnitte stabiler Befund: R7d (statt R9d) hat durchgehend die beste Worst-Phase,
+/// aber deutlich weniger Σ-PnL. Parameter-Aenderungen daher NUR nach Mehr-Schnitt-Validierung
+/// (Details → tools/BingXBacktestLab/CLAUDE.md).</para>
 /// </summary>
 public sealed class CrossSectionalSettings
 {

@@ -227,6 +227,42 @@ Taker-Fees (0.02 statt 0.05 %) heben Σ nur um ~5 pp (bei ~+400 %) und lassen di
 praktisch identisch → Min-Order-Fragmentierung ist beim Top-50-Profil KEIN Bremsklotz, mehr Kapital
 ändert die Prozent-Zahlen nicht.
 
+**Externe Evidenz-Recherche (30.07.2026, 25 Quellen, 122 Claims, 3-Stimmen-Verifikation je Claim →
+6 überlebt; Rohdaten in `reports/research-*.json`, gitignored).** Ergebnis: KEIN Fremd-Befund
+rechtfertigt eine Änderung am Live-Profil. Die drei Punkte mit Steuerungswirkung:
+
+1. **Liquiditäts-Deflator (3-0)** — die publizierten Krypto-Querschnitts-Alphas leben im
+   illiquiden/Micro-Cap-Segment; bei Marktkap-Gewichtung und realistischen Kosten verschwinden sie
+   („significantly" reduziert, Autoren erklären die Persistenz selbst mit Illiquidität). Ein Top-50-
+   nach-24h-Volumen-Universum filtert genau dieses Segment heraus → **die konsistenteste Erklärung
+   unserer gesamten Falsifikationsserie** und ein Dämpfer für JEDEN weiteren Signal-Kandidaten.
+2. **Signal-Kandidaten mit Restsubstanz, aber ohne Transfer-Nachweis:** CTREND (JFQA 2025, 2-1,
+   ML-Blend aus 28 Preis-/Volumen-Signalen über mehrere Horizonte, netto 2,35–2,90 %/Woche) —
+   Sample endet **Mai 2022**, also null Abdeckung für unser Falsifikationsfenster, Spot statt Perps,
+   Quintile über Tausende Coins statt 6 Slots; im Illiquiditäts-Doppelsort schrumpft das Alpha von
+   ~2,6 % auf 0,62 %. Residualisiertes Momentum (3-0) ist ein **Risiko-**, kein Ertrags-Effekt
+   (Max-DD −93 % → −36..−55 %), belegt auf US-Aktien 1968–2022 brutto; für Perps fehlt ein
+   Faktormodell zum Residualisieren.
+3. **Ohne verifizierbare Evidenz (nicht widerlegt, aber kein nächster Schritt):** ML-P(Win)-Gates,
+   Regime-Detection/HMM als Exposure-Schalter, On-Chain-/Order-Book-/Sentiment-Signale,
+   Trailing/Zeit-Stops/Profit-Locks zwischen Rebalances, Point-in-Time-Universen für Retail.
+   Time-Series- statt Cross-Sectional-Momentum (3-0 widerlegt als Alternativmodus): die 31,96 % vs.
+   14,59 % p.a. sind **brutto bei täglichem** Rebalance → erhöht den Kostendrag statt ihn zu senken.
+   Deep-RL (3-0): bester OOS-Agent **−34,96 %**, alle Agenten negativ — nur relativ besser als der
+   −50,78 %-Benchmark, kein Ertragsnachweis.
+
+> **Quellen-Warnung:** Drei inhaltlich hochrelevante Behauptungen (ML-Konfidenz-Sizing, gelerntes
+> Regime-Trust-Gate mit AUROC 0,721, Gate+Cap-Overlay-Sharpes) stammten aus `arXiv 2603.13252` —
+> 3× einstimmig verworfen, die ID ist **nicht als existierendes Paper bestätigt**. Diese Zahlen
+> dürfen in keiner Folgeentscheidung auftauchen.
+
+**Verwertbar ist genau ein Werkzeug:** der **CSCV/PBO-Overfitting-Test** (Bailey/López de Prado) als
+Hypothesentest mit α = 10 % — als Selektions-Hygiene für die großen Sweeps (Lookback/Rebalance-Grid,
+288×135 Entry/Exit-Kombis). Er adressiert aber nur Selektions-Overfitting über viele Trials, **nicht**
+unseren Ist-Fehlermodus (Universums-Snapshot-Sensitivität). Der eigentliche Engpass bleibt ein
+**Point-in-Time-Universum** (Listing-/Delisting-Historie + historische 24h-Volumen-Snapshots pro
+Rebalance-Datum): ohne das ist jeder weitere Signal-Test nicht entscheidbar.
+
 **Weitere Strategie-Klassen getestet (`--xsec-grid strategies`, `--pairs`, `--funding-carry`):** Reversal,
 Low-Vol-market-neutral, Inverse-Vol-Gewichtung, Skip-Period, Pairs-Trading (Distance/Gatev), Funding-Harvest —
 **alle NEGATIV/nicht-robust**. **Level-Familie (13.07.2026, `--phase-screen`, Live-Settings):** S/R-Level aus

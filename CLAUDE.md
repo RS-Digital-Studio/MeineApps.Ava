@@ -165,56 +165,17 @@ damit er testbar bleibt.
 
 ## 2. Projektstruktur
 
-```
-F:\Meine_Apps_Ava\
-├── MeineApps.Ava.sln
-├── Directory.Build.props           # Globale Build-Settings (net10.0, C#14, Nullable, Compiled Bindings)
-├── Directory.Build.targets         # Android-Settings (Signing, AAB, Full AOT, Symbol-Stripping)
-├── Directory.Packages.props        # Central Package Management
-├── CLAUDE.md                       # diese Datei
-├── Releases/                       # meineapps.keystore, CHANGELOGs, AABs
-│
-├── src/
-│   ├── Libraries/                       # Geteilte Bibliotheken (keine Referenz auf Apps)
-│   │   ├── MeineApps.CalcLib/            # Calculator-Engine (Tokenizer + Parser + Evaluator)
-│   │   ├── MeineApps.Core.Ava/          # Preferences, Lokalisierung, Themes, Converters, ViewLocator
-│   │   └── MeineApps.Core.Premium.Ava/  # AdMob, Google Play Billing, Trial (Android-Linked-Files)
-│   │
-│   ├── UI/
-│   │   └── MeineApps.UI/                # Custom Controls, Behaviors, SkiaSharp, GPU-Shader, Loading-Pipeline
-│   │
-│   └── Apps/                            # 13 Avalonia-Apps + 3 Unity-Projekte
-│       ├── RechnerPlus/                 # Taschenrechner (werbefrei)
-│       ├── ZeitManager/                 # Timer/Stoppuhr/Alarm (werbefrei)
-│       ├── FinanzRechner/               # 6 Finanzrechner + Budget-Tracker
-│       ├── FitnessRechner/              # BMI/Kalorien/Barcode-Scanner
-│       ├── HandwerkerRechner/           # 19 Rechner (5 Floor + 14 Premium, alle frei)
-│       ├── WorkTimePro/                 # Arbeitszeiterfassung + Export
-│       ├── HandwerkerImperium/          # Idle-Game (Werkstätten + Arbeiter)
-│       ├── BomberBlast/                 # Bomberman-Klon (SkiaSharp, Landscape)
-│       ├── RebornSaga/                  # Anime Isekai-RPG (volle SkiaSharp-Engine)
-│       ├── BingXBot/                    # Trading Bot — .Shared .Android .Desktop + .Server (Pi 24/7)
-│       │                                #   + 7 app-eigene Backend-Libs: .Core .Contracts .Engine .Exchange .Trading .Backtest .ClientApi
-│       ├── GardenControl/               # Bewässerung — .Core .Shared .Android .Desktop + .Server (Pi)
-│       ├── SmartMeasure/                # 3D-Grundstücksvermessung (RTK-GPS, privat)
-│       ├── SunSeeker/                   # Solarpanel-Ausrichtung (Sonnenstand, Bifazial, privat)
-│       ├── ArcaneKingdom/               # TCG + RPG  (Unity 6)
-│       ├── BomberBlast.Unity/           # Treuer 3D-Remake des Originals (Unity 6 + URP)
-│       └── HandwerkerImperium.Unity/    # Neuentwicklung parallel zur Avalonia-Version (Unity 6)
-│
-├── tools/                               # .NET-Tools (via dotnet run) + Python-Skripte
-│   ├── AppChecker/                      # .NET — 34 Checker, 200+ Prüfungen
-│   ├── StoreAssetGenerator/             # .NET — Play-Store-Assets (SkiaSharp)
-│   ├── SocialPostGenerator/             # .NET — Social-Media-Posts + Promo-Bilder
-│   ├── BingXBacktestLab/                # .NET — Strategie-Backtest auf echten Klines (standalone, nicht in .sln)
-│   ├── BingXBotTrainer/                 # Python — ONNX-Modell-Training (BingXBot)
-│   ├── ContentPipeline/                 # Python — Google-Sheets-Sync für Game-Content/Übersetzungen
-│   ├── SkAnalytics/                     # Python — Positions-/Snapshot-Analyse
-│   ├── SoundForge/                      # Python — Audio-Generierung (+ lufs-mastering.sh)
-│   └── screenshot-mcp/                  # MCP-Server für Screenshots
-│
-└── tests/                               # xUnit v3 — 14 Projekte (je App + MeineApps.CalcLib)
-```
+Das Layout ist aus dem Dateisystem ablesbar (`src/Libraries/`, `src/UI/`, `src/Apps/`, `tools/`,
+`tests/` plus die Root-Manifeste). Nicht ablesbar — und darum hier:
+
+- **`tools/BingXBacktestLab/` ist standalone** und bewusst **nicht** in `MeineApps.Ava.sln`
+  eingebunden; wird separat per `dotnet run` gestartet.
+- **`Releases/`** hält Keystore, CHANGELOGs und AABs — kein Build-Output, nicht regenerierbar.
+- **`tools/`** mischt .NET-Tools (via `dotnet run`) und Python-Skripte; die Python-Ordner
+  (`BingXBotTrainer`, `ContentPipeline`, `SkAnalytics`, `SoundForge`) haben README statt CLAUDE.md.
+- **`src/Apps/BingXBot/`** enthält neben `.Shared/.Android/.Desktop/.Server` sieben app-eigene
+  Backend-Libs (`.Core .Contracts .Engine .Exchange .Trading .Backtest .ClientApi`) — app-eigenes
+  Subsystem, keine Workspace-Library.
 
 ---
 
@@ -468,24 +429,11 @@ Design-Tokens (Spacing, Radius, Fonts) kommen aus `MeineApps.Core.Ava/Themes/The
 
 ### Build-Befehle
 
+Die Standard-.NET-Aufrufe gelten wie üblich (`dotnet build|run|publish|test` auf der Solution,
+`{App}.Shared`, `{App}.Desktop`, `{App}.Android`, `tests/{App}.Tests`). Nicht erratbar sind die
+projekteigenen Tools:
+
 ```bash
-# Gesamte Solution
-dotnet build F:\Meine_Apps_Ava\MeineApps.Ava.sln
-
-# Einzelne App ({App} ersetzen)
-dotnet build src/Apps/{App}/{App}.Shared
-dotnet run   --project src/Apps/{App}/{App}.Desktop
-dotnet build src/Apps/{App}/{App}.Android
-
-# Desktop Release
-dotnet publish src/Apps/{App}/{App}.Desktop -c Release -r win-x64     # bzw. linux-x64
-# Android Release (AAB) → bin/Release/net10.0-android/publish/
-dotnet publish src/Apps/{App}/{App}.Android -c Release
-
-# Tests (xUnit v3 — je App ein Projekt + CalcLib)
-dotnet test tests/{App}.Tests                    # einzelnes Test-Projekt
-dotnet test MeineApps.Ava.sln                    # alle Tests
-
 # AppChecker (34 Checker, 200+ Prüfungen)
 dotnet run --project tools/AppChecker            # alle Apps
 dotnet run --project tools/AppChecker {App}      # einzelne App
@@ -497,84 +445,32 @@ dotnet run --project tools/SocialPostGenerator post {App} <x|reddit>
 dotnet run --project tools/SocialPostGenerator image <{App}|portfolio>
 ```
 
-### Build-Konfiguration (Directory.Build.props / .targets)
+Android-Release erzeugt eine **AAB** unter `bin/Release/net10.0-android/publish/`.
 
-**`Directory.Build.props`** (alle Projekte): `net10.0` (Default), `LangVersion=latest`,
-`Nullable=enable`, `ImplicitUsings=enable`, `AvaloniaUseCompiledBindingsByDefault=true`.
-`NoWarn` für `NU1902;NU1903` (ImageSharp-CVE, nur transitiv über PdfSharpCore, keine
-User-Bild-Verarbeitung). Company/Copyright: RS Digital.
+### Build-Konfiguration & Packages
 
-**`Directory.Build.targets`** (nur `*-android`, ausgewertet *nach* den Projektdateien):
+Paketversionen zentral in `Directory.Packages.props` (Central Package Management) — dort
+nachsehen statt hier spiegeln. Build-Settings in `Directory.Build.props` (alle Projekte) und
+`Directory.Build.targets` (nur `*-android`, ausgewertet *nach* den Projektdateien).
 
-| Setting | Wert / Grund |
-|---------|--------------|
-| Signing | Keystore `Releases\meineapps.keystore`, Alias `meineapps` |
-| `AndroidPackageFormat` | `aab` (Play Store erfordert AAB) |
-| `AndroidEnableProfiledAot=false` | **Full AOT** — alle Methoden kompiliert, kein JIT-Fallback. Behebt Mono-JIT-Assertion `!ji->async` (z.B. Huawei P30). `UseInterpreter` ist mit AOT inkompatibel (XA0119). |
-| Debug-Symbole | Release: `DebugType=embedded` + `AndroidIncludeDebugSymbols=false` → Symbole **nicht** in der AAB (erschwert Reverse-Engineering), aber lokal für Play-Console-Upload erzeugt. Debug: `portable`. |
-| D8/DEX | `Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm` mit `ExcludeAssets=all` (Duplicate-Class-Fix gegen `…Annotation.Android`). |
-
-### Packages (Central Package Management)
-
-Versionen zentral in `Directory.Packages.props`. Kern:
-
-| Package | Version | Zweck |
-|---------|---------|-------|
-| Avalonia | 12.0.4 | UI-Framework (migriert von MAUI) |
-| Material.Icons.Avalonia | 3.0.2 | 7000+ SVG-Icons |
-| CommunityToolkit.Mvvm | 8.4.2 | MVVM |
-| Xaml.Behaviors.Avalonia | 12.0.0.1 | Behaviors |
-| SkiaSharp (+ Skottie) | 3.119.4 | 2D-Graphics + SkSL GPU-Shader |
-| Avalonia.Labs.Lottie | 12.0.2 | Lottie-Animationen |
-| AvaloniaUI.DiagnosticsSupport | 2.2.2 | DevTools (Debug-only) |
-| sqlite-net-pcl | 1.9.172 | Datenbank |
-| **Premium (Android)** | | |
-| Xamarin.GooglePlayServices.Ads.Lite | 124.0.0.5 | AdMob (+ UserMessagingPlatform 4.0.0.2) |
-| Xamarin.Android.Google.BillingClient | 9.0.0 | Google Play Billing v9 |
-| Xamarin.Google.Android.Play.Review | 2.0.2.7 | In-App Review |
-| Xamarin.GooglePlayServices.Games.V2 | 121.0.0.3 | Play Games Services v2 |
-| Xamarin.Firebase.Messaging / .Config | 125.0.2 / 123.1.0 | Push + Remote Config (kein Crashlytics/Analytics) |
-| **Feature-spezifisch** | | |
-| Xamarin.AndroidX.Camera.* / MLKit.BarcodeScanning | 1.6.1 / 117.3.0.7 | Kamera + Barcode (FitnessRechner) |
-| PdfSharpCore / ClosedXML | 1.3.67 / 0.105.0 | PDF-/Excel-Export (WorkTimePro) |
-| Skender.Stock.Indicators | 2.7.1 | Trading-Indikatoren (BingXBot) |
-| Microsoft.AspNetCore.SignalR.Client | 10.0.8 | Server-Remote (BingXBot, GardenControl) |
-| System.Device.Gpio / Iot.Device.Bindings | 4.2.0 | Raspberry-Pi-GPIO (GardenControl) |
-| Mapsui.Avalonia12 / InTheHand.BluetoothLE / Vapolia.Google.ARCore | 5.1.0 / 4.0.44 / 1.47.1 | Karten + BLE + AR (SmartMeasure) |
-| MQTTnet | 5.0.1.1416 | Anker-Cloud-Live-Watt via mTLS-MQTT (SunSeeker) |
-| **Test** | | |
-| xunit.v3 (+ runner.visualstudio) | 3.2.2 / 3.1.5 | Test-Framework (v3-Linie, inkl. Avalonia.Headless.XUnit) |
-| NSubstitute / FluentAssertions / coverlet.collector | 5.3.0 / 8.10.0 / 10.0.1 | Mocks / Assertions / Coverage |
-
-### Keystore
-
-`F:\Meine_Apps_Ava\Releases\meineapps.keystore` · Alias `meineapps` · Passwort `MeineApps2025`
-(in `Directory.Build.targets`).
+**Bevor an `Directory.Build.targets` etwas geändert wird:** Die Begründungen hinter den
+Android-Settings (Full AOT gegen die Mono-JIT-Assertion, Symbol-Stripping, D8-Duplicate-Fix,
+Signing/Keystore) stehen im Skill **`build-release`** — dort nachschlagen, die Werte sind
+absichtlich so gesetzt.
 
 ---
 
 ## 6. Werkzeuge: Workflows, Skills, Hooks
 
-Agent-Roster (Modell/Effort) → **globale CLAUDE.md**. Projekt-spezifische Verkettung:
+Agent-Roster (Modell/Effort) → **globale CLAUDE.md**.
 
-| Szenario | Ablauf |
-|----------|--------|
-| **Neue View** | `planner` → Skill `new-view` → `mvvm-auditor` → `code-review` |
-| **Neuer Service** | `planner` → Skill `new-service` → `code-review` → `tester` |
-| **Bug fixen** | `debugger` → fixen → `code-review` → ggf. `tester` (Regression) |
-| **Release (App)** | `pre-release` → `localize` → `deploy` |
-| **Release (Server)** | `pre-release` → Skill `server-deploy` → `server-ops` (Verifikation) |
-| **BingXBot-Problem** | `bingxbot` (Domain) → ggf. `debugger` / `server-ops` |
-| **MVVM-Sanierung** | `mvvm-auditor` (App-weit) → `code-review` → Build-Verifikation |
-| **Refactoring** | `health` → `refactor` → `code-review` → `tester` |
-| **Game-Update** | `game-audit` → implementieren → `skiasharp` (falls Rendering) → `pre-release` |
+Die projekt-spezifische Agent-Verkettung pro Szenario (Neue View, Neuer Service, Bug fixen,
+Release App/Server, BingXBot-Problem, MVVM-Sanierung, Refactoring, Game-Update) sowie die
+Hook-Übersicht stehen im Skill **`agent-workflows`**.
 
 **Skills (projekt-lokal):** `build-check`, `app-status`, `new-view`, `new-service`,
-`mvvm-check`, `localize-check`, `release`, `server-deploy`, `changelog`.
-
-**Hooks (User-Settings):** *SessionStart* — MVVM-Strict-Reminder, Auto-Commit-Erlaubnis,
-deutsche Umlaute, CLAUDE.md-Pflicht. *PostToolUse* (Write/Edit auf `View*.axaml.cs`) —
-Code-Behind-Hygiene-Reminder.
+`mvvm-check`, `localize-check`, `release`, `server-deploy`, `changelog`, `build-release`,
+`agent-workflows`.
 
 ---
 
@@ -591,44 +487,14 @@ konkreter zu ihrem Gebiet. **Gotchas/Troubleshooting leben in der Domänen-Datei
 | App-spezifische Logik (Cloud-Save, SK-System, Sprite-Cache, BLE/RTK, …) | jeweilige App-CLAUDE.md |
 | Datierte Erkenntnisse / Build-Historie | Memory `lessons-learned.md`, Git, `Releases/{App}/CHANGELOG` |
 
-**Libraries:**
+**Wo die Details liegen:** Jede Library, App und jedes .NET-Tool hat eine eigene `CLAUDE.md` im
+jeweiligen Ordner. Die lädt automatisch, sobald dort gearbeitet wird — eine Indexliste ist darum
+nicht nötig (`find . -name CLAUDE.md`). Zwei Ausnahmen von der Regel:
 
-| Projekt | Details |
-|---------|---------|
-| MeineApps.Core.Ava | [src/Libraries/MeineApps.Core.Ava/CLAUDE.md](src/Libraries/MeineApps.Core.Ava/CLAUDE.md) |
-| MeineApps.Core.Premium.Ava | [src/Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md](src/Libraries/MeineApps.Core.Premium.Ava/CLAUDE.md) |
-| MeineApps.CalcLib | [src/Libraries/MeineApps.CalcLib/CLAUDE.md](src/Libraries/MeineApps.CalcLib/CLAUDE.md) |
-| MeineApps.UI | [src/UI/MeineApps.UI/CLAUDE.md](src/UI/MeineApps.UI/CLAUDE.md) |
-
-**Apps:**
-
-| App | Details |
-|-----|---------|
-| RechnerPlus | [src/Apps/RechnerPlus/CLAUDE.md](src/Apps/RechnerPlus/CLAUDE.md) |
-| ZeitManager | [src/Apps/ZeitManager/CLAUDE.md](src/Apps/ZeitManager/CLAUDE.md) |
-| FinanzRechner | [src/Apps/FinanzRechner/CLAUDE.md](src/Apps/FinanzRechner/CLAUDE.md) |
-| FitnessRechner | [src/Apps/FitnessRechner/CLAUDE.md](src/Apps/FitnessRechner/CLAUDE.md) |
-| HandwerkerRechner | [src/Apps/HandwerkerRechner/CLAUDE.md](src/Apps/HandwerkerRechner/CLAUDE.md) |
-| WorkTimePro | [src/Apps/WorkTimePro/CLAUDE.md](src/Apps/WorkTimePro/CLAUDE.md) |
-| HandwerkerImperium | [src/Apps/HandwerkerImperium/CLAUDE.md](src/Apps/HandwerkerImperium/CLAUDE.md) |
-| BomberBlast | [src/Apps/BomberBlast/CLAUDE.md](src/Apps/BomberBlast/CLAUDE.md) |
-| RebornSaga | [src/Apps/RebornSaga/CLAUDE.md](src/Apps/RebornSaga/CLAUDE.md) |
-| BingXBot | [src/Apps/BingXBot/CLAUDE.md](src/Apps/BingXBot/CLAUDE.md) |
-| GardenControl | [src/Apps/GardenControl/CLAUDE.md](src/Apps/GardenControl/CLAUDE.md) |
-| SmartMeasure | [src/Apps/SmartMeasure/CLAUDE.md](src/Apps/SmartMeasure/CLAUDE.md) |
-| SunSeeker | [src/Apps/SunSeeker/CLAUDE.md](src/Apps/SunSeeker/CLAUDE.md) |
-| ArcaneKingdom (Unity) | [src/Apps/ArcaneKingdom/CLAUDE.md](src/Apps/ArcaneKingdom/CLAUDE.md) |
-| BomberBlast.Unity | [src/Apps/BomberBlast.Unity/CLAUDE.md](src/Apps/BomberBlast.Unity/CLAUDE.md) |
-| HandwerkerImperium.Unity | [src/Apps/HandwerkerImperium.Unity/CLAUDE.md](src/Apps/HandwerkerImperium.Unity/CLAUDE.md) |
-
-**Tools (.NET, eigene CLAUDE.md):** [AppChecker](tools/AppChecker/CLAUDE.md) ·
-[StoreAssetGenerator](tools/StoreAssetGenerator/CLAUDE.md) ·
-[SocialPostGenerator](tools/SocialPostGenerator/CLAUDE.md) ·
-[BingXBacktestLab](tools/BingXBacktestLab/CLAUDE.md)
-**Python-Skripte (README statt CLAUDE.md):** `BingXBotTrainer`, `ContentPipeline`, `SkAnalytics`, `SoundForge`.
-
-Die `BingXBot.*`-Backend-Libraries (`src/Apps/BingXBot/`, app-eigenes Subsystem) und die `*.Server`-Projekte sind in der
-[BingXBot-App-CLAUDE.md](src/Apps/BingXBot/CLAUDE.md) bzw.
-[GardenControl-App-CLAUDE.md](src/Apps/GardenControl/CLAUDE.md) dokumentiert (keine eigene Lib-CLAUDE.md).
+- Die `BingXBot.*`-Backend-Libraries und die `*.Server`-Projekte haben **keine** eigene
+  Lib-CLAUDE.md — sie sind in der jeweiligen App-CLAUDE.md dokumentiert
+  ([BingXBot](src/Apps/BingXBot/CLAUDE.md) · [GardenControl](src/Apps/GardenControl/CLAUDE.md)).
+- Die Python-Tools (`BingXBotTrainer`, `ContentPipeline`, `SkAnalytics`, `SoundForge`) haben
+  README statt CLAUDE.md.
 
 Firebase-Security-Rules: `database.rules.json` (Root, aktuell nur HandwerkerImperium).

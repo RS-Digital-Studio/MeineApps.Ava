@@ -1,11 +1,20 @@
 # BomberBlast.Unity — Unity-Conventions & Stolperfallen
 
-**Modernes 3D-Bomberman** auf Basis des produktiven Avalonia-BomberBlast (`../BomberBlast/`) —
-klassisches, **aktiv gespieltes** Bomberman in 3D, mit **neuer Story** (Neo-Grid/Overseer/Reborn)
-und der bewährten Bomberman-Meta-Progression. Gameplay-Mechanik & Domain-Code des Originals sind
-**wiederverwendetes Fundament** (modernisiert, **kein striktes 1:1-Remake**). **KEIN Idle-Game,
-KEIN AFK/Auto-Battle, kein Offline-Income** — Fortschritt nur durch aktives Spielen. Eigener Stack
-(Unity 6, **nicht** von `dotnet build` erfasst). Richtung/Story → [PLAN.md](PLAN.md) + [DESIGN.md](DESIGN.md).
+**3D-Arena-Demolition-Action** auf Basis des produktiven Avalonia-BomberBlast (`../BomberBlast/`) —
+**aktiv gespieltes** Bomberman in einer frei begehbaren, **physisch zerstörbaren 3D-Welt**, mit **neuer
+Story** (Neo-Grid/Overseer/Reborn) und tiefer Meta-Progression. **KEIN Idle-Game, KEIN AFK/Auto-Battle,
+kein Offline-Income, reiner Single-Player** — Fortschritt nur durch aktives Spielen. Eigener Stack
+(Unity 6, **nicht** von `dotnet build` erfasst).
+
+> **NEUAUSRICHTUNG (14.6.2026) — v0.6: volumetrische 3D-Neuerfindung.** Verbindliche Spiel-Design-Quelle:
+> [PLAN.md](PLAN.md) (Master) + [DESIGN.md](DESIGN.md) (GDD); Tech & Determinismus → [ARCHITECTURE.md](ARCHITECTURE.md).
+> Die Unity-Version wird **voll neu** als **volumetrisches 3D-Action-Spiel mit Bomberman-DNA** konzipiert
+> (frei begehbar, vertikale/mehrstöckige **zerstörbare** Arenen, **Physik-Bomben**, volumetrische Blast-Formen,
+> ebenenübergreifende 3D-Ketten) — **Mechanik weicht bewusst ab; das flache 15×10-Grid als Gameplay entfällt.**
+> Das Original liefert **Meta-Progression & Live-Service-Code** als Fundament; Combat/Bewegung/Raum sind
+> **Neu-Arbeit in 3D**. **Tech-Stack & Unity-Conventions in dieser Datei bleiben gültig** — mit **einer**
+> Konsequenz (§2): mit Physik entfällt bit-exakter Determinismus → **seed-deterministische Generierung** bleibt,
+> **Daily-Race-Anti-Cheat via Server-Plausibilität** ([ARCHITECTURE §13](ARCHITECTURE.md)).
 
 | Aspekt | Wert |
 |--------|------|
@@ -118,8 +127,13 @@ public class BattleHUDBinder : MonoBehaviour  // Adapter zur Unity-UI
 ## 2. Determinismus-Pflicht (wichtigste Regel der Codebase)
 
 Alle gameplay-relevanten Random-Calls über `IRngProvider`. Alle Tick-Updates über
-`FixedTimestepRunner` bei 60 Hz mit `fixedDeltaTime` (nie `Time.deltaTime` in Sim-Logik). Inputs für
-**Daily-Race/Replay** via `ReplayCapture.RecordTick(input)` aufzeichnen (Single-Player-Verifikation).
+`FixedTimestepRunner` bei 60 Hz mit `fixedDeltaTime` (nie `Time.deltaTime` in Sim-Logik) — für **stabiles
+Spielgefühl**. `ReplayCapture` zeichnet Inputs/Transforms nur für **Anzeige-Ghosts** auf (kein bit-exakter Resim).
+
+> **v0.6-Determinismus (entschieden 14.6.2026 — maßgeblich [ARCHITECTURE §13](ARCHITECTURE.md)):** Mit freier
+> 3D-Bewegung + **Physik** (Unity PhysX) ist **bit-exakte Cross-Platform-Reproduktion nicht erreichbar** →
+> das **Fixed-Point-Sim-Mandat und das Replay-Hash-CI-Gate entfallen.** Es **bleibt** die
+> **seed-deterministische Generierung** (gleiche Arena/Spawns/Drops/Dives/Daily weltweit).
 
 - **Status (aus dem Original):** Im produktiven BomberBlast ist Determinismus nur **Foundation,
   NICHT integriert** — der Live-Loop nutzt `System.Random`. Die Integration (alle ~50
@@ -127,15 +141,16 @@ Alle gameplay-relevanten Random-Calls über `IRngProvider`. Alle Tick-Updates ü
   kein reiner Port.
 - **Visual-Random** (Particle-Jitter, Screen-Shake, Camera-Tremor) ist **bewusst NICHT
   deterministisch** (sonst künstlich wirkend) → separater `[Inject] [Key("visual")] IRngProvider`.
-- **Float-Mandat:** `DeterministicRandom` (xoshiro256+) ist nur **integer**-bit-stabil. Für
-  hash-stabile **Daily-Race-/Replay-Verifikation** denselben `IRngProvider` + Fixed-Step nutzen, damit
-  ein Replay denselben State-Hash reproduziert. (Kein Server-/Online-Re-Sim — Single-Player.)
-- **CI-Gate:** Determinismus-Suite (Replay-Corpus → identischer State-Hash) ist Pflicht-Check
-  in jedem PR; Failure blockt Merge.
+- **Seed-Determinismus (bleibt Pflicht):** Generierung (Arena/Spawns/Drops/Dungeon-Map/Daily) ist über
+  denselben Seed **plattform-/lauf-unabhängig** reproduzierbar (`IRngProvider` + `DeterministicRandom`).
+- **CI-Gate:** **Seed-Reproduzierbarkeit-Suite** (gleiche Inhalte bei gleichem Seed,
+  [ARCHITECTURE §18.4](ARCHITECTURE.md)) ersetzt das frühere bit-exakte Replay-Hash-Gate; Failure blockt Merge.
+- **Daily-Race-Anti-Cheat:** **Server-Plausibilität** (Score-/Zeit-Sanity, Rate-Limit) + Anzeige-Ghosts statt
+  Re-Sim → [ARCHITECTURE §13](ARCHITECTURE.md).
 
 ---
 
-## 3. Multiplayer / Netcode — nicht Teil von v0.5
+## 3. Multiplayer / Netcode — nicht Teil von v0.6
 
 **Single-Player-Fokus. Kein Echtzeit-Multiplayer, kein Photon/Netcode, kein Online-PvP/Co-op.**
 „Grid-Rankings" und „Daily-Race" sind **asynchrone** Leaderboards (Firebase RTDB, Score-Submit), kein

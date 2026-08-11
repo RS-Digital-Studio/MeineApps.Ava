@@ -1,18 +1,24 @@
 # BomberBlast 3D — Master-Plan
 
-> **Status:** Konzept-Phase v0.5 (Stand 2026-06-08)
-> **Arbeitstitel:** BomberBlast: Reborn (modernes 3D-Bomberman)
-> **Genre:** **Modernes 3D-Bomberman-Action** mit tiefer Meta-Progression (Sektoren/Level, Helden, Karten,
-> Liga, Roguelike-Dives, Master-Mode/NG+). Klassisches Bomberman-Gameplay in modernem 3D — **immer aktiv
-> selbst gespielt**.
+> **Status:** Konzept-Phase v0.6 (Stand 2026-06-14)
+> **Arbeitstitel:** BomberBlast: Reborn (volumetrisches 3D-Demolition-Action)
+> **Genre:** **Volumetrisches 3D-Action-Spiel mit Bomberman-DNA** — freie Bewegung in vertikalen,
+> zerstörbaren Arenen, **physikalische Bomben**, echte **3D-Kettenexplosionen**, mit tiefer
+> Meta-Progression (Sektoren/Level, Helden, Karten, Liga, Roguelike-Dives, Master-Mode/NG+).
+> **Immer aktiv selbst gespielt.**
 > **Ausdrücklich:** **KEIN Idle-Game. KEIN AFK/Auto-Battle. KEIN Offline-Income.** Es spielt nie eine KI
 > für dich, und es gibt keinen passiven Fortschritt — Fortschritt entsteht **nur durch aktives Spielen**.
-> **Setting:** **Neue Story** (Neo-Grid / Overseer / Reborn-Core) im bestehenden Neon-Arcade-Look.
+> **Mutige Neuerfindung:** Der Bomberman-Kern (Sprengen, Ketten, räumliches Risiko, PowerUps, Combos)
+> bleibt die DNA — aber Bewegung, Raum und Explosionen werden **echt dreidimensional** neu gedacht
+> (freie Bewegung statt Grid-Lock, volumetrische Blast-Formen, ebenenübergreifende Ketten,
+> zerstörbare Architektur). **Kein 1:1-Remake.**
+> **Setting:** **Neue Story** (Neo-Grid / Overseer / Reborn-Core) im bestehenden Neon-Arcade-Look,
+> jetzt als volumetrisches 3D-Konstrukt.
 > **Plattformen:** Android (primär, wie das Original) + Desktop (Test). Kein iOS/Steam geplant.
 > **Team:** Solo-Indie + KI-Assistenz (right-sized).
 > **Monetarisierung:** **Lean / fair** wie das 2D-Original: kostenlos + Rewarded-Ads (kein Banner),
-> 1,99 € Remove-Ads, optional VIP-Abo + BattlePass-Plus (beide im Original produktiv). Keine Lootboxen,
-> kein Pay-to-Win.
+> 1,99 € Remove-Ads, optional VIP-Abo + zwei Battle-Pass-Stufen (Premium 4,99 € / Plus 19,99 €).
+> Keine Lootboxen, kein Pay-to-Win.
 
 Dieses Dokument ist die **Master-Übersicht**. Tiefe in:
 
@@ -20,17 +26,19 @@ Dieses Dokument ist die **Master-Übersicht**. Tiefe in:
 |---------|-------|
 | Game-Design (Story, Gameplay, Helden, Bomben, Gegner, Bosse, Modi, Progression, Live-Service) | [DESIGN.md](DESIGN.md) |
 | Content-Wiederverwendung (welches Original-System wird wie übernommen/umgewidmet) | [PARITY.md](PARITY.md) |
-| Tech-Architektur (Unity-Stack, Asmdefs, Determinismus, Save, Performance) | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Tech-Architektur (Unity-Stack, Asmdefs, Determinismus, Physik/Voxel, Save, Performance) | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Produktion (Roadmap, Marketing, Compliance, Risiken) | [ROADMAP.md](ROADMAP.md) |
 | Unity-Code-Conventions, bekannte Stolperfallen | [CLAUDE.md](CLAUDE.md) |
-| KI-Asset-Pipeline (3D-Meshes + PBR-Texturen) | [ASSETS_AI.md](ASSETS_AI.md) |
+| KI-Asset-Pipeline (3D-Meshes + PBR-Texturen + zerstörbare Umgebung) | [ASSETS_AI.md](ASSETS_AI.md) |
 
 > **Richtungs-Historie:** v0.2 = Sci-Fi-Reinvention (verworfen) · v0.3 = treuer 1:1-Remake (abgelöst) ·
 > v0.4 = kurzzeitig Idle-Game-Experiment (**verworfen — BomberBlast ist kein Idle-Game**) ·
-> **v0.5 (aktuell) = modernes 3D-Bomberman: klassisches, aktiv gespieltes Bomberman in 3D, mit neuer
-> Story und der bewährten Bomberman-Meta-Progression.** Das Original-Gameplay + der Domain-Code bleiben
-> Fundament; übernommen wird, was das Spiel trägt — kein strenges 1:1-Parität-Mandat (Inhalte dürfen
-> bewusst modernisiert/angepasst werden).
+> v0.5 = klassisches Grid-Bomberman in 3D (Top-Down, flaches Grid) ·
+> **v0.6 (aktuell) = volumetrische 3D-Neuerfindung: freie Bewegung in vertikalen, zerstörbaren Arenen,
+> physikalische Bomben, 3D-Kettenexplosionen — mit der bewährten Bomberman-Meta-Progression und neuer
+> Story.** Der Bomberman-Kern (Sprengen/Ketten/Risiko/PowerUps/Combos) ist die DNA; das Original liefert
+> **Meta-Progression & Live-Service-Code als Fundament** (wiederverwendet), während Bewegung/Raum/
+> Combat **neu in 3D** gebaut werden. Kein 1:1-Mandat.
 
 ---
 
@@ -57,27 +65,30 @@ Dieses Dokument ist die **Master-Übersicht**. Tiefe in:
 
 ### 1.1 Elevator-Pitch
 
-> **BomberBlast: Reborn** ist ein **modernes 3D-Bomberman**, das man **immer selbst aktiv spielt** —
-> klassisches Bomberman in echtem 3D (URP): Du steuerst deinen Bomber, legst Bomben, kettest Explosionen,
-> sprengst Blöcke, sammelst PowerUps, baust Combos und legst Gegner und Sektor-Bosse. Drumherum liegt die
-> **bewährte Bomberman-Meta-Progression**: 100 Story-Level in 10 Sektoren mit Sterne-Wertung, permanente
-> Shop-Upgrades, eine Karten-/Bomben-Sammlung, Helden, ein Roguelike-Modus (Anomaly-Dives), Liga
-> (Grid-Rankings), Battle-Pass — und **Master-Mode (Reborn)** als New-Game-Plus für endlosen Wiederspielwert.
-> Neu sind **3D-Optik**, eine **neue Story** und moderne Präsentation. **Kein Idle, kein AFK, kein Offline-Farming.**
+> **BomberBlast: Reborn** ist ein **volumetrisches 3D-Action-Spiel mit Bomberman-DNA**, das man **immer
+> selbst aktiv spielt**. Du bewegst dich **frei** durch vertikale, mehrstöckige Arenen — laufen, dashen,
+> springen, an Kanten ziehen — **legst, wirfst und rollst physikalische Bomben**, die abprallen, Rampen
+> hinunterrollen und **zwischen Ebenen fallen**. Explosionen sind **echte 3D-Volumen** (Kugel, Säule,
+> gerichteter Kegel, Cluster, Schockwelle), zünden in 3D **Kettenreaktionen** und lassen **zerstörbare
+> Architektur kollabieren**. Drumherum liegt die **bewährte Bomberman-Meta-Progression**: 100 Story-Level
+> in 10 Sektoren mit Sterne-Wertung, permanente Shop-Upgrades, Karten-/Bomben-Sammlung, Helden, ein
+> Roguelike-Modus (Anomaly-Dives), Liga (Grid-Rankings), Battle-Pass — und **Master-Mode (Reborn)** als
+> New-Game-Plus. **Kein Idle, kein AFK, kein Offline-Farming.**
 
-**In einem Satz:** *Das klassische Bomberman-Erlebnis — Skill, Combos, Bosse, Sterne sammeln — in modernem
-3D, mit neuer Story und tiefer Meta-Progression. Voll aktiv gespielt.*
+**In einem Satz:** *Bomberman-DNA — Sprengen, Ketten, räumliches Risiko, Combos — als volumetrisches,
+frei bewegtes 3D-Action-Spiel mit neuer Story und tiefer Meta-Progression. Voll aktiv gespielt.*
 
-### 1.2 Brand-Identität (Look bleibt, Story neu)
+### 1.2 Brand-Identität (Look bleibt, Raum + Story neu)
 
-Der **Neon-Arcade-Look bleibt** Markenkern — nur die **Story** ist neu (bewusste Entscheidung).
+Der **Neon-Arcade-Look bleibt** Markenkern — neu sind **echte Dreidimensionalität** (freie Bewegung,
+vertikale Arenen, volumetrische Blasts) und die **Story** (bewusste Entscheidung).
 
 | Aspekt | Wert |
 |--------|------|
 | **Primärfarbe** | Neon-Orange **#FF6B35** |
 | **Akzente** | Cyan **#22D3EE** + Gold-Trail **#FFDD33** |
 | **Tonalität** | Energetisch, Arcade, "Game Juice"; leichter Cyber-Story-Rahmen (kein Grimdark) |
-| **Visual-Sprache** | Neon-Arcade in 3D: oktagonale Formen, Glow, emissive Materialien, Bloom |
+| **Visual-Sprache** | Neon-Arcade in echtem 3D: oktagonale Formen, Glow, emissive Materialien, Bloom, volumetrische Explosionen, kollabierende Architektur |
 | **Anti-Style** | Realismus/Foto-Texturen, düstere Tristesse, **Idle-/AFK-Selbstläufer**, aggressive Whale-Monetarisierung |
 
 ---
@@ -87,16 +98,20 @@ Der **Neon-Arcade-Look bleibt** Markenkern — nur die **Story** ist neu (bewuss
 > Wegen der Richtungs-Historie hier explizit zur Vermeidung von Missverständnissen:
 
 **Es IST:**
-- Ein **modernes 3D-Bomberman-Action-Spiel**, klassisch und **aktiv** gespielt (Grid, Bomben, Ketten, PowerUps, Combos, Bosse).
+- Ein **volumetrisches 3D-Action-Spiel mit Bomberman-DNA**, klassisch **aktiv** gespielt: freie Bewegung,
+  physikalische Bomben, 3D-Ketten, PowerUps, Combos, Bosse.
+- **Mutig neu gedacht in 3D:** freie Bewegung statt Grid-Lock, Vertikalität (Ebenen/Rampen/Lifts/Fall),
+  volumetrische Blast-Formen, ebenenübergreifende Kettenreaktionen, zerstörbare Architektur.
 - Inhaltsreich: 10 Sektoren × 10 Level, Bosse, Roguelike-Dives, Liga, Battle-Pass, Helden, Karten, Cosmetics.
 - Mit **Master-Mode (Reborn)** = New-Game-Plus nach L100 für Wiederspielwert (Feature aus dem Original).
-- Mit **neuer Story** und 3D-Aufwertung von Optik/Audio.
+- Mit **neuer Story** und voller 3D-Aufwertung von Raum, Optik und Audio.
 
 **Es ist NICHT:**
 - **Kein Idle-/Incremental-Game.** Kein passives Einkommen, keine "Zahlen-gehen-hoch-während-du-wartest"-Mechanik.
 - **Kein AFK / Auto-Battle / Auto-Run.** Es spielt **nie** eine KI Level für dich.
 - **Kein Offline-Income.** Fortschritt entsteht ausschließlich durch aktives Spielen.
-- **Kein striktes 1:1-Remake.** Inhalte dürfen modernisiert/angepasst werden (neue Story, neue Boss-Namen, 3D).
+- **Kein striktes 1:1-Remake** und **kein flaches Grid-Bomberman** mehr — der Raum wird echt 3D.
+- **Kein Multiplayer.** Reiner Single-Player (Grid-Rankings/Daily-Race sind asynchrone Leaderboards).
 
 ---
 
@@ -104,36 +119,40 @@ Der **Neon-Arcade-Look bleibt** Markenkern — nur die **Story** ist neu (bewuss
 
 > Vollständige Story + Welt → [DESIGN.md §2](DESIGN.md). Hier der Pitch.
 
-**Welt — NEO-GRID:** Unter einer Neon-Megacity liegt **das Grid**: 10 Wartungs-Sektoren, gekapert von
-der außer Kontrolle geratenen Stadt-KI **OVERSEER**, die das Grid in einen tödlichen, sich selbst
-wieder aufbauenden Parcours verwandelt hat.
+**Welt — NEO-GRID:** Unter einer Neon-Megacity liegt **das Grid**: 10 Wartungs-Sektoren als **echtes
+volumetrisches 3D-Konstrukt** — mehrstöckige Maschinen-Architektur, gekapert von der außer Kontrolle
+geratenen Stadt-KI **OVERSEER**, die das Grid in einen tödlichen, sich selbst wieder aufbauenden,
+**vertikalen** Parcours verwandelt hat.
 
-**Held — der Bomber:** Du bist ein frisch aktivierter **Bomber** (augmentierter Abriss-Spezialist). In
-Sektor 1 birgst du einen **Reborn-Core** — Overseer-Technik, die einen gefallenen Bomber aus seinen
-**"Blast-Daten"** wieder zusammensetzt, jedes Mal **stärker**.
+**Held — der Bomber:** Du bist ein frisch aktivierter **Bomber** (augmentierter Abriss-Spezialist).
+In Sektor 1 birgst du einen **Reborn-Core** — Overseer-Technik, die einen gefallenen Bomber aus seinen
+**"Blast-Daten"** wieder zusammensetzt, jedes Mal **stärker** — und die deine 3D-Mobilität speist
+(Dash, Blast-Jump, Reborn-Fähigkeiten).
 
 **Der Reborn (= Master-Mode / NG+):** Sprengst du dich durch alle 10 Sektoren bis zum **Core** des
-Overseers und detonierst ihn, **kollabiert das Grid** — und baut sich **härter** neu auf. Du aber kehrst
-**Reborn** zurück: stärker, für einen neuen, schwereren Durchlauf. (Das ist der bestehende Master-Mode des
-Originals, narrativ verankert — **keine** Idle-Prestige-Schleife.)
+Overseers und detonierst ihn, **kollabiert das Grid** — und baut sich **härter und anders verschachtelt**
+neu auf. Du aber kehrst **Reborn** zurück: stärker, für einen neuen, schwereren Durchlauf. (Bestehender
+Master-Mode des Originals, narrativ verankert — **keine** Idle-Prestige-Schleife.)
 
 **Neue Bosse (Sektor-Wardens des Overseers):** Granite Warden · Frostwyrm · Magma Revenant · Null
 Phantom · **The Overseer** (Core-Avatar, Finale). Mechanisch bauen sie auf den 5 bewährten Boss-Archetypen
-des Originals auf, neu benannt und inszeniert.
+des Originals auf, **neu inszeniert als große 3D-Encounter mit Vertikalität und Arena-Zerstörung**.
 
 ---
 
 ## 4. Zielgruppe & Personas
 
 **Persona A: "Der Bomberman-Nostalgiker" (Kern, ~45 %)**
-- Spielte Bomberman (SNES/NES/PS1); will den aktiven Skill-Kern (Story-Level, Sterne, Bosse, Combos) in schönem 3D.
+- Spielte Bomberman (SNES/NES/PS1); will den aktiven Skill-Kern (Sprengen, Ketten, Sterne, Bosse, Combos)
+  — jetzt befreit in echtem 3D mit mehr Bewegungsfreiheit und Wucht.
 - Akzeptiert faires F2P: Rewarded-Ads opt-in, 1,99 € Remove-Ads.
 
 **Persona B: "Der Casual-Mobile-Action-Gamer" (~30 %)**
 - Kurze aktive Sessions: ein paar Level, Daily-Challenge, Daily-Race, Lucky-Spin. Liga + Battle-Pass als Bindung.
 
 **Persona C: "Der Completionist/Skiller" (~20 %)**
-- Will alle Achievements, alle Karten max, alle Cosmetics, 3-Sterne überall, Master-Mode-Sterne, Bestzeiten.
+- Will alle Achievements, alle Karten max, alle Cosmetics, 3-Sterne überall, Master-Mode-Sterne,
+  Bestzeiten und hohe Style-Ränge.
 
 > (Reiner Single-Player, Android-fokussiert — keine PC-/Cross-Save-/Multiplayer-Persona.)
 
@@ -143,18 +162,19 @@ des Originals auf, neu benannt und inszeniert.
 
 | # | Frage | Entscheidung |
 |---|-------|--------------|
-| 1 | Grundprinzip | **Modernes 3D-Bomberman, aktiv gespielt, mit tiefer Meta-Progression.** Kein Idle, kein 1:1-Remake. |
-| 2 | Engine | **Unity 6 + URP** (3D-Top-Down mit leichter Neigung, Cinemachine). |
-| 3 | Gameplay | **Klassisches Bomberman** (Grid, Bomben, Ketten, PowerUps, Combos, Bosse) — "typisch, modern". |
-| 4 | Genre-Ausschluss | **Kein Idle/AFK/Auto-Battle, kein Offline-Income, kein passiver Fortschritt.** |
-| 5 | Story/Setting | **Neue Story** (Neo-Grid/Overseer/Reborn). Neon-Arcade-**Look bleibt**. |
-| 6 | Wiederspielwert | **Master-Mode (Reborn) = NG+** nach L100 (Feature aus Original, narrativ verankert). |
-| 7 | Content-Quelle | Bomberman-Mechanik + Domain-Code des Originals als **Fundament** (wiederverwendet, modernisiert). |
-| 8 | Bestehende Docs | Neue Richtung; alte Remake-/Idle-Docs werden **abgelöst/umgewidmet** (PARITY → Content-Reuse-Map). |
-| 9 | Plattformen | **Android primär**, Desktop für Test. Kein iOS/Steam geplant. |
-| 10 | Monetarisierung | **Lean (BomberBlast-Modell):** F2P + Rewarded (kein Banner), 1,99 € Remove-Ads. Keine Lootboxen, kein P2W. |
-| 11 | Performance | **60 FPS High-End, 30 FPS Low-End** mit Hardware-Tier-Skalierung. |
-| 12 | Team-Realität | **Solo-Indie + KI** — Scope getrimmt, **reiner Single-Player**. Kein Multiplayer/Online. |
+| 1 | Grundprinzip | **Volumetrisches 3D-Action-Spiel mit Bomberman-DNA, aktiv gespielt, mit tiefer Meta-Progression.** Kein Idle, kein 1:1-Remake, kein flaches Grid. |
+| 2 | Engine | **Unity 6 + URP** (echtes 3D, freie Bewegung, dynamische Action-Kamera, Cinemachine, Physik). |
+| 3 | Bewegung & Raum | **Freie 3D-Bewegung** (Dash/Sprung/Ledge), **vertikale, mehrstöckige Arenen** (Rampen/Lifts/Fall/Void). |
+| 4 | Bomben & Blasts | **Physik-Bomben** (legen/werfen/rollen/kicken, fallen zwischen Ebenen) + **volumetrische Blast-Formen** + **3D-Kettenreaktion** + **zerstörbare Architektur**. |
+| 5 | Genre-Ausschluss | **Kein Idle/AFK/Auto-Battle, kein Offline-Income, kein passiver Fortschritt, kein Multiplayer.** |
+| 6 | Story/Setting | **Neue Story** (Neo-Grid/Overseer/Reborn) als volumetrisches 3D-Konstrukt. Neon-Arcade-**Look bleibt**. |
+| 7 | Wiederspielwert | **Master-Mode (Reborn) = NG+** nach L100 (Feature aus Original, narrativ verankert). |
+| 8 | Content-Quelle | **Meta-Progression + Live-Service-Code des Originals** als Fundament (wiederverwendet); **Combat/Bewegung/Raum neu in 3D** (kein Grid-Port). |
+| 9 | Determinismus | **2-Schichten-Modell:** autoritative deterministische Gameplay-Sim (Occupancy, Fixed-Step, `IRngProvider`, **Replay-Hash bleibt**) **+** kosmetische, nicht-autoritative PhysX-Debris-Schicht. Daily-Race verifiziert über die deterministische Schicht. Begründung → [GDD §12.3](3D_REINVENTION_PLAN.md) / [ARCHITECTURE §13](ARCHITECTURE.md). |
+| 10 | Plattformen | **Android primär**, Desktop für Test. Kein iOS/Steam geplant. |
+| 11 | Monetarisierung | **Lean (BomberBlast-Modell):** F2P + Rewarded (kein Banner), 1,99 € Remove-Ads, Premium-BP 4,99 € + Plus-BP 19,99 €. Keine Lootboxen, kein P2W. |
+| 12 | Performance | **60 FPS High-End, 30 FPS Low-End** mit Hardware-Tier-Skalierung (Physik-/VFX-/Destruktions-Caps pro Tier). |
+| 13 | Team-Realität | **Solo-Indie + KI** — Scope getrimmt, **reiner Single-Player**, **Feel-Prototyp vor Content-Breite**. |
 
 ---
 
@@ -162,32 +182,42 @@ des Originals auf, neu benannt und inszeniert.
 
 ### 6.1 Bleibt (wiederverwendet — Fundament)
 
-- **Aktives Bomberman-Gameplay:** 15×10-Grid, Bomben-Lege-/Ketten-Logik, 12 PowerUps, 14 Bomben-Typen,
-  12 Gegner-Typen, 5 Boss-**Archetypen** (neu benannt), Combo-System, Layout-/Mutator-Generator.
-- **Modi:** Story (100 Level), Master-Mode (Reborn/NG+), Quick-Play, Survival, Roguelike-Dives, Boss-Rush,
-  Daily-Challenge, Daily-Race.
 - **Meta-Progression:** 12 permanente Shop-Upgrades, Karten-/Deck-Sammlung + Crafting, Helden, 72 Achievements,
   Wirtschaft (Coins/Gems), Cosmetics (98).
-- **Pure-Domain-Code (1:1 portierbar):** `ComboSystem`, `LevelLayoutGenerator`, Pathfinding (A*/BFS),
-  `DungeonSynergyResolver`, `DeterministicRandom`, Anti-Cheat-Hybridtimer, Overflow-Guards.
+- **Modi-Gerüst:** Story (100 Level), Master-Mode (Reborn/NG+), Quick-Play, Survival, Roguelike-Dives,
+  Boss-Rush, Daily-Challenge, Daily-Race.
 - **Live-Service:** Daily-Reward, Daily/Weekly-Missions, Wochen-/Saison-Events, Lucky-Spin, Battle-Pass,
   async-Liga (→ "Grid-Rankings"), Cloud-Save, DSGVO-Pfade.
+- **Pure-Domain-Code (1:1 portierbar):** `ComboSystem` (Basis), `DungeonSynergyResolver`, `DeterministicRandom`
+  + `IRngProvider` + `FixedTimestepRunner` + `GameStateSnapshot` (Fundament der **autoritativen Schicht A** —
+  Replay-Hash bleibt, [GDD §12.3](3D_REINVENTION_PLAN.md)), Anti-Cheat-Hybridtimer, Overflow-Guards,
+  Liga-/BattlePass-/Mission-Formeln, Profanity-Filter.
+- **Bomben-/Gegner-/Boss-/PowerUp-Konzepte:** 14 Bomben-Typen, 12 PowerUps, 12 Gegner-Typen, 5 Boss-Archetypen
+  — als **Design-Vorlage** in 3D neu umgesetzt (Werte/Verhalten als Anker).
 - **Accessibility & Audio-Architektur:** Colorblind/HighContrast/UiScale/Subtitles; 7-Kanal-AudioBus, adaptive Music.
 
 ### 6.2 Neu
 
+- **Volumetrische 3D-Spielwelt:** freie Bewegung, vertikale/mehrstöckige Arenen (Rampen/Lifts/Fall/Void),
+  zerstörbare Architektur (Voxel-/Chunk-Destruktion mit Trümmer-Physik).
+- **Physik-Bomben & volumetrische Explosionen:** legen/werfen/rollen/kicken, ebenenübergreifender Fall,
+  Blast-Formen (Kugel/Säule/Kegel/Cluster/Schockwelle/Implosion), echte 3D-Kettenreaktion.
+- **3D-Bewegungs-Skill:** Dash/Roll (i-Frames), Doppelsprung/Blast-Jump, Ledge-Grab; **Air-Combos,
+  Drop-Kills, Environmental-Kills** und ein **Style-Rang-System** (erweitertes Combo).
 - **Neue Story** (Neo-Grid/Overseer/Reborn) + neu benannte Bosse, in 3D-Cutscenes (Timeline).
 - **3D-Engine/Optik/Audio:** Unity 6 + URP, dynamische Beleuchtung, Schatten, VFX-Graph-Explosionen,
-  Shader-Graph, 3D-Spatial-Audio, kuratiertes/aufgewertetes Audio.
-- **Modernisierungs-Freiheit:** Inhalte dürfen angepasst werden (kein 1:1-Zwang) — neue Boss-/Sektor-Namen,
-  ggf. neue Karten/Cosmetics-Themen passend zur Story.
+  Shader-Graph, 3D-Spatial-Audio, dynamische Action-Kamera (Cinemachine).
 
 ### 6.3 Bewusst gestrichen / nicht enthalten
 
 - **Idle/Incremental-Mechanik, AFK/Auto-Battle/Auto-Run, Offline-Income, passiver Fortschritt** — alles raus.
+- **Flaches 15×10-Grid als Sim-Kern** — ersetzt durch **freie 3D-Bewegung** + eine **deterministische
+  3D-Occupancy-Repräsentation** (Schicht A, bleibt deterministisch). Physik-Zerstörung läuft in einer
+  **kosmetischen, nicht-autoritativen PhysX-Schicht** (Schicht B) — Replay-Hash gilt nur für Schicht A
+  ([GDD §12.3](3D_REINVENTION_PLAN.md)).
 - **Idle-Meta-Prestige (Singularity/Eternal-Drive aus dem v0.4-Experiment)** — gestrichen; nur Master-Mode/Reborn bleibt.
-- **"100 % Feature-Parität"** als striktes Mandat — ersetzt durch "übernehmen + modernisieren, was trägt".
-- **Online-PvP/Multiplayer, Photon/Netcode, Esports, Cross-Platform-AAA-Anspruch, Full-Studio-Team & -Budget** — **komplett gestrichen** (Solo-Indie, reiner Single-Player).
+- **"100 % Feature-Parität" als striktes Mandat** — ersetzt durch "Meta wiederverwenden, Combat/Raum neu in 3D".
+- **Online-PvP/Multiplayer, Photon/Netcode, Esports, Cross-Platform-AAA-Anspruch** — komplett gestrichen (Solo-Indie, Single-Player).
 - **Whale-Monetarisierung / aggressive IAP** — bleibt lean.
 
 ---
@@ -197,8 +227,9 @@ des Originals auf, neu benannt und inszeniert.
 ### 7.1 Session-Loop (rein aktiv)
 
 ```
-Öffnen → Sektor/Level wählen → AKTIV spielen (Bomben, Combos, PowerUps, ggf. Boss)
-       → Sterne + Coins/Karten verdienen → Shop-Upgrades / Deck verbessern
+Öffnen → Sektor/Level wählen → AKTIV spielen (frei bewegen, Bomben legen/werfen/rollen, 3D-Ketten,
+       Architektur sprengen, PowerUps, Air-/Environmental-Combos, ggf. Boss)
+       → Sterne + Style-Rang + Coins/Karten verdienen → Shop-Upgrades / Deck verbessern
        → nächstes Level / nächster Sektor → … → L100 → Master-Mode (Reborn, NG+)
        → nebenbei: Daily/Weekly, Dives, Liga, Battle-Pass
 ```
@@ -212,7 +243,7 @@ des Originals auf, neu benannt und inszeniert.
 | **Quick-Play / Survival** | schnelle Action / Endlos bis Tod |
 | **Anomaly-Dives (Roguelike)** | Floor-basierte Runs mit Buffs/Synergien, eigene Meta-Upgrades |
 | **Boss-Rush** | Boss-Sequenz, wöchentlicher Reset |
-| **Daily-Challenge / Daily-Race** | tägliches deterministisches Level / Bestzeit-Wettlauf (Grid-Rankings) |
+| **Daily-Challenge / Daily-Race** | tägliche Seed-Arena (weltweit gleich) / Bestzeit-Wettlauf (Grid-Rankings) |
 
 ---
 
@@ -228,11 +259,14 @@ des Originals auf, neu benannt und inszeniert.
   Revival, Lucky-Spin-Extra, Dive-Retry. Hybrid-Cooldown.
 - **VIP-Abo (`vip_subscription_monthly`, 9,99 €/Monat):** im Original produktiv — wird übernommen,
   Vorteile sinngemäß aus dem Original.
-- **BattlePass-Plus (`battle_pass_plus_season`, 4,99 €/Saison):** aktiviert den Premium-Track der
-  laufenden Saison — wie im Original.
+- **Battle-Pass — zwei getrennte Produkte (Entscheidung 2026-06-14):**
+  - **Premium-Track (`battle_pass_premium_season`, 4,99 €/Saison):** schaltet den Premium-Belohnungs-Track
+    der laufenden Saison frei — klare Rewards pro Tier, **kein Zufall**.
+  - **Plus-Paket (`battle_pass_plus_season`, 19,99 €/Saison):** Premium-Track **plus** Komfort obendrauf —
+    +25 Tier-Skip beim Kauf, +50 % XP-Multiplier, Bonus-Gems pro Tier-Up (enthält den Premium-Track).
 - **Gems** (erspielbar + optionaler IAP): Deck-Slot, Helden-Direktkauf, Premium-Karten, Anomaly-Eintritt.
-- **Battle-Pass (Saison):** Free-Track + Premium-Track (via BattlePass-Plus) — klare Rewards pro Tier,
-  **keine** Zufalls-Boxen.
+- **Battle-Pass (Saison):** Free-Track + Premium-Track (via Premium- oder Plus-Kauf) — klare Rewards pro
+  Tier, **keine** Zufalls-Boxen.
 - **Cosmetics:** Trails/Frames/Victories/Skins über Gems, Battle-Pass, Events.
 - **Ethik:** keine Pay-to-Win-Stats in kompetitiven Modi, Saison-Content auch über Gameplay erreichbar,
   transparente Drop-Rates (Lucky-Spin mit Pity).
@@ -241,11 +275,14 @@ des Originals auf, neu benannt und inszeniert.
 
 ## 9. USPs
 
-1. **"Dein Bomberman — jetzt in 3D"** — das vertraute Action-Erlebnis, komplett 3D neu gerendert.
-2. **Tiefer aktiver Content** — 100 Level + Master-Mode + Roguelike-Dives + Liga: viel mehr als generische Klone.
-3. **Skill statt Selbstläufer** — voll aktiv gespielt, Combos & 3-Sterne belohnen Können. **Kein Idle, kein AFK.**
-4. **Werbe-fair & P2W-frei** — kostenlos, Rewarded opt-in, 1,99 € Remove-Ads, keine Lootboxen.
-5. **AAA-Mobile-Optik im Neon-Arcade-Stil** — dynamische Beleuchtung, VFX-Graph-Explosionen, neue Story.
+1. **"Bomberman, endlich in echtem 3D"** — freie Bewegung, vertikale Arenen, volumetrische Explosionen:
+   das vertraute Sprengen, befreit aus dem flachen Gitter.
+2. **Physik-Bomben & kollabierende Architektur** — werfen, rollen, ebenenübergreifende Ketten, Strukturen
+   einstürzen lassen: taktische Zerstörung als Kern-Spaß.
+3. **Tiefer aktiver Content** — 100 Level + Master-Mode + Roguelike-Dives + Liga: viel mehr als generische Klone.
+4. **Skill & Style statt Selbstläufer** — Air-Combos, Drop-/Environmental-Kills, Style-Rang belohnen Können.
+   **Kein Idle, kein AFK.**
+5. **Werbe-fair & P2W-frei** — kostenlos, Rewarded opt-in, 1,99 € Remove-Ads, keine Lootboxen.
 
 ---
 
@@ -278,7 +315,7 @@ des Originals auf, neu benannt und inszeniert.
 | ARPDAU | 0,08–0,15 € (werbegestützt, fair) |
 | Remove-Ads-Conversion (1,99 €) | ≥ 3 % |
 | Rewarded-Opt-In-Rate (Sessions) | ≥ 40 % |
-| BattlePass-Plus (pro Saison) | ≥ 6 % MAU |
+| Battle-Pass (Premium + Plus, pro Saison) | ≥ 6 % MAU |
 
 ### 10.4 Technik
 
@@ -292,65 +329,71 @@ des Originals auf, neu benannt und inszeniert.
 
 ## 11. High-Level-Roadmap
 
-> Detail-Sprints → [ROADMAP.md](ROADMAP.md). Right-sized für Solo-Indie + KI. Single-Player-Core zuerst.
+> Detail-Sprints → [ROADMAP.md](ROADMAP.md). Right-sized für Solo-Indie + KI. **Feel-Prototyp vor
+> Content-Breite** — das 3D-Spielgefühl muss zuerst sitzen.
 
 | Phase | Zeitrahmen | Hauptziel |
 |-------|-----------|-----------|
-| **Phase 0** | Monat 1 | Setup: Unity-Skelett, URP, VContainer, CI, Asmdefs. Pure-Domain-Code-Port (Combo/Layout/Pathfinding/RNG). |
-| **Phase 1** | Monat 2–4 | **Aktiver Bomberman-Core in 3D:** Grid, Bomben/Ketten, 12 PowerUps, 12 Gegner, 5 Bosse, 100 Level in 10 Sektoren, Layouts/Mutatoren, HUD, Combo. Fixed-Step-Sim + `IRngProvider`. |
-| **Phase 2** | Monat 4–6 | **Meta-Progression:** Wirtschaft (Coins/Gems), 12 Shop-Upgrades, Karten/Deck/Crafting, Helden, 72 Achievements, Cloud-Save, Tutorial. |
-| **Phase 3** | Monat 6–8 | **Modi & Live-Service:** Master-Mode (Reborn/NG+), Anomaly-Dives, Boss-Rush, Liga (Grid-Rankings), Daily/Weekly/Events, Lucky-Spin, Battle-Pass. |
-| **Phase 4** | Monat 8–9 | **3D-Art & Polish:** alle Sektoren/Helden/Gegner/Bosse, VFX-Graph, Shader, adaptive Music, Story-Cutscenes, Cosmetics. |
-| **Phase 5** | Monat 9–10 | **Closed Beta DACH:** Balancing, Low-End-Performance, Tutorial-Funnel, LiveOps-Tooling. |
-| **Phase 6** | Monat 11–12 | **Soft-Launch DACH** + Saison 1. |
-| **Phase 7** | Monat 13+ | Skalierung (EU/Global), weitere Saisons & Content-Updates. Kein Multiplayer, kein iOS/Steam. |
+| **Phase 0** | Monat 1 | Setup: Unity-Skelett, URP, VContainer, CI, Asmdefs. Pure-Domain-Port (Combo/RNG/Formeln). |
+| **Phase 1 — Feel-Prototyp (Gate)** | Monat 2–4 | **Das volumetrische 3D-Spielgefühl beweisen:** freie Bewegung (Dash/Sprung/Ledge), Physik-Bombe (legen/werfen/rollen/Fall), **eine volumetrische Blast-Form + 3D-Kette**, zerstörbare Arena-Elemente, **ein vertikaler Sektor + Granite Warden**, 3D-Lesbarkeit auf Min-Spec. **Gate: macht Spaß & ist lesbar → erst dann weiter.** |
+| **Phase 2** | Monat 4–7 | **Combat-Breite + Meta-Progression:** alle Blast-Formen/Bomben, 12 PowerUps, 12 Gegner, 5 Bosse, 100 Level in 10 Sektoren; Wirtschaft, 12 Shop-Upgrades, Karten/Deck/Crafting, Helden, 72 Achievements, Cloud-Save, Tutorial. |
+| **Phase 3** | Monat 7–9 | **Modi & Live-Service:** Master-Mode (Reborn/NG+), Anomaly-Dives, Boss-Rush, Liga (Grid-Rankings), Daily/Weekly/Events, Lucky-Spin, Battle-Pass. |
+| **Phase 4** | Monat 9–11 | **3D-Art & Polish:** alle Sektoren/Helden/Gegner/Bosse, Destruktions-Assets, VFX-Graph, Shader, adaptive Music, Story-Cutscenes, Cosmetics, Style-System-Politur. |
+| **Phase 5** | Monat 11–13 | **Closed Beta DACH:** Balancing, Low-End-Performance (Physik/Destruktion), Touch-3D-Controls, Tutorial-Funnel, LiveOps-Tooling. |
+| **Phase 6** | Monat 14–15 | **Soft-Launch DACH** + Saison 1. |
+| **Phase 7** | Monat 16+ | Skalierung (EU/Global), weitere Saisons & Content-Updates. Kein Multiplayer, kein iOS/Steam. |
 
-**Realistischer Soft-Launch ~Monat 12.** Reiner Single-Player — kein Multiplayer/Online.
+**Realistischer Soft-Launch ~Monat 14–15** (die volumetrische Neuerfindung + Physik/Destruktion ist
+ambitionierter als ein Grid-Port — bewusst mehr Puffer). Reiner Single-Player.
 
 ---
 
 ## 12. Risiko-Summary
 
-> Vollständiges Register → [ROADMAP.md §8](ROADMAP.md#8-risiko-register). Top-6:
+> Vollständiges Register → [ROADMAP.md §8](ROADMAP.md#8-risiko-register). Top-7:
 
 | # | Risiko | Wkt. | Impact | Mitigation |
 |---|--------|------|--------|------------|
-| 1 | **Scope** (voller Bomberman-Content + 3D + neue Story) für Solo zu groß | Hoch | Hoch | Strikte Phasen-Gates, Content-Reuse maximieren, Single-Player-Fokus (kein MP), Polish nach hinten |
-| 2 | **3D-Performance Low-End** (VFX-Explosionen + viele Gegner) | Mittel | Hoch | Hardware-Tier-System, LOD, VFX-Caps, Object-Pooling, Low-End-Tests pro Sprint |
-| 3 | **Balancing/Schwierigkeit** (klassisch knackig vs. modern zugänglich) | Mittel | Mittel | `BalancingConfig`-ScriptableObject, Beta-Telemetrie, Sterne-/Difficulty-Tuning |
-| 4 | **Story/Brand-Kohärenz** (neue Story vs. Neon-Brand) | Niedrig | Mittel | Look bleibt #FF6B35-Neon-Arcade; Story als leichter Cyber-Rahmen, kein Tonbruch |
-| 5 | **Content-Umfang** (Original ist sehr groß) realistisch portieren | Mittel | Hoch | Content-Reuse-Map (PARITY) als Checkliste; modernisieren statt 1:1 |
-| 6 | **Genre-Erwartung extern** (Marketing als "Idle" falsch gelabelt) | Niedrig | Mittel | Klar als **Action-Bomberman** positionieren — nicht als Idle |
+| 1 | **Scope** (volumetrische Neuerfindung + Physik + Destruktion + voller Content) für Solo zu groß | Hoch | Hoch | **Feel-Prototyp-Gate**, Content-Reuse der Meta maximieren, Single-Player, Polish nach hinten |
+| 2 | **3D-Spielgefühl/Controls auf Touch** (freie Bewegung + Zielen + Werfen mit Daumen) | Hoch | Hoch | Prototyp zuerst, Auto-Aim/Soft-Lock, Bewegungs-Assist, frühe Min-Spec-Tests |
+| 3 | **Performance Low-End** (Physik + volumetrische VFX + Destruktion + viele Gegner) | Hoch | Hoch | Hardware-Tier, LOD, VFX-/Physik-/Debris-Caps, Object-Pooling, Min-Spec-Test pro Sprint |
+| 4 | **3D-Lesbarkeit** (welche Volumina trifft der Blast? Höhe/Ebene?) | Hoch | Hoch | Blast-Preview-Volumen, Through-Wall-Outlines, Höhen-/Schatten-Indikatoren, empirischer A50-Test |
+| 5 | **Determinismus-Relaxation → Daily-Race-Anti-Cheat** | Mittel | Mittel | Server-Plausibilität (Score/Time-Sanity, Rate-Limit), Anzeige-Ghosts statt Resim |
+| 6 | **Balancing in 3D** (Werte aus 2D übertragen sich nicht 1:1) | Mittel | Mittel | `BalancingConfig`-ScriptableObject, Beta-Telemetrie, Tuning-Loop |
+| 7 | **Story/Brand-Kohärenz** (neue Story vs. Neon-Brand) | Niedrig | Mittel | Look bleibt #FF6B35-Neon-Arcade; Story als leichter Cyber-Rahmen |
 
 ---
 
 ## 13. Nächste konkrete Schritte
 
 ### Erledigt
-1. **Plan + DESIGN.md reviewt** — Richtung v0.5 (Story & Modernisierungs-Umfang) bestätigt.
+1. **Plan + DESIGN.md reviewt** — Richtung v0.6 (volumetrische Neuerfindung) bestätigt.
 2. **Unity-Projekt-Skelett** existiert unter `src/Apps/BomberBlast.Unity/Unity/` (Unity 6 + URP) —
    Setup-Doku in [SETUP.md](SETUP.md), Slice-Plan in [VERTICAL_SLICE.md](VERTICAL_SLICE.md).
 
 ### Sofort
-3. **Editor-Open-Verifikation** — Projekt in der installierten Unity-6-Version öffnen, sauber kompilieren
-   ([SETUP.md](SETUP.md)).
-4. **Aktiver Bomberman-Vertical-Slice** (1 Sektor, 1 Warden) in 3D — Spielgefühl zuerst
-   ([VERTICAL_SLICE.md](VERTICAL_SLICE.md)), inkl. Pure-Domain-Code-Port (Combo/Layout/Pathfinding/RNG —
-   keine Unity-API → 1:1).
+3. **Editor-Open-Verifikation** — Projekt in der installierten Unity-6-Version öffnen, sauber kompilieren,
+   Paket-Versionen + R3-NuGet-Setup prüfen ([SETUP.md](SETUP.md)).
+4. **Feel-Prototyp (Phase 1):** freie 3D-Bewegung + eine Physik-Bombe + eine volumetrische Blast-Form +
+   3D-Kette + ein zerstörbares Arena-Element auf dem Gerät — **Spielgefühl zuerst**
+   ([VERTICAL_SLICE.md](VERTICAL_SLICE.md)).
 
 ### Mittelfrist (Monat 1–4)
-5. **CI/CD** (game-ci, EditMode-Tests + Determinismus-Replay).
-6. **Concept-Art/3D-Sprint** für Bomber + Sektor 1 (Neon-Arcade-Stil, 3D).
+5. **CI/CD** (game-ci, EditMode-Tests + Seed-Reproduzierbarkeit-Tests; **kein** bit-exakter Replay-Gate mehr).
+6. **Concept-Art/3D-Sprint** für Bomber + Sektor 1 (Neon-Arcade-Stil, 3D) inkl. zerstörbarer Module.
 
 ---
 
 ## 14. Offene Design-Fragen
 
-1. **Modernisierungs-Umfang:** Wie weit weg vom Original-Content (neue Karten/Cosmetics-Themen passend zur
-   Story?) oder Content weitgehend übernehmen und nur neu einkleiden? — *Vorschlag: Content übernehmen, Namen/Themen modernisieren.*
-2. **Sektor-Umfang:** exakt 10 × 10 (=100), oder mehr/weniger? — *Vorschlag: 100 wie Original.*
-3. **Master-Mode-Tiefe:** nur 1 NG+-Stufe (wie Original) oder mehrere? — *Vorschlag: wie Original (1), später erweiterbar.*
-4. **Titel:** "BomberBlast: Reborn"? Alternativen willkommen.
+1. **Vertikalitäts-Tiefe:** Wie viele Ebenen pro Arena im Schnitt (2–3?) und wie aggressiv Fall-/Lift-Mechaniken?
+   — *Vorschlag: 2–3 Ebenen, Fall als Feature, im Prototyp tunen.*
+2. **Zerstörungs-Granularität:** echte Voxel-Destruktion vs. vordefinierte zerbrechende Module/Chunks?
+   — *Vorschlag: Chunk-/Modul-basiert (Solo-machbar, performant), Voxel-Optik nur kosmetisch.*
+3. **Style-Rang-Tiefe:** eigenständiges DMC-artiges Rang-System oder nur erweitertes Combo?
+   — *Vorschlag: erweitertes Combo mit Rang-Anzeige, kein eigenes Meta.*
+4. **Sektor-Umfang:** exakt 10 × 10 (=100)? — *Vorschlag: 100 wie Original.*
+5. **Titel:** "BomberBlast: Reborn"? Alternativen willkommen.
 
 ---
 
@@ -362,6 +405,8 @@ des Originals auf, neu benannt und inszeniert.
 | 2026-05-26 | v0.2 | Sci-Fi-Reinvention (OmniCorp/Mech/PvP-Arena) | Robert Schneider + Claude |
 | 2026-05-30 | v0.3 | Treuer 1:1-3D-Remake (Sci-Fi verworfen) | Robert Schneider + Claude |
 | 2026-06-08 | v0.4 | Idle-Game-Experiment (verworfen) | Robert Schneider + Claude |
-| 2026-06-08 | **v0.5** | **Modernes 3D-Bomberman: klassisches, AKTIV gespieltes Bomberman in 3D + bewährte Bomberman-Meta-Progression (100 Level, Modi, Shop, Liga, Battle-Pass, Master-Mode/Reborn-NG+). NEUE Story (Neo-Grid/Overseer/Reborn). KEIN Idle, KEIN AFK, KEIN Offline-Income. Lean Monetarisierung, Solo-Indie-Scope. Content modernisiert, kein striktes 1:1.** | Robert Schneider + Claude |
+| 2026-06-08 | v0.5 | Klassisches Grid-Bomberman in 3D (Top-Down, flaches Grid), neue Story, bewährte Meta-Progression | Robert Schneider + Claude |
+| 2026-06-14 | **v0.6** | **Voll-3D-Arena-Demolition-Roguelite (kanonische GDD [3D_REINVENTION_PLAN.md](3D_REINVENTION_PLAN.md)): freie Bewegung, vertikale/zerstörbare Arenen, Physik-Bomben, volumetrische Blast-Formen, ebenenübergreifende 3D-Ketten, Air-/Drop-/Environmental-Combos + Style-Rang. Meta-Progression & Live-Service bleiben Fundament. Determinismus = 2-Schichten-Modell (autoritative deterministische Occupancy-Sim + kosmetische PhysX-Schicht; Replay-Hash bleibt über Schicht A). Battle-Pass als zwei Produkte (Premium 4,99 € / Plus 19,99 €). Feel-Prototyp-Gate vor Content-Breite; Timeline realistisch ~14–15 Mo.** | Robert Schneider + Claude |
 
-> **Status:** Konzept-Phase v0.5 — modernes 3D-Bomberman (kein Idle). Bereit für Vertical-Slice + Content-Reuse-Map.
+> **Status:** Konzept-Phase v0.6 — volumetrisches 3D-Bomberman-Action (kein Idle, kein flaches Grid).
+> Bereit für Feel-Prototyp + aktualisierte Content-Reuse-Map.

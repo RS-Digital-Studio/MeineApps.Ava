@@ -2,13 +2,19 @@
 
 > Vollständige technische Spezifikation. Komplementär zu [PLAN.md](PLAN.md) (Übersicht),
 > [DESIGN.md](DESIGN.md) (Game-Design) und [ROADMAP.md](ROADMAP.md) (Produktion).
-> Stand 2026-05-26 (Tech-Stack), Richtung v0.5.
+> Stand 2026-06-14 (Tech-Stack), Richtung v0.6.
 >
-> **Richtung v0.5 (2026-06-08):** Das Spiel ist ein **modernes, aktiv gespieltes 3D-Bomberman** mit neuer
-> Story — **kein Idle/AFK, kein Offline-Income**. Der hier beschriebene Tech-Stack (Unity 6, URP, VContainer,
-> UniTask, R3, Firebase, Determinismus-First, Addressables) bleibt davon **unberührt und gültig**. Multiplayer/Netcode/Photon gibt es **nicht**
-> (§8 = expliziter Ausschluss). Determinismus-First gilt weiter für
-> Replay / Daily-Race / Anti-Cheat (es gibt keinen Idle-Loop, der zu modellieren wäre).
+> **Richtung v0.6 (2026-06-14):** Das Spiel ist ein **Voll-3D-Arena-Demolition-Roguelite mit Bomberman-DNA**
+> mit neuer Story — **freie Bewegung, vertikale/zerstörbare Arenen, Physik-Bomben, volumetrische Blasts —
+> kein Idle/AFK, kein Offline-Income, kein flaches Grid, kein Multiplayer.** Verbindliche Spiel-Design-Quelle:
+> [3D_REINVENTION_PLAN.md](3D_REINVENTION_PLAN.md) (GDD v0.6). Der Tech-Stack (Unity 6, URP, VContainer,
+> UniTask, R3, Firebase, Addressables) bleibt **gültig** und wird um **3D-Physik (Unity PhysX)** und
+> **Chunk-/Modul-Destruktion** ergänzt. **Wichtige Architektur-Entscheidung ggü. v0.5 — 2-Schichten-Modell:**
+> Physik-Zerstörung (PhysX) ist nicht geräte-deterministisch → die **autoritative Gameplay-Sim bleibt
+> deterministisch** (fixed-step, `IRngProvider`, **abstrahierte Occupancy-Repräsentation** statt flachem
+> 15×10-Grid; **Replay-Hash-Verifikation bleibt**), die **PhysX-Debris/Trümmer-Schicht ist nicht-autoritativ
+> und rein kosmetisch**. Daily-Race/Replay verifizieren über den **deterministischen Zustand**, nicht über
+> Debris (Details → §13 + [GDD §12.3](3D_REINVENTION_PLAN.md)). Multiplayer/Netcode/Photon gibt es **nicht** (§8).
 
 ---
 
@@ -26,7 +32,7 @@
 10. [Anti-Cheat (Single-Player)](#10-anti-cheat-single-player)
 11. [Cloud Functions (minimal, TypeScript)](#11-cloud-functions-minimal-typescript)
 12. [Firebase-Security-Rules](#12-firebase-security-rules)
-13. [Determinismus-First-Design](#13-determinismus-first-design)
+13. [Determinismus (seed-basiert) & Sim-Modell](#13-determinismus-seed-basiert--sim-modell)
 14. [Performance-Targets + Hardware-Profile](#14-performance-targets--hardware-profile)
 15. [URP-Rendering-Setup](#15-urp-rendering-setup)
 16. [Asset-Pipeline (Addressables)](#16-asset-pipeline-addressables)
@@ -121,6 +127,11 @@
 > **Ad-Formate (wie Original):** **Keine Interstitials.** Nur Rewarded Ads. Remove-Ads (1,99 EUR)
 > wirkt wie im Original: Rewarded-Belohnungen ohne Video-Zwang (`IsPremium`-Bypass) + exklusive
 > Premium-Skins.
+>
+> **Battle-Pass = zwei IAP-Produkte (v0.6):** `battle_pass_premium_season` (4,99 €, Premium-Track-Freischaltung)
+> und `battle_pass_plus_season` (19,99 €, Plus-Paket: +25 Tier-Skip, +50 % XP, Bonus-Gems, enthält Premium).
+> Beide non-consumable pro Saison; Produkt-IDs müssen identisch in Play-Console + Unity-IAP angelegt sein
+> (siehe [PARITY.md §2](PARITY.md), [DESIGN.md §16](DESIGN.md)).
 
 ### 1.7 Tooling
 
@@ -1087,41 +1098,56 @@ Client-Lesezugriff auf den `addressables/`-Pfad, Schreibzugriff nur über die CI
 
 *Photon-Webhooks für Match-Anti-Cheat entfernt — reiner Single-Player.*
 
-## 13. Determinismus-First-Design
+## 13. Determinismus (seed-basiert) & Sim-Modell
 
-### 13.0 Status & Mandat (WICHTIG)
+### 13.0 Status & Mandat (WICHTIG — v0.6: 2-Schichten-Modell)
 
-Determinismus dient **Single-Player-Zwecken**: **Daily-Race** (weltweit identisches Tages-Level) und
-**Replay-Verifikation**. Mandat: alle gameplay-relevanten Random-Calls über `IRngProvider`, Sim-Updates über
-`FixedTimestepRunner` (60 Hz Fixed-Step, nie `Time.deltaTime`). Ein Replay muss denselben State-Hash
-reproduzieren (CI-Gate).
+> **Entscheidung 2026-06-14 (verbindlich, [GDD §12.3](3D_REINVENTION_PLAN.md)):** Voll-3D-Physik-Zerstörung
+> (PhysX) ist **nicht** geräte-deterministisch (float, Mono/CI vs. IL2CPP/ARM64). Lösung = **2-Schichten-Modell**:
+> **Gameplay bleibt deterministisch, nur die Optik nicht.**
 
-**Verbindliche Festlegung: Fixed-Point-Simulation.** Der Sim-Kern rechnet ausschließlich in
-**Integer-/Fixed-Point-Arithmetik** — Grid-Positionen in **1/256-Zellen-Einheiten als `int`**
-(`SUBCELL = 256`), keine transzendenten float-Math-Funktionen (`Mathf.Sin/Cos/Sqrt/Pow` etc.)
-in der Sim. Dadurch sind die FNV-1a-State-Hashes **plattformübergreifend bit-stabil**
-(CI Linux/Mono vs. Android ARM64/IL2CPP) — float-Arithmetik wäre das nicht garantiert.
-Der **Render-Layer interpoliert in float** (Sub-Cell → Weltkoordinaten), beeinflusst die Sim
-aber nie. Das CI-Gate vergleicht Geräte-Replays gegen die CI-Re-Simulation.
+**Schicht A — autoritative, deterministische Gameplay-Sim:**
+- Läuft **fixed-step** (60 Hz, `FixedTimestepRunner`, Akkumulator in `Update`, Clamp 5 Steps/Frame, **nie**
+  `Time.deltaTime` in der Sim) auf einer **abstrahierten Occupancy-/Voxel-Repräsentation** (Integer-/Fixed-Point)
+  — **ersetzt** das flache 15×10-Grid (v0.5), bleibt aber deterministisch.
+- Enthält: **Bomben-Timing, Blast-Auflösung (Volumen/Ketten/Belegung), Schaden, Gegner-Entscheidungen,
+  Spieler-Treffer/i-Frames, Score/Combo/Style, Drop-Rolls, Win/Lose.**
+- Alle gameplay-relevanten Random-Calls über `IRngProvider` (`DeterministicRandom`, xoshiro256+). Produziert
+  einen **State-Hash** (FNV-1a, `GameStateSnapshot`) → **bit-reproduzierbar** (Replay-Verifikation **bleibt**).
 
-> **Kein** Online-/Server-Re-Sim, **keine** Float-Determinismus-Anforderung für Online-Versus (kein Multiplayer).
-> `DeterministicRandom` (xoshiro256+) ist integer-bit-stabil — zusammen mit der Fixed-Point-Sim
-> für die Daily-Race-Replay-Verifikation ausreichend.
+**Schicht B — nicht-autoritative visuelle Physik:**
+- **PhysX-Debris/Geröll/Trümmer/Partikel/Kamera-Tremor** — **rein kosmetisch**, beeinflusst Schicht A **nie**,
+  darf non-deterministisch sein (float, Visual-RNG `[Key("visual")]`), wird per Hardware-Tier gecapt.
+  **Nicht** Teil des State-Hash.
+
+**Verifikation & Anti-Cheat:**
+- **Replay/Daily-Race verifizieren über Schicht A** (gleicher Seed + gleiche Inputs ⇒ identischer State-Hash),
+  **nie** über Debris. `ReplayCapture` zeichnet Inputs auf.
+- **Seed-deterministische Generierung** (Arena/Spawns/Drops/Dive-Map/Daily) über `IRngProvider` — gleiche Seed
+  = gleiche Welt weltweit.
+- Zusätzlich async **Server-Plausibilität** (RTDB-Rules/Timestamp/Rate-Limit) als Defense-in-Depth (§10).
+
+> `DeterministicRandom`/`IRngProvider`/`FixedTimestepRunner`/`ReplayCapture`/`GameStateSnapshot` bleiben
+> **PORT-1:1, bit-identisch** (Schicht A). Das frühere flache Grid wird durch die deterministische
+> 3D-Occupancy-Repräsentation ersetzt (REBUILD/NEW). Siehe [PARITY.md §7](PARITY.md).
 
 ### 13.1 Pflicht-Konstanten
 
 ```csharp
 public static class SimConstants
 {
-    public const int   TICK_RATE = 60;            // Sim-Ticks pro Sekunde
-    public const float FIXED_DELTA = 1f / 60f;    // Schrittweite des FixedTimestepRunner (§13.4)
-    public const int   SUBCELL = 256;             // Fixed-Point: 1 Grid-Zelle = 256 Sub-Einheiten (int)
-    public const int   MAX_STEPS_PER_FRAME = 5;   // Accumulator-Clamp, Spiral-of-Death-Schutz (§13.4)
+    public const int TICK_RATE = 60;            // Schicht-A-Ticks pro Sekunde
+    public const float FIXED_DELTA = 1f / 60f;  // Schrittweite des FixedTimestepRunner (§13.4)
+    public const int SUBUNIT = 256;             // Fixed-Point: 1 Occupancy-Einheit = 256 Sub-Einheiten (int)
+    public const int MAX_STEPS_PER_FRAME = 5;   // Accumulator-Clamp, Spiral-of-Death-Schutz (§13.4)
 }
 ```
 
-> Nach der Integration gilt: Alle gameplay-relevanten Random-Calls gehen über `IRngProvider`.
-> Alle Tick-Updates laufen über `FixedTimestepRunner` bei 60 Hz. Alle Inputs werden in `ReplayCapture` aufgezeichnet.
+> **Schicht A (autoritativ):** rechnet **Integer-/Fixed-Point** auf der Occupancy-Repräsentation (`SUBUNIT`),
+> alle Gameplay-Random über `IRngProvider` — damit ist der FNV-1a-State-Hash **plattformübergreifend
+> reproduzierbar** (Replay-Verifikation, §18.4). **Schicht B (kosmetisch):** PhysX/Debris/Partikel rechnen in
+> **float** und nutzen **Visual-Random** (`[Key("visual")] IRngProvider`) — bewusst nicht-deterministisch,
+> nie Teil des Hash. Der Render-Layer interpoliert Schicht-A-Positionen in float (beeinflusst die Sim nie).
 
 ### 13.2 IRngProvider-Implementation
 
@@ -1593,41 +1619,46 @@ public void ComboSystem_FiveKillsInTwoSeconds_TriggersUltraCombo()
 
 **Tool:** Unity Test Framework PlayMode
 
-### 18.4 Determinismus-Suite (KRITISCH)
+### 18.4 Determinismus-Suite (KRITISCH — über Schicht A)
 
-**Zweck:** Sicherstellen, dass jedes Replay in der CI-Re-Simulation den identischen State-Hash
-reproduziert (Daily-Race-Verifikation) — auch plattformübergreifend (CI Linux vs. Android
-ARM64/IL2CPP, Fixed-Point-Sim §13.0). Kein Server-Worker — die Re-Simulation läuft als CI-Test.
+**Zweck (v0.6, 2-Schichten-Modell §13.0):** **zwei** Garantien sichern —
+1. **Replay-Determinismus (Schicht A):** gleicher Seed + gleiche Input-Sequenz ⇒ identischer State-Hash der
+   **autoritativen** Gameplay-Sim (Occupancy, Fixed-Step). Debris/PhysX (Schicht B) ist ausgeschlossen.
+2. **Seed-Reproduzierbarkeit der Generierung:** gleicher Seed ⇒ identische Arena/Spawns/Drops/Dive-Map/Daily.
 
-**Setup:**
 ```
 Tests/DeterminismSuite/
-├── ReplayCorpus/                     (Daily-Race + Story-Run-Replays als Test-Fixtures)
-│   ├── dailyrace_2026-06-08.bin
-│   ├── story_sektor3_l07.bin
-│   └── ...
-├── DeterminismTest.cs
-└── DeterminismRunner.cs
+├── ReplayCorpus/        (Schicht-A-Replays: Inputs + ExpectedHash)
+│   ├── arena_sektor3_l07.bin
+│   └── dailyrace_2026-06-14.bin
+├── SeedCorpus/          (Referenz-Seeds + erwartete Generierungs-Outputs als JSON)
+├── ReplayDeterminismTest.cs
+└── SeedReproTest.cs
 ```
 
-**Test-Logik:**
 ```csharp
-[Test]
-public void Determinism_AllReplays_ProduceIdenticalHash()
+[Test] // 1) Schicht-A-Replay reproduziert den State-Hash (Debris/PhysX zählt NICHT mit)
+public void ReplayDeterminism_AllReplays_ProduceIdenticalHash()
 {
-    var replays = LoadAllReplays("ReplayCorpus/");
-    foreach (var replay in replays)
+    foreach (var r in LoadAllReplays("ReplayCorpus/"))
     {
-        var simulator = new BattleSimulator(seed: replay.Seed);
-        var finalState = simulator.RunReplay(replay.Inputs);
-        var hash = ComputeStateHash(finalState);
-        Assert.AreEqual(replay.ExpectedHash, hash, 
-            $"Replay {replay.RunId} produced different hash!");
+        var sim = new AuthoritativeSim(seed: r.Seed);   // Schicht A: Occupancy, Fixed-Point
+        var hash = sim.RunReplay(r.Inputs).ComputeStateHash();   // FNV-1a, GameStateSnapshot
+        Assert.AreEqual(r.ExpectedHash, hash, $"Schicht-A-Drift in {r.RunId}!");
     }
+}
+
+[Test] // 2) Generierung ist seed-reproduzierbar
+public void SeedRepro_AllGenerators_ProduceIdenticalOutput()
+{
+    foreach (var f in LoadAllSeedFixtures("SeedCorpus/"))
+        Assert.AreEqual(f.ExpectedJson, Serialize(Generate(f)), $"Generator-Drift für Seed {f.Seed}!");
 }
 ```
 
-**CI-Gate:** Pflicht-Check in jedem PR. Failure blockt Merge.
+**Zusätzlich:** Domain-Unit-Tests (Combo/Style, Liga-/BP-/Mission-Formeln, ISO-Wochen-Seed,
+DungeonSynergyResolver) + PlayMode-Smoke (Boot→Game→Result). **CI-Gate:** Pflicht-Check in jedem PR; Failure
+blockt Merge. **Daily-Race** verifiziert über Schicht A (+ async Server-Plausibilität als Defense-in-Depth, §10).
 
 ### 18.5 Last-/Stress-Tests (Single-Player)
 
@@ -1851,6 +1882,13 @@ Funnel-Events:
 
 ## 22. Domain-Code-Port aus altem BomberBlast
 
+> **v0.6-Gewichtung (wichtig):** Diese Checkliste bleibt für **Meta-Progression, Live-Service, Wirtschaft,
+> Compliance, Determinismus-Bausteine (Generierung)** gültig — diese Systeme sind raum-agnostisch und werden
+> **portiert** (PORT-1:1/ADAPT). **Combat, Bewegung, Raum und AI werden dagegen NEU in 3D gebaut** (freie
+> Bewegung, Physik-Bomben, volumetrische Blasts, vertikale/zerstörbare Arenen, NavMesh-AI) — der 2D-Grid-/
+> A*-/LevelLayout-/Explosion-Code dient nur als **Konzept-Vorlage**, nicht als 1:1-Port. Maßgebliche
+> Reuse-/Neubau-Gewichtung pro System → **[PARITY.md](PARITY.md)** (Status REBUILD/NEW vs. PORT).
+
 ### 22.1 Port-Checkliste (Priority-1, Sprint 1-2)
 
 - [ ] `Core/DeterministicRandom.cs` (xoshiro256+) → `BomberBlast.Core/Random/DeterministicRandom.cs`
@@ -1860,7 +1898,7 @@ Funnel-Events:
 - [ ] `Core/Combat/SpecialExplosionEffects.cs` → `BomberBlast.Domain/Bombs/Effects/`
 - [ ] `Core/Combat/EnemyPositionIndex.cs` → `BomberBlast.Domain/Combat/`
 - [ ] `Core/Dungeon/DungeonSynergyResolver.cs` → `BomberBlast.Domain/Dungeon/`
-- [ ] `Core/Multiplayer/GameStateSnapshot.cs` (Original-Pfad; FNV-1a State-Hash für Daily-Race-Replay-Verifikation) → `BomberBlast.Domain/Determinism/`; Input-Recording via `ReplayCapture`. *(MP-Wire-Bits PlayerInputSnapshot/InputBuffer entfallen — Single-Player.)*
+- [ ] `Core/Multiplayer/GameStateSnapshot.cs` (FNV-1a) → `BomberBlast.Domain/Determinism/` — **v0.6: State-Hash über Schicht A** (autoritative Occupancy-Sim) für Replay-/Daily-Race-Verifikation, **bit-identisch** übernehmen. **Nicht** im Hash: PhysX/Debris (Schicht B, kosmetisch). `ReplayCapture` zeichnet Inputs auf. *(MP-Wire-Bits PlayerInputSnapshot/InputBuffer entfallen — Single-Player.)*
 
 ### 22.2 Port-Checkliste (Priority-2, Sprint 3-4)
 
@@ -1893,12 +1931,18 @@ Funnel-Events:
 
 ### 22.4 Geschätzte Port-Zeit
 
-> Das Original umfasst ~117 Services / ~86k LOC. Der Pure-Domain-Anteil (keine Avalonia/Android-API)
-> ist 1:1 portierbar; die Engine-/UI-Verkabelung ist Neu-Arbeit in Unity.
+> Das Original umfasst ~117 Services / ~86k LOC. Der raum-agnostische Meta-/Live-Service-Anteil (keine
+> Avalonia/Android-API) ist gut portierbar; **Combat/Bewegung/Raum/AI sind in v0.6 Neu-Arbeit in 3D**
+> (größer als ein Grid-Port).
 
-- Pure-Domain-Port (Combo/Dungeon/Liga/Cards/Economy/Determinismus-Bausteine): **3-4 Wochen** (1 Senior).
-- Vollständige Feature-Parität inkl. Live-Service-Glue + UI: **mehrere Monate** (siehe ROADMAP-Phasen).
+- Meta-/Live-Service-Port (Combo-Basis/Dungeon/Liga/Cards/Economy/Generierungs-RNG): **3-4 Wochen** (1 Senior).
+- **3D-Combat-/Bewegungs-/Arena-/Physik-/Destruktions-Neubau (NEU)** + volumetrische Blasts + NavMesh-AI:
+  **mehrere Monate** — der größte Brocken in v0.6 (Feel-Prototyp zuerst, [VERTICAL_SLICE.md](VERTICAL_SLICE.md)).
+- Vollständige Feature-Breite inkl. Live-Service-Glue + UI: **mehrere Monate** (siehe ROADMAP-Phasen).
 - Mit Tests + Coverage: zusätzlich +50 %.
+- **Determinismus (v0.6, 2-Schichten §13.0):** Die autoritative Sim bleibt deterministisch — die Integration
+  (Gameplay-Random auf `IRngProvider`, Fixed-Step) erfolgt jetzt auf der **Occupancy-Repräsentation** statt am
+  flachen Grid; die **PhysX-Debris-Schicht ist kosmetisch** und ausdrücklich vom State-Hash ausgenommen.
 
 > **Pflicht:** Die vollständige **Parity-Matrix** → [PARITY.md](PARITY.md) (jedes Original-System →
 > Unity-Äquivalent + Status) als lebende Checkliste führen — das Original ist umfangreich; ohne Matrix
@@ -1993,8 +2037,11 @@ public class BattleHUDBinder : MonoBehaviour
 |-------|---------|----------|-------|
 | 2026-05-26 | v0.1 | Initial-ARCHITECTURE.md mit Tech-Stack, DI, Netcode, Anti-Cheat, Performance-Targets | Robert Schneider + Claude |
 | 2026-06-08 | v0.5 | Neuausrichtung: Single-Player, kein Idle, Neo-Grid-Story; Netcode-Kapitel entfernt | Robert Schneider + Claude |
+| 2026-06-14 | **v0.6** | **Voll-3D-Arena-Demolition (GDD [3D_REINVENTION_PLAN.md](3D_REINVENTION_PLAN.md)): Tech-Stack um 3D-Physik (Unity PhysX) + Chunk-/Modul-Destruktion ergänzt. §13 → 2-Schichten-Determinismus: autoritative deterministische Gameplay-Sim auf abstrahierter Occupancy-Repräsentation (Fixed-Step, Fixed-Point, IRngProvider, Replay-Hash BLEIBT) + kosmetische, nicht-autoritative PhysX-Debris-Schicht. Flaches 15×10-Grid als Sim-Kern ersetzt. CI-Gate (§18.4): Replay-Determinismus über Schicht A + Seed-Reproduzierbarkeit. §22 Port-Gewichtung: Meta/Live-Service PORT, Combat/Bewegung/Raum/AI NEU in 3D. Battle-Pass als 2 IAP-Produkte (4,99/19,99 €).** | Robert Schneider + Claude |
 
 ---
 
-> **Status:** Tech-Architektur finalisiert für Phase 0 Setup. Unity-Projekt-Skelett unter `Unity/` angelegt (6000.4.8f1) — Editor-Open, Asmdef-Kompilierung und CI stehen aus.
-> **Nächste Schritte:** Projekt im Editor öffnen und verifizieren, Firebase-Projekt einrichten, Domain-Code-Port starten.
+> **Status:** Tech-Architektur auf v0.6 (Voll-3D-Demolition, 2-Schichten-Determinismus) aktualisiert.
+> Unity-Projekt-Skelett unter `Unity/` angelegt (6000.4.8f1) — Editor-Open, Asmdef-Kompilierung und CI stehen aus.
+> **Nächste Schritte:** Projekt im Editor öffnen und verifizieren, **Feel-Prototyp** (3D-Bewegung + Physik-Bombe
+> + volumetrische Blast-Form + 3D-Kette + zerstörbares Arena-Element), Firebase-Projekt einrichten, Meta-Port starten.

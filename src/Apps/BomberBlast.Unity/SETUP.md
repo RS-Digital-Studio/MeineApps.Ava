@@ -4,7 +4,8 @@
 > CI und Daten-Pipeline — der Unterbau für den [Vertical-Slice](VERTICAL_SLICE.md). Richtung/Design →
 > [PLAN.md](PLAN.md) · [DESIGN.md](DESIGN.md); Tech-Tiefe → [ARCHITECTURE.md](ARCHITECTURE.md);
 > Conventions/Stolperfallen → [CLAUDE.md](CLAUDE.md).
-> **Stand:** v0.5 (2026-06-08) — modernes 3D-Bomberman, aktiv gespielt, kein Idle/AFK.
+> **Stand:** v0.6 (2026-06-14) — Voll-3D-Arena-Demolition-Roguelite (freie Bewegung, zerstörbare Arenen,
+> Physik-Bomben), aktiv gespielt, kein Idle/AFK. Verbindliches GDD → [3D_REINVENTION_PLAN.md](3D_REINVENTION_PLAN.md).
 >
 > **Definition of Done (Phase 0):** Projekt öffnet ohne Fehler · URP aktiv · alle Asmdefs kompilieren
 > (Domain ohne Unity-API) · Boot-Scene lädt über VContainer · 1 EditMode-Test grün · CI läuft auf Push ·
@@ -97,9 +98,17 @@
   **R3-Kern-DLL + Abhängigkeiten** kommen zusätzlich via **NuGetForUnity** (erst NuGetForUnity
   installieren, R3-NuGet-Paket ziehen, dann `com.cysharp.r3`). R3.Unity via OpenUPM allein
   reicht **nicht**.
-- **Burst bewusst weggelassen** — erst bei Bedarf nachrüsten (Fixed-Point-Hot-Paths).
+- **Burst bewusst weggelassen** — erst bei Bedarf nachrüsten (Schicht-A-Fixed-Point-/Occupancy-Hot-Paths).
 - **Entfernt gegenüber dem Template-Default:** UniRx (Entscheidung: R3),
-  `com.unity.textmeshpro` (in `com.unity.ugui` enthalten), AI-Pakete, `com.unity.collab-proxy`.
+  `com.unity.textmeshpro` (in `com.unity.ugui` enthalten), `com.unity.collab-proxy`.
+
+> **v0.6-Paket-Ergänzungen (Voll-3D-Demolition, [GDD](3D_REINVENTION_PLAN.md)):** Beim Editor-Open prüfen/ergänzen —
+> - **`com.unity.ai.navigation`** (NavMesh-Komponenten) — Pflicht für die 3D-Gegner-AI (NavMeshAgent +
+>   Off-Mesh-Links für Rampe/Lift/Fall). In Unity 6 ein **separates Paket** (war im v0.5-Setup als „AI-Pakete"
+>   pauschal entfernt — für v0.6 **wieder aufnehmen**).
+> - **PhysX/3D-Physik** ist über `com.unity.modules.physics` (bereits im Manifest) abgedeckt — die
+>   **kosmetische Schicht B** (Debris/Trümmer). **Keine** zusätzliche Physik-Lib nötig.
+> - Burst/Jobs optional später für Schicht-A-/Destruktions-Hot-Paths.
 
 **Per-Asset-Store/Manuell (nicht via manifest):**
 - **DOTween** (UI-Tweens, Cinematics) — Asset-Store/„DOTween Pro" oder Free; nach Import `Setup`.
@@ -223,7 +232,9 @@ jobs:
         with:
           projectPath: src/Apps/BomberBlast.Unity/Unity
           testMode: EditMode
-          # Determinismus-Replay-Suite läuft als EditMode-Test mit (Replay-Corpus → identischer Hash)
+          # Determinismus-Suite als EditMode-Test (v0.6, 2-Schichten, ARCHITECTURE §18.4):
+          # (1) Replay-Hash über Schicht A (autoritative Occupancy-Sim) + (2) Seed-Reproduzierbarkeit der Generierung.
+          # PhysX/Debris (Schicht B) ist NICHT Teil des Hash.
 ```
 
 - **Secrets:** `UNITY_LICENSE` (Personal/Pro) in GitHub hinterlegen.
@@ -271,7 +282,8 @@ Minimaler Einstieg (Details + Skelett → [VERTICAL_SLICE.md](VERTICAL_SLICE.md)
 - [ ] CI-Workflow grün (1 Dummy-EditMode-Test) (§6)
 - [ ] Seed-JSON importiert, `BalancingConfig.asset` erzeugt (§7)
 - [ ] Boot→Game-Szenenfluss über VContainer, „Boot OK"-Log (§8)
-- [ ] **→ weiter mit [VERTICAL_SLICE.md](VERTICAL_SLICE.md)**
+- [ ] `com.unity.ai.navigation` ergänzt (3D-Gegner-NavMesh, §2)
+- [ ] **→ weiter mit dem Feel-Prototyp [VERTICAL_SLICE.md](VERTICAL_SLICE.md)** (GDD → [3D_REINVENTION_PLAN.md](3D_REINVENTION_PLAN.md))
 
 ---
 
@@ -280,3 +292,4 @@ Minimaler Einstieg (Details + Skelett → [VERTICAL_SLICE.md](VERTICAL_SLICE.md)
 | Datum | Version | Änderung |
 |-------|---------|----------|
 | 2026-06-08 | v0.5 | Initiales Setup-Doc für die v0.5-Richtung (modernes 3D-Bomberman, kein Idle). |
+| 2026-06-14 | **v0.6** | **Auf Voll-3D-Demolition angepasst: `com.unity.ai.navigation` (NavMesh) als Pflicht-Ergänzung; PhysX (Schicht B) via vorhandenes Physics-Modul; CI-Determinismus-Gate auf 2-Schichten (Replay-Hash über Schicht A + Seed-Repro) präzisiert; GDD-Verweis [3D_REINVENTION_PLAN.md](3D_REINVENTION_PLAN.md).** |

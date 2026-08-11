@@ -1,17 +1,25 @@
 # BomberBlast 3D — KI-Asset-Pipeline (3D + Audio + Animation)
 
-> **Status:** Produktions-Plan (Stand 2026-05-30, recherchiert; Richtung v0.5 2026-06-08; Stage-2-Pipeline validiert 2026-06-06: Hunyuan3D-2.1 als Primärpfad)
+> **Status:** Produktions-Plan (Stand 2026-05-30, recherchiert; **Richtung v0.6 2026-06-14** — Voll-3D-Arena-Demolition, GDD [3D_REINVENTION_PLAN.md](3D_REINVENTION_PLAN.md); Stage-2-Pipeline validiert 2026-06-06: Hunyuan3D-2.1 als Primärpfad)
 > **Ziel:** Skalierbarer, kommerziell dokumentierter Workflow für 3D-Assets, Animationen, Texturen und Audio mit KI-Tools — primär lokal (Standalone-Runner auf isolierter 3D-Instanz, Hunyuan3D-2.1 als validiertes Stage-2-Modell), Cloud-Services als Fallback wo Qualität es rechtfertigt. **Reiner KI-Durchlauf — keine Handarbeit als Pipeline-Schritt** (Entscheidung 2026-06-06: „probiere alles, aber wir wollen kein Handarbeit").
 > **Geltungsbereich:** die **5 Helden-Charaktere**, 12 Gegner, 5 Bosse, 14 Bomben-Typen, 12 PowerUps, 10 Sektor-Tile-Sets, Environment, Props, Animationen, Texturen, Game-Audio — alles im **Neon-Arcade-Stil des Originals**, jetzt in 3D.
 > **Nicht im Scope:** UI-Icons (bleiben 2D), redaktionelle Texte, Story-Schreiben, Voice (deferred — Original ist voice-los).
 
-> **WICHTIG — Richtung v0.5 + Subjekte sind KEINE Mechs:** Dies ist ein **modernes 3D-Bomberman** (aktiv
-> gespielt, **kein Idle/AFK**) mit **neuer Story** (Neo-Grid/Overseer/Reborn). Die Charaktere sind die 5
-> bestehenden Helden (Default/SpeedySam/BrickBoris/TwinTina/LuckyLola), die Gegner die klassischen
-> Bomberman-Typen. Die 5 Bosse werden als **Sektor-Wardens neu benannt/eingekleidet** (Granite Warden /
-> Frostwyrm / Magma Revenant / Null Phantom / The Overseer = Archetypen StoneGolem/IceDragon/FireDemon/
-> ShadowMaster/FinalBoss) — **gleicher Mesh-Workflow, neue Optik/Namen**. „Welten" heißen jetzt **Sektoren**.
-> Die spielbaren Charaktere sind die 5 Helden (humanoid, Neon-Arcade) — keine „Mechs".
+> **WICHTIG — Richtung v0.6 + Subjekte sind KEINE Mechs:** Dies ist ein **Voll-3D-Arena-Demolition-Roguelite**
+> (aktiv gespielt, **kein Idle/AFK**, freie Bewegung, **zerstörbare vertikale Arenen**) mit **neuer Story**
+> (Neo-Grid/Overseer/Reborn). Die Charaktere sind die 5 bestehenden Helden (Default/SpeedySam/BrickBoris/
+> TwinTina/LuckyLola), die Gegner die klassischen Bomberman-Typen. Die 5 Bosse werden als **Sektor-Wardens
+> neu benannt/eingekleidet** (Granite Warden / Frostwyrm / Magma Revenant / Null Phantom / The Overseer =
+> Archetypen StoneGolem/IceDragon/FireDemon/ShadowMaster/FinalBoss) — **gleicher Mesh-Workflow, neue
+> Optik/Namen**. „Welten" heißen jetzt **Sektoren**. Die spielbaren Charaktere sind die 5 Helden (humanoid,
+> Neon-Arcade) — keine „Mechs".
+>
+> **NEU in v0.6 — zerstörbare/modulare Umgebungs-Assets (zusätzlicher Asset-Bedarf):** Die volumetrische
+> Zerstörung braucht **modulare, zerbrechbare Arena-Kits** je Sektor — ganze + **vor-frakturierte Module**
+> (Wände/Plattformen/Stützen), **Debris-/Trümmer-Mesh-Sets** (kosmetische Schicht B) und vertikale Bauteile
+> (Rampen/Lifts/Plattformen). Gleicher KI-Mesh-Workflow (Stage 1–4) + Fracture/LOD/Collider als
+> Nachbearbeitungs-Schritt; Debris-Budgets pro Hardware-Tier (§12.1). Diese Umgebungs-Kits sind ein
+> **eigener Asset-Track** zusätzlich zu Helden/Gegnern/Bossen.
 
 > Achtung — **EU-Lizenz-Caveat Hunyuan3D:** Die Hunyuan3D-Lizenz (Tencent) schließt EU/UK/Südkorea kommerziell aus. **Hunyuan3D-2.1 ist dennoch der validierte Primärpfad** für Image-to-3D (Entscheidung 2026-06-06, Rechtsrisiko bewusst akzeptiert — qualitativ klar bestes Ergebnis, per Render belegt). **Vor kommerziellem Shipping erneut prüfen** — Sonderfreigabe einholen oder betroffene Assets via TRELLIS.2/Cloud regenerieren (Asset-Metadata macht sie auffindbar). Details: [§14](#14-eu-compliance--lizenz-recherche-stand-2026-05).
 

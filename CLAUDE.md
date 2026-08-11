@@ -7,7 +7,7 @@ Domänen-Details, Gotchas und Troubleshooting → jeweilige Library-/App-CLAUDE.
 
 > **Unity-Projekte** (eigener Stack, **nicht** von `dotnet build` erfasst, eigene CLAUDE.md):
 > - **ArcaneKingdom** — TCG + RPG, native Unity-Neuentwicklung (Designplan v4).
-> - **BomberBlast.Unity** — modernes 3D-Bomberman auf Basis des produktiven BomberBlast (Unity 6 + URP), klassisch **aktiv gespielt**, mit **neuer Story** (Neo-Grid/Overseer/Reborn). **Kein Idle/AFK**, kein striktes 1:1-Remake; **reiner Single-Player** (kein Multiplayer).
+> - **BomberBlast.Unity** — **volumetrisches 3D-Action-Spiel mit Bomberman-DNA** (v0.6-Neuerfindung) auf Basis des produktiven BomberBlast (Unity 6 + URP): frei begehbare, vertikale, **physisch zerstörbare** Arenen, Physik-Bomben, ebenenübergreifende 3D-Kettenexplosionen, **neue Story** (Neo-Grid/Overseer/Reborn). **Kein Idle/AFK, kein flaches Grid, kein 1:1-Remake; reiner Single-Player** (kein Multiplayer).
 > - **HandwerkerImperium.Unity** — Neuentwicklung parallel zur produktiven Avalonia-Version.
 >
 > Die Avalonia-Versionen von BomberBlast und HandwerkerImperium bleiben produktiv und werden
@@ -199,7 +199,7 @@ F:\Meine_Apps_Ava\
 │       ├── SmartMeasure/                # 3D-Grundstücksvermessung (RTK-GPS, privat)
 │       ├── SunSeeker/                   # Solarpanel-Ausrichtung (Sonnenstand, Bifazial, privat)
 │       ├── ArcaneKingdom/               # TCG + RPG  (Unity 6)
-│       ├── BomberBlast.Unity/           # Treuer 3D-Remake des Originals (Unity 6 + URP)
+│       ├── BomberBlast.Unity/           # Volumetrische 3D-Neuerfindung (Demolition-Action, v0.6) — Unity 6 + URP
 │       └── HandwerkerImperium.Unity/    # Neuentwicklung parallel zur Avalonia-Version (Unity 6)
 │
 ├── tools/                               # .NET-Tools (via dotnet run) + Python-Skripte

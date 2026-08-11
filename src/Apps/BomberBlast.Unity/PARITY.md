@@ -1,17 +1,36 @@
 # BomberBlast 3D — Content-Reuse-Map (Original → Unity)
 
-> Lebende **Content-Reuse-/Port-Checkliste**: welches Original-System wird für das **moderne 3D-Bomberman**
-> (v0.5) wiederverwendet, angepasst, neu gebaut — oder fällt weg. Quelle: produktiver BomberBlast-Code
-> (`src/Apps/BomberBlast/BomberBlast.Shared/`). Status-Legende: **PORT-1:1** | **PORT-ADAPT** | **REBUILD**
-> | **NEW** | **GESTRICHEN**.
-> Stand: 2026-05-30, Richtung v0.5 (2026-06-08). Komplementär zu [PLAN.md](PLAN.md), [DESIGN.md](DESIGN.md), [ARCHITECTURE.md](ARCHITECTURE.md).
+> Lebende **Content-Reuse-/Port-Checkliste**: welches Original-System wird für das **volumetrische
+> 3D-Action-Spiel** (v0.6) wiederverwendet, angepasst, neu gebaut — oder fällt weg. Quelle: produktiver
+> BomberBlast-Code (`src/Apps/BomberBlast/BomberBlast.Shared/`). Status-Legende: **PORT-1:1** | **PORT-ADAPT**
+> | **REBUILD** | **NEW** | **GESTRICHEN**.
+> Stand: 2026-06-14, Richtung v0.6. Komplementär zu [PLAN.md](PLAN.md), [DESIGN.md](DESIGN.md), [ARCHITECTURE.md](ARCHITECTURE.md).
 >
-> **Wichtig (v0.5):** **Kein striktes 1:1-Parität-Mandat** mehr — Inhalte werden **wiederverwendet und
-> modernisiert**. Story-bedingte Umbenennungen: **Welten → Sektoren**, **Bosse → Sektor-Wardens** (Granite
-> Warden/Frostwyrm/Magma Revenant/Null Phantom/The Overseer), **Liga → Grid-Rankings**, **Dungeon →
-> Anomaly-Dives**; neue Story-Strings statt Original-Welt-Story. **Gestrichen/irrelevant:** alles
-> Idle/AFK/Offline — das Spiel hat keinen solchen Loop (das v0.4-Idle-Experiment ist verworfen). Die
-> Tabellen unten bleiben gültig (Mechanik-/Code-Reuse) — nur Anzeige-Namen folgen der neuen Story.
+> ## ⚠️ v0.6-Neugewichtung (lesen vor Nutzung der Tabellen)
+>
+> Die **volumetrische Neuerfindung** (freie 3D-Bewegung, vertikale/zerstörbare Arenen, Physik-Bomben,
+> volumetrische Blasts, ebenenübergreifende Ketten) verschiebt die Reuse-Erwartung. **Grundregel v0.6:**
+>
+> - **HOHER Reuse (PORT-1:1/ADAPT, unverändert):** Meta-Progression, Wirtschaft, Shop, Karten-/Deck-/
+>   Crafting-**Logik**, Achievements, BattlePass, Liga-Formel, Dungeon-**Reward/Map/Buff-Logik**, Live-Service,
+>   Retention, Compliance, Cloud-Save, Audio-Bus, Accessibility-State, Navigation-Parser. **Diese Systeme
+>   sind raum-agnostisch** — die Tabellen unten gelten weiter.
+> - **NEUBAU in 3D (→ REBUILD/NEW, hochgestuft ggü. v0.5):** alles **Räumliche** — `GameGrid` (15×10),
+>   `LevelLayoutGenerator` (12 2D-Layouts), `AStar`/`EnemyAI` (2D-Grid), `GameEngine.*` (Movement/Collision/
+>   Explosion), `SpecialExplosionEffects` (flaches Kreuz → volumetrische Blast-Formen), Input-Bewegung. Der
+>   2D-Code dient als **Konzept-/Werte-Vorlage**, **nicht** als 1:1-Port. **Neu (NEW):** Physik-Bomben,
+>   3D-Arena-Generator + Vertikalität, Chunk-/Modul-Destruktion, volumetrische Blast-Auflösung,
+>   NavMesh-AI, Air-/Drop-/Environmental-Combos + Style-Rang.
+> - **Determinismus (§7) = 2-Schichten-Modell:** **autoritative, deterministische Gameplay-Sim** auf
+>   abstrahierter **Occupancy-Repräsentation** (Fixed-Step, Fixed-Point, `IRngProvider`, **Replay-Hash bleibt**)
+>   **+** kosmetische, **nicht-autoritative PhysX-Debris-Schicht**. Determinismus-Bausteine bleiben PORT-1:1
+>   bit-identisch; nur das **flache 15×10-Grid** wird durch die 3D-Occupancy ersetzt ([GDD §12.3](3D_REINVENTION_PLAN.md), [ARCHITECTURE §13](ARCHITECTURE.md)).
+>
+> **Kein striktes 1:1-Parität-Mandat.** Story-Umbenennungen: **Welten → Sektoren**, **Bosse →
+> Sektor-Wardens** (Granite Warden/Frostwyrm/Magma Revenant/Null Phantom/The Overseer), **Liga →
+> Grid-Rankings**, **Dungeon → Anomaly-Dives**. **Gestrichen/irrelevant:** alles Idle/AFK/Offline **und das
+> flache Grid als Sim-Kern**. Wo eine Zeile unten `PORT-1:1` für räumlichen Code sagt, gilt die v0.6-Regel
+> oben (→ REBUILD/NEW); die ausdrücklich angepassten Schlüssel-Zeilen sind unten markiert.
 
 ## 0a. Naming-Map (kanonisch, v0.5)
 
@@ -41,18 +60,30 @@
 
 ## 0. Zusammenfassung
 
-Grobe Verteilung der ~209 klassifizierten Tabellenzeilen (Services + Core, Models, Graphics, AI/Input/UI):
+Grobe Verteilung der ~209 klassifizierten Tabellenzeilen (Services + Core, Models, Graphics, AI/Input/UI).
+**v0.6-Korrektur:** Die Zahlen unten stammen aus v0.5 (flaches Grid). In v0.6 wandern die **räumlichen**
+Zeilen (Grid/Layout/A*/EnemyAI/Movement/Explosion ≈ 12–18 Systeme) von **PORT-1:1 → REBUILD/NEW** und es
+kommen NEW-Brocken hinzu (Physik-Bomben, 3D-Arena-Generator, Destruktion, volumetrische Blasts, NavMesh-AI,
+Style-System). **Netto: weniger PORT-1:1, deutlich mehr REBUILD/NEW** — die Meta-/Live-Service-Zeilen
+bleiben aber wie ausgewiesen.
 
-| Status | Anzahl (ca.) | Bedeutung |
-|---|---|---|
-| **PORT-1:1** | ~79 | Reiner C#-Domain-Code (Models, Enums, Algorithmen, Determinismus-Bausteine) — direkt kopieren + Namespace |
-| **PORT-ADAPT** | ~73 | Logik portierbar, nur Plattform-Berührung tauschen (Preferences -> PlayerPrefs/Firebase, HttpClient -> Firebase SDK, DateTime -> UTC) |
-| **REBUILD** | ~56 | Unity-API-gebunden (SkiaSharp-Renderer -> URP/3D, Avalonia-Views/VMs -> UI Toolkit/UGUI, Android-Services -> Unity-Pendant) |
-| **NEW** | 1 (+3 im Text) | Existiert im Original nicht — als Tabellenzeile nur die Determinismus-Integration; weitere NEW-Brocken als Aufzählung im Text (Legacy-Save-Import, 3D-Modelle/VFX, Hero-Stat-Anwendung) |
+| Status | Anzahl (v0.5, ca.) | v0.6-Tendenz | Bedeutung |
+|---|---|---|---|
+| **PORT-1:1** | ~79 | **↓ ~60** | Raum-agnostischer C#-Domain-Code (Models, Enums, Algorithmen, Generierungs-RNG) — direkt kopieren + Namespace |
+| **PORT-ADAPT** | ~73 | **~73** | Logik portierbar, nur Plattform-Berührung tauschen (Preferences→PlayerPrefs/Firebase, HttpClient→SDK, DateTime→UTC) |
+| **REBUILD** | ~56 | **↑ ~68** | Unity-API-/raum-gebunden (Renderer→URP/3D, Views/VMs→UI Toolkit/UGUI, **+ Combat/Grid/Movement/AI/Explosion in 3D**) |
+| **NEW** | 1 (+3 im Text) | **↑ deutlich** | Physik-Bomben, 3D-Arena-Generator + Vertikalität, Chunk-Destruktion, volumetrische Blast-Auflösung, NavMesh-AI, Air-/Drop-/Environmental-Combos + Style-Rang, Legacy-Save-Import |
 
 > **Zählregel:** Eine Tabellenzeile = ein System. Zeilen mit Kombi-Status (z. B. `PORT-1:1 (State) / REBUILD (View-Bindung)`) zählen nach ihrem **erstgenannten Primär-Status**.
 
-**Gesamtstrategie:** Zuerst das **Pure-Domain-Fundament** portieren (PORT-1:1: Models, Enums, Determinismus-Bausteine, A*/EnemyAI, Algorithmen) in `BomberBlast.Core`/`.Domain` — diese sind risikoarm, sofort testbar und bilden die Grundlage für alles andere. Dann den **Service-Layer** (PORT-ADAPT: Wirtschaft, Progression, Live-Service) mit getauschtem Persistenz-/Backend-Adapter (PlayerPrefs/Firebase Unity SDK) anbinden — die Balancing-Tabellen, Anti-Cheat-Hybridtimer und Konflikt-Resolution **bitgenau** übernehmen. Erst danach das **Rendering komplett neu** in URP/3D + UI Toolkit (REBUILD) — hier wird Konzept/Verhalten erhalten, Implementierung neu. Die **NEW**-Brocken (Determinismus-Integration, Legacy-Save-Import) sind die teuren Multi-Wochen-Arbeiten und bauen auf dem portierten Fundament auf. Leitprinzip: **Pure-Domain zuerst, Rendering/UI neu, reiner Single-Player (kein Multiplayer)** — und kein Verlust der subtilen Data-Loss-/Anti-Cheat-/Compliance-Patterns.
+**Gesamtstrategie (v0.6):** Zuerst das **raum-agnostische Meta-Fundament** portieren (Models/Enums,
+Generierungs-RNG, Wirtschaft/Progression/Live-Service-Logik) in `BomberBlast.Core`/`.Domain` — risikoarm,
+sofort testbar, Balancing-Tabellen/Anti-Cheat-Hybridtimer/Konflikt-Resolution **bitgenau** übernehmen.
+**Parallel/zentral** den **3D-Combat neu bauen** (Feel-Prototyp: freie Bewegung, Physik-Bomben,
+volumetrische Blasts, eine vertikale Arena, Destruktion) — das ist in v0.6 der **größte und
+risikoreichste** Brocken und entscheidet über das Spiel. Danach **Rendering/UI neu** in URP/3D + UI Toolkit.
+Leitprinzip: **Meta portieren, Combat/Raum neu in 3D, Feel-Prototyp zuerst, reiner Single-Player** — und
+kein Verlust der subtilen Data-Loss-/Anti-Cheat-/Compliance-Patterns.
 
 ## 1. Port-Reihenfolge (empfohlen)
 
@@ -84,7 +115,7 @@ Grobe Verteilung der ~209 klassifizierten Tabellenzeilen (Services + Core, Model
 | `FirstPurchaseService` (`Services/IFirstPurchaseService.cs`) | ×2-Bonus auf ersten echten IAP-Kauf (`gem_pack_small`), `GetBonusMultiplier`/`IsProductEligibleForBonus`/`MarkAsClaimed`, Anti-Reinstall via Cloud-Save-synced Flag | PORT-ADAPT | BomberBlast.Domain (IAP) | Trivial-Logik, nur Preferences-Bool. Billing extern (Unity IAP). Cloud-Sync-Key muss in neuen Save-Layer. |
 | `VipSubscriptionService` (`Services/IVipSubscriptionService.cs`) | VIP-Abo (9,99€/Mo): `IsActive` aus `ExpiresAtUtc`, +25% Coin-Multiplier, 100 Daily-Gems (UTC-Claim), Continue-Cooldown 60->30s, `Activate`/`Deactivate`/`MarkDailyGemsClaimed` | PORT-ADAPT | BomberBlast.Domain (IAP/Subscription) | Reine Zeit-/State-Logik, 2 Pref-Keys. Subscription-Validation extern nachzureichen -> Play Subscriptions API + Server-Validation (NEW-Anteil). |
 | `LoadoutService` (`Services/LoadoutService.cs`) | Pre-Run-Boosts pro Story-Level (max 2), 5 Boost-Typen mit Coin/Gem-Kosten, `Purchase` mit Pre-Check + atomarer Buchung + Refund, `GetSavedLoadout`/`SaveLoadout`/`ClearLoadout` | PORT-ADAPT | BomberBlast.Domain (Economy/Loadout) | Reine Logik + Preferences (CamelCase). Kosten-Tabellen + Refund-Atomarität load-bearing. |
-| `BomberBlastIapSkus` (`Models/BomberBlastIapSkus.cs`) | Zentrale SKU-Konstanten (`remove_ads`, 4 Gem-Pakete, `battle_pass_plus_season`, `vip_subscription_monthly`, `starter_pack`) + `All[]`-Audit-Array | PORT-1:1 | BomberBlast.Core | Reine Konstanten. SKU-IDs müssen identisch mit Play-Console/Unity-IAP-Produkt-IDs bleiben (Mismatch -> „Item nicht verfügbar"). |
+| `BomberBlastIapSkus` (`Models/BomberBlastIapSkus.cs`) | Zentrale SKU-Konstanten (`remove_ads`, 4 Gem-Pakete, `battle_pass_plus_season`, `vip_subscription_monthly`, `starter_pack`) + `All[]`-Audit-Array | PORT-ADAPT | BomberBlast.Core | Reine Konstanten. **NEW v0.6:** zusätzliche SKU **`battle_pass_premium_season`** (4,99 € Premium-Track) ergänzen — neben `battle_pass_plus_season` (19,99 € Plus). Beide ins `All[]`-Audit-Array. SKU-IDs müssen identisch mit Play-Console/Unity-IAP-Produkt-IDs bleiben (Mismatch -> „Item nicht verfügbar"). |
 | `IPurchaseService` (extern, `MeineApps.Core.Premium.Ava/Android`, via `App.PurchaseServiceFactory`) | Google Play Billing v8 — tatsächlicher Kauf-Flow für alle SKUs (consume/acknowledge), aufgerufen von GemShop/Settings-VMs | REBUILD | BomberBlast.LiveOps (Platform-IAP) | Android-Billing-gebunden -> Unity IAP/Play Billing neu. Gem-Pack-Gutschrift (`GemService.AddGems`) + First-Purchase/VIP-Trigger hängen daran (StarterPack ist im Original Coin-Kauf, kein Billing). Konzept (SKUs, Multiplier-Hooks) bleibt. |
 
 ## 3. Progression & Modi
@@ -99,7 +130,7 @@ Grobe Verteilung der ~209 klassifizierten Tabellenzeilen (Services + Core, Model
 | `DungeonUpgradeService` (`DungeonUpgradeService.cs`) | 8 permanente Dungeon-Upgrades + DungeonCoin-Währung, `TryBuyUpgrade` (Cost-Kurve aus `DungeonUpgradeCatalog`), Dungeon-Master-Pass (2× DC-Boost, IAP), `BalanceChanged`-Event | PORT-ADAPT | BomberBlast.Domain | Coin-Sink — Kauf-/Cost-Logik PORT-1:1. Persistenz tauschen. `HasDungeonMasterPass`-IAP-Flag bindet später an Unity-Billing. |
 | `GameTrackingService` (`GameTrackingService.cs`, 367 LOC) | **Zentraler Engine<->Meta-Dispatcher:** fan-out aller Gameplay-Events (Bombe/Combo/Kill/Boss/Level/Dungeon/Survival) an Achievement/Weekly/Daily/Collection/League/BattlePass/Card/Coin/Gem-Service. Survival-Meilensteine (HashSet-Save VOR Reward), Boss-Gem-Drops, Master-Clear + Champion-Skin-Grant, First-3-Stars-Gems | PORT-ADAPT | BomberBlast.Domain | **Kritischster Verdrahtungs-Knoten.** Reine Dispatch-/Reward-Logik (PORT-1:1), aber hängt an 12 Services per DI -> in VContainer neu verdrahten. `Random` für Gem-Drops -> `IRngProvider`. Verlust = Achievements/Missionen/Liga/BattlePass feuern nicht mehr. |
 | `GameStyleService` (`GameStyleService.cs`) | Visual-Style-Persistenz (Classic/Neon), `StyleChanged`-Event | PORT-ADAPT | BomberBlast.Domain | Trivial. Im 3D-Remake fraglich, ob Classic/Neon-Dualität bleibt — ggf. URP-Material/Render-Feature-Toggle (dann REBUILD-Anteil im Renderer). Service-State selbst PORT-ADAPT. |
-| `CollectionService` (`CollectionService.cs`) | Sammlungs-Album (Enemies 12 / Bosses 5 / PowerUps 12 / BombCards 14 / Cosmetics dynamisch), Encounter/Defeat-Tracking, Fortschritts-%, Meilensteine mit Coin/Gem-Rewards, Dirty-Flag + 5s-Debounce, `FlushIfDirty` | PORT-ADAPT | BomberBlast.Domain | Tracking-/Fortschritts-Logik PORT-1:1. Persistenz + Debounce-Timer tauschen. ACHTUNG: `GetTotalCount(BombCards)=14` weicht von den 13 `CardCatalog`-Einträgen ab (Original-Inkonsistenz — beim Port klären). `GetEnemyIcon`/`GetBossIcon` liefern `Material.Icons`-Namen -> Unity Sprite-Atlas/Icon-Lookup (REBUILD-Anteil im UI-Layer). |
+| `CollectionService` (`CollectionService.cs`) | Sammlungs-Album (Enemies 12 / Bosses 5 / PowerUps 12 / BombCards 14 / Cosmetics dynamisch), Encounter/Defeat-Tracking, Fortschritts-%, Meilensteine mit Coin/Gem-Rewards, Dirty-Flag + 5s-Debounce, `FlushIfDirty` | PORT-ADAPT | BomberBlast.Domain | Tracking-/Fortschritts-Logik PORT-1:1. Persistenz + Debounce-Timer tauschen. **FIX v0.6:** `GetTotalCount(BombCards)` beim Port von **14 → 13** korrigieren (zählte die Standard-Bombe fälschlich mit; Quelle der Wahrheit = die **13** `CardCatalog`-Sammelkarten, Standard ist Default-Bombe, nicht sammelbar). `GetEnemyIcon`/`GetBossIcon` liefern `Material.Icons`-Namen -> Unity Sprite-Atlas/Icon-Lookup (REBUILD-Anteil im UI-Layer). |
 | `HeroService` (`HeroService.cs`) | 5 spielbare Heroes (`HeroDefinitions.All`), `ActiveHero`, `SetActiveHero`/`Unlock`/`IsUnlocked`, Default immer unlocked, `ActiveHeroChanged`-Event | PORT-ADAPT | BomberBlast.Domain | Unlock-/Aktiv-Logik PORT-1:1. Preferences-Keys tauschen. Engine-Integration (Stat-Boni beim Spawn) im Original NOCH NICHT verdrahtet -> tatsächliche Hero-Stat-Anwendung in Unity ist **NEW** (3D-Player-Spawn). |
 
 ## 4. Live-Service & Retention
@@ -126,7 +157,7 @@ Grobe Verteilung der ~209 klassifizierten Tabellenzeilen (Services + Core, Model
 | `WorldStoryService.cs` (`IWorldStoryService`) | Sektor-Intro (10) / Outro (9) Cutscene-Daten, Stinger-Keys, one-shot Pref-Flags pro Sektor | PORT-ADAPT | BomberBlast.Domain (Story) | Cutscene-Definitionen + Seen-Flags rein. Preferences tauschen. Cutscene-Darstellung (3D) selbst ist NEW/REBUILD im Game-Layer; Service liefert nur Daten. |
 | `TutorialService.cs` (`ITutorialService`) | 6-Schritt-Tutorial in 3 geschützten Phasen (T1/T2/T3) mit Resume, Legacy-Migration, Soft-Onboarding-Counter (2 leichtere Level), `PhaseChanged`/`StepCompleted`/`TutorialCompleted`-Events | PORT-ADAPT | BomberBlast.Domain (Onboarding) | Phasen-State-Machine + Migration + Soft-Onboarding rein. Preferences tauschen. Highlight-Overlays/Tutorial-UI sind **REBUILD** (UI Toolkit); Service bleibt Logik. **Kritisch** (FTUE-Funnel). |
 | `CustomizationService.cs` (`ICustomizationService`) | 98 Cosmetics (32 Trails + 33 Frames + 33 Victories); zusätzlich separat Player-/Bomb-/Explosion-/Enemy-Skins, Owned-Sets, Coin-/Gem-/Premium-/Unlock-Kauf, Grant-by-Milestone | PORT-ADAPT | BomberBlast.Domain (Cosmetics) | Owned-Tracking + Kauf-/Grant-Logik rein. Tauschen: Preferences -> PlayerPrefs/Firebase; `IPurchaseService.IsPremium` -> Unity IAP (REBUILD-Layer). Skin-Definitionen (`PlayerSkins.All`…) -> PORT-1:1. Visuelle 3D-Umsetzung der Cosmetics ist NEW. |
-| `IBattlePassPlusService` / `BattlePassPlusService` (`IBattlePassPlusService.cs`) | Premium-Plus-Tier oberhalb des Standard-BattlePass (Brawl-Pass-Plus-Pattern, IAP `battle_pass_plus_season` 19,99€): `HasPlus`, +25 Tier-Skip beim Kauf, +50% XP-Multiplier, 10 Bonus-Gems/Tier-Up, `ActivatePlus`/`ResetForNewSeason` (Saison-Reset) | PORT-ADAPT | BomberBlast.Domain (LiveOps) | Reine State-/Saison-Logik, 2 Pref-Keys -> 1:1; Persistenz tauschen. Kauf (`battle_pass_plus_season`) extern via Unity IAP/Billing; Service hält nur den Plus-Zustand. |
+| `IBattlePassPlusService` / `BattlePassPlusService` (`IBattlePassPlusService.cs`) | **Plus-Paket** oberhalb des Standard-BattlePass (Brawl-Pass-Plus-Pattern, IAP `battle_pass_plus_season` **19,99 €**): `HasPlus`, +25 Tier-Skip beim Kauf, +50% XP-Multiplier, 10 Bonus-Gems/Tier-Up, `ActivatePlus`/`ResetForNewSeason` | PORT-ADAPT | BomberBlast.Domain (LiveOps) | Reine State-/Saison-Logik, 2 Pref-Keys -> 1:1; Persistenz tauschen. **Entscheidung v0.6 — zwei getrennte Produkte:** (1) **Premium-Track** `battle_pass_premium_season` **4,99 €** schaltet nur den Premium-Belohnungs-Track frei (Flag im `BattlePassService`); (2) dieses **Plus-Paket** `battle_pass_plus_season` **19,99 €** gibt Premium-Track **+** Skip/XP/Gems. Plus impliziert Premium (Premium-Flag mitsetzen). Beide Käufe extern via Unity IAP/Billing; Service hält nur Zustand. |
 | `IDailyAchievementsService` / `DailyAchievementsService` (`IDailyAchievementsService.cs`) | Tägliche Mini-Ziele: 3 deterministisch aus 5er-Pool (Tages-ID-Seed + Fisher-Yates), 200 Coins/Item, lokale Mitternacht-Reset, `TrackProgress`/`TryClaim`, `AchievementCompleted`-Event | PORT-ADAPT | BomberBlast.Domain (Retention) | Pool-/Seed-/Claim-Logik rein -> 1:1; nur Preferences-JSON tauschen. ACHTUNG: Original nutzt `DateTime.Now.Date` für die Tageswende ohne UTC-Klärung — beim Port UTC-basierte Persistenz + lokale Tageswende wie `DailyRewardService` umsetzen (`DateTime.Now` für Persistenz ist Workspace-Anti-Pattern). `ICoinService`-Reward via DI. D1-Hook (täglicher Mini-Ziel-Funnel). |
 | `DeckTelemetryService` (`DeckTelemetryService.cs`, `IDeckTelemetryService`) | Deck-Nutzungs-Telemetrie (Used/Plays/Wins pro `BombType`), 1s-Save-Debounce, Cache-Invalidierung bei `ICloudSaveService.CloudStateLoaded`, optionaler Firebase-Upload (`analytics/deck/{uid}`) — **Consent-gated über `IPrivacyCenter`** | PORT-ADAPT | BomberBlast.Domain (Balance-Telemetrie) | Counter-/Debounce-/Consent-Logik rein -> 1:1. Tauschen: Preferences -> PlayerPrefs, Firebase-Upload -> Firebase-Unity-Adapter. `IPrivacyCenter`-Consent-Gate vor jedem Schreibvorgang erhalten. Dispose flusht pending Save. |
 | `ID0ModalGate` / `D0ModalGate` (`ID0ModalGate.cs`) | D0-Onboarding-Modal-Priorisierung: am ersten Start nur EIN Modal pro Session (Reihenfolge WhatsNew > DailyReward > FeatureUnlock > Discovery), ab D1 transparent; `TryClaimModalSlot`/`MarkD0Complete` | PORT-ADAPT | BomberBlast.Domain (Onboarding) | Reine Gate-/Prioritäts-Logik + 1 Pref-Flag -> 1:1; Persistenz tauschen. Verhindert Neuling-Überforderung beim Erststart (FTUE). Im Unity-Modal-Stack vor den Modal-Triggern abfragen. |
@@ -170,8 +201,8 @@ Grobe Verteilung der ~209 klassifizierten Tabellenzeilen (Services + Core, Model
 | `Modes/IGameMode.cs` | Plugin-Interface (`ModeTag`, `Initialize/UpdateLogic/OnLevelComplete/OnGameOver/Cleanup` + `GameModeContext`) | PORT-1:1 | BomberBlast.Domain | Reines Interface, kein Plattform-API. |
 | `Modes/GameModes.cs` (8 Modi + `GameModeBase`: Story/Master/DailyChallenge/QuickPlay/Survival/Dungeon/BossRush/DailyRace) | Mode-spezifische Regeln/State (z.B. DungeonMode 13 State-Felder) | PORT-1:1 | BomberBlast.Domain | 219 LOC, reines C#. Property-Alias-Pattern aus GameEngine beim Engine-Rebuild verdrahten. |
 | `Modes/SurvivalSpawner.cs` | Static, zustandslos: Wellen-Spawn-Logik, schreibt in `ctx.Enemies` + emittiert Partikel | PORT-ADAPT | BomberBlast.Domain | Spawn-Logik rein; `SKColor` -> engine-freier Farbtyp (uint-RGBA-Hex), `ParticleSystem.Emit` -> VFX-Callback; Mapping auf `UnityEngine.Color` erst im Game-Adapter. SurvivalMode hält State. |
-| `Combat/ComboSystem.cs` | Instanz-Klasse: Kill-Fenster (2s), Score-Bonus-Tabelle, Slow-Mo-/Window-Verlängerungs-Trigger | PORT-1:1 | BomberBlast.Domain | Reine deltaTime-Zustandsmaschine. Coin-/Score-Balancing kritisch — bitgenau übernehmen. |
-| `Combat/SpecialExplosionEffects.cs` | Static, 13 `Handle*`-Methoden für 14 Bomben-Typen, `ExplosionEffectsContext` mit Mutations-Callbacks | PORT-ADAPT | BomberBlast.Domain (Effekt-Regeln) + BomberBlast.Game (VFX) | Welche Bombe was tut (Frost/Lava/Lightning/Gravity/Poison/TimeWarp/…) reine Logik; `SKColor`+`ParticleSystem`+`FloatingText` -> Callback-Adapter. Verlangsamungs-Stacking-Multiplikatoren exakt mitnehmen. |
+| `Combat/ComboSystem.cs` | Instanz-Klasse: Kill-Fenster (2s), Score-Bonus-Tabelle, Slow-Mo-/Window-Verlängerungs-Trigger | PORT-ADAPT + NEW | BomberBlast.Domain | Fenster-/Bonus-Basis übernehmen (Werte als Anker). **NEW v0.6:** erweitern um **Air-/Drop-/Environmental-Kills + Cross-Level-Ketten** und **Style-Rang** (DESIGN §10). |
+| `Combat/SpecialExplosionEffects.cs` | Static, 13 `Handle*`-Methoden für 14 Bomben-Typen, `ExplosionEffectsContext` mit Mutations-Callbacks | REBUILD | BomberBlast.Domain (Effekt-Regeln) + BomberBlast.Game (VFX) | **v0.6:** Effekt-Regeln (Frost/Lava/Lightning/Gravity/Poison/TimeWarp/…) als Anker, aber **Auflösung neu in 3D**: flaches Kreuz → **volumetrische Blast-Formen** (Sphere/Pillar/Cone/Cluster/Shockwave/Implosion, DESIGN §4.4), 3D-Radius-Ketten, Knockback in Void/Hazard. Verlangsamungs-Stacking-Multiplikatoren mitnehmen. |
 | `Combat/EnemyPositionIndex.cs` | Singleton (DI): O(1)-Spatial-Lookup via Dirty-Flag-Rebuild | PORT-1:1 | BomberBlast.Domain (via VContainer) | Nur `Models.Entities`-Abhängigkeit. Performance-Index direkt portierbar. |
 | `LevelGeneration/ILevelGenerator.cs` | Interface: `PlacePowerUps/PlaceExit/SpawnEnemies/SpawnBossAtPosition` | PORT-1:1 | BomberBlast.Domain | Trivial. |
 | `LevelGeneration/LevelGenerator.cs` | DI-Singleton, gepoolte interne Listen (keine Heap-Allok pro Level) | PORT-1:1 | BomberBlast.Domain (via VContainer) | Nur Models + Localization (Anzeigenamen) — Localization auf Unity-Pendant zeigen. RNG auf `IRngProvider` umstellen (siehe Determinismus). |
@@ -191,19 +222,19 @@ Grobe Verteilung der ~209 klassifizierten Tabellenzeilen (Services + Core, Model
 | `DeterministicRandom.cs` | xoshiro256+ (Public Domain), SplitMix64-Seed, `GetState/SetState` für Replay | PORT-1:1 | BomberBlast.Core | Plattformunabhängig deterministisch (x64/ARM64-bitgleich). **Fundament für Replay/Anti-Cheat** — unverändert kopieren. |
 | `IRngProvider.cs` (`DeterministicRngProvider`/`SystemRngProvider`) | Interface für deterministischen RNG (Sim) bzw. Visual-RNG | PORT-1:1 | BomberBlast.Core (via VContainer) | Trivial. |
 | `ReplayCapture.cs` | 1-Byte/Tick Input-Stream, Schema-V1, 108k-Tick-Cap, RLE | PORT-1:1 | BomberBlast.Core | `Serialize/Deserialize` rein. **Don't-lose**: definiert das Replay-Wire-Format. |
-| `FixedTimestepRunner.cs` | 60-Hz-Akkumulator (opt-in via Flag im Engine-Update) | PORT-1:1 | BomberBlast.Core | **Verbindlicher Sim-Treiber (Entscheidung):** der `FixedTimestepRunner` treibt die Sim mit 60 Hz (Akkumulator in Unity-`Update`, Clamp 5 Steps) — NICHT Unity-`FixedUpdate`. Sim-Kern läuft Fixed-Point (Integer, 1/256-Zellen-Einheiten) gemäß ARCHITECTURE.md §13. Die Integration (Sim-Tick vom Render-Pass trennen) bleibt **NEW**. |
-| `Core/Multiplayer/GameStateSnapshot.cs` (namespace `BomberBlast.Core.Multiplayer`) | struct: Spieler-State + RNG-State + FNV-1a-Hash, `IsIdenticalTo` | PORT-1:1 | BomberBlast.Core | **Don't-lose**: Daily-Race-Replay-Hash (FNV-1a) bitgenau übernehmen. |
+| `FixedTimestepRunner.cs` | 60-Hz-Akkumulator (opt-in via Flag im Engine-Update) | PORT-1:1 | BomberBlast.Core | **Treiber der autoritativen Schicht A** (60 Hz, Akkumulator in `Update`, Clamp 5 Steps) — NICHT Unity-`FixedUpdate`. **v0.6:** Schicht A rechnet weiterhin **Fixed-Point** auf der **Occupancy-Repräsentation** (`SUBUNIT`); die PhysX-Debris-Schicht B läuft separat in float (kosmetisch). ARCHITECTURE §13. |
+| `Core/Multiplayer/GameStateSnapshot.cs` (namespace `BomberBlast.Core.Multiplayer`) | struct: Spieler-State + RNG-State + FNV-1a-Hash, `IsIdenticalTo` | PORT-1:1 | BomberBlast.Core | **v0.6:** State-Hash **über Schicht A** (autoritative Occupancy-Sim) — Replay-/Daily-Race-Verifikation **bleibt**, **bit-identisch** übernehmen. **Nicht** im Hash: PhysX/Debris (Schicht B). ARCHITECTURE §13/§18.4. |
 | `Core/Multiplayer/InputBuffer.cs` + `PlayerInputSnapshot.cs` | Ring-Buffer (120 Ticks = 2s @ 60 Hz) + 2-Byte-Per-Tick-Input-Wire-Format (Slot+Direction+Bomb+Detonate+ToggleSpecial) | PORT-1:1 | BomberBlast.Core | Reine Datenstrukturen, Replay-Fundament — zusammen mit `ReplayCapture` portieren (Replay-Live-Capture-Pfad). |
 | `Core/Multiplayer/MultiplayerMode.cs` | `MultiplayerMode`-Enum (Single/LocalCoop/LocalVersus/AsyncGhost/RealtimeServer) + `PlayerSlot` + Spawn-Positionen | GESTRICHEN | — | Entfällt — Single-Player (kein Echtzeit-MP, kein Lokal-Co-Op in v0.5; siehe CLAUDE.md §3). |
 | `Services/IMultiplayerSessionService.cs` | Multiplayer-Session-Contract (`MultiplayerMode`, `IsCoopEnabled`/`IsVersusEnabled`, Foundation) | GESTRICHEN | — | Entfällt — Single-Player. |
-| **Determinismus-INTEGRATION** (50+ `Random`-Calls in LevelGenerator/EnemyAI/Engine auf `IRngProvider`, Sim/Render-Trennung) | Existiert im Original nur als Foundation, nicht verkabelt | NEW | BomberBlast.Domain + BomberBlast.Game | Hoch (Multi-Wochen). Alle Engine-internen `Random`-Calls auf injizierten RNG; Sim-Tick deterministisch von Unity-Render entkoppeln. Voraussetzung für Replay/Daily-Race. |
+| **Determinismus-INTEGRATION (Schicht A)** — alle Gameplay-`Random` auf `IRngProvider`, **autoritative Occupancy-Sim** (Bomben/Blast/Ketten/Belegung/Schaden/AI-Entscheidung/Score) deterministisch + Fixed-Step; **+** Generierungs-Random (Arena/Spawns/Drops/Dive-Map/Daily) | Existiert im Original nur als Foundation, nicht verkabelt | NEW | BomberBlast.Domain + BomberBlast.Game | **v0.6 (2-Schichten):** die autoritative Sim **bleibt deterministisch** (Replay-Hash über Schicht A), neu auf **3D-Occupancy** statt flachem Grid; **PhysX-Debris ist Schicht B (kosmetisch, nicht im Hash)**. Strikte Trennung A⟂B ist der kritische Teil. Hoch. Voraussetzung für Replay-/Daily-Race-Verifikation + Seed-Arena. |
 
 ## 8. AI & Input
 
 | Original-System (Datei) | Was es tut | Status | Unity-Ziel (asmdef/Modul) | Notiz / Aufwand |
 |---|---|---|---|---|
-| `AI/PathFinding/AStar.cs` | A*-Pathfinding (object-pooled PriorityQueue/HashSet/Dictionary) + BFS-Safe-Cell-Finder (`FindSafeCell`), nur `GameGrid`/`CellType` | PORT-1:1 | BomberBlast.Core/.Domain (`AI/PathFinding`) | Reiner Algorithmus, keine Unity-/Avalonia-/Skia-API. Pooling-Pattern (kein `new` im Hot-Path) zwingend mit — auf Mono/IL2CPP genauso GC-kritisch. |
-| `AI/EnemyAI.cs` | Verhaltensbasierte KI: Danger-Zone-Vorberechnung (Ketten, max 3 Iter.), 3 Intelligenz-Stufen (Low/Normal/High mit Chase-Hysterese), Evade, Cached-Path-Follow, Pin-Down-Escape, dynamisches A*-Budget/Frame (5–12) | PORT-1:1 | BomberBlast.Core/.Domain (`AI`) | Komplett platform-frei. Tick vom Unity-GameLoop getrieben (statt DispatcherTimer). Random bei Determinismus-Sprint auf `IRngProvider`. Mittel (viel verhaltenstragende Logik). |
+| `AI/PathFinding/AStar.cs` | A*-Pathfinding (object-pooled) + BFS-Safe-Cell-Finder, nur `GameGrid`/`CellType` | REBUILD | BomberBlast.Game/.Domain (`AI`) | **v0.6:** 2D-Grid-A* passt nicht zur volumetrischen Arena → **NavMesh-/3D-Pfadsuche neu** (Unity NavMesh + Off-Mesh-Links für Rampen/Lifts/Fall). Das **Danger-/Safe-Cell-Konzept** (Bomben-Gefahrzonen meiden) als 3D-Gefahrvolumen retten. |
+| `AI/EnemyAI.cs` | Verhaltensbasierte KI: Danger-Zone-Vorberechnung (Ketten), 3 Intelligenz-Stufen (Chase-Hysterese), Evade, Pin-Down-Escape | REBUILD (Verhalten REUSE) | BomberBlast.Game/.Domain (`AI`) | **v0.6:** **Verhaltens-Intent** (Stufen, Evade, Chase-Hysterese, Bomben-Gefahr meiden) als Design-Anker behalten, aber **Bewegung/Pfad neu auf NavMesh + 3D-Gefahrvolumen + Vertikalität** (Fall/Ebene). Random auf Generierungs-`IRngProvider` wo nötig. Hoch. |
 | Boss-AI (`GameEngine.Level.cs` -> `UpdateBossAI`) | Produktive Boss-KI: Duo-Boss-Ausweichen, Slowdown-Cells, Summoner, Multi-Cell-`OccupiesCell()`, Enrage halbiert Decision-Timer (kein A*) | PORT-ADAPT | BomberBlast.Domain (`Game/Boss`) | Logik portierbar, tief in der God-Class verwoben -> bei Engine-Migration mit-extrahieren. Lebt NICHT im AI-Ordner (alte AI-interne Boss-AI war toter Code, entfernt). |
 | `Input/IInputHandler.cs` | Handler-Interface: `MovementDirection`/`BombPressed`/`DetonatePressed` + Touch-/Update-/`Render(SKCanvas)`-Hooks | REBUILD | BomberBlast.Game (`Input`) | `Render(SKCanvas)` Skia-gebunden -> in Unity ersatzlos. Interface auf reine Intent-Abstraktion eindampfen; Touch-Events aus Unity Input System. |
 | `Input/InputManager.cs` | Aktiven Handler halten, Auto-Switch Touch/Keyboard/Gamepad, Settings aus `IPreferencesService`, `IDisposable`, **Bomb-Input-Buffer (Coyote-Time, 6 Frames)**, Konami-Hookup, Gamepad-/Analog-/Key-Routing | REBUILD | BomberBlast.Game (`Input`), Persistenz via BomberBlast.Core-Abstraktion | Avalonia.Input + SkiaSharp + Preferences -> REBUILD über **Unity Input System** (Action-Maps + Device-Auto-Switch nativ). **Bomb-Input-Buffer-Logik (Coyote-Time) als reine Tick-Logik PORT-1:1 retten** — Spielgefühl-relevant. |
@@ -247,11 +278,11 @@ Grobe Verteilung der ~209 klassifizierten Tabellenzeilen (Services + Core, Model
 | `Entities/Direction.cs` | Enum Up/Down/Left/Right/None | PORT-1:1 | BomberBlast.Core (Models/Entities) | Enum. |
 | `Entities/BossModifier.cs` | Enum 8 Modifier + `BossModifierExtensions.RollForWorld(world, rng)` | PORT-1:1 | BomberBlast.Core (Models/Entities) | Pure deterministische Roll-Logik (rng injiziert). |
 | `Entities/CollisionHelper.cs` | Statische Grid-Kollisionsberechnungen | PORT-1:1 | BomberBlast.Core (Models/Entities) | Pure Math, keine Unity-Physics. Direkt kopieren. |
-| `Grid/GameGrid.cs` | 15x10-Grid, Cell-Array, Accessor-Methoden | PORT-1:1 | BomberBlast.Core (Models/Grid) | POCO + Index-Logik. |
+| `Grid/GameGrid.cs` | 15x10-Grid, Cell-Array, Accessor-Methoden | REBUILD/NEW | BomberBlast.Domain (Arena) | **v0.6:** flaches 15×10-Grid entfällt als Sim-Kern → **3D-Arena-Repräsentation** (NavMesh + Collider + zerstörbare Chunks/Module, mehrere Ebenen). Optional ein **grobes Voxel-/Zell-Raster** nur als Hilfsstruktur für Gefahr-/Belegungs-Queries, nicht für Bewegung. |
 | `Grid/Cell.cs` | CellType, `IsDestructible`, Entity-Referenz | PORT-1:1 | BomberBlast.Core (Models/Grid) | POCO. |
 | `Grid/CellType.cs` | Enum mit 9 Werten: Empty/Wall/Block/Exit + Ice/Conveyor/Teleporter/LavaCrack/PlatformGap (5 Sektor-Mechanik-Zellen für Sektor 2/3/4/5/9) | PORT-1:1 | BomberBlast.Core (Models/Grid) | Enum. „Indestructible"/„Destructible" sind nur Doc-Kommentare — die Member heißen `Wall`/`Block`. Sektor-Mechanik-Zellen (Eis/Förderband/Teleporter/Lava/Plattform-Lücke) 1:1 mitnehmen. |
 | `Levels/Level.cs` | LevelNumber, WorldIndex, `LevelLayout`-Enum, aktiver Mutator | PORT-1:1 | BomberBlast.Core (Models/Levels) | POCO + Enum. |
-| `Levels/LevelLayoutGenerator.cs` | **Static, kein DI.** 12 Layout-Typen, Pool 8/Sektor, `GenerateDailyChallengeLevel(seed)`, `GetMutatorDisplayName` | PORT-1:1 | BomberBlast.Core (Models/Levels) | Reine prozedurale Logik mit Seed. Original-RNG in `GenerateDailyChallengeLevel` = seeded `System.Random` (`new Random(seed)`), NICHT xoshiro. Der Unity-Port stellt auf `IRngProvider`/xoshiro um — getrennte Leaderboards (eigenes Firebase-Projekt `bomberblast-arena`), daher nur Unity-interne Reproduzierbarkeit nötig (gleicher Seed = gleiches Level auf allen Geräten), keine Bit-Identität mit dem Original. |
+| `Levels/LevelLayoutGenerator.cs` | **Static, kein DI.** 12 Layout-Typen, Pool 8/Sektor, `GenerateDailyChallengeLevel(seed)` | REBUILD/NEW | BomberBlast.Domain (Arena-Generator) | **v0.6:** 2D-Layout-Generator → **3D-Arena-Generator** (vertikale Ebenen/Rampen/Lifts/Void, zerstörbare Module). Die 12 Layout-Namen als **Archetyp-Vorlage** (DESIGN §3.3). **Seed-deterministisch** über `IRngProvider`/xoshiro: gleicher Seed = gleiche Arena auf allen Geräten (Daily-Challenge/Daily-Race) — keine Bit-Identität mit dem 2D-Original nötig. |
 | `Dungeon/DungeonRunState.cs` | Aktiver Run: Floor, HP, Buffs, Modifikatoren | PORT-1:1 | BomberBlast.Core (Models/Dungeon) | POCO, keine eigene Versionierung (Migration extern). |
 | `Dungeon/DungeonBuff.cs` | 16 Buffs (Rarity, Effekt) | PORT-1:1 | BomberBlast.Core (Models/Dungeon) | POCO + Definitionsliste. |
 | `Dungeon/DungeonMapNode.cs` | Node-Map-Knoten (10x3): RoomType, gewählter Pfad | PORT-1:1 | BomberBlast.Core (Models/Dungeon) | POCO. |
@@ -360,9 +391,16 @@ Grobe Verteilung der ~209 klassifizierten Tabellenzeilen (Services + Core, Model
 - **CloudSaveSchemaMigrator (V1->V2->V3) + CloudSaveData.ChooseBest()** — Migrationskette schützt Bestandsspieler vor Datenverlust beim Schema-Wechsel (muss VOR `ApplyCloudData` laufen); `ChooseBest`-Vergleichsreihenfolge (TotalStars -> Wealth -> Cards -> Keys.Count -> Timestamp -> Cloud-Default) verhindert, dass ein leerer Erstlogin den Cloud-Stand überschreibt.
 - **FirebaseService (Backbone)** — trägt Liga (Grid-Rankings), Daily-Race, CloudSave. Bearer-Header (kein Token-URL-Leak), 401-Retry mit frischem StringContent, `ServerValue.TIMESTAMP`, IsOnline-Semantik müssen erhalten bleiben (Rate-Limit-Schutz + Offline-Verhalten der async-Features).
 
-**Determinismus / Spielgefühl (bitgenau):**
-- **DeterministicRandom + IRngProvider + ReplayCapture + GameStateSnapshot (FNV-1a-Hash)** — gesamtes Determinismus-/Anti-Cheat-Fundament. Ein verlorenes Bit (Seed-Expansion, xoshiro-Schrittfolge, Hash-Reihenfolge, Replay-Byte-Schema) = Replays nicht abspielbar + Daily-Race-/Replay-Verifikation wertlos. PORT-1:1, **bitidentisch**; die teure Arbeit ist die INTEGRATION (NEW) — inkl. Umstellung des Sim-Kerns auf Fixed-Point-Arithmetik (ARCHITECTURE.md §13).
-- **LevelLayoutGenerator (Daily-Challenge-Determinismus)** — das Original nutzt in `GenerateDailyChallengeLevel(seed)` `new Random(seed)` (seeded System.Random, NICHT xoshiro — Determinismus ist dort nur Foundation). **Entscheidung: getrennte Leaderboards** (eigenes Firebase-Projekt `bomberblast-arena`) — der Unity-Port nutzt durchgehend `IRngProvider`/xoshiro und muss nur Unity-intern reproduzierbar sein (gleicher Seed = gleiches Level auf allen Geräten), keine Bit-Identität mit dem Avalonia-Original.
+**Determinismus / Spielgefühl (v0.6 — 2-Schichten-Modell):**
+- **DeterministicRandom + IRngProvider + FixedTimestepRunner + ReplayCapture + GameStateSnapshot (FNV-1a)** —
+  Fundament der **autoritativen Schicht A** (Occupancy-Sim, Fixed-Point, Fixed-Step). **PORT-1:1, bit-identisch.**
+  Ein verlorenes Bit (Seed-Expansion, xoshiro-Schrittfolge, Hash-Reihenfolge, Replay-Byte-Schema) = Replays
+  nicht abspielbar + Daily-Race-Verifikation wertlos. **Replay-Hash-Verifikation BLEIBT** — aber **über
+  Schicht A**, **nicht** über die kosmetische PhysX-Debris-Schicht B (ARCHITECTURE §13/§18.4).
+- **Arena-Generator (Daily-Challenge/Daily-Race-Determinismus)** — der **neue 3D-Arena-Generator** muss
+  durchgehend `IRngProvider`/xoshiro nutzen und **reproduzierbar** sein (gleicher Seed = gleiche Arena auf
+  allen Geräten). Getrennte Leaderboards (eigenes Firebase-Projekt `bomberblast-arena`), keine Bit-Identität
+  mit dem 2D-Avalonia-Original nötig. Async Server-Plausibilität als Defense-in-Depth (§10).
 - **ComboSystem** — Score-Bonus-Tabelle (×2…×10+), 2s-Kill-Fenster, Slow-Mo/Window-Verlängerung. Score -> Coins, direkt monetarisierungs-/progressionsrelevant. Abweichende Werte kippen die Früh-Economy.
 - **SpecialExplosionEffects (Verlangsamungs-Stacking + 14 Bomben-Regeln)** — Deck-/Karten-System ist Kern-Coin/Gem-Sink. Multiplikative Slow-Stacks (Frost 0.5× × TimeWarp 0.5× × BlackHole 0.3×) + Reichweiten/Schaden exakt erhalten, sonst entwertet sich gekaufter Content.
 - **DungeonService + DungeonSynergyResolver + MutatorEffects + DungeonUpgradeService** — größter Coin/Gem-Sink-Generator + Roguelike-Loop. Reward-Multiplikator-Kette (Elite/Wealthy/Boss/GoldRush/Ascension/Lite in genau dieser Reihenfolge), Synergie-Regeln und die DungeonCoin-Parallelwährung sind das profitabelste Endgame-Balancing + Wiederspiel-Anreiz. Anti-Restart-Datum-Tracking in `DungeonStats` (nicht `RunState`) mitnehmen.
@@ -381,10 +419,24 @@ Grobe Verteilung der ~209 klassifizierten Tabellenzeilen (Services + Core, Model
 
 **NEW (existiert nicht, aber kritisch beim Port):**
 - **Legacy-Save-Import** — Bestandsspieler (Avalonia-Version, Produktion) müssen ihren kompletten Stand (Coins/Gems/Upgrades/Cards/Cosmetics/Progress/Liga/BattlePass) verlustfrei in die 3D-Version übernehmen können. Baut auf CloudSaveSchemaMigrator + ChooseBest auf; ohne diesen Import verlieren zahlende Bestandskunden alles (maximaler Vertrauens-/Refund-Schaden). Spezifikation: ARCHITECTURE.md §6.5 (`importLegacySave`, UID-Bridging, 35-Key-Mapping, ≥99 % Erfolgsrate).
+- **3D-Combat-Kern (v0.6, größter NEW-Brocken)** — **freie Bewegung** (Dash/Sprung/Ledge), **Physik-Bomben** (legen/werfen/rollen/Fall, ebenenübergreifend), **volumetrische Blast-Auflösung** (Sphere/Pillar/Cone/Cluster/Shockwave/Implosion) + 3D-Kettenreaktion, **3D-Arena-Generator** + Vertikalität (Ebenen/Rampen/Lifts/Void), **Chunk-/Modul-Destruktion** mit Trümmer-Physik, **NavMesh-AI**, **Air-/Drop-/Environmental-Combos + Style-Rang**. Entscheidet über das Spiel → **Feel-Prototyp zuerst** ([VERTICAL_SLICE.md](VERTICAL_SLICE.md)).
+- **Zweites Battle-Pass-Produkt** — `battle_pass_premium_season` (4,99 € Premium-Track) **neben** `battle_pass_plus_season` (19,99 € Plus). Premium-Flag-Logik im `BattlePassService` + SKU-Konstante + Play-Console/Unity-IAP-Produkt.
 
 ## Pflege
 
 - Bei jedem portierten System den **Status** in der jeweiligen Domänen-Tabelle aktualisieren (z.B. `PORT-1:1` -> `PORTIERT` bzw. mit Datum/Commit-Hash ergänzen). Die Don't-lose-Liste erst abhaken, wenn die kritischen Werte/Verhalten gegen das Original verifiziert sind (idealerweise per Unit-Test, der die Original-Zahlen festnagelt).
 - **Reihenfolge respektieren:** kein Service-Port ohne den Persistenz-/Backend-Adapter (Schritt 4); kein `GameTrackingService` ohne seine 12 Ziel-Services; kein Legacy-Save-Import ohne `CloudSaveSchemaMigrator` + `ChooseBest`.
-- **Determinismus-Bausteine zuerst und bitidentisch** — sie sind Voraussetzung für Replay-Verifikation und die asynchronen Grid-Rankings/Daily-Race; Abweichungen fallen erst spät und teuer auf.
+- **Determinismus-Bausteine zuerst und bit-identisch** (v0.6, 2-Schichten) — `DeterministicRandom`/`IRngProvider`/`FixedTimestepRunner`/`GameStateSnapshot` tragen die **autoritative Schicht A** (Replay-Hash + Seed-Arenen); Abweichungen fallen erst spät und teuer auf. **PhysX-Debris (Schicht B) strikt davon getrennt halten** — nie in den Hash (§7).
 - Diese Datei ist die **Single Source of Truth** des Ports — neue Original-Systeme (bei Weiterentwicklung der produktiven Avalonia-Version) hier nachtragen, damit der Port nichts verpasst.
+
+---
+
+## Änderungslog (PARITY)
+
+| Datum | Version | Änderung |
+|-------|---------|----------|
+| 2026-05-30 | v0.3–v0.5 | Initiale Content-Reuse-Map (Original → Unity), Grid-Bomberman, Determinismus-First |
+| 2026-06-14 | **v0.6** | **Neugewichtung für Voll-3D-Demolition (GDD [3D_REINVENTION_PLAN.md](3D_REINVENTION_PLAN.md)): räumliche Systeme (Grid/Layout/A*/EnemyAI/Movement/Explosion) von PORT-1:1 → REBUILD/NEW; Meta/Live-Service bleibt PORT. Determinismus = 2-Schichten-Modell: Bausteine (DeterministicRandom/IRngProvider/FixedTimestep/GameStateSnapshot) bleiben PORT-1:1 bit-identisch für die autoritative Occupancy-Sim (Replay-Hash bleibt); PhysX-Debris ist kosmetische Schicht B. Flaches 15×10-Grid ersetzt. Collection-Karten-Zahl 14→13 (Fix). Battle-Pass als 2 Produkte (`battle_pass_premium_season` 4,99 € / `battle_pass_plus_season` 19,99 €). 3D-Combat-Kern als größter NEW-Brocken ergänzt.** |
+
+> **Status:** v0.6 — Reuse-Map auf volumetrische 3D-Neuerfindung neugewichtet. **Nächster Schritt:**
+> Feel-Prototyp ([VERTICAL_SLICE.md](VERTICAL_SLICE.md)) parallel zum Meta-Port.

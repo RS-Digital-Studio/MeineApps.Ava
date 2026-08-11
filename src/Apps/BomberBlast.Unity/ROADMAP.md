@@ -1,12 +1,18 @@
-# BomberBlast 3D — Roadmap & Produktion (Solo-Indie, v0.5)
+# BomberBlast 3D — Roadmap & Produktion (Solo-Indie, v0.6)
 
-> Schlanker Produktionsplan für **modernes 3D-Bomberman, reiner Single-Player**, gebaut von **einer
-> Person + KI-Assistenz**. Komplementär zu [PLAN.md](PLAN.md) (Vision/Phasen — maßgeblich),
-> [DESIGN.md](DESIGN.md) (Game-Design), [ARCHITECTURE.md](ARCHITECTURE.md) (Tech). Stand v0.5 (2026-06-08).
+> Schlanker Produktionsplan für **volumetrisches 3D-Action-Spiel mit Bomberman-DNA, reiner Single-Player**,
+> gebaut von **einer Person + KI-Assistenz**. Komplementär zu [PLAN.md](PLAN.md) (Vision/Phasen —
+> maßgeblich), [DESIGN.md](DESIGN.md) (Game-Design), [ARCHITECTURE.md](ARCHITECTURE.md) (Tech).
+> Stand v0.6 (2026-06-14).
 >
-> **Bewusst NICHT Teil von v0.5 (alte Logik entfernt):** kein Vollzeit-Studio/Budget, **kein Multiplayer/
-> Photon/Netcode, kein Esports, kein Online-PvP/Co-op, kein iOS/Steam/Cross-Save, kein 1:1-Parität-Mandat,
-> kein Idle/AFK**. Verbindliche Phasen-Übersicht → [PLAN.md §11](PLAN.md).
+> **v0.6-Kern:** freie 3D-Bewegung, vertikale/zerstörbare Arenen, Physik-Bomben, volumetrische Blasts —
+> **mutige Neuerfindung**, daher **Feel-Prototyp als Phasen-Gate** (das 3D-Spielgefühl muss zuerst sitzen)
+> und **realistisch mehr Zeit** als ein Grid-Port (~14–15 Mo statt ~12).
+>
+> **Bewusst NICHT Teil von v0.6:** kein Vollzeit-Studio/Budget, **kein Multiplayer/Photon/Netcode, kein
+> Esports, kein Online-PvP/Co-op, kein iOS/Steam/Cross-Save, kein 1:1-Parität-Mandat, kein Idle/AFK, kein
+> flaches Grid.** Determinismus = **2-Schichten** (deterministische Gameplay-Sim + kosmetische PhysX-Schicht,
+> §5/[GDD §12.3](3D_REINVENTION_PLAN.md)). Verbindliche Phasen-Übersicht → [PLAN.md §11](PLAN.md).
 
 ---
 
@@ -57,24 +63,26 @@ Nur reale Sachkosten — **keine Personalkosten, keine Photon-/Server-Match-Kost
 
 ---
 
-## 3. Roadmap (~12 Monate)
+## 3. Roadmap (~14–15 Monate)
 
 > Verbindliche Phasen → [PLAN.md §11](PLAN.md). Hier die Produktions-Sicht, Single-Player-only.
+> **v0.6: Feel-Prototyp ist ein hartes Gate** — ohne überzeugendes, lesbares 3D-Spielgefühl keine Content-Breite.
 
 | Phase | Monat | Hauptergebnis |
 |-------|-------|---------------|
-| **0 Setup** | 1 | Unity-6/URP-Skelett, Asmdefs, CI, Daten-Importer ([SETUP.md](SETUP.md)) |
-| **1 Aktiver Core** | 2–4 | Grid, Bomben/Ketten, 12 PowerUps, 12 Gegner, 5 Wardens, 100 Level in 10 Sektoren, Combo, HUD; Fixed-Step-Sim |
-| **2 Meta-Progression** | 4–6 | Coins/Gems, 12 Shop-Upgrades, Karten/Deck/Crafting, Helden, 72 Achievements, Cloud-Save, Tutorial |
-| **3 Modi & LiveOps** | 6–8 | Master-Mode (Reborn/NG+), Anomaly-Dives, Boss-Rush, Grid-Rankings (async), Daily/Weekly/Events, Lucky-Spin, Battle-Pass |
-| **4 3D-Art & Polish** | 8–9 | alle Sektoren/Helden/Gegner/Wardens, VFX-Graph, Shader, adaptive Music, Story-Cutscenes, Cosmetics |
-| **5 Closed Beta DACH** | 9–10 | Balancing, Low-End-Performance, Tutorial-Funnel, LiveOps-Tooling |
-| **6 Soft-Launch DACH** | 11–12 | Saison 1, Stabilisierung |
-| **7 Skalierung** | 13+ | EU → Global, weitere Saisons & Content. **Kein** Multiplayer, **kein** iOS/Steam |
+| **0 Setup** | 1 | Unity-6/URP-Skelett, Asmdefs, CI (Replay-Hash über Schicht A + Seed-Repro), Daten-Importer ([SETUP.md](SETUP.md)) |
+| **1 Feel-Prototyp (GATE)** | 2–4 | **Volumetrisches 3D-Spielgefühl beweisen:** freie Bewegung (Dash/Sprung/Ledge), Physik-Bombe (legen/werfen/rollen/Fall), **eine volumetrische Blast-Form + 3D-Kette**, zerstörbare Arena-Elemente, **ein vertikaler Sektor + Granite Warden**, 3D-Lesbarkeit auf Min-Spec. **Macht Spaß & ist lesbar → erst dann weiter** ([VERTICAL_SLICE.md](VERTICAL_SLICE.md)) |
+| **2 Combat-Breite + Meta** | 4–7 | alle Blast-Formen/Bomben, 12 PowerUps, 12 Gegner (NavMesh-AI), 5 Wardens, 100 Level in 10 Sektoren; Coins/Gems, 12 Shop-Upgrades, Karten/Deck/Crafting, Helden, 72 Achievements, Cloud-Save, Tutorial |
+| **3 Modi & LiveOps** | 7–9 | Master-Mode (Reborn/NG+), Anomaly-Dives, Boss-Rush, Grid-Rankings (async), Daily/Weekly/Events, Lucky-Spin, Battle-Pass (Premium + Plus) |
+| **4 3D-Art & Polish** | 9–11 | alle Sektoren/Helden/Gegner/Wardens, Destruktions-Assets, VFX-Graph, Shader, adaptive Music, Story-Cutscenes, Cosmetics, Style-System |
+| **5 Closed Beta DACH** | 11–13 | Balancing (3D), Low-End-Performance (Physik/Destruktion), Touch-3D-Controls, Tutorial-Funnel, LiveOps-Tooling |
+| **6 Soft-Launch DACH** | 14–15 | Saison 1, Stabilisierung |
+| **7 Skalierung** | 16+ | EU → Global, weitere Saisons & Content. **Kein** Multiplayer, **kein** iOS/Steam |
 
-**Realistischer Soft-Launch ~Monat 12.** Phase 7 „Monat 13+" ist ein **offenes Startfenster**; die
-Konkretisierung steht in [§11](#11-post-launch-saisons): EU-Rollout mit Saison 2 (~Monat 14–16),
-Global-Skalierung ab Saison 4+ (~Monat 18+).
+**Realistischer Soft-Launch ~Monat 14–15** (bewusst mehr Puffer als der Grid-Port-Plan: die volumetrische
+Neuerfindung + Physik/Destruktion + 3D-Controls ist der größte Unsicherheitsfaktor — das Feel-Prototyp-Gate
+schützt davor, Content auf ein unfertiges Spielgefühl zu bauen). Phase 7 ist ein **offenes Startfenster**;
+Konkretisierung → [§11](#11-post-launch-saisons): EU-Rollout mit Saison 2 (~Monat 16–18), Global ab Saison 4+.
 
 ---
 
@@ -103,14 +111,18 @@ Kein Online-Match → kein server-autoritatives Anti-Cheat. Fokus auf **lokale I
   Stopwatch liefert denselben monotonen Schutz.
 - **Save-Integrität:** Overflow-Guards (`(long)+amount`-Clamp), `PersistenceHealth`-Corruption-Flag,
   Cloud-Pull-statt-Push bei erkannter Korruption (kein Data-Loss).
-- **Grid-Rankings (async):** Firebase-Security-Rules + Server-Timestamp + Write-Rate-Limit; Score-Plausibilität
-  serverseitig per RTDB-Rules begrenzen. Profanity-Filter + Report-Button. **Keine** Echtzeit-Match-Validierung nötig.
+- **Grid-Rankings & Daily-Race (async):** Firebase-Security-Rules + Server-Timestamp + Write-Rate-Limit;
+  Score-/Time-Plausibilität serverseitig per RTDB-Rules. Profanity-Filter + Report-Button.
+  **v0.6 (2-Schichten):** Daily-Race nutzt die **seed-gleiche Arena** + **Verifikation über die
+  deterministische Schicht A** (Replay-Hash der autoritativen Occupancy-Sim, [GDD §12.3](3D_REINVENTION_PLAN.md));
+  die kosmetische PhysX-Schicht zählt nicht. Server-Plausibilität als Defense-in-Depth. **Keine** Echtzeit-Match-Validierung.
 
 ---
 
 ## 6. LiveOps & Saisons
 
-- **Battle-Pass-Saison** 30 Tage (Free + optional Premium), Theme-Rotation (10 Themes deterministisch).
+- **Battle-Pass-Saison** 30 Tage (Free + Premium-Track via `battle_pass_premium_season` 4,99 € **oder**
+  Plus-Paket `battle_pass_plus_season` 19,99 €), Theme-Rotation (10 Themes deterministisch).
 - **Liga-Saison** 14 Tage (Grid-Rankings, Perzentil-Promotion/Relegation, NPC-Backfill).
 - **Wochen-Events** (ISO-Wochen-Seed, deterministisch) + **saisonale Events** (Halloween/Christmas/NewYear/Summer).
 - **Daily/Weekly-Missions**, Daily-Reward (7-Tage + Comeback), Lucky-Spin, Rotating-Deals.
@@ -137,12 +149,15 @@ Kein Online-Match → kein server-autoritatives Anti-Cheat. Fokus auf **lokale I
 
 | # | Risiko | Wkt. | Impact | Mitigation |
 |---|--------|------|--------|------------|
-| 1 | **Scope** für Solo zu groß | Hoch | Hoch | Phasen-Gates, Content-Reuse, Single-Player-Fokus (kein MP), Polish nach hinten |
-| 2 | **3D-Performance Low-End** | Mittel | Hoch | Hardware-Tier, LOD, VFX-Caps, Object-Pooling, Min-Spec-Test pro Iteration |
-| 3 | **Balancing/Schwierigkeit** | Mittel | Mittel | `BalancingConfig`-ScriptableObject, Beta-Telemetrie, Tuning-Loop |
-| 4 | **Save-Integrität / Migration** | Mittel | Hoch | Schema-Migrator, Overflow-Guards, Corruption-Schutz, Backup-Pull |
-| 5 | **Motivations-/Zeit-Risiko (Solo)** | Mittel | Mittel | kleine spielbare Meilensteine, realistischer 12-Mo-Plan, KI-Assistenz für Fleißarbeit |
-| 6 | **Store-Compliance** (Ads/Consent/Rating) | Niedrig | Mittel | UMP-Consent, ehrliche Rating-Angaben, keine Lootboxen |
+| 1 | **Scope** (volumetrische Neuerfindung + Physik + Destruktion + voller Content) für Solo zu groß | Hoch | Hoch | **Feel-Prototyp-Gate**, Meta-Content-Reuse maximieren, Single-Player, Polish nach hinten, realistische ~14–15-Mo-Timeline |
+| 2 | **3D-Spielgefühl/Controls auf Touch** (freie Bewegung + Zielen + Werfen mit Daumen) | Hoch | Hoch | Prototyp zuerst, Auto-Aim/Soft-Lock, Bewegungs-Assist, frühe Min-Spec-Touch-Tests |
+| 3 | **Performance Low-End** (Physik + volumetrische VFX + Destruktion + viele Gegner) | Hoch | Hoch | Hardware-Tier, LOD, VFX-/Physik-/Debris-Caps, Object-Pooling, Min-Spec-Test pro Iteration |
+| 4 | **3D-Lesbarkeit** (welches Volumen trifft der Blast? Höhe/Ebene?) | Hoch | Hoch | Blast-Preview-Volumen, Through-Wall-Outlines, Höhen-/Schatten-Indikatoren, empirischer A50-Test |
+| 5 | **Save-Integrität / Migration** | Mittel | Hoch | Schema-Migrator, Overflow-Guards, Corruption-Schutz, Backup-Pull |
+| 6 | **Determinismus-Relaxation → Daily-Race-Anti-Cheat** | Mittel | Mittel | Server-Plausibilität (Score/Time-Sanity, Rate-Limit), Anzeige-Ghosts statt Resim |
+| 7 | **Balancing in 3D** (2D-Werte übertragen sich nicht 1:1) | Mittel | Mittel | `BalancingConfig`-ScriptableObject, Beta-Telemetrie, Tuning-Loop |
+| 8 | **Motivations-/Zeit-Risiko (Solo)** | Mittel | Mittel | kleine spielbare Meilensteine, Feel-Prototyp als früher Motivations-Win, KI-Assistenz für Fleißarbeit |
+| 9 | **Store-Compliance** (Ads/Consent/Rating) | Niedrig | Mittel | UMP-Consent, ehrliche Rating-Angaben, keine Lootboxen |
 
 ---
 
@@ -175,13 +190,13 @@ Kein Online-Match → kein server-autoritatives Anti-Cheat. Fokus auf **lokale I
 
 | Saison | Monat | Inhalt |
 |--------|-------|--------|
-| 1 | 12–14 | Launch-Saison (DACH), alle 5 Helden + 10 Sektoren, BP-Theme Classic |
-| 2 | 14–16 | **EU-Rollout**; BP-Theme Cyberpunk; neues saisonales Event; Balancing-Pass aus Beta-Daten |
-| 3 | 16–18 | BP-Theme aus Rotation; neue Cosmetics; ggf. neuer Bomben-/Karten-Inhalt |
-| 4+ | 18+ | **Global-Skalierung**, weitere Saisons, optional 6. Held als echte Content-Erweiterung |
+| 1 | 14–16 | Launch-Saison (DACH), alle 5 Helden + 10 Sektoren, BP-Theme Classic |
+| 2 | 16–18 | **EU-Rollout**; BP-Theme Cyberpunk; neues saisonales Event; Balancing-Pass aus Beta-Daten |
+| 3 | 18–20 | BP-Theme aus Rotation; neue Cosmetics; ggf. neuer Bomben-/Karten-/Arena-Inhalt |
+| 4+ | 20+ | **Global-Skalierung**, weitere Saisons, optional 6. Held als echte Content-Erweiterung |
 
-> Diese Tabelle konkretisiert Phase 7 aus [§3](#3-roadmap-12-monate) (offenes Startfenster „Monat 13+"):
-> EU mit Saison 2 (~Monat 14–16), Global ab Saison 4+ (~Monat 18+).
+> Diese Tabelle konkretisiert Phase 7 aus [§3](#3-roadmap-1415-monate) (offenes Startfenster „Monat 16+"):
+> EU mit Saison 2 (~Monat 16–18), Global ab Saison 4+ (~Monat 20+).
 
 > Reine Single-Player-Content-Updates. **Kein** Versus/Co-op/Esports.
 
@@ -193,7 +208,9 @@ Kein Online-Match → kein server-autoritatives Anti-Cheat. Fokus auf **lokale I
 |-------|---------|----------|-------|
 | 2026-05-26 | v0.1 | Initial 18-Mo-Plan, Team, Marketing, Compliance | Robert Schneider + Claude |
 | 2026-05-30 | v0.2 | Auf treuen 3D-Remake ausgerichtet | Robert Schneider + Claude |
-| 2026-06-08 | **v0.5** | **Komplett-Neubau schlank: Solo-Indie, reiner Single-Player. Team/Budget/Esports/Online-MP/Photon/iOS/Steam/Cross-Save und 1:1-Parität-Mandat **entfernt**. Behalten/getrimmt: Compliance, Single-Player-Anti-Cheat, LiveOps/Saisons, Risiken, Launch, Post-Launch.** | Robert Schneider + Claude |
+| 2026-06-08 | v0.5 | Komplett-Neubau schlank: Solo-Indie, reiner Single-Player. Team/Budget/Esports/Online-MP/Photon/iOS/Steam/Cross-Save und 1:1-Parität-Mandat entfernt. | Robert Schneider + Claude |
+| 2026-06-14 | **v0.6** | **Voll-3D-Arena-Demolition (GDD [3D_REINVENTION_PLAN.md](3D_REINVENTION_PLAN.md)): Feel-Prototyp als Phasen-Gate (Phase 1), Roadmap auf ~14–15 Mo gestreckt, Phasen neu geschnitten (Combat-Breite + Meta zusammengeführt). Risiko-Register erweitert (3D-Controls/Touch, Physik-Low-End, 3D-Lesbarkeit, 2-Schichten-Sauberkeit). Determinismus = 2-Schichten: Daily-Race-Verifikation über autoritative Schicht A (Replay-Hash) + Server-Plausibilität; PhysX-Debris kosmetisch. CI: Replay-Hash über Schicht A + Seed-Reproduzierbarkeit. Battle-Pass als 2 Produkte (Premium 4,99 € / Plus 19,99 €).** | Robert Schneider + Claude |
 
-> **Status:** v0.5 — Solo-Indie-Single-Player-Produktionsplan. Maßgeblich für Scope/Phasen: [PLAN.md §11](PLAN.md).
-> **Nächste Schritte:** [SETUP.md](SETUP.md) → Vertical-Slice (Sektor 1 + Granite Warden).
+> **Status:** v0.6 — Solo-Indie-Single-Player-Produktionsplan, volumetrische 3D-Neuerfindung. Maßgeblich für
+> Scope/Phasen: [PLAN.md §11](PLAN.md).
+> **Nächste Schritte:** [SETUP.md](SETUP.md) → **Feel-Prototyp** (Sektor 1 + Granite Warden in 3D, [VERTICAL_SLICE.md](VERTICAL_SLICE.md)).

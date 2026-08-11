@@ -1,15 +1,21 @@
 # BomberBlast 3D — Game-Design-Dokument
 
-> Vollständige Game-Design-Spezifikation von **BomberBlast: Reborn** — **modernes 3D-Bomberman-Action**,
-> klassisch und **immer aktiv selbst gespielt**, mit der bewährten Bomberman-Meta-Progression und einer
-> **neuen Story**. Komplementär zu [PLAN.md](PLAN.md) (Übersicht), [ARCHITECTURE.md](ARCHITECTURE.md)
-> (Tech) und [PARITY.md](PARITY.md) (Content-Reuse-Map). Stand 2026-06-08, v0.5.
+> Vollständige Game-Design-Spezifikation von **BomberBlast: Reborn** — ein **volumetrisches
+> 3D-Action-Spiel mit Bomberman-DNA**, **immer aktiv selbst gespielt**: freie Bewegung in vertikalen,
+> zerstörbaren Arenen, **physikalische Bomben**, echte **3D-Kettenexplosionen**, mit der bewährten
+> Bomberman-Meta-Progression und einer **neuen Story**. Komplementär zu [PLAN.md](PLAN.md) (Übersicht),
+> [ARCHITECTURE.md](ARCHITECTURE.md) (Tech) und [PARITY.md](PARITY.md) (Content-Reuse-Map).
+> Stand 2026-06-14, v0.6.
 >
-> **Leitprinzip:** Klassisches Bomberman-Gameplay (Grid, Bomben, Ketten, PowerUps, Combos, Bosse) in
-> modernem 3D. Inhalte/Mechaniken des produktiven 2D-BomberBlast werden als **Fundament wiederverwendet**
-> und modernisiert — **kein striktes 1:1-Remake**. **KEIN Idle-Game, KEIN AFK/Auto-Battle, KEIN
-> Offline-Income, kein passiver Fortschritt.** Markierungen: **[REUSE]** = aus Original übernommen,
-> **[STORY]** = neue Narrative, **[3D]** = Darstellungs-Upgrade, **[NEU]** = echte Neuerung.
+> **Leitprinzip:** Die **Bomberman-DNA** (Sprengen, Ketten, räumliches Risiko, PowerUps, Combos, Bosse)
+> wird **mutig in echtes 3D neu gedacht** — **freie Bewegung statt Grid-Lock**, **vertikale/mehrstöckige
+> Arenen**, **physikalische Bomben** (legen/werfen/rollen/Fall) und **volumetrische Blast-Formen** mit
+> **ebenenübergreifender 3D-Kettenreaktion** und **zerstörbarer Architektur**. **Meta-Progression &
+> Live-Service** des produktiven 2D-BomberBlast werden als **Fundament wiederverwendet**; **Combat,
+> Bewegung und Raum werden neu in 3D gebaut** — **kein striktes 1:1-Remake, kein flaches Grid mehr**.
+> **KEIN Idle-Game, KEIN AFK/Auto-Battle, KEIN Offline-Income, kein passiver Fortschritt.**
+> Markierungen: **[REUSE]** = aus Original übernommen, **[STORY]** = neue Narrative,
+> **[3D]** = Darstellungs-Upgrade, **[NEU]** = echte Neuerung (in v0.6 oft volumetrisches Gameplay).
 
 ---
 
@@ -18,7 +24,7 @@
 1. [Setting & Welt-Stil](#1-setting--welt-stil)
 2. [Story (neu): Neo-Grid, Overseer, Reborn](#2-story-neu-neo-grid-overseer-reborn)
 3. [Die 10 Sektoren](#3-die-10-sektoren)
-4. [Spielfeld & Grid](#4-spielfeld--grid)
+4. [Arena, Bewegung & Raum (3D)](#4-arena-bewegung--raum-3d)
 5. [Helden (5)](#5-helden-5)
 6. [Gegner (12 + Elite)](#6-gegner-12--elite)
 7. [Bosse: Sektor-Wardens (5 + 8 Modifier)](#7-bosse-sektor-wardens-5--8-modifier)
@@ -45,9 +51,11 @@
 
 ## 1. Setting & Welt-Stil
 
-BomberBlast: Reborn ist ein klassisches Bomberman-Action-Spiel mit **10 thematischen Sektoren** und einem
-leichten Story-Rahmen, gespielt in **NEO-GRID** — den Maschinen-Eingeweiden einer Neon-Megacity. Der
-**Neon-Arcade-Look** des Originals bleibt Markenkern; neu sind **3D-Umsetzung** und die **Story**.
+BomberBlast: Reborn ist ein **volumetrisches 3D-Action-Spiel mit Bomberman-DNA** mit **10 thematischen
+Sektoren** und einem leichten Story-Rahmen, gespielt in **NEO-GRID** — den **mehrstöckigen
+Maschinen-Eingeweiden** einer Neon-Megacity. Der **Neon-Arcade-Look** des Originals bleibt Markenkern;
+neu sind **echte Dreidimensionalität** (freie Bewegung, vertikale/zerstörbare Arenen, volumetrische
+Explosionen) und die **Story**.
 
 ### 1.1 Visueller Stil (Neon-Arcade in 3D) **[3D]**
 
@@ -62,14 +70,18 @@ Zwei umschaltbare Visual-Styles wie im Original (`IGameStyleService`), jetzt als
 | **Primärfarbe** | Neon-Orange **#FF6B35** |
 | **Akzent 1** | Cyan **#22D3EE** |
 | **Akzent 2** | Gold-Trail **#FFDD33** |
-| **Design-Sprache** | Oktagonale Formen, scharfe Kanten, Arcade-Glow |
-| **HUD** | Side-Panel rechts (Landscape): Time/Score/Combo/Lives/Deck |
+| **Design-Sprache** | Oktagonale Formen, scharfe Kanten, Arcade-Glow, volumetrische Blasts |
+| **HUD** | Side-Panel rechts (Landscape): Time/Score/Combo/Style/Lives/Deck |
 | **Anti-Style** | Realismus, Foto-Texturen, düstere Tristesse, Idle-/AFK-Selbstläufer |
 
-### 1.3 Kamera **[3D]**
+### 1.3 Kamera **[3D+NEU]**
 
-Top-Down mit leichter Neigung (~55–65°) für 3D-Tiefe, Cinemachine mit Damping + Impulse (Shake/Zoom).
-Jeder Sektor mit eigener Beleuchtung, Skybox, Material-Set, Ambient-Partikeln (`WeatherSystem`).
+**Dynamische 3D-Action-Kamera** (Cinemachine 3): orbitierbare Schulter-/Verfolger-Perspektive mit
+**Smart-Framing** (Spieler + relevante Bomben/Gegner im Bild), Damping + Impulse (Shake/Zoom), optionaler
+**Soft-Lock** auf Boss/Encounter. Ein **lesbarkeits-erhaltender Top-Down-Tilt-Modus (~55–65°)** bleibt als
+**Accessibility-/Fallback-Option** wählbar (Min-Spec & Übersichts-Präferenz). Jeder Sektor mit eigener
+Beleuchtung, Skybox, Material-Set, Ambient-Partikeln (`WeatherSystem`). Kamera-Modus & -Empfindlichkeit
+sind in den Einstellungen tunebar (3D-Action gegen Lesbarkeit abwägen — empirischer Min-Spec-Test, §4).
 
 ---
 
@@ -148,10 +160,13 @@ NG+-Modus, der aktiv gespielt wird.
 > Themes/Layouts/Mechanik-Zellen (Ice/Conveyor/Teleporter/LavaCrack/PlatformGap) aus dem Original
 > wiederverwendet, nur neu eingekleidet. **[REUSE]**
 
-### 3.3 Layout-Typen (12) **[REUSE]**
+### 3.3 Arena-Archetypen (12) **[REUSE-Konzept + NEU-3D]**
 
-Classic, Cross, Arena, Maze, TwoRooms, Spiral, Diagonal, BossArena, Labyrinth, Symmetry, Islands, Chaos
-(`LevelLayoutGenerator`, Pure-Domain → 1:1 portierbar).
+Die 12 Original-Layout-Namen (Classic, Cross, Arena, Maze, TwoRooms, Spiral, Diagonal, BossArena,
+Labyrinth, Symmetry, Islands, Chaos) bleiben als **Design-Vorlage**, werden aber als **vertikale
+3D-Arena-Archetypen neu gebaut** (Ebenen/Rampen/Lifts/Void). Der 2D-`LevelLayoutGenerator` ist **kein
+1:1-Port** mehr — er dient als Inspiration für einen **3D-Arena-Generator** (REBUILD/NEU, seed-deterministisch
+über `IRngProvider`). Siehe [PARITY.md §6/§10](PARITY.md) (Status REBUILD).
 
 ### 3.4 Mutatoren (4) **[REUSE]**
 
@@ -160,30 +175,88 @@ Classic, Cross, Arena, Maze, TwoRooms, Spiral, Diagonal, BossArena, Labyrinth, S
 
 ---
 
-## 4. Spielfeld & Grid **[REUSE+3D]**
+## 4. Arena, Bewegung & Raum (3D) **[NEU+REUSE]**
 
-- **15×10-Grid** (`GameGrid`), Landscape. `CellType` (9): Empty, Wall, Block, Exit + 5 Sektor-Mechanik-Zellen
-  (Ice, Conveyor, Teleporter, LavaCrack, PlatformGap).
-- **Block-Zellen** droppen PowerUps/Karten (Drop-Chance hero-/upgrade-moduliert).
-- **Pre-Turn-Buffering** (Turn bei 40 % Zellzentrum-Nähe) für flüssige Steuerung.
-- **[3D]** Grid als 3D-Bodenfläche mit erhöhten Block-Meshes, dynamische Schatten, 3D-Explosions-Volumen.
-- Steuerung **immer durch den Spieler** (Touch-Joystick / Gamepad / Keyboard).
+> **Herzstück der v0.6-Neuerfindung.** Das flache 15×10-Grid des Originals entfällt als Sim-Kern. An seine
+> Stelle treten **freie 3D-Bewegung** in **vertikalen, mehrstöckigen, zerstörbaren Arenen**. Die
+> Bomberman-DNA bleibt: Sprengen, Ketten, räumliches Risiko, PowerUps, Combos. Die Zell-Mechaniken des
+> Originals (Ice/Conveyor/Teleporter/LavaCrack/PlatformGap) werden als **3D-Hazard-/Mechanik-Volumen**
+> wiederverwendet. Steuerung **immer durch den Spieler** (Touch / Gamepad / Keyboard).
 
-### 4.1 3D-Lesbarkeit (Pflicht) **[3D]**
+### 4.1 Arena-Modell **[NEU]**
 
-> Größtes 3D-Risiko: Bomberman lebt von exakter Grid-Lesbarkeit (welche Zellen trifft die Explosion?).
-> Die 3D-Darstellung darf diese Information niemals verschleiern — folgende Maßnahmen sind verbindlich:
+- **Mehrstöckige 3D-Arenen** (Arbeitsannahme **2–3 Ebenen**, im Prototyp zu tunen) statt einer Ebene:
+  Rampen, Plattformen, **Lifts**, Sprungfelder, **Abgründe/Void** (Umgebungs-Kills) und **zerstörbare
+  Böden** (Durchbruch → Fall in tiefere Ebene).
+- **Bewegung frei** (NavMesh-/Collider-basiert), **keine Zell-Rasterung** der Bewegung. Bomben-Platzierung
+  ist räumlich, nicht zellgebunden.
+- **Zerstörbare Module/Chunks** ersetzen die „Block"-Zellen — sie droppen PowerUps/Karten beim Zerstören
+  (Drop-Chance hero-/upgrade-moduliert, Werte aus dem Original als Anker).
+- **Sektor-Mechanik-Volumen [REUSE]:** Ice (rutschen), Conveyor (Förder-Schub), Teleporter, LavaCrack
+  (Hazard), PlatformGap (Lücke/Fall) — als 3D-Trigger-Zonen umgesetzt.
 
-- **Boden-projizierter Bomb-Range-Indicator:** Ab dem Legen einer Bombe wird auf **allen betroffenen
-  Zellen** ein leuchtendes Kreuz auf den Boden projiziert (FireRange-genau, inkl. Kettenreaktions-Zellen).
-  Standard **AN**, in den Accessibility-Einstellungen abschaltbar.
-- **Occlusion-Handling:** Block-Meshes, die den Spieler oder aktive Bombenzellen verdecken, werden per
-  Dither/Fade transparent (URP-Shader) — alternativ Höhen-Cap der Block-Meshes, falls performanter.
-- **Projektion:** Start mit **perspektivischer Top-Down-Kamera (55–65°)**. Im Vertical Slice wird die
-  Grid-Lesbarkeit **empirisch auf dem Min-Spec-Device (Galaxy A50)** getestet — fällt der Test durch,
-  Wechsel auf nahezu isometrische Darstellung (Orthographic, ~45°).
-- **Tiefenachsen-Kompensation:** Grid-Linien und Zell-Highlights bleiben **immer sichtbar** (die
-  perspektivische Stauchung der Tiefenachse darf Zell-Grenzen nicht verschlucken).
+### 4.2 Bewegung & 3D-Skill **[NEU]**
+
+- **Laufen** (analoge Richtung), **Dash/Roll** (kurze i-Frames, Cooldown), **Sprung + Doppelsprung /
+  Blast-Jump** (Bombe unter sich als Sprung-Boost, Risiko/Reward), **Ledge-Grab/Vault** an Kanten.
+- **Reborn-Core-Fähigkeiten [STORY+NEU]:** schalten 3D-Mobilität schrittweise frei (z.B. Blast-Jump,
+  kurzer Air-Dash) — narrativ verankert, **kein** Idle/Auto-Move.
+- **Fall-Schaden = nein** (Arcade-Feel); Fall in **Void/Hazard** = Tod/Schaden (lesbar telegraphiert).
+
+### 4.3 Physik-Bomben **[NEU]**
+
+Bomben sind **echte 3D-Physik-Objekte**, nicht zellgebundene Marker:
+
+- **Legen / Werfen (lobben) / Rollen / Kicken** — über Kanten, um Ecken, auf tiefere Ebenen.
+- **Physik:** prallen ab, rollen Rampen hinunter, **fallen zwischen Ebenen** → ermöglichen
+  **ebenenübergreifende Kettenreaktionen**.
+- **Charge-Bombe [NEU]:** Halten → stärkerer/größerer Blast (Timing-/Risiko-Mechanik).
+- **Detonator/Kick/LineBomb** aus dem Original als 3D-Pendants (PowerUps §9).
+- **Slide/Kick** ersetzt die 2D-„Slide 160 px"-Mechanik durch echte Roll-Physik.
+
+### 4.4 Volumetrische Blast-Formen **[NEU]**
+
+Statt des flachen Kreuzes hat **jede Bombe eine 3D-Blast-Form** (treibt Bomben-/Karten-Identität, §8):
+
+| Form | Charakter | Beispiel-Bombe |
+|------|-----------|----------------|
+| **Sphere/Dome** | radialer Kugel-/Kuppel-Blast | Standard, Nova |
+| **Pillar** | vertikale Säule (trifft Ebenen darüber/darunter) | Lightning, PowerBomb |
+| **Directional Cone / Shaped Charge** | gerichteter Kegel (zielbar) | Mirror, Vortex |
+| **Cluster** | Streu-Submunition | Cluster-Variante |
+| **Shockwave** | Knockback-Ring (stößt Gegner in Void/Hazards) | Gravity/Sticky-Pendant |
+| **Implosion** | Sog → dann Blast | BlackHole |
+
+**Echte 3D-Kettenreaktion:** Explosionen zünden Bomben im **3D-Radius/-Volumen** (inkl. anderer Ebenen),
+nicht nur in Grid-Linie. Iteratives Auflösen mit Caps (Performance, §23).
+
+### 4.5 Zerstörbare Architektur **[NEU]**
+
+- **Chunk-/Modul-basierte Destruktion** (Solo-machbar, performant; echte Voxel nur kosmetisch): Wände,
+  Plattformen, Stützen brechen.
+- **Strukturelles Spiel:** Stützpfeiler sprengen → **ganze Sektion kollabiert** (taktische Zerstörung,
+  Environmental-Kills). **Trümmer-Physik** mit Lebensdauer-/Anzahl-Caps pro Hardware-Tier.
+- **Indestructible-Kern** (Arena-Grenzen/tragende Hülle) bleibt stehen — Lesbarkeit & Soft-Locks vermeiden.
+
+### 4.6 3D-Lesbarkeit (Pflicht) **[NEU]**
+
+> Größtes Risiko der Neuerfindung: In echtem 3D + Vertikalität + Volumen-Blasts muss **jederzeit klar
+> sein, was der nächste Blast trifft** und **wo Spieler/Gegner/Bomben stehen** (welche Ebene/Höhe). Die
+> 3D-Darstellung darf diese Information niemals verschleiern — folgende Maßnahmen sind verbindlich:
+
+- **Blast-Preview-Volumen:** Beim Zielen/Legen wird die **volumetrische Blast-Form** als transparentes
+  Volumen + betroffene Flächen-Highlights gezeigt (inkl. prognostizierter **Ketten** und
+  **Fall-/Ebenen-Treffer**). Standard **AN**, in Accessibility abschaltbar.
+- **Through-Wall-Silhouetten (Outline):** Spieler, **aktive (scharfe) Bomben** und gefährdete Gegner
+  bekommen eine Outline durch verdeckende Geometrie (URP-Renderer-Feature).
+- **Occlusion-Handling:** Geometrie, die Spieler/aktive Bomben verdeckt, wird per Dither/Fade transparent.
+- **Höhen-/Ebenen-Indikatoren:** Boden-Schattenpunkt unter Spieler **und fallenden Bomben**,
+  Ebenen-Tönung, Höhen-Linien — damit Vertikalität lesbar bleibt.
+- **Danger-Telegraphs in 3D:** Boden-/Volumen-Marker für Boss-/Hazard-Angriffe (Telegraph vor Wirkung).
+- **Kamera & empirischer Test:** dynamische Action-Kamera mit Smart-Framing + wählbarem Top-Down-Tilt
+  (~55–65°) als Fallback. Im **Feel-Prototyp** wird die Lesbarkeit **empirisch auf dem Min-Spec-Device
+  (Galaxy A50)** getestet — fällt der Test durch, konservativere Kamera (stärkerer Tilt/Orthographic-Nähe)
+  und/oder reduzierte Vertikalität.
 
 ---
 
@@ -233,8 +306,10 @@ Classic, Cross, Arena, Maze, TwoRooms, Spiral, Diagonal, BossArena, Labyrinth, S
 
 ## 7. Bosse: Sektor-Wardens (5 + 8 Modifier) **[REUSE-Mechanik + STORY-Namen + 3D]**
 
-> 5 Boss-**Archetypen** (`BossEnemy`), **neu benannt** als Overseer's Sektor-Wardens. Multi-Cell, HP 3–8,
-> Enrage bei 50 %. **[3D]** große 3D-Boss-Modelle mit Telegraph-Animationen, dynamischer Beleuchtung.
+> 5 Boss-**Archetypen** (`BossEnemy`), **neu benannt** als Overseer's Sektor-Wardens. Mehrzellig (im 3D-Port
+> = raumgreifendes **Bounding-Volumen**), HP 3–8, Enrage bei 50 %. **[3D+NEU]** große 3D-Boss-Modelle mit
+> volumetrischen **Telegraph-Markern**, dynamischer Beleuchtung, **vertikalen Arena-Phasen** und
+> **Arena-Zerstörung** (kollabierende Deckung als Mechanik) — neu inszeniert, Mechanik-Anker aus dem Original.
 
 ### 7.1 Warden-Roster
 
@@ -258,16 +333,23 @@ Shielded, Fast, Healing, Summoner, Frenzy, Berserk, Reflective, Burning. Determi
 
 ---
 
-## 8. Bomben & Karten (14 Typen / 13 Karten) **[REUSE+3D]**
+## 8. Bomben & Karten (14 Typen / 13 Karten) **[REUSE+NEU]**
 
-> 14 Bomben-Typen (inkl. `Normal`); 13 Karten-Definitionen im `CardCatalog` (Standard ist keine Sammelkarte):
-> 3 Shop-Bomben + 10 Sammel-/Drop-Karten. **[3D]** 3D-Bomben-Modelle + VFX-Graph-Explosionen pro Typ.
+> **14 Bomben-Typen** (inkl. `Normal`); **13 Sammel-Karten-Definitionen** im `CardCatalog` (Standard ist
+> **keine** Sammelkarte): 3 Shop-Bomben + 10 Sammel-/Drop-Karten. **[NEU]** Jede Bombe ist ein
+> **Physik-Objekt** (legen/werfen/rollen/Fall, §4.3) mit einer **volumetrischen Blast-Form** (§4.4) statt
+> flachem Kreuz; 3D-Bomben-Modelle + VFX-Graph-Explosionen pro Typ.
+>
+> **Sammlungs-Konsistenz (Fix v0.6):** Die **Collection trackt genau die 13 Sammel-Karten** (Standard ist
+> Default-Bombe, **nicht** sammelbar). Die im Original-`CollectionService` gespeicherte `GetTotalCount
+> (BombCards)=14` war inkonsistent (zählte die Standard-Bombe mit) — beim Port auf **13** korrigieren
+> (Quelle der Wahrheit = `CardCatalog`-Einträge). Siehe [PARITY.md §3](PARITY.md).
 
 ### 8.1 Karten-Liste (Rarities aus `CardCatalog`)
 
 | Karte | Effekt | Rarity | Quelle |
 |-------|--------|--------|--------|
-| Standard | Kreuz-Explosion mit FireRange-Reichweite (Basis 1) | — (Default) | immer |
+| Standard | Sphere/Dome-Blast mit FireRange-Radius (Basis 1) | — (Default) | immer |
 | Ice | Frost 3 s, 50 % Slow | Common | Shop |
 | Fire | Lava-Feld 3 s, DoT | Common | Shop |
 | Sticky | Klebt 1.5 s + Kettenreaktion | Common | Shop |
@@ -314,10 +396,14 @@ Shielded, Fast, Healing, Summoner, Frenzy, Berserk, Reflective, Burning. Determi
 
 ---
 
-## 10. Combo-System **[REUSE+3D]**
+## 10. Combo- & Style-System **[REUSE+NEU]**
 
-`ComboSystem` (Pure-Domain → 1:1). Kills im 2-s-Fenster steigern den Combo-Zähler. **[3D]** Floating-Text-Pop
-+ Slow-Mo + Vignette-Flash. Combos sind Score-/Coin-Multiplikator → aktives, gutes Spiel wird belohnt.
+`ComboSystem` (Original-Fenster-/Bonus-Logik als Basis, PORT-ADAPT) — Kills im 2-s-Fenster steigern den
+Combo-Zähler. **[NEU]** In 3D **erweitert um neue Kill-Quellen**: **Air-Kills** (Kill während
+Sprung/Fall), **Drop-Kills** (Kill aus dem Fall/Stampf), **Environmental-Kills** (Gegner in Void/Hazard
+gestoßen oder unter kollabierender Struktur), **Cross-Level-Ketten** (Kette über Ebenen). **[3D]**
+Floating-Text-Pop + Slow-Mo + Vignette-Flash. Combos sind Score-/Coin-Multiplikator → aktives, gutes,
+**bewegtes** Spiel wird belohnt.
 
 | Combo | Score-Bonus | Besonderheit |
 |-------|------------|--------------|
@@ -332,6 +418,15 @@ Shielded, Fast, Healing, Summoner, Frenzy, Berserk, Reflective, Burning. Determi
 | ×10+ | +30.000 | ULTRA, Slow-Mo 1.2 s, Vignette |
 
 - **Window** 2 s, +0.5 s ab ×6. Slow-Mo-Multiplikator 1.5× bei ULTRA. Chain-Kill 1.5× bei 3+ Kills.
+- **Kill-Quellen-Boni [NEU]:** Air-Kill ×1.25 · Drop-Kill ×1.5 · Environmental-Kill ×2.0 · Cross-Level-Kette ×1.5
+  (multiplikativ auf den Combo-Bonus; Werte als Anker, im Prototyp zu tunen).
+
+### 10.1 Style-Rang **[NEU]**
+
+Aus dem laufenden Combo + Kill-Vielfalt + Schadensvermeidung wird ein **Style-Rang** abgeleitet
+(D → C → B → A → S → SS — Character-Action-Game-Idiom, „DMC-light"): höhere Ränge erhöhen Score-/Coin-Faktor
+und treiben das HUD-Feedback. **Bewusst leichtgewichtig** — erweiterte Combo-Anzeige, **kein** eigenes
+Meta-System, **kein** P2W. Rang fällt bei Treffer/Untätigkeit. Tuning in `BalancingConfig`.
 
 ---
 
@@ -348,8 +443,8 @@ Shielded, Fast, Healing, Summoner, Frenzy, Berserk, Reflective, Burning. Determi
 | **Survival** | Endlos bis Tod | Coins + Highscore |
 | **Anomaly-Dives** | Roguelike (siehe §12) | Dive-Cores, Buffs, Karten |
 | **Boss-Rush** | Warden-Sequenz, ISO-Wochen-Reset | Coins + Karten |
-| **Daily-Challenge** | tägliches deterministisches Level (Tages-Seed), Streak | Coins (Streak-Bonus) |
-| **Daily-Race** | 1 deterministisches Tages-Level weltweit, schnellster Run | Coins + Daily-Race-Liga-Platzierung |
+| **Daily-Challenge** | tägliche **Seed-Arena** (weltweit gleich generiert via Tages-Seed), Streak | Coins (Streak-Bonus) |
+| **Daily-Race** | 1 **Seed-Arena/Tag** weltweit, schnellster Run; Wertung über die deterministische Schicht A (Replay-Hash) + Server-Plausibilität (siehe §13/[GDD §12.3](3D_REINVENTION_PLAN.md)) | Coins + Daily-Race-Liga-Platzierung |
 
 Zusätzlich: **Weekly-Challenge** (5/Woche aus 17er-Pool, Montag-Reset) + **Daily-Missions** (3/Tag, Mitternacht-UTC).
 
@@ -384,7 +479,11 @@ Zusätzlich: **Weekly-Challenge** (5/Woche aus 17er-Pool, Montag-Reset) + **Dail
 
 - **Perzentil-Promotion/Relegation** (Top 30 % auf / Bottom 20 % ab) am Saisonende, **14-Tage-Saisons**, Saison-Reset.
 - **NPC-Backfill** bei < 20 Spielern, **Profanity-Filter** (Unicode-NFKD), Report-Button, Write-Rate-Limit (Server-Timestamp).
-- **Daily-Race** (separates Board): 1 deterministisches Tages-Level weltweit, schnellster aktiver Run.
+- **Daily-Race** (separates Board): 1 **Seed-Arena/Tag** weltweit (gleiche Generierung auf allen Geräten),
+  schnellster aktiver Run. **Verifikation über die deterministische Schicht A** (Replay-Hash der autoritativen
+  Occupancy-Sim, [GDD §12.3](3D_REINVENTION_PLAN.md)/[ARCHITECTURE §13](ARCHITECTURE.md)) — die kosmetische
+  PhysX-Debris-Schicht zählt nicht mit; zusätzlich async Server-Plausibilität (Score-/Time-Sanity,
+  Rate-Limit, Server-Timestamp) als Defense-in-Depth.
 - **Keine P2W-Stats** in Rankings.
 
 ---
@@ -436,7 +535,8 @@ Zentraler Coin-Sink, bleibt erhalten.
 |---------|--------|
 | **Remove-Ads — 1,99 € (non-consumable)** | wirkt wie im Original als **Premium-Flag**: Rewarded-Belohnungen gibt es **ohne Video-Zwang** (IsPremium-Bypass in den Rewarded-Flows) + exklusive Premium-Skins |
 | **VIP-Abo — `vip_subscription_monthly`, 9,99 €/Monat** | Abo aus dem Original (dort produktiv), Vorteile sinngemäß übernommen |
-| **BattlePass-Plus — `battle_pass_plus_season`, 4,99 €/Saison** | aktiviert den Premium-Track der laufenden Battle-Pass-Saison (klare Rewards, kein Zufall) — wie im Original |
+| **BattlePass Premium — `battle_pass_premium_season`, 4,99 €/Saison** | schaltet den **Premium-Belohnungs-Track** der laufenden Saison frei (klare Rewards pro Tier, **kein Zufall**) |
+| **BattlePass Plus — `battle_pass_plus_season`, 19,99 €/Saison** | **Premium-Track + Komfort obendrauf**: +25 Tier-Skip beim Kauf, +50 % XP-Multiplier, Bonus-Gems pro Tier-Up (enthält den Premium-Track) |
 | **Gem-Pakete** | optional, mehrere Größen |
 | **Starter-Pack** | einmaliges faires Einsteiger-Angebot |
 
@@ -555,15 +655,28 @@ PvP/Co-op, kein Clan-Live-System. **Grid-Rankings** und **Daily-Race** sind **as
 ## 25. Balancing-Anker (offen, zu tunen)
 
 > Alle Werte in `BalancingConfig`-ScriptableObject — niemals hardcoded (Unity-Anti-Pattern, siehe CLAUDE.md).
-> Erste Werte 1:1 aus Original übernehmen, dann gegen 3D-Feel tunen. Konkrete Zahlen → Memory `balancing.md` (Original).
+> **Wichtig (v0.6):** Die Original-2D-Werte sind nur **Startanker** für die Meta (Wirtschaft/Drops/Shop) —
+> **alles Räumliche (Bewegung, Blast-Radien, Vertikalität, Destruktion) ist NEU und muss im Feel-Prototyp
+> empirisch getunt werden** (3D-Feel überträgt sich nicht 1:1 aus 2D). Konkrete Original-Zahlen → Memory
+> `balancing.md`.
 
-| Größe | Quelle | Hinweis |
-|-------|--------|---------|
-| Coins pro Level | Level-Score / 3 (Sektor 1: / 2) | Combo-getrieben → Skill-Reward |
+| Größe | Quelle / Startwert | Hinweis |
+|-------|--------------------|---------|
+| Coins pro Level | Level-Score / 3 (Sektor 1: / 2) | Combo-/Style-getrieben → Skill-Reward |
 | Shop-Preise | 700–17.000 Coins (`UpgradeType`) | zentraler Coin-Sink |
 | Master-Mode-Skalierung | ×1.2 Speed + Gegner-Typ-Upgrades | NG+ aus Original |
 | Drop-Gewichtung | 57/25/12/6 % | sektor-moduliert |
-| Boss-Modifier-Chance | 30 % ab S5 / 60 % ab S10 | deterministisch |
+| Boss-Modifier-Chance | 30 % ab S5 / 60 % ab S10 | deterministisch (Seed) |
+| **Bewegung [NEU]** | Lauf-Speed, Dash-Distanz/-Cooldown/-i-Frames, Sprung-Höhe/Doppelsprung | reines 3D-Tuning, Prototyp |
+| **Blast [NEU]** | Radius/Höhe je Blast-Form, Charge-Skalierung, Kettenketten-Cap | 3D-Volumen statt FireRange-Kreuz |
+| **Vertikalität [NEU]** | Ebenen/Arena, Fall-Trigger, Void/Hazard-Schaden | Prototyp-getunt |
+| **Destruktion [NEU]** | Chunk-HP, Debris-Anzahl/-Lebensdauer-Caps pro Tier | Performance-gekoppelt (§23) |
+
+> **Determinismus-Hinweis (v0.6 — 2-Schichten):** Die **autoritative Gameplay-Sim (Schicht A)** ist
+> deterministisch (abstrahierte Occupancy, Fixed-Step, `IRngProvider`) — **Replay-Hash bleibt** (Daily-Race-
+> Verifikation). Die **PhysX-Debris/Zerstörung (Schicht B)** ist kosmetisch/non-deterministisch und zählt
+> nicht mit. Generierung (Arena/Spawns/Dives/Daily) seed-deterministisch (gleiche Seed = gleiche Welt
+> weltweit). Begründung/Architektur → [GDD §12.3](3D_REINVENTION_PLAN.md) / [ARCHITECTURE §13](ARCHITECTURE.md).
 
 ---
 
@@ -574,9 +687,12 @@ PvP/Co-op, kein Clan-Live-System. **Grid-Rankings** und **Daily-Race** sind **as
 | 2026-05-26 | v0.1 | Sci-Fi-Reinvention (Mech-Helden, OmniCorp, PvP-Arena) | Robert Schneider + Claude |
 | 2026-05-30 | v0.2/0.3 | Treuer 1:1-3D-Remake (echtes BomberBlast-Design, code-verifiziert) | Robert Schneider + Claude |
 | 2026-06-08 | v0.4 | Idle-Game-Experiment (verworfen) | Robert Schneider + Claude |
-| 2026-06-08 | **v0.5** | **Modernes 3D-Bomberman: klassisches, AKTIV gespieltes Bomberman in 3D + bewährte Bomberman-Meta-Progression (100 Level, 8 Modi inkl. Master-Mode/Reborn-NG+, Shop, Dives, Liga, Battle-Pass, 72 Achievements, 98 Cosmetics). NEUE Story (Neo-Grid/Overseer/Reborn, Wardens neu benannt). KEIN Idle/AFK/Offline-Income. Content [REUSE] modernisiert (kein striktes 1:1), lean Monetarisierung.** | Robert Schneider + Claude |
+| 2026-06-08 | v0.5 | Modernes 3D-Bomberman: klassisches, AKTIV gespieltes Bomberman in 3D (flaches Grid, Top-Down) + bewährte Bomberman-Meta-Progression. NEUE Story (Neo-Grid/Overseer/Reborn). KEIN Idle/AFK/Offline-Income. | Robert Schneider + Claude |
+| 2026-06-14 | **v0.6** | **Voll-3D-Arena-Demolition-Roguelite (GDD [3D_REINVENTION_PLAN.md](3D_REINVENTION_PLAN.md)): freie Bewegung (Dash/Sprung/Ledge), vertikale/zerstörbare Arenen statt flachem Grid, Physik-Bomben (legen/werfen/rollen/Fall), volumetrische Blast-Formen (Sphere/Pillar/Cone/Cluster/Shockwave/Implosion), ebenenübergreifende 3D-Ketten, zerstörbare Architektur, Air-/Drop-/Environmental-Kills + Style-Rang, dynamische Action-Kamera. Meta-Progression & Live-Service bleiben Fundament. Determinismus = 2-Schichten (autoritative Occupancy-Sim mit Replay-Hash + kosmetische PhysX-Schicht). Collection-Karten-Zahl 13 (Fix). Battle-Pass als zwei Produkte (Premium 4,99 € / Plus 19,99 €).** | Robert Schneider + Claude |
 
 ---
 
-> **Status:** Game-Design v0.5 — modernes 3D-Bomberman (kein Idle). **Nächster Schritt:** Content-Reuse-Map
-> (PARITY) als Port-/Modernisierungs-Checkliste, dann aktiver Vertical-Slice (1 Sektor + 1 Warden) in 3D.
+> **Status:** Game-Design v0.6 — volumetrisches 3D-Bomberman-Action (kein Idle, kein flaches Grid).
+> **Nächster Schritt:** Content-Reuse-Map (PARITY) als Port-/Neubau-Checkliste, dann **Feel-Prototyp**
+> (freie 3D-Bewegung + Physik-Bombe + volumetrische Blast-Form + 3D-Kette + zerstörbares Arena-Element,
+> Sektor 1 + Granite Warden) in 3D — Spielgefühl zuerst.

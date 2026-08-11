@@ -44,8 +44,15 @@ public static class ArPrecisionHelpers
     /// Depth-Sanity-Check: liest Depth-Map am Touch-Pixel und vergleicht mit HitResult-Distanz.
     /// Liefert Confidence-Multiplikator (1.0 = neutral, >1.0 = Bonus, &lt;1.0 = Penalty).
     ///
-    /// Nutzt PRIMÄR Raw Depth (unfiltered, höhere Präzision auf S25 Ultra mit Stereo-Depth)
-    /// mit separater Confidence-Map. Fallback auf smoothed DepthImage.
+    /// Nutzt PRIMÄR Raw Depth (unfiltered, mit separater Confidence-Map), Fallback auf
+    /// smoothed DepthImage.
+    ///
+    /// WICHTIG zur Erwartung: Das S25 Ultra hat KEINEN Tiefensensor (kein ToF/LiDAR — Samsung
+    /// hat ToF nach dem S20 Ultra aufgegeben; die vier Linsen sind Ultra-Weitwinkel/Haupt/2×
+    /// Tele). ARCore rechnet die Tiefe hier aus BEWEGUNG (Depth-from-Motion, Parallaxe über
+    /// mehrere Frames). Der relative Fehler waechst deshalb mit der Distanz und haengt davon ab,
+    /// wie viel Parallaxe der Nutzer erzeugt hat — er ist der DOMINIERENDE Fehlerterm der
+    /// Messung, groesser als Winkel-/Pixelauflösung um eine bis zwei Größenordnungen.
     /// </summary>
     public static float DepthSanityMultiplier(Frame frame, float screenX, float screenY,
         float hitDistanceMeters, int viewportWidth, int viewportHeight)
@@ -203,12 +210,14 @@ public static class ArPrecisionHelpers
     /// <summary>
     /// Plan Kap. 3.6: Liest die Depth-Map am Touch-Pixel und liefert die Tiefe in Metern.
     /// Wird vom Instant-Placement-Fallback genutzt — statt hardcoded 1,5 m wird die echte
-    /// Distanz vom Stereo-Depth-Sensor verwendet. Bei Sky oder ungültigem Depth-Wert null.
+    /// Distanz aus der ARCore-Depth-Map verwendet (Depth-from-Motion, KEIN Hardware-Sensor —
+    /// siehe <see cref="DepthSanityMultiplier"/>). Bei Sky oder ungültigem Depth-Wert null.
     /// </summary>
     public static float? TryGetDepthMeters(Frame frame, float screenX, float screenY,
         int viewportWidth, int viewportHeight)
     {
-        // Raw Depth bevorzugt (höhere Präzision auf S25 Ultra mit Stereo-Depth-Sensor).
+        // Raw Depth bevorzugt (unfiltered + eigene Confidence-Map, praeziser als die
+        // geglaettete Variante — beide kommen aus Depth-from-Motion, nicht aus Hardware).
         var raw = TryReadRawDepthMeters(frame, screenX, screenY, viewportWidth, viewportHeight);
         if (raw.HasValue) return raw;
 

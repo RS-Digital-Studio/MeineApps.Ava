@@ -195,7 +195,7 @@ Die Activity hat keine Avalonia-DI. Lokalisierte Strings werden einmalig in `OnC
 | `ArSnapEngine` (Shared.Services) | Vertex (15 cm), Right-Angle (5°), Parallel (3°), Extension (10 cm) |
 | Geospatial API (VPS) | `earth.CameraGeospatialPose` → Heading ±5° statt ±15–30° (Metall-immun) |
 | Earth-Anchors | Persistent über Session-Ende via VPS re-lokalisierbar — Recovery-Restore queued Punkte für Re-Attach sobald Earth-Tracking aktiv |
-| Raw Depth + Confidence | Pixel mit Confidence > 0,3 (Random-Noise-Filter) |
+| Raw Depth + Confidence | Pixel mit Confidence > 0,3 (Random-Noise-Filter). **Quelle ist Depth-from-Motion, kein Tiefensensor** — das S25 Ultra hat keinen ToF/LiDAR (vier Linsen: Ultra-Weitwinkel 50 MP, Haupt 200 MP, Tele 50 MP 5×, Tele 10 MP 3×). Der Tiefenfehler wächst mit der Distanz und mit fehlender Parallaxe und ist der **dominierende** Fehlerterm der Messung |
 | Scene Semantics | `SemanticMode.Enabled` — Sky + Instant-Placement-Kombi wird abgelehnt, sonst Label in `ArPoint.SemanticLabel` |
 | Light-Estimation | `LightEstimate.PixelIntensity` — Helligkeits-Sprung > 40 % bricht laufendes Sampling ab (2 s Cooldown) |
 | Session Recovery | State in SharedPreferences nach jeder Mutation (Punkt setzen/loeschen/verschieben, Kontur schliessen), max 30 Min alt. Geloescht erst nach BESTAETIGTER Projekt-Uebernahme (`ConfirmResultPersisted`) bzw. bewusstem Verwerfen — nie schon in FinishCapture. Restore reaktiviert die letzte offene Kontur als aktive; Punkte ohne Geo-Bezug tragen `ArPoint.RestoredWithoutGeo` (Transfer wertet auf >= 5 m / Konfidenz <= 0,3 ab) |

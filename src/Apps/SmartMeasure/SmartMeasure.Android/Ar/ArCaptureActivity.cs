@@ -2009,8 +2009,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
 
             // 2. Instant Placement Fallback wenn kein Plane/Point getroffen.
             // Plan Kap. 3.6: Statt hardcoded 1,5 m versuchen wir zuerst das Depth-Image am
-            // Touch-Pixel zu lesen. Auf S25 Ultra ist Raw-Depth verfügbar (Stereo-Sensor)
-            // und liefert real-world-Distanzen ±5 % für 0,3–30 m. Bei Sky/Glanz fällt
+            // Touch-Pixel zu lesen. Raw-Depth ist verfuegbar, kommt aber aus Depth-from-Motion
+            // (kein Tiefensensor im Geraet) — der Fehler waechst mit der Distanz und mit
+            // fehlender Parallaxe, ist also keine feste Prozent-Angabe. Bei Sky/Glanz fällt
             // TryGetDepthMeters auf null zurück und wir benutzen die alte 1,5-m-Annahme.
             if (bestHit == null && _viewportWidth > 0 && _viewportHeight > 0)
             {

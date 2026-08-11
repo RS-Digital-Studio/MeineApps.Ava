@@ -24,6 +24,46 @@ public sealed class GardenPlanRenderer : IDisposable
     public double LastCenterX { get; private set; }
     public double LastCenterY { get; private set; }
 
+    // Stabile Einpassung: Zentrum + Spannweite werden EINMAL aus den Daten bestimmt und
+    // danach beibehalten. Vorher rechnete jeder Frame Zentrum und Skalierung neu aus der
+    // aktuellen Bounding-Box — ein einzelner neuer Messpunkt verschob und skalierte damit
+    // die ganze Szene, alle bereits gesetzten Punkte wanderten sichtbar auf dem Schirm.
+    // Neu eingepasst wird nur, wenn Daten sonst aus dem Bild fielen (dann ist Verschieben
+    // erwartbar) oder wenn der Datensatz wechselt (ResetFit beim Projekt-Load).
+    private double _fitCenterX;
+    private double _fitCenterY;
+    private double _fitRange;
+    private bool _hasFit;
+
+    /// <summary>Verwirft die aktuelle Einpassung — der nächste Render passt neu ein.
+    /// Beim Projekt-Wechsel aufrufen, sonst behält die Ansicht den Zuschnitt des
+    /// vorherigen Projekts.</summary>
+    public void ResetFit() => _hasFit = false;
+
+    /// <summary>Übernimmt die Bounding-Box als Einpassung, wenn noch keine existiert oder die
+    /// Daten aus der bestehenden herauswachsen. Sonst bleibt die alte Einpassung stehen, damit
+    /// ein neuer Punkt die Szene nicht verschiebt.</summary>
+    private void UpdateFit(double minX, double maxX, double minY, double maxY)
+    {
+        var range = Math.Max(maxX - minX, maxY - minY);
+        if (range < 0.001) range = 1;
+
+        if (_hasFit)
+        {
+            // Passt die aktuelle Box noch in den eingepassten Ausschnitt? Halber Range in jede
+            // Richtung um das Fit-Zentrum ist der sichtbare Bereich.
+            var half = _fitRange / 2.0;
+            var insideX = minX >= _fitCenterX - half && maxX <= _fitCenterX + half;
+            var insideY = minY >= _fitCenterY - half && maxY <= _fitCenterY + half;
+            if (insideX && insideY) return;
+        }
+
+        _fitCenterX = (minX + maxX) / 2.0;
+        _fitCenterY = (minY + maxY) / 2.0;
+        _fitRange = range;
+        _hasFit = true;
+    }
+
     private static readonly Dictionary<GardenElementType, SKColor> ElementColors = new()
     {
         [GardenElementType.Weg] = new SKColor(120, 144, 156),
@@ -139,15 +179,14 @@ public sealed class GardenPlanRenderer : IDisposable
                 if (py > maxY) maxY = py;
             }
 
-        var rangeX = maxX - minX;
-        var rangeY = maxY - minY;
-        var range = Math.Max(rangeX, rangeY);
-        if (range < 0.001) range = 1;
+        UpdateFit(minX, maxX, minY, maxY);
+
+        var range = _fitRange;
         var scale = Math.Min(bounds.Width, bounds.Height) * 0.4f * Zoom / range;
         LastScale = scale;
 
-        var centerX = (minX + maxX) / 2.0;
-        var centerY = (minY + maxY) / 2.0;
+        var centerX = _fitCenterX;
+        var centerY = _fitCenterY;
         LastCenterX = centerX;
         LastCenterY = centerY;
 

@@ -89,8 +89,15 @@ public partial class GardenPlanViewModel : ViewModelBase
         _volumeService = volumeService;
         Renderer = new GardenPlanRenderer(gardenPlanService);
 
+        // Einzelner neuer Punkt: Koordinaten aktualisieren, Einpassung des Renderers aber
+        // stehen lassen — sonst verschiebt und skaliert sich der ganze Plan bei jedem Punkt.
         _measurementService.PointAdded += _ => UpdateCoordinates();
-        _measurementService.PointsReset += UpdateCoordinates;
+        // Batch-Änderung (Projekt-Load, Clear) ist ein echter Datensatz-Wechsel → neu einpassen.
+        _measurementService.PointsReset += () =>
+        {
+            Renderer.ResetFit();
+            UpdateCoordinates();
+        };
     }
 
     // Plan-Kap. 5.4: Volumen-Schaetzung pro geschlossener Kontur
@@ -127,6 +134,10 @@ public partial class GardenPlanViewModel : ViewModelBase
             Elements.Clear();
             foreach (var elem in dbElements)
                 Elements.Add(elem);
+
+            // Projekt-Wechsel bzw. frischer AR-Transfer: Einpassung verwerfen, sonst behält die
+            // Ansicht den Zuschnitt des vorherigen Datensatzes.
+            Renderer.ResetFit();
 
             // Referenz aus Messpunkten ODER Gartenelementen bestimmen,
             // dann LocalPoints für alle Elemente berechnen.

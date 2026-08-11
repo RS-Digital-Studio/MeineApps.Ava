@@ -28,6 +28,44 @@ public sealed class TerrainRenderer : IDisposable
     public bool ShowContours { get; set; } = true;
     public bool ShowLabels { get; set; } = true;
 
+    // Stabile Einpassung (analog GardenPlanRenderer): Zentrum + Spannweite werden einmal aus
+    // der Mesh-Bounding-Box bestimmt und beibehalten. Bei jedem neuen Messpunkt entsteht ein
+    // neues Mesh mit neuer Box — vorher verschob und skalierte sich dadurch das ganze
+    // Geländemodell, obwohl sich nur ein Punkt dazugesellt hat.
+    private double _fitCenterX;
+    private double _fitCenterY;
+    private double _fitCenterZ;
+    private double _fitRange;
+    private bool _hasFit;
+
+    /// <summary>Verwirft die aktuelle Einpassung — der nächste Render passt neu ein.
+    /// Beim Projekt-Wechsel aufrufen.</summary>
+    public void ResetFit() => _hasFit = false;
+
+    /// <summary>Übernimmt die Mesh-Bounding-Box als Einpassung, wenn noch keine existiert oder
+    /// das Mesh aus der bestehenden herauswächst. Sonst bleibt die Einpassung stehen, damit ein
+    /// neuer Punkt das Modell nicht verschiebt. Die Höhen-Mitte wandert aus demselben Grund
+    /// nicht mit — sonst würde ein einzelner tiefer Punkt das ganze Relief kippen.</summary>
+    private void UpdateFit(TerrainMesh mesh)
+    {
+        var range = Math.Max(mesh.MaxX - mesh.MinX, mesh.MaxY - mesh.MinY);
+        if (range < 0.001) range = 1;
+
+        if (_hasFit)
+        {
+            var half = _fitRange / 2.0;
+            var insideX = mesh.MinX >= _fitCenterX - half && mesh.MaxX <= _fitCenterX + half;
+            var insideY = mesh.MinY >= _fitCenterY - half && mesh.MaxY <= _fitCenterY + half;
+            if (insideX && insideY) return;
+        }
+
+        _fitCenterX = (mesh.MinX + mesh.MaxX) / 2.0;
+        _fitCenterY = (mesh.MinY + mesh.MaxY) / 2.0;
+        _fitCenterZ = (mesh.MinZ + mesh.MaxZ) / 2.0;
+        _fitRange = range;
+        _hasFit = true;
+    }
+
     // Höhen-Farbverlauf (Grün → Gelb → Orange → Braun)
     private static readonly SKColor[] HeightColors =
     [
@@ -107,11 +145,8 @@ public sealed class TerrainRenderer : IDisposable
         canvas.Translate(bounds.MidX + PanX, bounds.MidY + PanY);
 
         var scale = Math.Min(bounds.Width, bounds.Height) * 0.35f * Zoom;
-        var rangeX = mesh.MaxX - mesh.MinX;
-        var rangeY = mesh.MaxY - mesh.MinY;
-        var range = Math.Max(rangeX, rangeY);
-        if (range < 0.001) range = 1;
-        var normalizeScale = scale / range;
+        UpdateFit(mesh);
+        var normalizeScale = scale / _fitRange;
 
         var azRad = Azimuth * MathF.PI / 180f;
         var elRad = Elevation * MathF.PI / 180f;
@@ -120,9 +155,9 @@ public sealed class TerrainRenderer : IDisposable
         var cosEl = MathF.Cos(elRad);
         var sinEl = MathF.Sin(elRad);
 
-        var centerX = (mesh.MinX + mesh.MaxX) / 2.0;
-        var centerY = (mesh.MinY + mesh.MaxY) / 2.0;
-        var centerZ = (mesh.MinZ + mesh.MaxZ) / 2.0;
+        var centerX = _fitCenterX;
+        var centerY = _fitCenterY;
+        var centerZ = _fitCenterZ;
 
         // Vertices projizieren — Kamera-Z separat merken für korrekte Painter-Tiefensortierung
         for (int i = 0; i < mesh.VertexCount; i++)
@@ -235,7 +270,9 @@ public sealed class TerrainRenderer : IDisposable
         canvas.Restore();
 
         DrawNorthArrow(canvas, bounds);
-        DrawScale(canvas, bounds, range, scale);
+        // Maßstab gegen die EINGEPASSTE Spannweite rechnen — sie bestimmt zusammen mit `scale`
+        // die tatsächliche Pixel-pro-Meter-Umrechnung.
+        DrawScale(canvas, bounds, _fitRange, scale);
         DrawHeightLegend(canvas, bounds, mesh.MinZ, mesh.MaxZ);
     }
 

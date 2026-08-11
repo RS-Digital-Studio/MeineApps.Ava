@@ -43,10 +43,17 @@ public partial class TerrainViewModel : ViewModelBase
         _terrainService = terrainService;
         _coordinateService = coordinateService;
 
-        // Einzel-Messung: pro Punkt inkrementell neu triangulieren (Live-Ansicht beim AR-Transfer)
+        // Einzel-Messung: pro Punkt inkrementell neu triangulieren (Live-Ansicht beim AR-Transfer).
+        // Die Einpassung des Renderers bleibt dabei bewusst stehen — sonst verschiebt sich das
+        // ganze Modell bei jedem einzelnen neuen Punkt.
         _measurementService.PointAdded += _ => RecalculateMesh();
-        // Batch-Änderung (Projekt-Load, Clear): einmalige Neuberechnung statt N²
-        _measurementService.PointsReset += RecalculateMesh;
+        // Batch-Änderung (Projekt-Load, Clear): einmalige Neuberechnung statt N².
+        // Hier IST ein Datensatz-Wechsel gemeint, also neu einpassen.
+        _measurementService.PointsReset += () =>
+        {
+            Renderer.ResetFit();
+            RecalculateMesh();
+        };
     }
 
     /// <summary>Mesh aus aktuellen Messpunkten berechnen</summary>
@@ -152,7 +159,8 @@ public partial class TerrainViewModel : ViewModelBase
         InvalidateRequested?.Invoke();
     }
 
-    /// <summary>Ansicht zuruecksetzen</summary>
+    /// <summary>Ansicht zuruecksetzen — inklusive Neu-Einpassung, damit nach dem Zuruecksetzen
+    /// garantiert alle Punkte im Bild sind (auch die, die seit der letzten Einpassung dazukamen).</summary>
     [RelayCommand]
     private void ResetView()
     {
@@ -161,6 +169,7 @@ public partial class TerrainViewModel : ViewModelBase
         Renderer.Zoom = 1.0f;
         Renderer.PanX = 0;
         Renderer.PanY = 0;
+        Renderer.ResetFit();
         InvalidateRequested?.Invoke();
     }
 }

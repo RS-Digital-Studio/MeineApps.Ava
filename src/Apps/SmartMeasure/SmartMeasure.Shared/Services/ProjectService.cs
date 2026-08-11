@@ -3,8 +3,15 @@ using SQLite;
 
 namespace SmartMeasure.Shared.Services;
 
-/// <summary>SQLite-basierte Projekt-Persistenz</summary>
-public class ProjectService : IProjectService
+/// <summary>
+/// SQLite-basierte Persistenz für Projekte, Messpunkte und Gartenelemente.
+///
+/// Implementiert die drei Rollen-Interfaces bewusst in EINER Klasse: sie teilen dieselbe
+/// <see cref="SQLiteAsyncConnection"/> und dasselbe Init-/Semaphore-Handling. Die DI
+/// registriert deshalb eine Singleton-Instanz und mappt alle drei Interfaces darauf —
+/// drei separate Registrierungen würden drei Verbindungen auf dieselbe Datei öffnen.
+/// </summary>
+public class ProjectService : IProjectService, IProjectPointService, IProjectElementService
 {
     private readonly SQLiteAsyncConnection _db;
     private readonly SemaphoreSlim _semaphore = new(1, 1);

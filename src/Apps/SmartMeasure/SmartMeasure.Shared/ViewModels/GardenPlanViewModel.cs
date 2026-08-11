@@ -71,7 +71,9 @@ public partial class GardenPlanViewModel : ViewModelBase
     /// MainViewModel verdrahtet das als Toast.</summary>
     public event Action<string>? MessageRequested;
 
-    private readonly IProjectService _projectService;
+    // Nur die Element-Rolle: der Gartenplan liest und schreibt Gartenelemente, er legt keine
+    // Projekte an und loescht keine.
+    private readonly IProjectElementService _elementService;
 
     private readonly IVolumeService _volumeService;
 
@@ -79,13 +81,13 @@ public partial class GardenPlanViewModel : ViewModelBase
         IMeasurementService measurementService,
         ICoordinateService coordinateService,
         IGardenPlanService gardenPlanService,
-        IProjectService projectService,
+        IProjectElementService elementService,
         IVolumeService volumeService)
     {
         _measurementService = measurementService;
         _coordinateService = coordinateService;
         _gardenPlanService = gardenPlanService;
-        _projectService = projectService;
+        _elementService = elementService;
         _volumeService = volumeService;
         Renderer = new GardenPlanRenderer(gardenPlanService);
 
@@ -128,7 +130,7 @@ public partial class GardenPlanViewModel : ViewModelBase
     /// <summary>Gartenelemente aus der Datenbank laden (nach AR-Transfer oder Projekt-Wechsel)</summary>
     public async Task LoadElementsFromProjectAsync(int projectId)
     {
-        var dbElements = await _projectService.GetGardenElementsAsync(projectId);
+        var dbElements = await _elementService.GetGardenElementsAsync(projectId);
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             Elements.Clear();
@@ -365,7 +367,7 @@ public partial class GardenPlanViewModel : ViewModelBase
         if (CurrentProjectId > 0)
         {
             element.ProjectId = CurrentProjectId;
-            await _projectService.AddGardenElementAsync(CurrentProjectId, element);
+            await _elementService.AddGardenElementAsync(CurrentProjectId, element);
         }
 
         Elements.Add(element);
@@ -401,7 +403,7 @@ public partial class GardenPlanViewModel : ViewModelBase
 
         // Aus DB loeschen (Id wurde durch await in FinishDrawingAsync korrekt gesetzt)
         if (element.Id > 0)
-            await _projectService.DeleteGardenElementAsync(element.Id);
+            await _elementService.DeleteGardenElementAsync(element.Id);
 
         CanUndo = _undoStack.Count > 0;
 

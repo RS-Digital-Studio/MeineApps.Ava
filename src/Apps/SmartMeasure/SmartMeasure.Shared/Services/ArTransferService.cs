@@ -6,7 +6,11 @@ namespace SmartMeasure.Shared.Services;
 /// <summary>Sensor-Fusion: Konvertiert AR-Koordinaten (lokal, relativ) nach WGS84 und uebertraegt ins Projekt</summary>
 public class ArTransferService : IArTransferService
 {
+    // Der Transfer berührt alle drei Persistenz-Rollen: er liest/aktualisiert das Projekt,
+    // schreibt Punkte und schreibt Konturen als Gartenelemente.
     private readonly IProjectService _projectService;
+    private readonly IProjectPointService _pointService;
+    private readonly IProjectElementService _elementService;
     private readonly ICoordinateService _coordinateService;
     private readonly IMeasurementService _measurementService;
     private readonly IGeoidService _geoidService;
@@ -40,11 +44,15 @@ public class ArTransferService : IArTransferService
 
     public ArTransferService(
         IProjectService projectService,
+        IProjectPointService pointService,
+        IProjectElementService elementService,
         ICoordinateService coordinateService,
         IMeasurementService measurementService,
         IGeoidService geoidService)
     {
         _projectService = projectService;
+        _pointService = pointService;
+        _elementService = elementService;
         _coordinateService = coordinateService;
         _measurementService = measurementService;
         _geoidService = geoidService;
@@ -96,7 +104,7 @@ public class ArTransferService : IArTransferService
         {
             try
             {
-                await _projectService.AddPointAsync(projectId, point);
+                await _pointService.AddPointAsync(projectId, point);
                 _measurementService.AddPoint(point);
                 transferredCount++;
             }
@@ -112,7 +120,7 @@ public class ArTransferService : IArTransferService
         {
             try
             {
-                await _projectService.AddGardenElementAsync(projectId, element);
+                await _elementService.AddGardenElementAsync(projectId, element);
                 transferredCount++;
             }
             catch (Exception ex)

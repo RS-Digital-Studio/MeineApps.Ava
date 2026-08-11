@@ -18,7 +18,9 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `IGeoidService` | `Egm96GeoidService` | EGM96 Ellipsoid→NN-Höhe. Hardcoded 2°-Grid DE (46–56°N, 4–16°E) |
 | `ITerrainService` | `TerrainService` | Bowyer-Watson Delaunay, Konturlinien, Volumen, Convex Hull |
 | `IGardenPlanService` | `GardenPlanService` | Gartenelemente CRUD, PointsJson v2, v1-Legacy-Fallback |
-| `IProjectService` | `ProjectService` | SQLite (Projekte, Punkte, Elemente). `DeleteProject` atomar |
+| `IProjectService` | `ProjectService` | SQLite-Persistenz der **Projekte** (Anlegen/Laden/Umbenennen/Duplizieren/Löschen). `DeleteProject` atomar |
+| `IProjectPointService` | `ProjectService` | SQLite-Persistenz der **Messpunkte** eines Projekts |
+| `IProjectElementService` | `ProjectService` | SQLite-Persistenz der **Gartenelemente** eines Projekts (nicht verwechseln mit `IGardenPlanService` — der rechnet nur) |
 | `IExportService` | `ExportService` | CSV, GeoJSON, DXF, KMZ, PDF |
 | `IBlenderExportService` | `BlenderExportService` | OBJ + MTL (kein Y/Z-Swap — UTM ist schon Z-up) |
 | `IDifferentialSnapshotService` | `DifferentialSnapshotService` | Greedy-Nearest-Neighbor Snapshot-Vergleich (Moved/Added/Removed/Unchanged) |

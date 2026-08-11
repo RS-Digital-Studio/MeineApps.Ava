@@ -13,17 +13,18 @@ namespace SmartMeasure.Shared.Services;
 public sealed class SurveyReportService : ISurveyReportService
 {
     private readonly IAppPaths _appPaths;
-    private readonly IProjectService _projectService;
     private readonly IVolumeService _volumeService;
     private readonly IDifferentialSnapshotService _differentialService;
 
     private static readonly XColor PrimaryColor = XColor.FromArgb(255, 255, 107, 0);
 
-    public SurveyReportService(IAppPaths appPaths, IProjectService projectService,
+    // Kein Persistenz-Service: der Report bekommt das fertig geladene SurveyProject uebergeben
+    // (GeneratePdfReportAsync) und liest nie selbst aus der DB. Die frueher injizierte
+    // IProjectService-Abhaengigkeit war ungenutzt und ist beim Rollen-Split entfallen.
+    public SurveyReportService(IAppPaths appPaths,
         IVolumeService volumeService, IDifferentialSnapshotService differentialService)
     {
         _appPaths = appPaths;
-        _projectService = projectService;
         _volumeService = volumeService;
         _differentialService = differentialService;
     }

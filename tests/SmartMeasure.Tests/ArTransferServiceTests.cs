@@ -16,14 +16,18 @@ public class ArTransferServiceTests
     private const double Munich_Lon = 9.1829;
     private const double Munich_AltEllipsoid = 568.0; // ~520 NN + 48 Geoid-Differenz
 
-    private static (ArTransferService svc, IProjectService projects, IMeasurementService meas) MakeService()
+    private static (ArTransferService svc, IProjectService projects, IProjectPointService points,
+        IMeasurementService meas) MakeService()
     {
         var projects = Substitute.For<IProjectService>();
         projects.GetProjectAsync(Arg.Any<int>()).Returns(new SurveyProject { Id = 1 });
+        var points = Substitute.For<IProjectPointService>();
+        var elements = Substitute.For<IProjectElementService>();
         var meas = Substitute.For<IMeasurementService>();
         var coord = new CoordinateService();
         var geoid = new Egm96GeoidService();
-        return (new ArTransferService(projects, coord, meas, geoid), projects, meas);
+        return (new ArTransferService(projects, points, elements, coord, meas, geoid),
+            projects, points, meas);
     }
 
     private static ArCaptureResult MakeResult(
@@ -47,7 +51,7 @@ public class ArTransferServiceTests
     [Fact]
     public void ConvertToSurveyPoints_OhneGpsReferenz_GibtLeereListe()
     {
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = new ArCaptureResult();
 
         var points = svc.ConvertToSurveyPoints(result, projectId: 1);
@@ -60,7 +64,7 @@ public class ArTransferServiceTests
     {
         // Heading 0° = Blick nach Norden. ARCore -Z = vorne = Norden.
         // Erwartet: 1m Richtung Norden in WGS84 → Lat erhöht sich.
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult(heading: 0f);
         result.Points.Add(new ArPoint { X = 0, Y = 0, Z = -1 });
 
@@ -78,7 +82,7 @@ public class ArTransferServiceTests
     public void ConvertToSurveyPoints_HeadingOst_ArZminus1_ZeigtNachOsten()
     {
         // Heading 90° = Blick nach Osten. ARCore -Z = vorne = Osten.
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult(heading: 90f);
         result.Points.Add(new ArPoint { X = 0, Y = 0, Z = -1 });
 
@@ -95,7 +99,7 @@ public class ArTransferServiceTests
         // ARCore Y-Ursprung in 1.5m Augenhoehe → GroundPlaneY = -1.5.
         // Punkt bei Y=-1.45 ist 5cm ueber Boden — finale Hoehe sollte gpsAlt + 0.05 sein
         // (vor Geoid-Korrektur).
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult(groundPlaneY: -1.5f);
         result.Points.Add(new ArPoint { X = 0, Y = -1.45f, Z = 0 });
 
@@ -108,7 +112,7 @@ public class ArTransferServiceTests
     [Fact]
     public void ConvertToSurveyPoints_OhneGroundPlaneY_NutztYDirekt()
     {
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult(groundPlaneY: null);
         result.Points.Add(new ArPoint { X = 0, Y = 0.5f, Z = 0 });
 
@@ -125,7 +129,7 @@ public class ArTransferServiceTests
         // die Wahrheit. VPS-Koords pro Punkt trugen ±1-3 m Rauschen JE PUNKT und verzerrten
         // damit Distanzen und Flaechen — sie duerfen eine vorhandene lokale Position nicht
         // mehr verdraengen.
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult(heading: 0f);
         result.Points.Add(new ArPoint
         {
@@ -152,7 +156,7 @@ public class ArTransferServiceTests
     {
         // Total-Station-Punkte werden radial aus der Stations-Geo gerechnet und haben
         // X/Y/Z = 0. Fuer sie ist die Punkt-Geo die einzige Quelle.
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult(heading: 0f);
         const double tsLat = 48.8;
         const double tsLon = 9.2;
@@ -182,7 +186,7 @@ public class ArTransferServiceTests
         // nicht die des Messpunkts. Ohne lokale Position ist der Punkt damit nicht verortbar
         // und darf nicht als Messung ins Projekt wandern — sonst faellt er auf die
         // Standposition und sieht dort wie eine echte Messung aus.
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult(heading: 0f);
         result.Points.Add(new ArPoint
         {
@@ -205,7 +209,7 @@ public class ArTransferServiceTests
         // Die Sitzungs-Boden-Referenz ist ein EMA vom Sitzungsende. Ein Punkt, der bei einem
         // anderen Bodenniveau gemessen wurde, muss SEINEN Offset behalten — sonst bekommen
         // Punkte vom Sitzungsanfang die Bodenhoehe vom Sitzungsende.
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult(groundPlaneY: -1.0f); // Sitzungswert am Ende
         result.Points.Add(new ArPoint
         {
@@ -228,7 +232,7 @@ public class ArTransferServiceTests
         // Bei 100m Distanz auf 48° N sollte UTM gegenueber 111320-Approximation
         // einen messbar besseren Wert liefern. Genauer: ueber 1000m muss der
         // UTM-Wert konsistent mit Haversine sein.
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult(heading: 0f);
         result.Points.Add(new ArPoint { X = 0, Y = 0, Z = -1000 }); // 1km Norden
 
@@ -248,7 +252,7 @@ public class ArTransferServiceTests
     [Fact]
     public void ConvertToGardenElements_LeereKontur_WirdIgnoriert()
     {
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult();
         result.Contours.Add(new ArContour
         {
@@ -265,7 +269,7 @@ public class ArTransferServiceTests
     public void ConvertToGardenElements_GeschlossenePolygon_RechnetFlaeche()
     {
         // 10×10m-Quadrat → Flaeche = 100 m²
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult(heading: 0f);
         result.Contours.Add(new ArContour
         {
@@ -292,7 +296,7 @@ public class ArTransferServiceTests
     public void ConvertToGardenElements_OffeneLinie_LaengeOhneSchlussEdge()
     {
         // 3 Punkte auf einer Linie: 0-10-20 → Laenge = 20m
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult(heading: 0f);
         result.Contours.Add(new ArContour
         {
@@ -314,7 +318,7 @@ public class ArTransferServiceTests
     [Fact]
     public void ConvertToGardenElements_PointsJson_IstV2Format()
     {
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult();
         result.Contours.Add(new ArContour
         {
@@ -339,7 +343,7 @@ public class ArTransferServiceTests
     public void ConvertToSurveyPoints_VerticalAccuracyIst18xHorizontale()
     {
         // Plan Kap. 4.1 — VerticalAccuracy konservativ schlechter als horizontale
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult();
         result.Points.Add(new ArPoint());
 
@@ -355,7 +359,7 @@ public class ArTransferServiceTests
         // SurveyPoint.Altitude ist NN — der Fallback-Ursprung muss sie nach Ellipsoid
         // zurueckwandeln, sonst wird die Undulation (~48 m in DE) doppelt abgezogen und
         // neue AR-Punkte liegen 48 m unter dem Projekt (48-m-Stufe im Gelaendemodell).
-        var (svc, projects, _) = MakeService();
+        var (svc, projects, points, _) = MakeService();
         const double bestandNn = 520.0;
         var projektMitBestand = new SurveyProject
         {
@@ -365,7 +369,7 @@ public class ArTransferServiceTests
         projects.GetProjectAsync(Arg.Any<int>()).Returns(projektMitBestand);
 
         SurveyPoint? added = null;
-        await projects.AddPointAsync(Arg.Any<int>(), Arg.Do<SurveyPoint>(p => added = p));
+        await points.AddPointAsync(Arg.Any<int>(), Arg.Do<SurveyPoint>(p => added = p));
 
         var result = new ArCaptureResult(); // kein GPS
         result.Points.Add(new ArPoint { X = 0, Y = 0, Z = -1 });
@@ -383,7 +387,7 @@ public class ArTransferServiceTests
         // Recovery-Punkte ohne Geo-Bezug stammen aus dem Koordinatensystem einer ANDEREN
         // Session — Lage kann um Meter abweichen. Accuracy >= 5 m, Konfidenz gedeckelt,
         // sonst stuende ein versetzter Punkt mit cm-Angabe im Projekt.
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult();
         result.GpsAccuracy = 0.5f; // normal: 50 cm Minimum
         result.Points.Add(new ArPoint { RestoredWithoutGeo = true, Confidence = 0.9f });
@@ -403,7 +407,7 @@ public class ArTransferServiceTests
     {
         // Bei Android-LocationManager-Quelle bleibt das 50cm-Minimum als Ceiling für
         // optimistisches GPS.
-        var (svc, _, _) = MakeService();
+        var (svc, _, _, _) = MakeService();
         var result = MakeResult();
         result.GpsAccuracy = 0.001f; // unrealistisch genau, Android meldet sowas manchmal
         result.GpsSource = ArGpsSource.AndroidLocation;
@@ -421,7 +425,7 @@ public class ArTransferServiceTests
         // Fallback-Ursprung gesetzt (Schwerpunkt vorhandener Projektpunkte, sonst DE-Default),
         // damit die translation-invariante Messung (Distanzen/Flaechen) NICHT verloren geht.
         // Nur die absolute Karten-Lage ist dann ein Platzhalter.
-        var (svc, projects, meas) = MakeService();
+        var (svc, projects, points, meas) = MakeService();
         var result = new ArCaptureResult(); // kein GPS
         result.Points.Add(new ArPoint { X = 0, Y = 0, Z = -1 });
 
@@ -431,7 +435,7 @@ public class ArTransferServiceTests
         result.HasGpsReference.Should().BeTrue();      // Fallback-Ursprung wurde gesetzt
         result.GpsLatitude.Should().NotBeNull();
         result.GpsLongitude.Should().NotBeNull();
-        await projects.Received().AddPointAsync(1, Arg.Any<SurveyPoint>());
+        await points.Received().AddPointAsync(1, Arg.Any<SurveyPoint>());
         meas.Received().AddPoint(Arg.Any<SurveyPoint>());
     }
 
@@ -440,8 +444,8 @@ public class ArTransferServiceTests
     {
         // Wenn DB-Insert kracht, soll der Punkt NICHT in MeasurementService landen
         // (sonst inkonsistent: User sieht Punkt in Liste, aber DB hat ihn nicht).
-        var (svc, projects, meas) = MakeService();
-        projects.AddPointAsync(Arg.Any<int>(), Arg.Any<SurveyPoint>())
+        var (svc, _, points, meas) = MakeService();
+        points.AddPointAsync(Arg.Any<int>(), Arg.Any<SurveyPoint>())
             .Returns(Task.FromException(new Exception("DB voll")));
 
         var result = MakeResult();

@@ -137,7 +137,14 @@ public class App : Application
         services.AddSingleton<IGeoidService, Egm96GeoidService>();
         services.AddSingleton<ITerrainService, TerrainService>();
         services.AddSingleton<IGardenPlanService, GardenPlanService>();
-        services.AddSingleton<IProjectService, ProjectService>();
+        // ProjectService deckt drei Rollen-Interfaces ab (Projekte / Punkte / Elemente).
+        // EINE Instanz registrieren und alle drei darauf mappen — drei getrennte
+        // AddSingleton<IXxx, ProjectService>() würden drei SQLite-Verbindungen auf dieselbe
+        // Datei öffnen (jede mit eigenem Init-Task und eigenem Semaphore).
+        services.AddSingleton<ProjectService>();
+        services.AddSingleton<IProjectService>(sp => sp.GetRequiredService<ProjectService>());
+        services.AddSingleton<IProjectPointService>(sp => sp.GetRequiredService<ProjectService>());
+        services.AddSingleton<IProjectElementService>(sp => sp.GetRequiredService<ProjectService>());
         services.AddSingleton<IExportService, ExportService>();
         services.AddSingleton<IBlenderExportService, BlenderExportService>();
         services.AddSingleton<IArTransferService, ArTransferService>();

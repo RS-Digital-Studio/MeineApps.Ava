@@ -2,7 +2,16 @@ using SmartMeasure.Shared.Models;
 
 namespace SmartMeasure.Shared.Services;
 
-/// <summary>SQLite-Persistenz fuer Projekte, Messpunkte und Gartenelemente</summary>
+/// <summary>
+/// SQLite-Persistenz der PROJEKTE selbst (Anlegen, Laden, Umbenennen, Duplizieren, Löschen).
+///
+/// Punkte und Gartenelemente liegen bewusst in eigenen Rollen-Interfaces
+/// (<see cref="IProjectPointService"/>, <see cref="IProjectElementService"/>): vorher war alles
+/// in einem 12-Methoden-Interface, und jeder Konsument hing an allem — der Gartenplan-Tab
+/// bekam Lösch-Rechte für ganze Projekte, obwohl er nur Elemente schreibt.
+/// Implementiert werden alle drei von derselben <see cref="ProjectService"/>-Instanz
+/// (eine SQLite-Verbindung, siehe DI-Registrierung in App.axaml.cs).
+/// </summary>
 public interface IProjectService
 {
     /// <summary>Alle Projekte laden (ohne Punkte/Elemente)</summary>
@@ -22,22 +31,4 @@ public interface IProjectService
 
     /// <summary>Projekt duplizieren (als Planungsvariante)</summary>
     Task<SurveyProject> DuplicateProjectAsync(int id, string newName);
-
-    /// <summary>Punkt zu einem Projekt hinzufuegen</summary>
-    Task AddPointAsync(int projectId, SurveyPoint point);
-
-    /// <summary>Alle Punkte eines Projekts laden</summary>
-    Task<List<SurveyPoint>> GetPointsAsync(int projectId);
-
-    /// <summary>Gartenelement zu einem Projekt hinzufuegen</summary>
-    Task AddGardenElementAsync(int projectId, GardenElement element);
-
-    /// <summary>Gartenelement aktualisieren</summary>
-    Task UpdateGardenElementAsync(GardenElement element);
-
-    /// <summary>Gartenelement loeschen</summary>
-    Task DeleteGardenElementAsync(int id);
-
-    /// <summary>Alle Gartenelemente eines Projekts laden</summary>
-    Task<List<GardenElement>> GetGardenElementsAsync(int projectId);
 }

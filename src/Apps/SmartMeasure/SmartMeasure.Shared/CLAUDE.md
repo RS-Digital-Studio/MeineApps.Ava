@@ -36,14 +36,19 @@ null → Fallbacks/Mocks (gewollt). Generisches Pattern → [Core.Ava-CLAUDE.md]
 3. **`ILocalizationService`** → `new LocalizationService(AppStrings.ResourceManager, IPreferencesService)`.
    MUSS nach `IPreferencesService` kommen (persistiert die Sprachwahl darüber).
 4. **`IArCaptureService`** — plattform-spezifisch oder Mock.
-5. **Fachliche Services** (alle Singleton): `IMeasurementService`, `ICoordinateService`,
+5. **`ProjectService`** — deckt drei Rollen-Interfaces ab (`IProjectService` /
+   `IProjectPointService` / `IProjectElementService`). **EINE** Instanz registrieren und alle drei
+   darauf mappen (`sp => sp.GetRequiredService<ProjectService>()`) — drei getrennte
+   `AddSingleton<IXxx, ProjectService>()` würden drei SQLite-Verbindungen auf dieselbe Datei
+   öffnen, jede mit eigenem Init-Task und Semaphore.
+6. **Fachliche Services** (alle Singleton): `IMeasurementService`, `ICoordinateService`,
    `IGeoidService`, `ITerrainService`, `IGardenPlanService`, `IProjectService`,
    `IExportService`, `IBlenderExportService`, `IArTransferService`,
    `IDifferentialSnapshotService`, `IVolumeService`,
    `ITotalStationService`, `ILeastSquaresAdjustmentService`,
    `IVoiceAnnotationService`, `ISurveyReportService`, `ISceneReconstructionService`,
    `IMultiUserSessionService`.
-6. **ViewModels** (alle Singleton): `MainViewModel`, `SurveyViewModel`,
+7. **ViewModels** (alle Singleton): `MainViewModel`, `SurveyViewModel`,
    `TerrainViewModel`, `GardenPlanViewModel`, `MapViewModel`, `ProjectsViewModel`,
    `SettingsViewModel`.
 

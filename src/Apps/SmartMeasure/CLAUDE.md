@@ -70,6 +70,28 @@ ArCaptureActivity → ConsumeLastResult → AndroidArCaptureService → TCS
       Transfer-Fehler im Uebergabefenster bleiben wiederherstellbar)
 ```
 
+**Positions-Quelle (KRITISCH):** Die **relative AR-Geometrie ist die Wahrheit**, nicht die
+VPS-Absolutposition. `ArTransferService` georeferenziert über `X`/`Z` + **einen** Session-Anker
++ den Frame-Azimut — eine gemeinsame starre Transformation für den ganzen Punktsatz. Der Satz
+kann als Ganzes um die Anker-Unsicherheit verschoben/verdreht sein, aber Distanzen, Flächen und
+die Bowditch-Korrektur bleiben erhalten.
+
+Geospatial-Koordinaten pro Punkt (`ArPoint.GeoLatitude/-Longitude`) sind nur noch Rückfall für
+Punkte **ohne** lokale Position (`HasLocalPosition == false` → Total-Station) und dort Pflicht-
+gekoppelt an `GeoIsExact`. Grund: VPS trägt ±1–3 m **je Punkt** — zwei real 2 m entfernte Punkte
+lagen damit 1 m oder 4 m auseinander, und das Geländemodell rechnete 25-cm-Isohypsen auf Höhen
+mit Meter-Rauschen. Nicht verortbare Punkte werden **verworfen**, nie auf den Session-Ursprung
+gelegt. Flag-Semantik → [Models-CLAUDE.md](SmartMeasure.Shared/Models/CLAUDE.md) (`ArPoint`).
+
+**Bekannte Grenze (Sitzung zu Sitzung):** Jede AR-Sitzung bringt ihren eigenen Anker (±1–3 m VPS
+bzw. ±3–8 m GPS) und ihr eigenes Heading (±5° VPS, ±15–30° Magnetometer). Punkte einer Folge-
+Sitzung können daher gegen den Bestand verschoben **und verdreht** liegen — bei 20 m Ausdehnung
+sind 5° Heading-Fehler 1,7 m Querversatz. Die Genauigkeit wird ehrlich in
+`SurveyPoint.HorizontalAccuracy` geführt, ausgeglichen wird sie **nicht**: dafür bräuchte es eine
+Helmert-Registrierung auf zugeordnete Passpunkte, und die Zuordnung „neuer Punkt = jener
+Bestandspunkt" existiert im Datenmodell nicht. `ILeastSquaresAdjustmentService` löst das nicht —
+er ist ein Distanz-Constraint-Ausgleich (PBD) und hat aktuell keinen Aufrufer.
+
 **Heading-Konvention (KRITISCH):** `ArCaptureResult.MagneticHeading` ist der **Azimut des
 ARCore-Weltframes** (true north, inkl. Deklination) — gewonnen als zirkulärer Mittelwert der
 (Magnetometer − ARCore-Yaw)-Paare bzw. via VPS (`geoHeading − Kamera-Yaw` desselben Frames).
@@ -121,8 +143,9 @@ FrameLayout
                             Punkt · Fläche · Schließen · Zurück · Vor · Mehr · Fertig.
                             "Fertig" = grüner CTA, aktiver Modus = Akzent (Farb-Konstanten
                             ToolbarAccent/Inactive/Cta, an das Overlay-Design-System angeglichen).
-                            "Mehr" = PopupMenu (Maßband, Tachymeter, Löschen,
-                            Bodenraster ein/aus, Screenshot, Aufnahme, Hilfe).
+                            "Mehr" = PopupMenu (Maßband, Tachymeter, Punkt ans Ziel
+                            verschieben, Löschen, Bodenraster ein/aus, Screenshot,
+                            Aufnahme, Hilfe).
                             KEINE Emojis/Unicode als UI-Text.
 ```
 
@@ -161,7 +184,7 @@ Die Activity hat keine Avalonia-DI. Lokalisierte Strings werden einmalig in `OnC
 
 | Feature | Zweck |
 |---------|-------|
-| `ArAnchorManager` | Drift-Kompensation: Anchor pro gesetztem Punkt, RefreshAnchors pro Frame |
+| `ArAnchorManager` | Drift-Kompensation: **lokaler** Session-Anchor pro gesetztem Punkt, RefreshAnchors pro Frame. **Nie Earth-Anchors für Messpunkte** — deren Pose folgt der VPS-Lösung, und RefreshAnchors schrieb sie pro Frame in X/Y/Z zurück (Punkte wanderten metrisch, nicht starr). Earth-Anchors nur für Site-Marker + Recovery-Re-Attach, wo sie die einzige Positionsquelle sind |
 | `ArPoseSampler` (Shared.Services) | Multi-Frame-Averaging (15 Samples / 800 ms), Median + ±3σ-Outlier-Filter |
 | `ArStabilityMonitor` (in `ArAnchorManager.cs`) | EMA über Gyro + Accel, StabilityScore 0..1, Block bei < 0,6 |
 | `ArPrecisionHelpers` | Depth-Sanity, Depth-Fallback (Instant-Placement), Ground-Plane, Heading-Extraktion, Semantic-Label, Sky-Check. Math-Helfer delegiert an `ArMathHelpers` (Shared) |
@@ -207,13 +230,13 @@ confidence =
 | Feature | Beschreibung |
 |---------|-------------|
 | Bestätigungs-Dialoge | Löschen + Fertig fragen vor destruktiver Aktion (`ConfirmDeleteSelectedPoint`, `ConfirmFinishCapture`) |
-| Sound beim Punkt-Setzen | `MediaActionSound.SHUTTER_CLICK` zusätzlich zur Vibration. SharedPreferences-Key `ar.sound.enabled` (Default an). Toggle im Help-Dialog. |
+| Sound beim Punkt-Setzen | `ToneGenerator` auf **`Stream.Music`** zusätzlich zur Vibration → folgt der Medien-Lautstärke, bei Regler auf 0 stumm. **Nicht** `MediaActionSound`: das spielt zwingend über `STREAM_SYSTEM_ENFORCED` (Kamera-Shutter-Vorgabe) und ignoriert Lautstärke wie Stumm-Schaltung. SharedPreferences-Key `ar.sound.enabled` (Default an), Toggle im Help-Dialog. |
 | 3D-Punkt-Darstellung | `DrawPoints` zeichnet räumlich: Painter-Tiefensortierung (fern→nah), perspektivische Marker-Skalierung (0,45×–1,9× um 2,5 m Referenz), Bodenschatten-Ellipse + Höhen-Stab zur Bodenprojektion, Confidence-Ampel-Ring (grün/gelb/rot) statt `~/?`-Zeichen, ΔH am Stab-Kopf. Tiefe + Bodenprojektion kommen aus `WorldToScreen` (liefert Clip-Tiefe) + `ProjectPointsToScreen` (groundX/groundY/worldY je Punkt) |
 | Pop-Animation neuer Punkte | 250 ms Scale-Easing in `DrawPoints` — junge Punkte (< 250 ms alt) starten 2.2× groß, schrumpfen mit Ease-Out-Quadratic |
 | Boden-Raster (3D-Anker) | 1-m-Gitter auf der Ground-Plane, GL-seitig segmentweise projiziert + distanz-gecullt (`ProjectGroundGrid`, alloc-frei via Struct-Closure), Tiefen-Fade im `DrawGroundGrid`. Toggle im Mehr-Menü, Pref `ar.grid.enabled` (Default an). Verankert die Szene räumlich |
 | Plastische Flächen | Geschlossene Konturen (Typ-Farbe), aktive Kontur (Akzent) und Rechteck-Vorschau (grün/orange je Quadrat-Snap) mit vertikalem Tiefen-Gradient (`FillPolygonGradient`) statt flacher Füllung |
 | Modus/Schritt-Chip | Permanenter Glas-Chip oben mittig (`DrawModeChip`): Modus-Titel + nächster Schritt/Fortschritt (`BuildModeChipLabel`). Führt durch geführte Modi ("1. Ecke → 2. Ecke → Tiefe"), zeigt Kontur-Typ. Ersetzt native Modus-/Zähler-TextViews |
-| Crosshair-Punktsetzung | Punkte werden immer am Crosshair (Bildmitte) gesetzt, nicht an der Tap-Position — passend zu den am Crosshair angezeigten Live-Distanzen (`HandleTouchUp` → `PlaceNewPoint(viewport/2)`) |
+| Crosshair-Punktsetzung | **Jede** Punkt-Position kommt vom Crosshair (Bildmitte) — Setzen (`HandleTouchUp` → `PlaceNewPoint(viewport/2)`) **wie Verschieben** (`MoveSelectedPointToCrosshair`, Mehr-Menü). Der Tap löst nur aus, anvisiert wird mit dem Crosshair; so gilt exakt die Distanz, die das Reticle anzeigt. **Kein Drag-to-Move**: da ein Tap neben einem bestehenden Punkt diesen zuerst selektiert, verschob ein minimaler Wisch über `TAP_THRESHOLD_DP` sonst eine fertige Messung an die Fingerposition. Verschieben gibt den alten Anchor frei und erzeugt keinen neuen (bewusste Festlegung, Semantik wie Bowditch/Rechteck) |
 | Off-Screen-Distanz | Liegt der Vorpunkt außerhalb des Bildes, zeigt `DrawOffScreenLiveSegment` Distanz/ΔH am Crosshair + Rand-Pfeil zur Richtung (`LiveSegmentActive` + `LiveSegmentOffScreenDirectionDeg` aus `BuildOverlayState`) |
 | Farbcodierte Hinweise | Transient-Hinweise nach Schweregrad (`TransientSeverity` Info/Success/Warning) → Panel-Ton + Status-Dot. `ShowTransientHint` hat optionalen Severity-Parameter (Default Info, atomar via Record-Feld) |
 | Dialoge mit Status-/Typ-Dots | Kontur-/Rechteck-Typ-Dialoge zeigen farbigen Typ-Punkt je Eintrag (`DotListAdapter`, Farbe via `ArPointOverlayView.GetContourTypeColor`); Readiness-Dialog mit Status-Dots (grün/rot/bernstein/grau) als nicht-klickbare Zeilen (`BuildDotRow`) |

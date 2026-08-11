@@ -12,7 +12,7 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 |-----------|------|-------|
 | `IAppPaths` | `AppPaths` (Desktop), `AndroidAppPaths` | Sandbox-sichere Pfade |
 | `IArCaptureService` | `MockArCaptureService` (Desktop), `AndroidArCaptureService` | AR-Kamera-Erfassung |
-| `IArTransferService` | `ArTransferService` | AR-Punkte → SurveyPoints (GPS-Fusion, Heading-Rotation, Geoid) |
+| `IArTransferService` | `ArTransferService` | AR-Punkte → SurveyPoints. **Relative AR-Geometrie ist Priorität 1** (Session-Anker + Heading als starre Transformation), VPS pro Punkt nur Rückfall ohne lokale Position — siehe Abschnitt unten |
 | `IMeasurementService` | `MeasurementService` | Punkt-Verwaltung, Abstände, Flächen. `ReplacePoints` + `PointsReset`-Event |
 | `ICoordinateService` | `CoordinateService` | WGS84 ↔ UTM (Transverse-Mercator). `ToUtmFixedZone` für Zonen-Konsistenz |
 | `IGeoidService` | `Egm96GeoidService` | EGM96 Ellipsoid→NN-Höhe. Hardcoded 2°-Grid DE (46–56°N, 4–16°E) |
@@ -24,7 +24,7 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `IDifferentialSnapshotService` | `DifferentialSnapshotService` | Greedy-Nearest-Neighbor Snapshot-Vergleich (Moved/Added/Removed/Unchanged) |
 | `IVolumeService` | `VolumeService` | Prism/Layered/Frustum-Volumen + Material-Schätzung (8 Materialien) |
 | `ITotalStationService` | `TotalStationService` | Stationierung + Radial-Projektion (Distanz+Bearing+Pitch → Lat/Lon) |
-| `ILeastSquaresAdjustmentService` | `LeastSquaresAdjustmentService` | Position-based-Dynamics-Netzausgleich, gewichtet 1/σ² |
+| `ILeastSquaresAdjustmentService` | `LeastSquaresAdjustmentService` | Position-based-Dynamics-Netzausgleich, gewichtet 1/σ². **Aktuell ohne Aufrufer** (nur DI-registriert): er gleicht `DistanceConstraint`s aus, die keine App-Stelle erzeugt. Löst insbesondere NICHT den Sitzungs-Versatz — dafür wäre eine Helmert-Registrierung auf zugeordnete Passpunkte nötig |
 | `IVoiceAnnotationService` | `NullVoiceAnnotationService` (Desktop), `AndroidVoiceAnnotationService` | SpeechRecognizer-Transkript |
 | `ISurveyReportService` | `SurveyReportService` | PdfSharpCore: Cover, Punkt-Tabelle + Foto-Thumbnails, Materialien, optional Differential |
 | `ISceneReconstructionService` | `SceneReconstructionService` | Voxel-Filter + PLY/OBJ-Punktwolke-Export |
@@ -90,6 +90,26 @@ Betroffen: `ProjectService`, `ExportService`, `SettingsViewModel`, `SurveyReport
 | Convex-Hull (Andrew's Monotone Chain) | `CalculateArea2D` braucht geordnete Polygon-Punkte |
 | Face-Normalen vorberechnet | Spart 24 k sqrt/s beim 60-fps-Dreh |
 
+### ArTransferService — Positions-Priorität
+
+```
+1. HasLocalPosition          → RotateAndProject(X, Z) + Session-Anker + Frame-Azimut
+2. !HasLocalPosition
+   && GeoIsExact             → Punkt-Geo direkt (Total-Station)
+3. sonst                     → Punkt VERWERFEN (nicht verortbar)
+```
+
+Die Höhe kommt in Fall 1 aus `gpsAlt + (Y − GroundOffsetYAtCapture)`, nicht aus `GeoAltitude` —
+VPS-Höhen sind noch ungenauer als VPS-Lagen und würden das Geländemodell (25-cm-Isohypsen)
+in Rauschen auflösen.
+
+**Warum nicht VPS pro Punkt (frühere Priorität 1):** VPS ist absolut besser referenziert, trägt
+aber ±1–3 m **je Punkt**. Zwei real 2 m entfernte Punkte lagen danach 1 m oder 4 m auseinander,
+die Bowditch-Korrektur war wieder verworfen, und Konturen verloren ihre Form. Ein gemeinsamer
+Anker verschiebt/verdreht den Satz als Ganzes — Distanzen und Flächen bleiben exakt. Die
+Flag-Semantik, auf die sich das stützt, steht in
+[Models-CLAUDE.md](../Models/CLAUDE.md) (`ArPoint`).
+
 ### ArMathHelpers / ARCore Koordinatensystem
 
 ARCore: +X = rechts, +Y = oben, **+Z = hinten** (vom Gerät weg). Das `heading` in
@@ -126,6 +146,8 @@ sind das Lat/Lon-Grad statt Meter → Warning + 0 zurückgeben.
 
 | Problem | Fix |
 |---------|-----|
+| Punkte wandern / Distanzen stimmen nicht nach dem Transfer | Relative AR-Geometrie muss Priorität 1 bleiben (siehe Abschnitt oben). VPS-Koordinaten pro Punkt NIE als primäre Position verwenden |
+| Punkt landet auf der Standposition des Nutzers | `ArPoint.GeoIsExact` prüfen, nicht bloß `GeoLatitude.HasValue` — der Fallback in `ResolveHitGeoPose` liefert die Kamera-Position |
 | `LocalApplicationData` crasht auf Android | `IAppPaths`-Pattern, NIEMALS direkt aufrufen |
 | O(N²)-Triangulation bei Projekt-Load | `MeasurementService.ReplacePoints` statt N× `AddPoint` |
 | GardenElement-Konturen driften bei Schwerpunkt-Änderung | PointsJson v2 (WGS84) + `LocalPoints` transient neu projiziert |

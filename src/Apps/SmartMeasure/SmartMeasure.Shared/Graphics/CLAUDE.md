@@ -10,8 +10,8 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → [MeineA
 
 | Datei | Zweck | Besonderheit |
 |-------|-------|-------------|
-| `TerrainRenderer.cs` | 3D-Geländemodell: Höhenfarbkodierung, Konturlinien, Rotation, Painter's Algorithm | Painter's Algorithm nach Kamera-Z (nicht Screen-Y), gecachte screenX/Y/Z-Arrays, vorberechnete Face-Normalen aus Mesh, Höhen-Legende als `LinearGradient`-Shader |
-| `GardenPlanRenderer.cs` | 2D-Gartenplan: Elemente als farbige Polygone/Linien, Labels | Min/Max in 1-Pass, gecachter Preview-Path + SKPoint-Array, `element.LocalPoints` direkt (kein PointsJson-Re-Parse pro Frame) |
+| `TerrainRenderer.cs` | 3D-Geländemodell: Höhenfarbkodierung, Konturlinien, Rotation, Painter's Algorithm | Painter's Algorithm nach Kamera-Z (nicht Screen-Y), gecachte screenX/Y/Z-Arrays, vorberechnete Face-Normalen aus Mesh, Höhen-Legende als `LinearGradient`-Shader, **stabile Einpassung** |
+| `GardenPlanRenderer.cs` | 2D-Gartenplan: Elemente als farbige Polygone/Linien, Labels | Min/Max in 1-Pass, gecachter Preview-Path + SKPoint-Array, `element.LocalPoints` direkt (kein PointsJson-Re-Parse pro Frame), **stabile Einpassung** |
 | `ProjectThumbnailRenderer.cs` | Vorschau-Thumbnail für Projekt-Liste | Statisch mit gecachten Paints, SKFont-API |
 
 ---
@@ -40,6 +40,23 @@ SkiaSharp-Grundlagen/Gotchas (Paint-Lifecycle, DPI, MaskFilter-Leak) → [MeineA
 5. **Normalen aus Mesh** — `TerrainMesh.NormalsX/Y/Z` sind vorberechnet; Renderer ruft `RecalculateNormals()` NICHT pro Frame auf.
 
 ---
+
+## Stabile Einpassung (`ResetFit`) — Terrain + GardenPlan
+
+Zentrum und Spannweite (`_fitCenter*`, `_fitRange`) werden **einmal** aus den Daten bestimmt und
+danach beibehalten. Vorher rechnete jeder Frame beides neu aus der aktuellen Bounding-Box — ein
+einzelner neuer Messpunkt verschob und skalierte damit die ganze Szene, alle bereits gesetzten
+Punkte wanderten sichtbar auf dem Schirm.
+
+Neu eingepasst wird nur, wenn (a) noch keine Einpassung existiert, (b) die Daten aus der
+bestehenden herauswachsen — sonst wären sie unsichtbar — oder (c) `ResetFit()` gerufen wurde.
+`ResetFit()` gehört an **echte Datensatz-Wechsel**, nicht an einzelne Punkte:
+`PointsReset` (Projekt-Load/Clear), `LoadElementsFromProjectAsync`, `TerrainViewModel.ResetView`.
+`PointAdded` ruft es bewusst **nicht**.
+
+Beim Terrain bleibt auch die Höhen-Mitte (`_fitCenterZ`) stehen — sonst kippt ein einzelner
+tiefer Punkt das ganze Relief. Der Maßstab-Balken rechnet gegen `_fitRange`, damit
+Pixel-pro-Meter und Anzeige zusammenpassen.
 
 ## TerrainRenderer — Painter's Algorithm
 

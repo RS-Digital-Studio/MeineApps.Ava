@@ -15,11 +15,27 @@ Generische Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `GardenElement.cs` | SQLite-Entity: Polygon/Linie mit `PointsJson` (v2: WGS84, v1: legacy UTM). `LocalPoints` ist `[Ignore]` + transient. `GardenElementType`-Enum: Weg, Beet, Rasen, Mauer, Zaun, Terrasse, Grenze, Gebäude, Wasser, Kante |
 | `TerrainMesh.cs` | Immutable Delaunay-Gitter: Vertex-Arrays X/Y/Z, Triangle-Index-Array, vorberechnete Normalen, Bounding Box. `ContourLine` (Isohypse) ebenfalls in dieser Datei |
 | `MaterialEstimate.cs` | Berechneter Materialbedarf: `Material`-String, Menge, Einheit, `QuantityWithSafety` (+15 %). Kein Typ-Enum — `Material` ist Freitext |
-| `ArPoint.cs` | AR-Messpunkt: ARCore-Koordinaten + Confidence + SemanticLabel (`ArSemanticLabel`-Enum) + PhotoPath + optionale Geo-Koordinaten (VPS) + Tracking-Metadaten. Flags: `IsPreloaded` (Vorlade-Punkt, nie ins Result), `RestoredWithoutGeo` (Recovery ohne Geo-Bezug → Transfer wertet Accuracy/Konfidenz drastisch ab) |
+| `ArPoint.cs` | AR-Messpunkt: ARCore-Koordinaten + Confidence + SemanticLabel (`ArSemanticLabel`-Enum) + PhotoPath + optionale Geo-Koordinaten (VPS) + Tracking-Metadaten. Flags → eigener Abschnitt unten |
 | `ArContour.cs` | AR-Kontur aus mehreren `ArPoint`s. Nicht zwingend geschlossen (`IsClosed`-Flag). `ArContourType`-Enum: Grenze, Weg, Beet, Mauer, Zaun, Terrasse, Gebäude, Wasser, Kante |
 | `ArCaptureResult.cs` | Übergabe-Objekt von `ArCaptureActivity` → `IArCaptureService.CaptureAsync()`. Enthält alle Punkte + Konturen + `TotalPointCount`, GPS-Anker, Geospatial-Metadaten, `ArGpsSource`-Enum |
 
 ---
+
+## ArPoint — Flags, die der Transfer auswerten MUSS
+
+Der Transfer entscheidet anhand dieser Flags, woher die Position eines Punkts kommt. `HasValue`
+auf den Geo-Feldern allein ist **nie** ein ausreichendes Kriterium.
+
+| Flag | Bedeutung | Wirkung im Transfer |
+|------|-----------|---------------------|
+| `HasLocalPosition` (Default **true**) | `X`/`Y`/`Z` sind eine echte Position im Session-Frame | Priorität 1: Georeferenzierung über Session-Anker + Heading (starr für den ganzen Satz). Total-Station setzt `false` (radial gerechnet, X/Y/Z bleiben 0) |
+| `GeoIsExact` | `GeoLatitude/-Longitude` sind die Geo-Pose des **Messpunkts** (ARCore-Earth auf der Hit-Pose). `false` = **Kamera**-Position, nur Höhe korrigiert — Fehler ist die volle Messdistanz | Ohne lokale Position nur bei `true` verwendbar; sonst wird der Punkt verworfen |
+| `GroundOffsetYAtCapture` | Boden-Ebene **zum Messzeitpunkt** | Schlägt den Sitzungswert `ArCaptureResult.GroundPlaneY` (ein EMA vom Sitzungsende) |
+| `IsPreloaded` | Vorlade-Punkt aus dem Projekt, relativ platziert | Geht nie ins Result (Duplikat-/Korruptionsschutz) |
+| `RestoredWithoutGeo` | Recovery ohne belastbaren Geo-Bezug (auch bei `GeoIsExact == false`) | Accuracy ≥ 5 m, Konfidenz ≤ 0,3 |
+
+Recovery-States werden als JSON serialisiert — neue Flags reisen automatisch mit, alte States
+tragen sie nicht (JSON-Default) und werden dadurch bewusst konservativ behandelt.
 
 ## SurveyPoint — Feld-Details
 

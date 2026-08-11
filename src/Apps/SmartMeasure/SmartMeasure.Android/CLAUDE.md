@@ -20,7 +20,7 @@ Generische Android-Patterns → [Haupt-CLAUDE.md](../../../../CLAUDE.md).
 | `Ar/ArBackgroundRenderer.cs` | OpenGL ES 3.0 Kamera-Preview (Vertex+Fragment-Shader für Camera-Textur). |
 | `Ar/ArPointOverlayView.cs` | Transparenter Canvas: gesamtes HUD (3D-Punkte, Linien, Flächen, Boden-Raster, Banner, Pillen, Footer, Modus-Chip, Stats, Readiness-Badge). `partial sealed`. |
 | `Ar/ArPointOverlayView.Design.cs` | Design-System des Overlays: semantische Farb-Tokens (Klasse `C`), Typo-Schnitte, `DrawPanel`/`DrawStatusDot` — das EINE Glas-Panel-Primitiv für alle HUD-Container. |
-| `Ar/ArAnchorManager.cs` | Drift-Kompensation via Earth-Anchors. Enthält auch `ArStabilityMonitor`. |
+| `Ar/ArAnchorManager.cs` | Drift-Kompensation. Messpunkte tragen **lokale** Session-Anchors; Earth-Anchors nur für Site-Marker + Recovery-Re-Attach (`RefreshAnchors` schreibt die Anchor-Pose pro Frame in X/Y/Z — bei einem Earth-Anchor wanderten die Punkte damit mit der VPS-Lösung). Enthält auch `ArStabilityMonitor`. |
 | `Ar/ArPrecisionHelpers.cs` | Depth-Sanity, Ground-Plane, Semantic-Label, Sky-Check. Delegiert Math an `ArMathHelpers` (Shared). |
 | `Ar/ArOverlayState.cs` | Snapshot-Record: alle Render-Parameter + lokalisierte Labels + System-Banner. |
 | `Ar/MediaStoreGallery.cs` | Speichert Screenshots (Bild) + Aufnahmen (Video) via MediaStore in `Pictures/SmartMeasure` / `Movies/SmartMeasure` (IS_PENDING-geschuetzt, Cleanup bei Fehler). Sichtbar in der Galerie, ueberlebt Deinstall, keine Permission ab API 29. |

@@ -82,8 +82,10 @@ MIME-Type aus Dateiendung: `.pdf` / `.csv` / `.geojson` / `.kmz` / `.dxf` / `.ob
 
 ## TerrainViewModel
 
-- `PointAdded` → inkrementelles Neu-Triangulieren (Live-Ansicht beim AR-Transfer).
-- `PointsReset` → einmalige Neuberechnung (Projekt-Load).
+- `PointAdded` → inkrementelles Neu-Triangulieren (Live-Ansicht beim AR-Transfer). **Ohne**
+  `Renderer.ResetFit()` — die Einpassung muss stehen bleiben, sonst verschiebt sich das Modell
+  bei jedem einzelnen Punkt (→ [Graphics-CLAUDE.md](../Graphics/CLAUDE.md)).
+- `PointsReset` → einmalige Neuberechnung (Projekt-Load) **mit** `Renderer.ResetFit()`.
 - Rotation via `HandleDrag(dx, dy)`, Zoom via `HandleZoom(factor)`, Pan via `HandlePan(dx, dy)`.
   Alle drei delegieren direkt an `Renderer.*`, kein eigener State-Speicher nötig.
 - `ContourInterval` default 0,25 m (25 cm); Änderung triggert nur Konturlinien-Neuberechnung, nicht neues Mesh.

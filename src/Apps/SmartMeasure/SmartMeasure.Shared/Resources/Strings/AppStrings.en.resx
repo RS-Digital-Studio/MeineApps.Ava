@@ -489,4 +489,13 @@
   <data name="ArTransferFailed" xml:space="preserve">
     <value>AR transfer failed</value>
   </data>
+  <data name="SessionRegistration" xml:space="preserve">
+    <value>Session aligned</value>
+  </data>
+  <data name="SessionRegistrationApplied" xml:space="preserve">
+    <value>Aligned to existing data via {0} control points (rotation {1:F1}°, offset {2:F2} m, residual {3:F0} cm)</value>
+  </data>
+  <data name="SessionRegistrationSkipped" xml:space="preserve">
+    <value>Not aligned to existing data — the new points may be offset from the previous session. To align, re-measure 2–3 existing spots.</value>
+  </data>
 </root>

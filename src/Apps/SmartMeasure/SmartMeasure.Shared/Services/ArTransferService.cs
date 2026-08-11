@@ -14,6 +14,10 @@ public class ArTransferService : IArTransferService
     private readonly ICoordinateService _coordinateService;
     private readonly IMeasurementService _measurementService;
     private readonly IGeoidService _geoidService;
+    private readonly ISessionRegistrationService _registrationService;
+
+    /// <inheritdoc />
+    public event Action<SessionRegistrationResult>? SessionRegistered;
 
     /// <summary>Minimale geschaetzte AR-Genauigkeit in cm</summary>
     private const float MinArAccuracyCm = 50f;
@@ -48,7 +52,8 @@ public class ArTransferService : IArTransferService
         IProjectElementService elementService,
         ICoordinateService coordinateService,
         IMeasurementService measurementService,
-        IGeoidService geoidService)
+        IGeoidService geoidService,
+        ISessionRegistrationService registrationService)
     {
         _projectService = projectService;
         _pointService = pointService;
@@ -56,6 +61,7 @@ public class ArTransferService : IArTransferService
         _coordinateService = coordinateService;
         _measurementService = measurementService;
         _geoidService = geoidService;
+        _registrationService = registrationService;
     }
 
     public async Task<int> TransferToProjectAsync(ArCaptureResult result, int projectId)
@@ -100,6 +106,25 @@ public class ArTransferService : IArTransferService
         //    failen, In-Memory-Add aber gelingen → erst DB, dann erst _measurementService,
         //    damit beide Welten konsistent sind.
         var surveyPoints = ConvertToSurveyPoints(result, projectId);
+
+        // 1a. Folge-Sitzung auf den Bestand einpassen. Jede AR-Sitzung hat eigenen Anker und
+        //     eigenes Heading — ohne Einpassung liegt der neue Satz gegenueber dem Bestand
+        //     verschoben UND verdreht. Passpunkte sind Punkte, die eine bestehende Stelle
+        //     erneut messen; daraus kommt eine gemeinsame starre Transformation.
+        //     MUSS vor dem Speichern laufen, damit nur eingepasste Koordinaten in die DB gehen.
+        //     Der Bestand wird dabei NICHT angetastet.
+        if (surveyPoints.Count > 0)
+        {
+            var beforeTransfer = await _projectService.GetProjectAsync(projectId);
+            var existingPoints = beforeTransfer?.Points ?? [];
+            if (existingPoints.Count > 0)
+            {
+                var registration = _registrationService.Register(existingPoints, surveyPoints);
+                if (registration.Applied) surveyPoints = registration.Points;
+                SessionRegistered?.Invoke(registration);
+            }
+        }
+
         foreach (var point in surveyPoints)
         {
             try

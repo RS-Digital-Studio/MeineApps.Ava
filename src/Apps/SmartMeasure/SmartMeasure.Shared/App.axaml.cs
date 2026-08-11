@@ -147,6 +147,8 @@ public class App : Application
         services.AddSingleton<IProjectElementService>(sp => sp.GetRequiredService<ProjectService>());
         services.AddSingleton<IExportService, ExportService>();
         services.AddSingleton<IBlenderExportService, BlenderExportService>();
+        // MUSS vor IArTransferService stehen (der injiziert ihn).
+        services.AddSingleton<ISessionRegistrationService, SessionRegistrationService>();
         services.AddSingleton<IArTransferService, ArTransferService>();
         services.AddSingleton<IDifferentialSnapshotService, DifferentialSnapshotService>();
         services.AddSingleton<IVolumeService, VolumeService>();

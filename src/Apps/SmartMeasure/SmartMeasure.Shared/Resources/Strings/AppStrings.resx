@@ -489,4 +489,13 @@
   <data name="ArTransferFailed" xml:space="preserve">
     <value>AR-Transfer fehlgeschlagen</value>
   </data>
+  <data name="SessionRegistration" xml:space="preserve">
+    <value>Sitzung eingepasst</value>
+  </data>
+  <data name="SessionRegistrationApplied" xml:space="preserve">
+    <value>Über {0} Passpunkte auf den Bestand eingepasst (Drehung {1:F1}°, Versatz {2:F2} m, Restklaffung {3:F0} cm)</value>
+  </data>
+  <data name="SessionRegistrationSkipped" xml:space="preserve">
+    <value>Nicht auf den Bestand eingepasst — die neuen Punkte können gegenüber der Vorsitzung versetzt liegen. Zum Einpassen 2–3 bestehende Stellen erneut messen.</value>
+  </data>
 </root>

@@ -489,4 +489,13 @@
   <data name="ArTransferFailed" xml:space="preserve">
     <value>Échec du transfert AR</value>
   </data>
+  <data name="SessionRegistration" xml:space="preserve">
+    <value>Session ajustée</value>
+  </data>
+  <data name="SessionRegistrationApplied" xml:space="preserve">
+    <value>Ajustée aux données existantes via {0} points d'appui (rotation {1:F1}°, décalage {2:F2} m, résidu {3:F0} cm)</value>
+  </data>
+  <data name="SessionRegistrationSkipped" xml:space="preserve">
+    <value>Non ajustée aux données existantes — les nouveaux points peuvent être décalés par rapport à la session précédente. Pour ajuster, remesurez 2 à 3 emplacements existants.</value>
+  </data>
 </root>

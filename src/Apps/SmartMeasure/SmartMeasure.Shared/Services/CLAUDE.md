@@ -26,7 +26,8 @@ Generische Service-Conventions → [Haupt-CLAUDE.md](../../../../../CLAUDE.md).
 | `IDifferentialSnapshotService` | `DifferentialSnapshotService` | Greedy-Nearest-Neighbor Snapshot-Vergleich (Moved/Added/Removed/Unchanged) |
 | `IVolumeService` | `VolumeService` | Prism/Layered/Frustum-Volumen + Material-Schätzung (8 Materialien) |
 | `ITotalStationService` | `TotalStationService` | Stationierung + Radial-Projektion (Distanz+Bearing+Pitch → Lat/Lon) |
-| `ILeastSquaresAdjustmentService` | `LeastSquaresAdjustmentService` | Position-based-Dynamics-Netzausgleich, gewichtet 1/σ². **Aktuell ohne Aufrufer** (nur DI-registriert): er gleicht `DistanceConstraint`s aus, die keine App-Stelle erzeugt. Löst insbesondere NICHT den Sitzungs-Versatz — dafür wäre eine Helmert-Registrierung auf zugeordnete Passpunkte nötig |
+| `ILeastSquaresAdjustmentService` | `LeastSquaresAdjustmentService` | Position-based-Dynamics-Netzausgleich, gewichtet 1/σ². **Aktuell ohne Aufrufer** (nur DI-registriert): er gleicht `DistanceConstraint`s aus, die keine App-Stelle erzeugt. Für den Sitzungs-Versatz ist `ISessionRegistrationService` zuständig, nicht dieser Service |
+| `ISessionRegistrationService` | `SessionRegistrationService` | Passt eine Folge-Sitzung per 2D-Helmert (Translation + Rotation, **kein** Maßstab) auf den Bestand ein — siehe Abschnitt unten |
 | `IVoiceAnnotationService` | `NullVoiceAnnotationService` (Desktop), `AndroidVoiceAnnotationService` | SpeechRecognizer-Transkript |
 | `ISurveyReportService` | `SurveyReportService` | PdfSharpCore: Cover, Punkt-Tabelle + Foto-Thumbnails, Materialien, optional Differential |
 | `ISceneReconstructionService` | `SceneReconstructionService` | Voxel-Filter + PLY/OBJ-Punktwolke-Export |
@@ -111,6 +112,37 @@ die Bowditch-Korrektur war wieder verworfen, und Konturen verloren ihre Form. Ei
 Anker verschiebt/verdreht den Satz als Ganzes — Distanzen und Flächen bleiben exakt. Die
 Flag-Semantik, auf die sich das stützt, steht in
 [Models-CLAUDE.md](../Models/CLAUDE.md) (`ArPoint`).
+
+### SessionRegistrationService — Folge-Sitzungen einpassen
+
+Jede AR-Sitzung bringt eigenen Anker (±1–3 m VPS / ±3–8 m GPS) und eigenes Heading (±5° VPS /
+±15–30° Magnetometer). Der neue Punktsatz liegt gegenüber dem Bestand deshalb verschoben **und
+verdreht** — bei 20 m Ausdehnung sind 5° schon 1,7 m Querversatz.
+
+Ablauf (in `ArTransferService.TransferToProjectAsync`, **vor** dem Speichern):
+
+```
+Bestandspunkte + neue Punkte → gemeinsames lokales Meter-System (UTM um Bestands-Schwerpunkt)
+  → Passpunkt-Paare: greedy nearest-neighbour, kürzeste zuerst, jeder Punkt einmal (Radius 3 m)
+  → Rotation aus zentrierten Paaren: atan2(Σ Kreuzprodukt, Σ Skalarprodukt)
+  → Translation aus der Schwerpunkt-Differenz
+  → Plausibilität: ≥ 2 Paare, RMS ≤ 0,5 m, |Drehung| ≤ 45°, Passpunkt-Streuung > 10 cm²
+  → auf ALLE neuen Punkte anwenden (auch die ohne Partner — das ist der Zweck)
+```
+
+**Kein Maßstabsfaktor:** Der Maßstab kommt aus der AR-Geometrie und ist gut. Ihn mitzuschätzen
+würde echte Messung gegen Anker-Rauschen tauschen — deshalb kippt die Restklaffung eine
+widersprüchliche Paarung (Test `WiderspruechlichePaare_LehntWegenRestklaffungAb`) statt die
+Messung zu verbiegen.
+
+**Höhen bleiben unangetastet** — der Höhenbezug kommt aus Anker-Höhe + `GroundOffsetYAtCapture`
+und hat mit der Lage-Verdrehung nichts zu tun. Eine Höhen-Einpassung wäre ein eigener Schritt
+mit eigenen Toleranzen.
+
+Bei Ablehnung bleiben die Punkte **unverändert** — lieber ein ehrlich versetzter Satz als einer,
+den eine Fehlzuordnung verzogen hat. `IArTransferService.SessionRegistered` feuert in beiden
+Fällen (Bestand vorhanden), `MainViewModel` macht daraus einen Toast mit Kennzahlen bzw. dem
+Hinweis, 2–3 bestehende Stellen erneut zu messen.
 
 ### ArMathHelpers / ARCore Koordinatensystem
 

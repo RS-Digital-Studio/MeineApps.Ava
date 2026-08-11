@@ -489,4 +489,13 @@
   <data name="ArTransferFailed" xml:space="preserve">
     <value>Falha na transferência AR</value>
   </data>
+  <data name="SessionRegistration" xml:space="preserve">
+    <value>Sessão alinhada</value>
+  </data>
+  <data name="SessionRegistrationApplied" xml:space="preserve">
+    <value>Alinhada aos dados existentes com {0} pontos de apoio (rotação {1:F1}°, deslocamento {2:F2} m, resíduo {3:F0} cm)</value>
+  </data>
+  <data name="SessionRegistrationSkipped" xml:space="preserve">
+    <value>Não alinhada aos dados existentes — os novos pontos podem estar deslocados em relação à sessão anterior. Para alinhar, meça novamente 2–3 pontos existentes.</value>
+  </data>
 </root>

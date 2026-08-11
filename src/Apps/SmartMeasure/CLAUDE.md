@@ -83,14 +83,18 @@ lagen damit 1 m oder 4 m auseinander, und das Geländemodell rechnete 25-cm-Isoh
 mit Meter-Rauschen. Nicht verortbare Punkte werden **verworfen**, nie auf den Session-Ursprung
 gelegt. Flag-Semantik → [Models-CLAUDE.md](SmartMeasure.Shared/Models/CLAUDE.md) (`ArPoint`).
 
-**Bekannte Grenze (Sitzung zu Sitzung):** Jede AR-Sitzung bringt ihren eigenen Anker (±1–3 m VPS
-bzw. ±3–8 m GPS) und ihr eigenes Heading (±5° VPS, ±15–30° Magnetometer). Punkte einer Folge-
-Sitzung können daher gegen den Bestand verschoben **und verdreht** liegen — bei 20 m Ausdehnung
-sind 5° Heading-Fehler 1,7 m Querversatz. Die Genauigkeit wird ehrlich in
-`SurveyPoint.HorizontalAccuracy` geführt, ausgeglichen wird sie **nicht**: dafür bräuchte es eine
-Helmert-Registrierung auf zugeordnete Passpunkte, und die Zuordnung „neuer Punkt = jener
-Bestandspunkt" existiert im Datenmodell nicht. `ILeastSquaresAdjustmentService` löst das nicht —
-er ist ein Distanz-Constraint-Ausgleich (PBD) und hat aktuell keinen Aufrufer.
+**Sitzung zu Sitzung:** Jede AR-Sitzung bringt ihren eigenen Anker (±1–3 m VPS bzw. ±3–8 m GPS)
+und ihr eigenes Heading (±5° VPS, ±15–30° Magnetometer) — der neue Punktsatz liegt gegenüber dem
+Bestand verschoben **und verdreht**. Der Transfer passt ihn deshalb über
+`ISessionRegistrationService` ein: Punkte, die eine bestehende Stelle erneut messen, dienen als
+Passpunkte für eine 2D-Helmert-Transformation (Translation + Rotation, kein Maßstab), die auf den
+ganzen Satz angewandt wird. Verfahren, Toleranzen und Ablehnungsgründe →
+[Services-CLAUDE.md](SmartMeasure.Shared/Services/CLAUDE.md) (`SessionRegistrationService`).
+
+Praktisch heißt das: **in einer Folge-Sitzung zuerst 2–3 markante Stellen der Vorsitzung erneut
+messen** (Terrassenecke, Pfosten), dann neu vermessen. Ohne solche Wiederholungsmessungen lehnt
+die Einpassung ab und meldet das — die Punkte bleiben dann bewusst unverändert (ehrlich versetzt
+statt durch eine Fehlzuordnung verzogen).
 
 **Heading-Konvention (KRITISCH):** `ArCaptureResult.MagneticHeading` ist der **Azimut des
 ARCore-Weltframes** (true north, inkl. Deklination) — gewonnen als zirkulärer Mittelwert der

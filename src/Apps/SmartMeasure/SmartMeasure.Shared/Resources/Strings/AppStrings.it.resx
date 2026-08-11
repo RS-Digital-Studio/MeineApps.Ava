@@ -489,4 +489,13 @@
   <data name="ArTransferFailed" xml:space="preserve">
     <value>Trasferimento AR non riuscito</value>
   </data>
+  <data name="SessionRegistration" xml:space="preserve">
+    <value>Sessione allineata</value>
+  </data>
+  <data name="SessionRegistrationApplied" xml:space="preserve">
+    <value>Allineata ai dati esistenti con {0} punti di appoggio (rotazione {1:F1}°, scostamento {2:F2} m, residuo {3:F0} cm)</value>
+  </data>
+  <data name="SessionRegistrationSkipped" xml:space="preserve">
+    <value>Non allineata ai dati esistenti: i nuovi punti possono risultare spostati rispetto alla sessione precedente. Per allineare, rimisura 2–3 punti esistenti.</value>
+  </data>
 </root>

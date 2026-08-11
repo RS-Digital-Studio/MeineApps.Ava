@@ -242,5 +242,10 @@ namespace SmartMeasure.Shared.Resources.Strings {
         public static string NoProjectAvailable => ResourceManager.GetString("NoProjectAvailable", resourceCulture) ?? "";
         public static string PointsTransferred => ResourceManager.GetString("PointsTransferred", resourceCulture) ?? "";
         public static string ArTransferFailed => ResourceManager.GetString("ArTransferFailed", resourceCulture) ?? "";
+
+        // Sitzungs-Einpassung (Passpunkt-Registrierung nach dem Transfer)
+        public static string SessionRegistration => ResourceManager.GetString("SessionRegistration", resourceCulture) ?? "";
+        public static string SessionRegistrationApplied => ResourceManager.GetString("SessionRegistrationApplied", resourceCulture) ?? "";
+        public static string SessionRegistrationSkipped => ResourceManager.GetString("SessionRegistrationSkipped", resourceCulture) ?? "";
     }
 }

@@ -113,6 +113,14 @@ public partial class MainViewModel : ViewModelBase
         GardenPlanVm.MessageRequested += msg =>
             MessageRequested?.Invoke(LocalizationManager.GetString("GardenPlan"), msg);
 
+        // Sitzungs-Einpassung: der Nutzer muss wissen, ob die neue Sitzung auf den Bestand
+        // gezogen wurde — und wenn nicht, dass sie frei liegen kann. Feuert nur bei Projekten,
+        // die schon Punkte hatten.
+        _arTransferService.SessionRegistered += registration =>
+            MessageRequested?.Invoke(
+                LocalizationManager.GetString("SessionRegistration"),
+                FormatRegistration(registration));
+
         // AR-Capture → Terrain-Transfer
         SurveyVm.ArCaptureCompleted += async result =>
         {
@@ -161,6 +169,19 @@ public partial class MainViewModel : ViewModelBase
     public Task InitializeAsync()
     {
         return Task.CompletedTask;
+    }
+
+    /// <summary>Ergebnis der Sitzungs-Einpassung als Nutzer-Text. Bei Erfolg mit den Kennzahlen
+    /// (Passpunkte, Drehung, Versatz, Restklaffung), damit die Korrektur nachvollziehbar bleibt;
+    /// bei Ablehnung mit dem Hinweis, wie man sie erreicht.</summary>
+    private static string FormatRegistration(SessionRegistrationResult r)
+    {
+        if (!r.Applied) return LocalizationManager.GetString("SessionRegistrationSkipped");
+
+        return string.Format(
+            System.Globalization.CultureInfo.CurrentCulture,
+            LocalizationManager.GetString("SessionRegistrationApplied"),
+            r.PairCount, r.RotationDeg, r.TranslationMeters, r.ResidualRmsMeters * 100.0);
     }
 
     [RelayCommand]

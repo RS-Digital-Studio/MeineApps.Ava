@@ -26,7 +26,12 @@ public class ArTransferServiceTests
         var meas = Substitute.For<IMeasurementService>();
         var coord = new CoordinateService();
         var geoid = new Egm96GeoidService();
-        return (new ArTransferService(projects, points, elements, coord, meas, geoid),
+        // Echter Registrierungs-Service: pure Geometrie, keine externen Abhaengigkeiten.
+        // In den Tests hier hat das Projekt-Mock keine Bestandspunkte → er lehnt mit
+        // NoExistingPoints ab und laesst die Koordinaten unveraendert. Eigene Tests fuer die
+        // Einpassung selbst stehen in SessionRegistrationServiceTests.
+        var registration = new SessionRegistrationService(coord);
+        return (new ArTransferService(projects, points, elements, coord, meas, geoid, registration),
             projects, points, meas);
     }
 

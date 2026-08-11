@@ -265,12 +265,38 @@ Cross-Asset-Dispersion (Gold/Indizes/Forex) traegt den Edge. Betriebs-Mechanik:
   (manuell) geschlossene Korb-Positionen werden erkannt und die freien Slots mit einem frischen
   Momentum-Ranking aufgefuellt — sonst liefe der Korb bis zu RebalanceDays unter-investiert und
   verloere die Market-Neutralitaet. Sicherheits-Regeln: **Zwei-Tick-Bestaetigung** (Schutz vor
-  transienter leerer Positions-Antwort → sonst Korb-Doppelaufbau), **Wiedereroeffnungs-Sperre**
-  fuer extern geschlossene Symbole bis zum naechsten vollen Rebalance (`ExcludedUntilRebalance`,
-  im State persistiert), **Fremd-Positionen unangetastet** (werden dem Reconcile-Ziel nur als
-  Schutz beigemischt). Der Soll-Korb wird aus `RebalanceResult.Filled` gebaut (tatsaechlich
-  gehalten/eroeffnet) — NICHT per erneutem `GetPositions` (frische Market-Orders erscheinen dort
-  teils erst Sekunden spaeter, Race). `LastRebalanceUtc` bleibt beim Refill unveraendert.
+  transienter leerer Positions-Antwort → sonst Korb-Doppelaufbau; unbestaetigt fehlende Symbole
+  stehen via `doNotOpen` nur als Schutz im Reconcile-Ziel und werden NIE vorzeitig eroeffnet),
+  **Wiedereroeffnungs-Sperre** fuer extern geschlossene Symbole bis zum naechsten vollen Rebalance
+  (`ExcludedUntilRebalance`, im State persistiert), **Seiten-Flip-Regel** (offene GEGENSEITEN-
+  Position eines Korb-Symbols = User-Statement → Korb-Seite sofort aufgeben + sperren, User-
+  Position bleibt als Fremd-Position geschuetzt), **Fremd-Positionen unangetastet** (via
+  `doNotOpen` nur Schutz, nie Open). Ein **komplett leerer Korb** (fehlgeschlagener Rebalance:
+  Settle-Race, Insufficient Margin, Wochenende) wird vom Refill mit vollen LongK/ShortK-Slots
+  wieder aufgebaut — vorher Sackgasse bis zum naechsten Wall-Clock-Rebalance (bis zu 9 Tage flat).
+  Der Soll-Korb wird aus `RebalanceResult.Filled` gebaut (tatsaechlich gehalten/eroeffnet) — NICHT
+  per erneutem `GetPositions` (frische Market-Orders erscheinen dort teils erst Sekunden spaeter,
+  Race). `LastRebalanceUtc` bleibt beim Refill unveraendert.
+- **Rebalancer-Ausfuehrungs-Regeln** (Audit-Fixes 11.08.2026):
+  - **Sizing-Divisor = Korbgroesse** (`basketSlots` bzw. `target.Count`), NICHT
+    `min(LongK+ShortK, MaxOpenPositions)` — der Scalper-Default `MaxOpenPositions=3` halbierte
+    sonst den Divisor bei 6 Slots (Live lief mit ~2× der validierten Positionsgroesse).
+    `MaxOpenPositions` geht nicht mehr in den Xsec-Pfad ein.
+  - **Settle-Retry nach Closes**: bis 3 zusaetzliche Positions-Reads (2 s Abstand), solange ein
+    gesendeter Close noch im Snapshot steht; der Account-Snapshot fuers Sizing wird erst danach
+    gelesen (sonst failedClose-False-Positives + AvailableBalance≈0 → leerer Korb).
+  - **Alternierendes Oeffnen** Short/Long statt alle Longs zuerst — Margin-Knappheit liess sonst
+    systematisch die zuletzt platzierten Shorts scheitern (netto-long im Abverkauf).
+  - **Fehl-Close-Retry-Liste** (`PendingCloses`, im State persistiert): haengengebliebene Closes
+    (TradFi ausserhalb Handelszeiten, Rate-Limit) werden pro Drift-Tick erneut geschlossen und
+    NICHT als Fremd-Positionen geschuetzt (sonst Ueber-Exposure bis zum Rebalance).
+  - **Wochenend-Gate**: Ein am Sa/So faelliger Rebalance wird auf die naechste Werktags-Session
+    verschoben (TradFi traegt den Edge, Closes/Opens scheitern am Wochenende mit 101413); der
+    Drift-Refill pflegt den Korb solange. `BuildUniverse` filtert Symbole mit geschlossenem Markt.
+  - **Watchdog-Auto-Restart liquidiert NICHT** (`IBotControlService.StopForRestartAsync` →
+    `CrossSectionalManager.StopAsync(closePositions: false)`): der Korb ueberlebt den Restart und
+    wird aus dem persistierten State adoptiert. Der manuelle User-Stop schliesst weiterhin alles
+    (Xsec-Positionen haben keine nativen Stops — ein Korb ohne Engine waere ungeschuetzt).
 - **Heartbeat im Xsec-Tick**: `SaveLastHeartbeatAsync` ZUERST pro Tick (vor dem fehleranfaelligen
   Account-Call) — sonst altert der Heartbeat ueber den 21-Tage-Zyklus und der Income-Backfill
   rechnet nach jedem Reboot mit einem riesigen Offline-Fenster. Equity-Snapshot im Tick gekapselt
@@ -447,8 +473,10 @@ bei ≥ PauseAtCount stehen → Scaling 0 → kein Trade → selbsterhaltende Da
 
 ### Aktive Schutz-Mechanismen
 
-- **Position-Sizing**: Risiko-basiert — `maxLoss / slDistance` (enger SL = größere Position).
-  SL ist **Pflicht**, ohne SL wird Trade abgelehnt.
+- **Position-Sizing**: margin-/notional-basiert — `qty = Balance × MaxPositionSizePercent × lev / entryPrice`
+  (`CalculatePositionSize` nutzt den SL NICHT; `RiskManagerTests` zementiert das bewusst).
+  `MaxRiskPercentPerTrade` wirkt nur als nachgelagerte Deckelung — das effektive Risiko pro Trade
+  schwankt daher mit der SL-Distanz (Volatilitaet). SL ist **Pflicht**, ohne SL wird Trade abgelehnt.
 - **`MaxRiskPercentPerTrade`**: Default **5%** (bewusste User-Entscheidung).
 - **Drawdown-Limits**: Täglich + gesamt. Peak-Equity-Tracking für Total-Drawdown.
 - **Liquidation-Check**: Isolated-Margin-Formel `(1 - MMR) / Leverage`. Bei ≤ 2x Leverage
@@ -792,7 +820,10 @@ Generisches UTC-/ISO-8601-Pattern → [Haupt-CLAUDE.md](../../../CLAUDE.md). Bin
 - BingX `incomeType`: `REALIZED_PNL`, `FUNDING_FEE`, `TRADING_FEE`, `INSURANCE_CLEAR`, `ADL`, `TRANSFER`
 - BingX-API: `startTime.Value.ToUniversalTime()` für `DateTimeOffset` (sonst lokale Timezone)
 
-### Pip-Werte (`PipStopLossCalculator.GetPipValue`)
+### Pip-Werte (`PipStopLossCalculator.GetPipValue`) — HISTORISCH, kein Produktiv-Aufrufer
+
+> Der `PipStopLossCalculator` wird im Produktivcode nirgends aufgerufen (TrendFollow nutzt
+> ATR×2,75). Die Tabelle bleibt als Referenz fuer den Fall einer Reaktivierung.
 
 | Kategorie | Pip-Berechnung |
 |-----------|---------------|
@@ -821,10 +852,14 @@ das Modus-Präfix `Local{Name}Service` / `Remote{Name}Service` (z.B. `LocalBotCo
 - **API-Code 100410 (rate limited) kommt in HTTP-200-Antworten** — `SendSignedRequestAsync`
   behandelt ihn wie HTTP 429 (Backoff-Retry, Timestamp/Signatur pro Versuch neu). Vorher gab z.B.
   `CloseAllPositionsAsync` beim Stop nach dem ersten 100410 auf und liess Positionen offen.
-  **AUSNAHME `PlaceOrderAsync` (`retryRateLimit=false`)**: Position-eroeffnende Orders duerfen bei
-  100410 NICHT blind erneut gesendet werden — BingX kann die Order trotz Rate-Limit-Antwort
-  angenommen haben, der Retry platzierte sie doppelt (doppelte Exposure). Close-/reduce-only-Pfade
-  sind retry-sicher (zweiter Close auf leerer Position = harmloser Reject)
+  **AUSNAHME `PlaceOrderAsync` (`retryUnsafe=false`)**: Position-eroeffnende Orders duerfen bei
+  unklarem Effekt des vorherigen Versuchs (100410, 5xx, Netzwerkfehler, Timeout) NICHT blind
+  erneut gesendet werden — BingX kann die Order trotzdem angenommen haben, der Resend platzierte
+  sie doppelt (doppelte Exposure). Nur HTTP 429 bleibt retrybar (wird VOR der Verarbeitung
+  abgelehnt). Entry-Retries laufen stattdessen in der `OrderRetryPolicy` MIT Idempotency-Probe
+  (Positions-Check vor jedem Retry) und `retryRateLimit: false` (100410-Gate — die Settle-Latenz
+  macht die Probe in den 100/300-ms-Backoffs blind). Close-/reduce-only-Pfade sind retry-sicher
+  (zweiter Close auf leerer Position = harmloser Reject)
 - **`SetMarginTypeAsync` VOR jeder Order** — BingX-Default kann Cross sein, try-catch (Fehler bei offener Position ignorieren)
 - **Kill-Switch**: alle 60s refreshen (`ActivateKillSwitchAsync(120s)`), bei sauberem Stop explizit `DeactivateKillSwitchAsync()`
 - **Server-Zeit-Sync**: `SyncServerTimeAsync()` bei Connect — Error 100421 bei > 5s Drift
@@ -840,6 +875,29 @@ das Modus-Präfix `Local{Name}Service` / `Remote{Name}Service` (z.B. `LocalBotCo
 
 ### Trading-Logik
 
+- **Signal + ExitState VOR `PlaceOrderOnExchangeAsync` registrieren** (Entry-Pfad in
+  `TradingServiceBase`): `PlaceTpLimitOrdersAfterFillAsync` laeuft INNERHALB des Order-Calls und
+  schreibt die TP-Limit-OrderIds + Fill-Korrektur in den ExitState. Registrierung erst danach
+  (Alt-Zustand bis 11.08.2026) liess `Tp1/Tp2LimitOrderId` dauerhaft null →
+  `IsTpManagedByExchange=false` → Bot-TP-Check lief parallel zu den BingX-Limits (Doppel-Close
+  bei TP1, TP2-Bein amputiert). Bei `!placed`/Exception: `RemoveSignalByKey` als Rollback.
+- **`RestorePositionSignal` braucht die Positions-Quantity** (Parameter `positionQuantity`):
+  Recovery/Adoption muessen `Tp2` + `OriginalQuantity` fuellen — ohne Tp2 macht der WS-TP1-Fill
+  einen Full-Close bei 1,5R, ohne OriginalQuantity bucht der Native-Close-Fallback Qty 0.
+- **Anti-Churn-Guards im Entry-Pfad**: (1) EIN Entry je (Symbol, NavTF, Kerze)
+  (`_entryBarBySymbolTf`, Backtest-Paritaet — der evaluiert exakt 1×/Kerze; der 60-s-Scan feuerte
+  nach einem Exit sonst dasselbe Kerzen-Signal bis zu ~240×). (2) Stale-Signal-Guard: Markt
+  > 25 % der SL-Distanz vom Signal-Close entfernt ODER SL auf der falschen Marktseite → verwerfen.
+- **Glitch-Guard fuer leere Positions-Antworten** (TickerLoop + Reconcile, getrennte Zaehler):
+  `GetPositionsAsync` liefert bei BingX-Schema-Drift LEER statt Exception — erst der ZWEITE leere
+  Snapshot in Folge gilt als echt. Vorher cancelte ein einzelner Glitch die nativen SL/TP ALLER
+  Positionen (Re-Adoption dann mit 1,5%-Notfall-SL statt ATR×2,75).
+- **Bot-SL-Backstop prueft den MARK-Price** (`pos.MarkPrice`, Paritaet zum nativen STOP_MARKET
+  mit workingType=MARK_PRICE) — Last-Price-Wicks auf illiquiden Symbolen stoppten sonst aus,
+  obwohl die Boerse nie getriggert haette. TP-Checks bleiben auf Last (Limits fuellen im Orderbuch).
+- **BE-Exit-Erkennung am geplanten Risiko** (`|Entry−SL| × Qty × 0,15`, Fallback 0,2 % Notional
+  wenn kein SL mehr bekannt): die reine Notional-Schwelle stufte Fee-Verluste als Break-Even ein
+  und resettete die Loss-Streak-Bremse.
 - **`_tradesToday` MUSS `volatile`** — JIT darf nicht-volatile Felder bei parallelen Reads cachen
 - **`ContinueWith` IMMER mit `TaskScheduler.Default`** — sonst UI-Thread-Deadlock möglich
 - **`OriginalQuantity` IMMER die tatsächlich platzierte Menge** (nach Equity/Score-Scaling), NICHT `riskCheck.AdjustedPositionSize`

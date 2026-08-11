@@ -48,6 +48,13 @@ public partial class LiveTradingService : TradingServiceBase
     private DateTime _killSwitchDisabledUntil = DateTime.MinValue;
     private const int KillSwitchRetryMinutes = 15;
 
+    // Glitch-Guard (Audit 11.08.2026): Zaehler aufeinanderfolgender LEERER Positions-Antworten
+    // bei getrackten Signalen — erst der zweite leere Snapshot in Folge gilt als echt (BingX
+    // liefert bei Schema-Drift/data:null leer statt Exception). Getrennte Zaehler fuer den
+    // 5-s-TickerLoop und den 60-s-ReconcileLoop (laufen als separate Tasks).
+    private int _emptyPositionsTickerStreak;
+    private int _emptyPositionsReconcileStreak;
+
     // Zeitpunkt der Signal-Erstellung (für Grace Period bei Bereinigung verwaister Signale)
     // internal damit Tests den Zeitstempel fuer Grace-Window-Cases setzen koennen.
     internal readonly ConcurrentDictionary<string, DateTime> _signalCreatedAt = new();
@@ -664,7 +671,25 @@ public partial class LiveTradingService : TradingServiceBase
             }
         }
 
-        if (_positionSignals.Count > 0)
+        // Glitch-Guard (Audit 11.08.2026): GetPositionsAsync liefert bei BingX-Schema-Drift/
+        // data:null eine LEERE Liste statt einer Exception. Eine leere Antwort bei >0 getrackten
+        // Signalen als "alle Positionen geschlossen" zu werten, cancelte die nativen SL/TP ALLER
+        // realen Positionen und entsorgte die Signale — die Re-Adoption kam dann mit 1,5%-Notfall-
+        // SL statt ATR×2,75. Zwei-Tick-Bestaetigung analog Xsec-DriftConfirmTicks: erst der zweite
+        // leere Snapshot in Folge gilt als echt.
+        if (positions.Count > 0) _emptyPositionsTickerStreak = 0;
+        var suspiciousEmptySnapshot = false;
+        if (_positionSignals.Count > 0 && positions.Count == 0)
+        {
+            _emptyPositionsTickerStreak++;
+            suspiciousEmptySnapshot = _emptyPositionsTickerStreak < 2;
+            if (suspiciousEmptySnapshot)
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Safety",
+                    $"Leere Positions-Antwort bei {_positionSignals.Count} getrackten Signal(en) — "
+                    + "vermutlich API-Glitch, Orphan-Cleanup uebersprungen (Bestaetigung im naechsten Tick)."));
+        }
+
+        if (_positionSignals.Count > 0 && !suspiciousEmptySnapshot)
         {
             var positionKeys = new HashSet<string>(positions.Select(p => $"{p.Symbol}_{p.Side}"));
             var now = DateTime.UtcNow;

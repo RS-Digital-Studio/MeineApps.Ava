@@ -63,6 +63,23 @@ public partial class LiveTradingService
     {
         var positions = await _restClient.GetPositionsAsync(ct).ConfigureAwait(false);
 
+        // Glitch-Guard analog OnBeforePriceTickerIteration (Audit 11.08.2026): Eine transiente
+        // LEERE Positions-Antwort bei getrackten Signalen liesse den PositionDriftAnalyzer
+        // OrphanSignalRemove fuer ALLE Keys erzeugen (SL/TP-Cancel + Signalverlust). Erst der
+        // zweite leere Snapshot in Folge wird verarbeitet.
+        if (positions.Count > 0) _emptyPositionsReconcileStreak = 0;
+        if (_positionSignals.Count > 0 && positions.Count == 0)
+        {
+            _emptyPositionsReconcileStreak++;
+            if (_emptyPositionsReconcileStreak < 2)
+            {
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
+                    $"{LogPrefix}Leere Positions-Antwort bei {_positionSignals.Count} getrackten Signal(en) — "
+                    + "vermutlich API-Glitch, Reconcile-Durchgang uebersprungen (Bestaetigung im naechsten Tick)."));
+                return;
+            }
+        }
+
         // v1.5.1 Phase 3 — Open-Orders fuer Missing-Stop-Loss-Detection abrufen.
         // 02.06.2026 hochgezogen: AdoptUnmanagedPositionsAsync braucht die OpenOrders, um native
         // SL/TP zu erkennen, BEVOR botKeys/signalsExpectingTp gebaut werden.

@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Status** | Pre-MVP — Konzept-Phase, Foundation startet |
+| **Status** | Pre-MVP — **P0 komplett + headless verifiziert**: spielbare 3D-Welt an die Runtime gekoppelt, Android-APK baut (IL2CPP/ARM64), P1–P4-Domain-Logik gebaut + getestet (~181 NUnit grün). Offen: Ads/IAP-SDK, 6-Sprachen-Lokalisierung, APK-Größe, Beta/Store/KPI/Cutover |
 | **Engine** | Unity 6000.4.8f1 (LTS) + URP 17.0.4 + IL2CPP |
 | **Plattform** | Android (Phase 1), iOS (Phase 2) |
 | **Stack** | VContainer + UniTask + Addressables + Firebase + TextMesh Pro + Cinemachine + DOTween |
 | **Avalonia-Original** | Produktiv unter [`../HandwerkerImperium/`](../HandwerkerImperium/) — ~28k LOC C#, 91 Services, 77 Models, 80 ViewModels, 74 Views |
 | **Persona-Anker** | "Meister Hans" (~1500 Voice-Files via ElevenLabs-Standard-Voice in 6 Sprachen, kein Cloning) |
-| **Asset-Pipeline** | KI-basiert, EU-konform (TRELLIS 2 + ComfyUI + Stable Audio + ElevenLabs) |
+| **Asset-Pipeline** | KI-basiert (real **Hunyuan3D** — 44 GLBs gebaut). EU-Lizenz-Konflikt offen (siehe [EU AI Act](#eu-ai-act-compliance)); TRELLIS-2-Pipeline = dokumentierte EU-konforme Fallback-Variante |
 
 ---
 
@@ -59,11 +59,12 @@ ls src/Apps/HandwerkerImperium.Unity/
 
 ## Dokumentations-Index
 
-### Verbindliche Werte-Referenz
+### Design-Quelle & Werte-Referenz
 
 | Datei | Beschreibung |
 |-------|--------------|
-| [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) | **Single Source of Truth** — alle echten Mechaniken, Formeln und Balancing-Werte, direkt aus dem Avalonia-Code extrahiert. Jede Abweichung eines anderen Dokuments ist ein Fehler und auf diese Werte zu korrigieren. |
+| [3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md) | **Verbindliche Design-Quelle (GDD)** der 3D-Idle-Neuausrichtung — Loop, Systeme, Monetarisierung, Roadmap. Mechanik darf bewusst vom Avalonia-Original abweichen. |
+| [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md) | **Referenz für wiederverwendete Formeln** (Income-Soft-Cap/Log2, Offline-Staffel, Auto-Produktion), direkt aus dem Avalonia-Code extrahiert. **Nicht mehr global verbindlich** — wo der GDD eine Original-Formel wiederverwendet, gelten deren Werte; neue Genre-Mechanik weicht bewusst ab. |
 
 ### Strategie & Planung
 
@@ -92,13 +93,18 @@ ls src/Apps/HandwerkerImperium.Unity/
 ## Projekt-Vision in 60 Sekunden
 
 **Was wir bauen:**
-Ein **3D-stylized Idle-Incremental-Game** mit aktiven Mini-Games. Der Spieler erbt Meister Hans' Werkstatt und baut ein Imperium aus 10 Handwerks-Werkstätten in einer **wachsenden Toon-Cartoon-Stadt** auf.
+Ein **eigenständiges 3D-Walk-around-Idle-Tycoon-Spiel** (Stil: My Perfect Hotel / My Mini Mart / Idle Office
+Tycoon). Der Spieler erbt Meister Hans' Werkstatt und baut ein Imperium aus 10 Handwerks-Werkstätten in einer
+**wachsenden Toon-Cartoon-Stadt** auf — der Avatar läuft durch den Hof, sammelt Cash, stellt Arbeiter an, baut
+Werkstätten/Plots aus, saniert die Stadt und expandiert (max. 3 Prestige). Verbindlicher GDD:
+[3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md).
 
-**Was es besser macht als Avalonia:**
+**Wie es sich von Avalonia unterscheidet:**
 
-> **Wichtig:** "Besser" heißt ausschließlich **Präsentation** (Grafik, 3D, Hub, Cinematics,
-> Audio, Input, UI-Tech). Mechaniken, Formeln und Balancing-Werte sind **identisch** zum
-> Avalonia-Original (siehe [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md)).
+> **Wichtig:** Die Unity-Version ist ein **eigenständiges Spiel** — die **Mechanik weicht bewusst ab**
+> (Avatar läuft & sammelt, Arbeiter-Automatisierung, Plot-Ausbau, Stadt-Wiederaufbau, max. 3 Prestige). Gleich
+> bleiben nur **Thema** (Handwerk) und **Personal** (Meister Hans). Die folgende Tabelle vergleicht nur die
+> **Präsentation** (2D→3D, Hub, Cinematics, Audio, Input, UI-Tech) — sie ist **keine** Aussage über Mechanik-Gleichheit.
 
 | Avalonia (Präsentation) | Unity (Präsentation) |
 |----------|-------|
@@ -116,7 +122,10 @@ Ein **3D-stylized Idle-Incremental-Game** mit aktiven Mini-Games. Der Spieler er
 
 ---
 
-## Designentscheidungen (final, Stand Mai 2026)
+## Designentscheidungen (Stand vor Neuausrichtung — Mechanik-Zeilen siehe GDD)
+
+> Die **Mechanik-Zeilen** (Loop, Prestige, Worker-Tiefe) sind durch die Neuausrichtung abgelöst — verbindlich ist
+> der [GDD](3D_IDLE_GAME_PLAN.md). Die **Präsentations-Zeilen** (Low-Poly, Hub-Stadt, 3D-Worker, Audio) gelten weiter.
 
 | Frage | Entscheidung |
 |-------|-------------|
@@ -129,39 +138,32 @@ Ein **3D-stylized Idle-Incremental-Game** mit aktiven Mini-Games. Der Spieler er
 | **iOS** | Erstmal nur Android — iOS-Entscheidung nach Beta-Erfolg (frühestens Monat 22-24) |
 | **Live-PvP** | Phase 2: Photon Fusion Echtzeit-Klan-Matches (Monat 19-21, nach Beta-Erfolg) |
 | **Save-Konverter Avalonia→Unity** | Nicht im MVP (Beta-Tester starten frisch) |
-| **Asset-Pipeline** | KI-basiert (TRELLIS 2 für 3D, ElevenLabs für Voice, EU-konform, kein Hunyuan) |
+| **Asset-Pipeline** | **Real Hunyuan3D** (44 GLBs gebaut) — EU-Lizenz-Konflikt **offenes Compliance-Risiko** (siehe [EU AI Act](#eu-ai-act-compliance)). TRELLIS 2 + ElevenLabs = dokumentierte EU-konforme Fallback-Variante |
 
 ---
 
 ## Spielmechanik in 60 Sekunden
 
-**5-Minuten-Loop:**
-1. Werkstätten verdienen passiv Geld
-2. Auftrag annehmen (3 Strategien: Safe/Standard/Risk)
-3. Mini-Game spielen (13 Typen, 3D)
-4. Auftrag abschließen → Reward
-5. Investieren (Upgrade, Worker, Forschung)
+**Sekunde-zu-Sekunde (der eigentliche Loop):**
+1. Stationen produzieren sichtbar Waren
+2. Avatar läuft hin, nimmt automatisch einen Trag-Stapel auf
+3. Avatar trägt die Ware zum Tresen, lädt ab → Kunden bedienen → Geld spawnt physisch
+4. Avatar läuft über das Geld → Auto-Pickup (Sammelradius upgradebar)
+5. Hold-to-Pay-Pad → Upgrade (Tempo / Kapazität / Sammelradius)
+6. Hold-to-Pay an gesperrtem Plot → neue Werkstatt/Distrikt schaltet auf
+7. Arbeiter anstellen → NPC übernimmt Tragen/Bedienen (Automatisierung) → die Kette läuft ohne den Spieler
 
-**Stunden-Loop:**
-- 10 Werkstätten leveln (Lv 1 → 1000, WorkshopMaxLevel = 1000)
-- 10 Worker-Tiers (F → Legendary)
-- 72 Research-Nodes (4 Branches)
-- Reputation-Tier-Aufstieg (4 Tiers: Beginner → Industry Legend)
+**Meta (über Sessions):**
+- **Stern-Rating** der Stadt (1→5★) steigt durch Werkstätten + sanierte Distrikte + Auftragsvolumen → Distrikt-Gate
+- **Offline-Verdienst** beim Wiederkommen (gedeckelt, per Ad verdoppelbar)
+- **Prestige = Akt-Finale** bei 5★ → permanenter Multiplikator + Umzug. **Maximal 3×** (4 Städte), selten & zeremoniell
 
-**Wochen/Monate-Loop:**
-- 7 Prestige-Tiers (Bronze → Legende)
-- 12 Master-Tools (+74% Income)
-- Gilde + Co-op-Orders + 6 Bosse + Mega-Projekte (Cathedral, HQ)
-- BattlePass (50 Tier, 30-Tage-Saison)
-- 109 Achievements (17 Kategorien)
-- 4 Saisons pro Jahr
+**Langzeit (Monate):**
+- **Meisterschafts-Track** (kontoweit, nie reset) — das permanente Rückgrat
+- **Master-Tools** + **Imperium-Marken-Perkboard** (permanente Boni)
+- **Endgame-Meistergrade** (Soft-Infinite nach dem 3. Prestige)
 
-**Endgame:**
-- Nach 3× Legende → **Ascension**
-- 6 Perks × 3 Levels = 54 AP
-- Eternal-Mastery (+0.5% Income pro Prestige, max 50)
-
-Vollständige Spec: [DESIGN.md](DESIGN.md).
+Langzeit-/Prestige-Modell: [PROGRESSION_BALANCING.md](PROGRESSION_BALANCING.md). Vollständiger GDD: [3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md).
 
 ---
 
@@ -170,7 +172,7 @@ Vollständige Spec: [DESIGN.md](DESIGN.md).
 | Komponente | Wahl | Begründung |
 |------------|------|------------|
 | **Engine** | Unity 6000.4.8f1 (LTS) | Gleiche Version wie ArcaneKingdom |
-| **Sprache** | C# 12 | Modernes C# (records, pattern matching, primary ctors) |
+| **Sprache** | **C# 9 / netstandard 2.1** | Unity-6000.4.8f1-Default — file-scoped Namespaces, records, Collection-Expressions `[…]` brechen (siehe CLAUDE.md §2/§4). Erlaubt: block-Namespaces, pattern matching, `new[]{}` |
 | **Scripting Backend** | IL2CPP | AOT für Mobile |
 | **Render Pipeline** | URP 17.0.4 | 2D + 3D, Mobile-optimiert |
 | **DI Container** | VContainer 1.16.9 | AOT-kompatibel (nicht Zenject!) |
@@ -179,13 +181,13 @@ Vollständige Spec: [DESIGN.md](DESIGN.md).
 | **Lokalisierung** | Unity Localization 1.5.11 | 6 Sprachen + TMP-Font-Assets |
 | **Audio** | Unity AudioMixer | 1 API für alle Plattformen |
 | **Animation** | Animator + DOTween + Timeline | UI + Mood-States + Cinematics |
-| **Camera** | Cinemachine 2.10+ | Orbit + Pan + Shake |
+| **Camera** | Cinemachine 3.x | Orbit + Pan + Shake (Unity-6-Default, API-inkompatibel zu 2.10) |
 | **Text** | TextMesh Pro | Inline-Sprites + Rich Text + CJK-ready |
 | **Input** | New Input System | Multi-Touch + Gesten |
 | **Tests** | Unity Test Framework + NUnit | EditMode + PlayMode |
 | **Backend** | Firebase Suite | Auth + RTDB + Functions + Analytics + Crashlytics + RC + FCM |
 | **IAP** | Google Play Billing 6.x | Premium + Bundles |
-| **Ads** | Google Mobile Ads | 13 Ad-Placements (1:1 Original, siehe DESIGN.md § 29.3) |
+| **Ads** | Google Mobile Ads | **~8 Rewarded-Placements** (GDD §9.1, kein Banner — idle-arcade-typisch Rewarded-getrieben) |
 
 Vollständige Asmdef-Hierarchie, DI-Setup, Service-Lifetimes: [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -250,7 +252,7 @@ Erwartete Test-Klassen (200+ Tests): siehe [PLAN.md § 13](PLAN.md).
 | FPS Mini-Game | 60 |
 | Cold-Start | <3s |
 | Memory (RAM) | <400 MB |
-| Storage (APK/AAB) | <120 MB |
+| Storage (APK/AAB) | <120 MB (**P4-Ziel** — aktueller Durchstich-APK ~536 MB; Texture-Compression ASTC + Strip-Pass stehen aus) |
 | Particle-Count gleichzeitig | <2.000 |
 
 ---
@@ -332,8 +334,13 @@ Diese App nutzt KI-generierte Assets (3D-Modelle, Texturen, Audio, Voice).
 - Pro-Asset-Metadata mit `license_source`
 - Lizenz-Archiv unter `F:\AI\Licenses\handwerkerimperium_unity\`
 - Voice ausschließlich über ElevenLabs-Standard-Voice (von ElevenLabs lizenziert, kein Cloning, keine Sprecher-Freigabe nötig)
-- Bewusst Hunyuan-frei (EU-Lizenz-Ausschluss)
 - Suno/Udio gemieden (Trainingsdaten-Lawsuits)
+
+> ⚠️ **Offenes Compliance-Risiko (Hunyuan3D):** Die real genutzte Asset-Pipeline setzt **Hunyuan3D** ein (44
+> gebaute GLBs; auch das Schwesterprojekt BomberBlast.Unity nutzt Hunyuan3D). Dessen Lizenz schließt
+> **EU/UK/Korea** aus und erfordert eine **schriftliche Tencent-Sonderfreigabe** — die „Hunyuan-frei"-Annahme ist
+> damit faktisch **widerlegt**. **Entscheidung ausstehend** (extern): Sonderfreigabe einholen **ODER** EU-konform
+> neu generieren (TRELLIS-2-Pipeline ist dokumentiert). Details: [ASSETS_AI.md § 14](ASSETS_AI.md).
 
 Details: [ASSETS_AI.md § 14](ASSETS_AI.md).
 

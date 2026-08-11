@@ -8,10 +8,22 @@
 > **Status:** Produktions-Plan (Stand 2026-05-26, recherchiert)
 > **Ziel:** Skalierbarer, EU-konformer und kommerziell sauberer Workflow für 3D-Assets, Animationen, Texturen und Audio mit KI-Tools — primär lokal (ComfyUI + EU-konforme OSS-Modelle), Cloud-Services als Production-Standard wo Qualität es rechtfertigt.
 > **Geltungsbereich:** Werkstätten, Arbeiter (inkl. sichtbares Equipment + Mood-States), Werkzeuge, Master-Tools, Crafting-Produkte, Buildings, Mini-Game-Props, Gilden-Hall-Gebäude, Mega-Projekte, Gilden-Bosse, City-Tiles, Cosmetics/Event-Visuals, Prestige-Cinematic-Assets, Animationen, Texturen, Game-Audio.
-> **Grundsatz (unverhandelbar):** Die Unity-Version ist **dasselbe Spiel** wie das produktive Avalonia-Original (gleiche Mechaniken, Formeln, Balancing-Werte — Quelle: [DESIGN.md](DESIGN.md) + [ORIGINAL_WERTE.md](ORIGINAL_WERTE.md)), nur in **3D statt 2D-SkiaSharp**. Asset-mengen sind daher **vom realen Spielinhalt abgeleitet, nicht frei geschätzt**. Jedes sichtbare 2D-Element des Originals braucht ein 3D-Pendant.
+> **Grundsatz (Stand Neuausrichtung 8.6.2026):** Die Unity-Version ist seit der Neuausrichtung ein
+> **eigenständiger 3D-Walk-around-Idle-Tycoon** — die **Mechanik weicht bewusst vom Avalonia-Original ab**
+> (verbindliche Spiel-Design-Quelle: [3D_IDLE_GAME_PLAN.md](3D_IDLE_GAME_PLAN.md)). Diese Datei (ASSETS_AI.md) gilt
+> für die **Asset-Pipeline/Tech & das Mengengerüst**, **nicht** als Mechanik-/Balancing-Soll. Der **Asset-Bedarf der
+> Neuausrichtung** (spielbarer Avatar, NPC-Arbeiter, Stadt-Kit, Distrikt-Wahrzeichen, Franchise-Karte) steht in
+> [3D_IDLE_GAME_PLAN.md §13](3D_IDLE_GAME_PLAN.md). Die unten genannten Original-Stückzahlen (DESIGN.md/ORIGINAL_WERTE.md)
+> bleiben als **Mengen-/Themen-Referenz** stehen. Jedes sichtbare Element braucht ein 3D-Pendant.
 > **Nicht im Scope:** redaktionelle Texte, Story-Schreiben.
 
-> **EU-Compliance-Warnung:** Hunyuan3D (Tencent) ist in der EU/UK/Südkorea per Lizenz **explizit ausgeschlossen** und erfordert schriftliche Tencent-Sonderfreigabe. Wir bauen bewusst eine **EU-konforme Pipeline** ohne Hunyuan als Default. Details: [§14](#14-eu-compliance--lizenz-recherche-stand-2026-05).
+> ⚠️ **STATUS + RISIKO (Hunyuan3D) — Nutzer-Entscheidung ausstehend:** Die **faktisch genutzte Pipeline setzt
+> Hunyuan3D ein** (Stand CLAUDE.md: 44 reale GLBs im Welt-Bestand; auch das Schwesterprojekt BomberBlast.Unity
+> nutzt real Hunyuan3D). Die unten dokumentierte EU-Lizenz-Restriktion (Hunyuan in **EU/UK/Korea** per Lizenz
+> ausgeschlossen, nur mit **schriftlicher Tencent-Sonderfreigabe**) ist damit ein **offenes, ungelöstes
+> Compliance-Risiko**. Die „wir bauen bewusst Hunyuan-frei"-Aussage ist faktisch **widerlegt**. **Nutzer-Entscheidung
+> ausstehend (extern):** Sonderfreigabe einholen **ODER** EU-konform neu generieren. Die nachfolgend dokumentierte
+> **TRELLIS-2-basierte Pipeline gilt als dokumentierte EU-konforme Fallback-Variante.** Details: [§14](#14-eu-compliance--lizenz-recherche-stand-2026-05).
 
 > **2D-zu-3D-Migration:** Das Original rendert alles in 2D (SkiaSharp + 224 Bitmap-/Vektor-Icons aus `Assets/visuals/`). Für die Unity-Version wird **jedes sichtbare 2D-Element zu einem 3D-Pendant** überführt: Werkstätten und Buildings werden begehbare 3D-Strukturen, Worker-Sprites werden riggbare 3D-Charaktere, Crafting-Produkt-Icons werden 3D-Props (im Lager/Showroom sichtbar), Master-Tool-Icons werden Glow-Artefakte, Gilden-Hall und Bosse werden 3D-Szenen. UI-Icons (Buttons, Tab-Symbole, Währungs-Glyphen) bleiben **2D** und werden als TextMeshPro-SpriteAsset aus dem Avalonia-Icon-Bestand (224 Glyphen) übernommen (siehe [§12.3](#123-ui-icons-2d-bleiben-2d)).
 
@@ -46,7 +58,7 @@ Für ein **stylisiertes Idle-Builder-Game mit Cartoon-Werkstatt-Ästhetik** ist 
 
 **Kern-Entscheidungen (verbindlich):**
 
-- **EU-konformer OSS-Stack** als Default — kein Hunyuan3D ohne Tencent-Sonderfreigabe.
+- **EU-konformer OSS-Stack** als (Soll-)Default — kein Hunyuan3D ohne Tencent-Sonderfreigabe. ⚠️ **Realität abweichend:** faktisch wird **Hunyuan3D real eingesetzt** (44 GLBs) → offenes Compliance-Risiko, Entscheidung ausstehend (siehe **Top-Banner** + [§14](#14-eu-compliance--lizenz-recherche-stand-2026-05)).
 - **Lokale Pipeline primär**: ComfyUI 0.3.x + ComfyUI-3D-Pack mit **TRELLIS 2** (Microsoft, MIT) als Geometrie-Hauptmodell, **SPAR3D** (Stability) für schnelle Props.
 - **Cloud-Services für Production**: Meshy 6 oder Rodin Gen-2.5 für Prestige-Cinematic-Hero-Modelle, Tripo 3.0 für komplexe Werkstatt-Architektur mit Auto-Rigging.
 - **Modulare Werkstätten:** Basis-Modell + austauschbare Material-Decals/Anbauten für Upgrade-Stufen Lv1-5 — spart ~80% Generations-Zeit gegenüber 5× separat generierten Modellen. (WorkshopMaxLevel = 1000 im Code; die 5 sichtbaren Decal-Stufen sind eine visuelle Gruppierung, keine mechanische Abweichung.)
@@ -139,8 +151,8 @@ Für ein **stylisiertes Idle-Builder-Game mit Cartoon-Werkstatt-Ästhetik** ist 
 | **Stable Audio 3** | 3.0 (Mai 2026) | Stability Community ≤ $1M; Open-Weight Small/Medium | Musik + SFX (lizenzierte Trainingsdaten!) | stableaudio.com |
 | **Blender** | 4.3+ | GPL | Cleanup, Decimation, Modul-Setup, Export | blender.org |
 
-> **NICHT genutzt (EU-Lizenz-Ausschluss):**
-> - **Hunyuan3D-2 / 2.5** (Tencent) — Lizenz schließt EU/UK/Korea per Definition `Territory` aus. Nur mit schriftlicher Sonderfreigabe. Source: [Hunyuan3D-2 LICENSE](https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/LICENSE).
+> **NICHT genutzt (EU-Lizenz-Ausschluss) — ⚠️ in der Realität ABWEICHEND, siehe Top-Banner:**
+> - **Hunyuan3D-2 / 2.5** (Tencent) — Lizenz schließt EU/UK/Korea per Definition `Territory` aus. Nur mit schriftlicher Sonderfreigabe. Source: [Hunyuan3D-2 LICENSE](https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/LICENSE). **In der Realität wird Hunyuan3D real eingesetzt** (44 gebaute GLBs) — Konflikt zur EU-Lizenz, **offenes Compliance-Risiko** (Entscheidung ausstehend, siehe Top-Banner).
 > - **HunyuanWorld-1.0** (Tencent) — gleiche Lizenz-Restriktion.
 
 ### 3.2 Cloud (Production, mit kommerzieller Lizenz)
@@ -816,6 +828,13 @@ Toon-Shader-Asset wird im Pilot evaluiert.
 ---
 
 ## 14. EU-Compliance & Lizenz-Recherche (Stand 2026-05)
+
+> 🛑 **RISIKO-MARKIERUNG (überschreibt die „no-Hunyuan"-Aussage dieses Abschnitts):** Die in diesem Abschnitt
+> beschriebene „wir bauen Hunyuan-frei"-Doktrin ist durch die **reale Nutzung von Hunyuan3D** (Stand CLAUDE.md:
+> 44 gebaute GLBs; auch BomberBlast.Unity nutzt real Hunyuan3D) **widerlegt**. Der EU-Lizenz-Konflikt
+> (EU/UK/Korea ausgeschlossen, Tencent-Sonderfreigabe nötig) ist damit **real und offen** — die
+> **Compliance-Entscheidung steht aus** (Sonderfreigabe einholen ODER EU-konform neu generieren). Der folgende
+> Recherche-Text bleibt als **Soll-/Fallback-Dokumentation** gültig.
 
 ### 14.1 Hunyuan3D — warum nicht?
 

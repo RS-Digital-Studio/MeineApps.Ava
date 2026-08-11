@@ -306,6 +306,13 @@ bei diesem Setup GEGEN den Short (die ueberlebenden Jung-Coins sind die erfolgre
 **Kein Live-Einbau.** Lektion (Verallgemeinerung der SK-Lektion): ein positives Event-Studien-
 Mittel ist KEIN handelbares Portfolio — Slot-Kapazitaet, Auswahl-Reihenfolge und Kompoundierung
 muessen im Harness mitgetestet werden.
+**Nachtrag Qualitaets-Ranking (gleicher Tag):** Entry-Auswahl nach Pump-Staerke absteigend statt
+Scan-Reihenfolge (Edge steigt monoton mit Pump-Groesse) verbessert ueberall dort deutlich, wo
+Events um Slots konkurrieren — broad78/Recent: −2,5 → +10,5 % — und hebt die beste Variante
+(pf2x30 standalone, 78er@1k) auf 2/4 mit Σ +8,1 %/4J. Aendert das Fazit NICHT (Worst-Phase
+−9,3 %, ~2 %/Jahr, Iteration 3 auf demselben Datensatz → Selektions-Overfitting-Risiko steigt);
+das Live-Universum waere zwar breiter als der 78er-Ueberlebenden-Schnitt (Verzerrung pro
+Pump-Fade), aber ohne Point-in-Time-Universum nicht bezifferbar.
 
 **Weitere Strategie-Klassen getestet (`--xsec-grid strategies`, `--pairs`, `--funding-carry`):** Reversal,
 Low-Vol-market-neutral, Inverse-Vol-Gewichtung, Skip-Period, Pairs-Trading (Distance/Gatev), Funding-Harvest —

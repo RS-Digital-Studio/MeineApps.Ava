@@ -477,6 +477,8 @@ public sealed class CrossSectionalMomentumEngine(
     /// <summary>
     /// Pump-Fade-Entry-Scan: Krypto-Alt juenger als MaxAgeDays (Erstlisting via D1-Probe), 24h-Rendite
     /// ueber der Schwelle, weder im Korb noch als Overlay offen → Market-Short mit 7,5 % Equity-Margin.
+    /// Kandidaten werden nach QUALITAET (Pump-Staerke absteigend) gefuellt, nicht nach Scan-Reihenfolge —
+    /// der Edge steigt monoton mit der Pump-Groesse (Analyse 11.08.2026: +20 % → 180 bp, +50 % → 486 bp).
     /// Slot gilt erst als belegt, wenn die Position tatsaechlich existiert (Min-Order-Reject = kein Slot).
     /// </summary>
     private static async Task ScanPumpFadeEntriesAsync(
@@ -490,9 +492,10 @@ public sealed class CrossSectionalMomentumEngine(
         var equity = acc.Balance + acc.UnrealizedPnl;
         if (equity <= 0m) return;
 
+        // 1. Alle gueltigen Events dieses Schritts sammeln.
+        var candidates = new List<(PortfolioSymbolState State, decimal R24, decimal Close)>();
         foreach (var s in states)
         {
-            if (pumpFade.Count >= p.PumpFadeSlots) break;
             if (s.NavIdx < 6 || pumpFade.ContainsKey(s.Symbol) || heldSymbols.Contains(s.Symbol)) continue;
             if (!listingTime.TryGetValue(s.Symbol, out var listed)) continue;
             var ageDays = (t - listed).TotalDays;
@@ -501,7 +504,15 @@ public sealed class CrossSectionalMomentumEngine(
             var closeNow = s.Nav[s.NavIdx].Close;
             var close24hAgo = s.Nav[s.NavIdx - 6].Close;
             if (close24hAgo <= 0m || closeNow <= 0m) continue;
-            if (closeNow / close24hAgo - 1m <= p.PumpFadeThreshold24h) continue;
+            var r24 = closeNow / close24hAgo - 1m;
+            if (r24 <= p.PumpFadeThreshold24h) continue;
+            candidates.Add((s, r24, closeNow));
+        }
+
+        // 2. Staerkste Pumps zuerst in die freien Slots.
+        foreach (var (s, _, closeNow) in candidates.OrderByDescending(c => c.R24))
+        {
+            if (pumpFade.Count >= p.PumpFadeSlots) break;
 
             var catLev = (int)settings.Risk.GetCategorySettings(s.Category).MaxLeverage;
             var leverage = Math.Max(1, p.LeverageCap > 0 ? Math.Min(catLev, p.LeverageCap) : catLev);

@@ -212,4 +212,123 @@ public class CrossSectionalRebalancerTests
         ex.PlaceOrderCalls.Should().ContainSingle(p => p.Symbol == "NEU");
         ex.PlaceOrderCalls[0].Qty.Should().BeApproximately(15m, 0.0001m);
     }
+
+    // ────────────────── Gewichts-Korrektur gehaltener Positionen ──────────────────
+    // Befund 11.08.2026 (live): Beim Wechsel Momentum → DominanceSpread behielt ein bereits
+    // korrekt geshorteter Momentum-Titel seine ALTE Groesse und trug damit 57 % der Short-Seite.
+
+    [Fact]
+    public async Task Reconcile_GehalteneUebergrosse_WirdAufZielgewichtVerkleinert()
+    {
+        // equity 10000 × util 0.75 × w 0.05 = 375 Margin; lev 10 (Fake-Position), price 100
+        // → Ziel-Qty 37.5. Gehalten: 300 → Teil-Close ueber 262.5.
+        var ex = new FakeExchangeClient { AccountEquity = 10000m }
+            .WithPosition("AAA", Side.Sell, 300m, 100m);
+        var target = new Dictionary<string, Side> { ["AAA"] = Side.Sell };
+        var prices = new Dictionary<string, decimal> { ["AAA"] = 100m };
+        var weights = new Dictionary<string, decimal> { ["AAA"] = 0.05m };
+
+        var r = await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto("AAA"), Cfg(), Risk(), weights: weights);
+
+        ex.ClosePartialCalls.Should().ContainSingle();
+        ex.ClosePartialCalls[0].Symbol.Should().Be("AAA");
+        ex.ClosePartialCalls[0].Side.Should().Be(Side.Sell);
+        ex.ClosePartialCalls[0].Qty.Should().BeApproximately(262.5m, 0.0001m);
+        ex.ClosePositionCalls.Should().BeEmpty();   // Verkleinern, nicht schliessen
+        r.Resized.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Reconcile_GehalteneUntergrosse_WirdAufgestockt()
+    {
+        // Ziel-Qty 37.5 (s.o.), gehalten 10 → Nachkauf ueber 27.5 auf DERSELBEN Seite.
+        var ex = new FakeExchangeClient { AccountEquity = 10000m }
+            .WithPosition("AAA", Side.Sell, 10m, 100m);
+        var target = new Dictionary<string, Side> { ["AAA"] = Side.Sell };
+        var prices = new Dictionary<string, decimal> { ["AAA"] = 100m };
+        var weights = new Dictionary<string, decimal> { ["AAA"] = 0.05m };
+
+        var r = await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto("AAA"), Cfg(), Risk(), weights: weights);
+
+        ex.PlaceOrderCalls.Should().ContainSingle(p => p.Symbol == "AAA" && p.Side == Side.Sell);
+        ex.PlaceOrderCalls[0].Qty.Should().BeApproximately(27.5m, 0.0001m);
+        ex.ClosePartialCalls.Should().BeEmpty();
+        r.Resized.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Reconcile_GehalteneInnerhalbToleranz_BleibtUnangetastet()
+    {
+        // Ziel-Qty 37.5, gehalten 40 → 6.7 % Abweichung, unter der 25-%-Toleranz: jede Korrektur
+        // waere teurer (Taker-Fee + Slippage) als der Gewichtungs-Fehler.
+        var ex = new FakeExchangeClient { AccountEquity = 10000m }
+            .WithPosition("AAA", Side.Sell, 40m, 100m);
+        var target = new Dictionary<string, Side> { ["AAA"] = Side.Sell };
+        var prices = new Dictionary<string, decimal> { ["AAA"] = 100m };
+        var weights = new Dictionary<string, decimal> { ["AAA"] = 0.05m };
+
+        var r = await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto("AAA"), Cfg(), Risk(), weights: weights);
+
+        ex.ClosePartialCalls.Should().BeEmpty();
+        ex.PlaceOrderCalls.Should().BeEmpty();
+        r.Resized.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Reconcile_OhneGewichte_KorrigiertNie()
+    {
+        // Equal-weight (Momentum) bleibt bewusst unangetastet — dort ist jede Position per
+        // Konstruktion gleich dimensioniert; ein Resize waere reiner Fee-Verlust.
+        var ex = new FakeExchangeClient { AccountEquity = 10000m }
+            .WithPosition("AAA", Side.Sell, 300m, 100m);
+        var target = new Dictionary<string, Side> { ["AAA"] = Side.Sell };
+        var prices = new Dictionary<string, decimal> { ["AAA"] = 100m };
+
+        var r = await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto("AAA"), Cfg(), Risk());
+
+        ex.ClosePartialCalls.Should().BeEmpty();
+        r.Resized.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Reconcile_FremdPosition_WirdNieKorrigiert()
+    {
+        // doNotOpen = Fremd-/Schutz-Eintrag: gehoert dem User, der Rebalancer fasst weder
+        // Seite noch Groesse an.
+        var ex = new FakeExchangeClient { AccountEquity = 10000m }
+            .WithPosition("FREMD", Side.Sell, 300m, 100m);
+        var target = new Dictionary<string, Side> { ["FREMD"] = Side.Sell };
+        var prices = new Dictionary<string, decimal> { ["FREMD"] = 100m };
+        var weights = new Dictionary<string, decimal> { ["FREMD"] = 0.05m };
+
+        var r = await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto("FREMD"), Cfg(), Risk(),
+            doNotOpen: new HashSet<string> { "FREMD" }, weights: weights);
+
+        ex.ClosePartialCalls.Should().BeEmpty();
+        ex.PlaceOrderCalls.Should().BeEmpty();
+        r.Resized.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Reconcile_KorrekturUnterMinOrder_LaesstGroesseStehen()
+    {
+        // Ziel-Qty 37.5, gehalten 50 → Delta 12.5 liegt unter der Min-Order (20): lieber die
+        // leichte Uebergewichtung behalten als einen Reject zu produzieren.
+        var ex = new FakeExchangeClient { AccountEquity = 10000m, MinOrderQty = 20m }
+            .WithPosition("AAA", Side.Sell, 50m, 100m);
+        var target = new Dictionary<string, Side> { ["AAA"] = Side.Sell };
+        var prices = new Dictionary<string, decimal> { ["AAA"] = 100m };
+        var weights = new Dictionary<string, decimal> { ["AAA"] = 0.05m };
+
+        var r = await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto("AAA"), Cfg(), Risk(), weights: weights);
+
+        ex.ClosePartialCalls.Should().BeEmpty();
+        r.Resized.Should().Be(0);
+    }
 }

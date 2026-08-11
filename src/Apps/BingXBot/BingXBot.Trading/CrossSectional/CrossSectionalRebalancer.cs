@@ -14,7 +14,8 @@ namespace BingXBot.Trading.CrossSectional;
 /// </summary>
 public sealed record RebalanceResult(
     int Closed, int Opened, int SkippedMinOrder, int FailedClose, IReadOnlySet<string> Filled,
-    IReadOnlyList<Position>? FailedClosePositions = null);
+    IReadOnlyList<Position>? FailedClosePositions = null,
+    int Resized = 0);
 
 /// <summary>
 /// Fuehrt den Cross-Sectional-Rebalance gegen einen <see cref="IExchangeClient"/> aus: bringt die offenen
@@ -171,6 +172,82 @@ public static class CrossSectionalRebalancer
             }
         }
 
+        // 3b. Gehaltene Ziel-Positionen auf ihr Gewicht nachziehen (NUR bei expliziten Gewichten).
+        //     Ohne diesen Schritt behaelt eine bereits korrekt gehaltene Position ihre ALTE Groesse:
+        //     beim Wechsel Momentum → DominanceSpread schleppte der Korb eine Momentum-Position mit
+        //     ~8-facher Slot-Groesse mit (live 11.08.2026: ein einziger Short trug 57 % der
+        //     Short-Seite). Equal-weight (weights == null) bleibt bewusst unangetastet — dort ist
+        //     jede Position per Konstruktion gleich dimensioniert.
+        //     Fremd-/Schutz-Positionen (doNotOpen) werden nie angefasst: sie gehoeren dem User.
+        var resized = 0;
+        var topUpBudget = 0m;
+        if (weights != null)
+        {
+            topUpBudget = Math.Max(0m, acc.AvailableBalance * 0.95m - opens.Sum(MarginFor) * capFactor);
+            foreach (var pos in after)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!target.TryGetValue(pos.Symbol, out var want) || want != pos.Side) continue;
+                if (doNotOpen?.Contains(pos.Symbol) == true) continue;
+                if (!weights.TryGetValue(pos.Symbol, out var w) || w <= 0m) continue;
+
+                var price = prices.TryGetValue(pos.Symbol, out var p) && p > 0m ? p : pos.MarkPrice;
+                if (price <= 0m || pos.Quantity <= 0m) continue;
+                var leverage = pos.Leverage > 0m ? pos.Leverage : 1m;
+                var targetQty = equity * cfg.MarginUtilization * w * leverage / price;
+                if (targetQty <= 0m) continue;
+
+                // Toleranz: kleine Abweichungen (Mark-Drift, Tick-Rundung) nicht wegtraden —
+                // jede Korrektur kostet Taker-Fee und Slippage.
+                var deltaQty = targetQty - pos.Quantity;
+                if (Math.Abs(deltaQty) / targetQty <= ResizeTolerance) continue;
+
+                // Die Ziel-Groesse selbst muss handelbar bleiben, sonst entstuende eine Dust-Position
+                // (bzw. ein Reject) statt einer sauber gewichteten.
+                if (!ex.MeetsMinimumOrder(pos.Symbol, targetQty, price)) continue;
+
+                var adjustQty = Math.Abs(deltaQty);
+                if (!ex.MeetsMinimumOrder(pos.Symbol, adjustQty, price))
+                {
+                    log($"Rebalance: {pos.Symbol} {pos.Side} Gewichts-Korrektur {adjustQty:F6} unter Min-Order → bleibt bei {pos.Quantity:F6}.");
+                    continue;
+                }
+
+                try
+                {
+                    if (deltaQty < 0m)
+                    {
+                        await ex.ClosePartialAsync(pos.Symbol, pos.Side, adjustQty).ConfigureAwait(false);
+                        log($"Rebalance: {pos.Symbol} {pos.Side} auf Zielgewicht verkleinert "
+                            + $"({pos.Quantity:F6} → {targetQty:F6}).");
+                    }
+                    else
+                    {
+                        // Aufstocken bindet zusaetzliche Margin — nur aus dem Rest, der nach den
+                        // geplanten Opens frei bleibt (der Account-Snapshot ist aelter als die
+                        // Downsizes dieses Durchlaufs, deshalb bewusst konservativ).
+                        var needed = adjustQty * price / leverage;
+                        if (needed > topUpBudget)
+                        {
+                            log($"Rebalance: {pos.Symbol} {pos.Side} Aufstockung uebersprungen (freie Margin reicht nicht) — naechster Durchlauf.");
+                            continue;
+                        }
+                        await ex.PlaceOrderAsync(new OrderRequest(pos.Symbol, pos.Side, OrderType.Market, adjustQty), price)
+                            .ConfigureAwait(false);
+                        topUpBudget -= needed;
+                        log($"Rebalance: {pos.Symbol} {pos.Side} auf Zielgewicht aufgestockt "
+                            + $"({pos.Quantity:F6} → {targetQty:F6}).");
+                    }
+                    resized++;
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception exn)
+                {
+                    log($"Rebalance: Gewichts-Korrektur {pos.Symbol} {pos.Side} fehlgeschlagen ({exn.Message}) — Groesse bleibt, naechster Durchlauf erneut.");
+                }
+            }
+        }
+
         // 4. Ziel-Positionen oeffnen, die noch nicht gehalten werden — ALTERNIEREND Short/Long:
         //    die fruehere Insertion-Order (alle Longs zuerst, MomentumBasketCalculator) liess bei
         //    knapper Margin (Free-Margin-Cap, Fees/Mark-Drift zwischen den Market-Orders) bevorzugt
@@ -235,8 +312,14 @@ public static class CrossSectionalRebalancer
             }
         }
 
-        return new RebalanceResult(closed, opened, skippedMin, failedClose, filled, failedClosePositions);
+        return new RebalanceResult(closed, opened, skippedMin, failedClose, filled, failedClosePositions, resized);
     }
+
+    /// <summary>
+    /// Relative Abweichung, ab der eine gehaltene Position auf ihr Zielgewicht nachgezogen wird
+    /// (25 %). Darunter waeren Fees + Slippage teurer als der Gewichtungs-Fehler.
+    /// </summary>
+    private const decimal ResizeTolerance = 0.25m;
 
     /// <summary>
     /// Ordnet die Ziel-Eintraege alternierend Short/Long (S,L,S,L,…) statt in Dictionary-

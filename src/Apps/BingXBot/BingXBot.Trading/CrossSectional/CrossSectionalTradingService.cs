@@ -371,6 +371,7 @@ public sealed class CrossSectionalTradingService : IDisposable
 
         Log(LogLevel.Trade, "Engine",
             $"Rebalance fertig: {result.Closed} geschlossen, {result.Opened} eroeffnet, "
+            + $"{result.Resized} auf Zielgewicht korrigiert, "
             + $"{result.SkippedMinOrder} Min-Order-Skip, {result.FailedClose} Close-Fehler. "
             + $"Korb ({basket.Count}): {DescribeBasket(basket)}. Naechster: "
             + $"{(_lastRebalanceUtc + TimeSpan.FromDays(cfg.RebalanceDays)):yyyy-MM-dd HH:mm} UTC.");
@@ -607,7 +608,8 @@ public sealed class CrossSectionalTradingService : IDisposable
         DrainPaperTrades();
 
         Log(LogLevel.Trade, "Engine",
-            $"Drift-Refill fertig: {result.Opened} eroeffnet, {result.SkippedMinOrder} Min-Order-Skip. "
+            $"Drift-Refill fertig: {result.Opened} eroeffnet, {result.Resized} auf Zielgewicht korrigiert, "
+            + $"{result.SkippedMinOrder} Min-Order-Skip. "
             + $"Korb ({_currentBasket.Count}): {DescribeBasket(_currentBasket)}.");
     }
 

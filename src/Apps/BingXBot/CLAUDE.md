@@ -277,6 +277,14 @@ Cross-Asset-Dispersion (Gold/Indizes/Forex) traegt den Edge. Betriebs-Mechanik:
   Der Soll-Korb wird aus `RebalanceResult.Filled` gebaut (tatsaechlich gehalten/eroeffnet) — NICHT
   per erneutem `GetPositions` (frische Market-Orders erscheinen dort teils erst Sekunden spaeter,
   Race). `LastRebalanceUtc` bleibt beim Refill unveraendert.
+- **Gewichts-Korrektur gehaltener Positionen**: Bei expliziten Gewichten (DominanceSpread) zieht
+  `ReconcileAsync` eine bereits korrekt gehaltene Position auf ihr Zielgewicht nach (Teil-Close per
+  `ClosePartialAsync` bzw. Nachkauf derselben Seite), Toleranz 25 %, Min-Order-aware (auch die
+  Ziel-Groesse muss handelbar bleiben), Aufstockung nur aus der nach den Opens freien Margin.
+  Fremd-/Schutz-Positionen (`doNotOpen`) bleiben unangetastet, Equal-Weight (Momentum, `weights == null`)
+  ebenfalls — dort ist jeder Slot per Konstruktion gleich gross. Ohne diesen Schritt behielt eine
+  gehaltene Position ihre ALTE Groesse: beim Moduswechsel trug ein mitgeschleppter Momentum-Short
+  57 % der ganzen Short-Seite.
 - **Rebalancer-Ausfuehrungs-Regeln** (Audit-Fixes 11.08.2026):
   - **Sizing-Divisor = Korbgroesse** (`basketSlots` bzw. `target.Count`), NICHT
     `min(LongK+ShortK, MaxOpenPositions)` — der Scalper-Default `MaxOpenPositions=3` halbierte
@@ -342,6 +350,13 @@ Rueckenwind (+1,3 %/J: Alt- > BTC-Funding). Korb-Bildung geteilt via
 Sizing ueber den optionalen `weights`-Parameter des Rebalancers (null = equal-weight, unveraendert).
 **Empfohlene Betriebs-Settings:** `RebalanceDays=30`, `LeverageCap=1`, `ShortK=10..20`,
 `IncludeTradFi=false` (reiner Krypto-Korb → kein Wochenend-Deferral), `LongK` wird ignoriert.
+**Konto-Groesse begrenzt ShortK:** Der Slot ist `equity × MarginUtilization × 0.5 / ShortK`; liegt er
+unter der BingX-`tradeMinQuantity × Preis` eines Ziel-Symbols, bleibt der Slot dauerhaft Cash (der
+Refill versucht es bei jedem Tick erneut und scheitert deterministisch) — die Short-Seite ist dann
+unterinvestiert und der Spread netto long. Bei ~95 USDT Equity und ShortK=10 (Slot ~3,6 USDT) traf
+das ETH (min 18,7), AAVE (8,8) und BNB (6,1). Faustregel: ShortK so waehlen, dass der Slot die
+Min-Order der volumenstaerksten Alts traegt — ETH ist unter ~380 USDT Equity strukturell nicht
+shortbar.
 Drift-Semantik: Der Spread ist EIN Paar-Trade — wird der BTC-Anker extern geschlossen, loest der
 Drift-Tick den ganzen Spread auf (Alt-Shorts schliessen, Sperre bis zum naechsten Rebalance) statt
 net-short weiterzulaufen; freie Short-Slots fuellt der Refill mit den naechsten Volumen-Alts.

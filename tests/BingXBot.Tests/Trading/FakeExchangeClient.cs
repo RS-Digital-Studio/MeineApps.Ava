@@ -25,6 +25,7 @@ public sealed class FakeExchangeClient : IExchangeClient
     // ────────────────── Call-Recorder ──────────────────
     public List<string> CallLog { get; } = new();
     public List<(string Symbol, Side Side)> ClosePositionCalls { get; } = new();
+    public List<(string Symbol, Side Side, decimal Qty)> ClosePartialCalls { get; } = new();
     public List<(string Symbol, Side Side, decimal Qty)> PlaceOrderCalls { get; } = new();
     public List<(string Symbol, int Leverage, Side Side)> SetLeverageCalls { get; } = new();
     public List<(string Symbol, Side Side, decimal? Sl, decimal? Tp)> SetSlTpCalls { get; } = new();
@@ -203,6 +204,7 @@ public sealed class FakeExchangeClient : IExchangeClient
     public Task ClosePartialAsync(string symbol, Side originalSide, decimal quantity)
     {
         CallLog.Add($"ClosePartialAsync({symbol},{originalSide},{quantity})");
+        ClosePartialCalls.Add((symbol, originalSide, quantity));
         return Task.CompletedTask;
     }
 

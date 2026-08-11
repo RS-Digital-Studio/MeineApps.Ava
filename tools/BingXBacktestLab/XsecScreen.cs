@@ -220,6 +220,28 @@ internal static class XsecScreen
     ];
 
     /// <summary>
+    /// Pump-Fade-Overlay-Screen (Event-Setup aus der Top-50-Analyse 11.08.2026, User-Auftrag:
+    /// "2 Pump-Fades zusaetzlich zum aktuellen Xsec"): prueft das Overlay (2 Event-Short-Slots,
+    /// Coin &lt;180d, +20/+30 %/24h, Stop +15 %, Zeit-Exit 24h) im live-treuen Harness — als Zusatz
+    /// zum Live-Profil, standalone (0L-0S = nur Overlay) und als Kombi mit dem Dominanz-Spread.
+    /// Erste Config traegt PF, damit der sequenzielle Preload die D1-Listing-Proben waermt.
+    /// </summary>
+    public static XsecParams[] PumpFadeConfigs() =>
+    [
+        // Live-Profil + Overlay (2 Slots, Schwelle 20 % / 30 %).
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, PumpFadeSlots: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, PumpFadeSlots: 2, PumpFadeThreshold24h: 0.30m),
+        // Referenz: Live-Profil pur.
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        // Standalone-Overlay (0L-0S = Korb aus): isolierter PF-Beitrag im Harness.
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 0, ShortK: 0, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, PumpFadeSlots: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 0, ShortK: 0, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, PumpFadeSlots: 2, PumpFadeThreshold24h: 0.30m),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 0, ShortK: 0, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 1, PumpFadeSlots: 2),
+        // Kombi der beiden Struktur-Trades: Dominanz-Spread + Overlay.
+        new(LookbackCandles: 60, RebalanceEveryCandles: 180, LongK: 1, ShortK: 10, RiskAdjusted: false, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.DominanceSpread, PumpFadeSlots: 2),
+    ];
+
+    /// <summary>
     /// Universums-Sensitivitaets-Check (Befund 29.07.2026: die Juni-4/4-Validierung des Live-Profils
     /// reproduziert auf dem heutigen Top-50-Schnitt NICHT — 2022-Bear kippt von +35 % auf −54 %).
     /// Kleiner Config-Satz (Live-Profil + die besten Worst-Phase-Kandidaten der Re-Validierung +

@@ -61,11 +61,22 @@ public enum XsecMode
 ///   noch in den Top-(K+Buffer) seiner Seite rankt (0 = aus). Senkt den Turnover → Fees/Slippage.</param>
 /// <param name="ClusterDiversify">Max. 1 neues Symbol je Asset-Cluster pro Seite (verhindert 3 Longs mit
 ///   identischem Beta). Fallback nach Rang, wenn Cluster nicht fuer K Slots reichen.</param>
+/// <param name="PumpFadeSlots">Pump-Fade-Overlay (Event-Setup aus der Top-50-Analyse 11.08.2026):
+///   max. N gleichzeitige Event-Shorts ZUSAETZLICH zum Korb (0 = aus). Event = Krypto-Alt juenger
+///   als <see cref="PumpFadeMaxAgeDays"/> mit 24h-Rendite &gt; <see cref="PumpFadeThreshold24h"/> →
+///   Short fuer <see cref="PumpFadeHoldCandles"/> Kerzen mit Stop bei +<see cref="PumpFadeStopPct"/>.
+///   Jeder Slot bindet 7,5 % Equity-Margin; die Korb-Utilization sinkt entsprechend.</param>
+/// <param name="PumpFadeThreshold24h">24h-Pump-Schwelle (0.20 = +20 %).</param>
+/// <param name="PumpFadeStopPct">Stop-Distanz gegen den Short (0.15 = +15 % ueber Entry, High-basiert).</param>
+/// <param name="PumpFadeHoldCandles">Zeit-Exit nach N Nav-Kerzen (6 = 24 h auf H4).</param>
+/// <param name="PumpFadeMaxAgeDays">Max. Coin-Alter seit Erstlisting (D1-Probe ab 2021).</param>
 public readonly record struct XsecParams(
     int LookbackCandles, int RebalanceEveryCandles, int LongK, int ShortK,
     bool RiskAdjusted, decimal AtrStopMultiplier, int LeverageCap = 0,
     XsecMode Mode = XsecMode.Momentum, bool InverseVolWeight = false, int SkipCandles = 0,
-    decimal VolTargetAnnualPct = 0m, int ExitRankBuffer = 0, bool ClusterDiversify = false)
+    decimal VolTargetAnnualPct = 0m, int ExitRankBuffer = 0, bool ClusterDiversify = false,
+    int PumpFadeSlots = 0, decimal PumpFadeThreshold24h = 0.20m, decimal PumpFadeStopPct = 0.15m,
+    int PumpFadeHoldCandles = 6, int PumpFadeMaxAgeDays = 180)
 {
     public int Slots => LongK + ShortK;
     public string Label =>
@@ -78,6 +89,7 @@ public readonly record struct XsecParams(
         + $"{(AtrStopMultiplier > 0 ? $"/stop{AtrStopMultiplier:0.0}" : "")}"
         + $"{(ExitRankBuffer > 0 ? $"/buf{ExitRankBuffer}" : "")}"
         + $"{(ClusterDiversify ? "/cdiv" : "")}"
+        + $"{(PumpFadeSlots > 0 ? $"/pf{PumpFadeSlots}x{PumpFadeThreshold24h * 100:0}" : "")}"
         + $"{(LeverageCap > 0 ? $"/lev{LeverageCap}" : "")}";
 }
 
@@ -125,6 +137,20 @@ public sealed class CrossSectionalMomentumEngine(
         logger.LogInformation("Xsec-Backtest: {Symbols} Symbole, {Cfg}, {From}..{To}",
             states.Count, p.Label, from.ToString("yyyy-MM-dd"), to.ToString("yyyy-MM-dd"));
 
+        // Pump-Fade-Overlay: Erstlisting je Symbol via D1-Probe ab 2021 (Phasen-Klines beginnen am
+        // Phasenstart und taugen nicht als Alter). Symbole, die schon 2021 existieren, sind nie "jung".
+        var listingTime = new Dictionary<string, DateTime>();
+        if (p.PumpFadeSlots > 0)
+        {
+            var probeFrom = new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            foreach (var s in states)
+            {
+                if (!IsCryptoAlt(s.Symbol)) continue;
+                var d1 = await publicClient.GetKlinesAsync(s.Symbol, TimeFrame.D1, probeFrom, to, ct).ConfigureAwait(false);
+                if (d1.Count > 0) listingTime[s.Symbol] = d1[0].OpenTime;
+            }
+        }
+
         var bt = settings.Backtest;
         using var sim = new SimulatedExchange(bt, symbolInfo);
         var fundingRate = bt.SimulatedFundingRatePercent / 100m;
@@ -138,6 +164,8 @@ public sealed class CrossSectionalMomentumEngine(
         var leverageSet = new HashSet<string>();
         var slots = Math.Min(p.Slots, settings.Risk.MaxOpenPositions);
         var lastRebalanceStep = int.MinValue;
+        // Pump-Fade-Overlay-State: Symbol → (Entry-Schritt, Entry-Preis).
+        var pumpFade = new Dictionary<string, (int EntryStep, decimal EntryPrice)>();
 
         for (var step = 0; step < timeline.Count; step++)
         {
@@ -163,15 +191,23 @@ public sealed class CrossSectionalMomentumEngine(
             if (p.AtrStopMultiplier > 0m)
                 await ApplyAtrStopsAsync(sim, states, p, ct).ConfigureAwait(false);
 
+            // c2. Pump-Fade-Overlay: offene Event-Shorts verwalten (Stop zuerst, dann Zeit-Exit).
+            if (pumpFade.Count > 0)
+                await ManagePumpFadeAsync(sim, states, p, pumpFade, step).ConfigureAwait(false);
+
             // d. Rebalance faellig?
             var eligibleStart = step >= 0 && states.Any(s => s.NavIdx >= p.LookbackCandles + p.SkipCandles && t >= s.TradingStartCloseTime);
             if (eligibleStart && (lastRebalanceStep == int.MinValue || step - lastRebalanceStep >= p.RebalanceEveryCandles))
             {
                 // Portfolio-Vol-Targeting: Gesamt-Exposure nach realisierter Equity-Vol skalieren.
                 var volScale = p.VolTargetAnnualPct > 0m ? ComputeVolScale(equityCurve, p.VolTargetAnnualPct) : 1m;
-                await RebalanceAsync(sim, states, settings, p, slots, leverageSet, t, volScale, ct).ConfigureAwait(false);
+                await RebalanceAsync(sim, states, settings, p, slots, leverageSet, t, volScale, pumpFade.Keys, ct).ConfigureAwait(false);
                 lastRebalanceStep = step;
             }
+
+            // d2. Pump-Fade-Overlay: neue Events shorten (nach dem Rebalance — Korb hat Vorrang).
+            if (p.PumpFadeSlots > 0 && pumpFade.Count < p.PumpFadeSlots)
+                await ScanPumpFadeEntriesAsync(sim, states, settings, p, listingTime, leverageSet, pumpFade, step, t).ConfigureAwait(false);
 
             // e. Equity-Snapshot ~1×/Tag.
             if (step % EquitySnapshotEverySteps == 0)
@@ -191,7 +227,8 @@ public sealed class CrossSectionalMomentumEngine(
 
     private async Task RebalanceAsync(
         SimulatedExchange sim, List<PortfolioSymbolState> states, BotSettings settings, XsecParams p,
-        int slots, HashSet<string> leverageSet, DateTime t, decimal volScale, CancellationToken ct)
+        int slots, HashSet<string> leverageSet, DateTime t, decimal volScale,
+        IReadOnlyCollection<string> pumpFadeSymbols, CancellationToken ct)
     {
         // 1.+2. Ziel-Korb. Momentum nutzt den GETEILTEN MomentumBasketCalculator (identisch zur
         // Live-Logik); Reversal/LowVol sind Lab-Forschungs-Modi (lokal, Live unberuehrt).
@@ -206,13 +243,18 @@ public sealed class CrossSectionalMomentumEngine(
         // gehaltenen Symbole, um sie innerhalb des Buffer-Fensters im Slot zu lassen.
         var positions = await sim.GetPositionsAsync().ConfigureAwait(false);
         var currentBasket = new Dictionary<string, Side>();
-        foreach (var pos in positions) currentBasket[pos.Symbol] = pos.Side;
+        foreach (var pos in positions)
+            if (!pumpFadeSymbols.Contains(pos.Symbol)) currentBasket[pos.Symbol] = pos.Side;
 
         var target = BuildTargetBasket(universe, p, currentBasket);
+        // Pump-Fade-Symbole gehoeren dem Overlay: der Korb besetzt sie nicht (kein Seiten-Mix).
+        foreach (var pf in pumpFadeSymbols) target.Remove(pf);
 
         // 3. Bestehende Positionen, die NICHT (mehr) zum Ziel-Korb passen (Symbol raus ODER Seite gedreht), schliessen.
         foreach (var pos in positions)
         {
+            // Offene Pump-Fade-Shorts verwaltet ausschliesslich das Overlay (Stop/Zeit-Exit).
+            if (pos.Side == Side.Sell && pumpFadeSymbols.Contains(pos.Symbol)) continue;
             if (!target.TryGetValue(pos.Symbol, out var wantSide) || wantSide != pos.Side)
                 await sim.ClosePositionAsync(pos.Symbol, pos.Side, isMakerClose: false).ConfigureAwait(false);
         }
@@ -224,7 +266,9 @@ public sealed class CrossSectionalMomentumEngine(
         var acc = await sim.GetAccountInfoAsync().ConfigureAwait(false);
         var equity = acc.Balance + acc.UnrealizedPnl;
         if (equity <= 0m || slots <= 0) return;
-        var totalMargin = equity * MarginUtilization * volScale;   // volScale=1 wenn Vol-Targeting aus
+        // Pump-Fade-Slots reservieren je 7,5 % Equity-Margin — der Korb weicht entsprechend zurueck.
+        var utilization = Math.Max(0.10m, MarginUtilization - PumpFadeMarginPerSlot * p.PumpFadeSlots);
+        var totalMargin = equity * utilization * volScale;   // volScale=1 wenn Vol-Targeting aus
 
         // Inverse-Vol-Gewichte (1/ATR%) je Korb-Symbol, normalisiert auf Summe 1 → perSymbolMargin.
         // Ohne Flag: Gleichgewicht (jedes Symbol 1/Slots). Geteilt fuer Long+Short (Gross-Exposure-Split).
@@ -390,6 +434,90 @@ public sealed class CrossSectionalMomentumEngine(
 
     /// <summary>Fester Long-Anker der Modi AnchorBtc/DominanceSpread.</summary>
     private const string AnchorSymbol = "BTC-USDT";
+
+    /// <summary>Equity-Margin-Anteil je Pump-Fade-Slot (2 Slots = 15 %; der Korb weicht zurueck).</summary>
+    private const decimal PumpFadeMarginPerSlot = 0.075m;
+
+    /// <summary>
+    /// Pump-Fade-Verwaltung: Stop-Check (High der aktuellen Kerze reisst Entry×(1+Stop)) VOR dem
+    /// Zeit-Exit (HoldCandles Schritte nach Entry, Close zum Kerzen-Close). Entry-Kerze selbst wird
+    /// nicht gestoppt (Event wird am Kerzen-Close erkannt — das High lag davor).
+    /// </summary>
+    private static async Task ManagePumpFadeAsync(
+        SimulatedExchange sim, List<PortfolioSymbolState> states, XsecParams p,
+        Dictionary<string, (int EntryStep, decimal EntryPrice)> pumpFade, int step)
+    {
+        foreach (var (symbol, pf) in pumpFade.ToList())
+        {
+            var s = states.FirstOrDefault(x => x.Symbol == symbol);
+            if (s is null || s.NavIdx < 0) continue;
+            var candle = s.CurrentCandle;
+
+            if (step > pf.EntryStep)
+            {
+                var stopPrice = pf.EntryPrice * (1m + p.PumpFadeStopPct);
+                if (candle.High >= stopPrice)
+                {
+                    sim.SetCurrentPrice(symbol, stopPrice);
+                    await sim.ClosePositionAsync(symbol, Side.Sell, isMakerClose: false).ConfigureAwait(false);
+                    sim.SetCurrentPrice(symbol, candle.Close);
+                    pumpFade.Remove(symbol);
+                    continue;
+                }
+            }
+
+            if (step - pf.EntryStep >= p.PumpFadeHoldCandles)
+            {
+                await sim.ClosePositionAsync(symbol, Side.Sell, isMakerClose: false).ConfigureAwait(false);
+                pumpFade.Remove(symbol);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Pump-Fade-Entry-Scan: Krypto-Alt juenger als MaxAgeDays (Erstlisting via D1-Probe), 24h-Rendite
+    /// ueber der Schwelle, weder im Korb noch als Overlay offen → Market-Short mit 7,5 % Equity-Margin.
+    /// Slot gilt erst als belegt, wenn die Position tatsaechlich existiert (Min-Order-Reject = kein Slot).
+    /// </summary>
+    private static async Task ScanPumpFadeEntriesAsync(
+        SimulatedExchange sim, List<PortfolioSymbolState> states, BotSettings settings, XsecParams p,
+        IReadOnlyDictionary<string, DateTime> listingTime, HashSet<string> leverageSet,
+        Dictionary<string, (int EntryStep, decimal EntryPrice)> pumpFade, int step, DateTime t)
+    {
+        var positions = await sim.GetPositionsAsync().ConfigureAwait(false);
+        var heldSymbols = positions.Select(pos => pos.Symbol).ToHashSet();
+        var acc = await sim.GetAccountInfoAsync().ConfigureAwait(false);
+        var equity = acc.Balance + acc.UnrealizedPnl;
+        if (equity <= 0m) return;
+
+        foreach (var s in states)
+        {
+            if (pumpFade.Count >= p.PumpFadeSlots) break;
+            if (s.NavIdx < 6 || pumpFade.ContainsKey(s.Symbol) || heldSymbols.Contains(s.Symbol)) continue;
+            if (!listingTime.TryGetValue(s.Symbol, out var listed)) continue;
+            var ageDays = (t - listed).TotalDays;
+            if (ageDays < 1 || ageDays >= p.PumpFadeMaxAgeDays) continue;
+
+            var closeNow = s.Nav[s.NavIdx].Close;
+            var close24hAgo = s.Nav[s.NavIdx - 6].Close;
+            if (close24hAgo <= 0m || closeNow <= 0m) continue;
+            if (closeNow / close24hAgo - 1m <= p.PumpFadeThreshold24h) continue;
+
+            var catLev = (int)settings.Risk.GetCategorySettings(s.Category).MaxLeverage;
+            var leverage = Math.Max(1, p.LeverageCap > 0 ? Math.Min(catLev, p.LeverageCap) : catLev);
+            if (leverageSet.Add($"{s.Symbol}_{Side.Sell}"))
+                await sim.SetLeverageAsync(s.Symbol, leverage, Side.Sell).ConfigureAwait(false);
+
+            var qty = equity * PumpFadeMarginPerSlot * leverage / closeNow;
+            if (qty <= 0m) continue;
+            await sim.PlaceOrderAsync(new OrderRequest(s.Symbol, Side.Sell, OrderType.Market, qty)).ConfigureAwait(false);
+
+            // Reject-sicher: Slot nur belegen, wenn die Short-Position wirklich existiert.
+            var after = await sim.GetPositionsAsync().ConfigureAwait(false);
+            if (after.Any(pos => pos.Symbol == s.Symbol && pos.Side == Side.Sell))
+                pumpFade[s.Symbol] = (step, closeNow);
+        }
+    }
 
     /// <summary>Krypto-Alt = kein NC-TradFi-Perp und kein tokenisiertes Edelmetall (XAUT/PAXG →
     /// AssetCluster.TradFiCommodity) — der DominanceSpread shortet nur echte Alts.</summary>

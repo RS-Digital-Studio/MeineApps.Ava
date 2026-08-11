@@ -290,6 +290,23 @@ Krypto-Alts, seitenweise 50/50-Gewichtung, fehlende Slots bleiben Cash). Befund 
    Offen: echte Funding-Historie (Sim = flat 0,01 %/8h; real ist Alt-Funding meist > BTC-Funding
    → Rueckenwind fuer den Spread), Point-in-Time-Universum.
 
+**Pump-Fade-Overlay (11.08.2026, `--xsec-grid pumpfade`) — Event-Studie ueberlebt die
+Portfolio-Realisierung NICHT:** Die Pandas-Event-Studie (Coin <180d, +20 %/24h → short 24h,
++253 bp/Trade, alle Jahre positiv) wurde als Overlay in die `CrossSectionalMomentumEngine`
+gebaut (`XsecParams.PumpFadeSlots` usw.: 2 Event-Short-Slots à 7,5 % Equity-Margin, Korb weicht
+auf 60 % Utilization zurueck, Stop +15 % High-basiert, Zeit-Exit 24h, Erstlisting via D1-Probe
+ab 2021, Kollisionsregeln Korb↔Overlay) und ueber Top-50/may-live/158+1000 USDT/breites
+78er-Cache-Universum gescreent. Ergebnis: **Standalone bestenfalls ~null** (Schwelle 30 %:
+Σ −4,9..+0,8 %, 1/4–2/4; Schwelle 20 %: klar negativ, Recent-Phase −18..−39 %), als Zusatz zum
+Live-Profil verbessert es die Worst-Phase nur via Exposure-Reduktion des Korbs. Ursachen des
+Event-Studie↔Portfolio-Gaps: 2-Slot-Sampling erfasst nur einen Bruchteil der Events (Auswahl
+in Scan-Reihenfolge, Slots von Losern blockiert), Kompoundierung des 7,5 %-Sizings, doppelte
+Kosten (Slippage 0,05 %/Seite ZUSAETZLICH zu Fees), Survivorship des heutigen Universums wirkt
+bei diesem Setup GEGEN den Short (die ueberlebenden Jung-Coins sind die erfolgreichen Pumps).
+**Kein Live-Einbau.** Lektion (Verallgemeinerung der SK-Lektion): ein positives Event-Studien-
+Mittel ist KEIN handelbares Portfolio — Slot-Kapazitaet, Auswahl-Reihenfolge und Kompoundierung
+muessen im Harness mitgetestet werden.
+
 **Weitere Strategie-Klassen getestet (`--xsec-grid strategies`, `--pairs`, `--funding-carry`):** Reversal,
 Low-Vol-market-neutral, Inverse-Vol-Gewichtung, Skip-Period, Pairs-Trading (Distance/Gatev), Funding-Harvest —
 **alle NEGATIV/nicht-robust**. **Level-Familie (13.07.2026, `--phase-screen`, Live-Settings):** S/R-Level aus

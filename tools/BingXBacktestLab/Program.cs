@@ -169,6 +169,8 @@ if (GetArg(argMap, "xsec", null) != null)
         ? XsecScreen.FinalConfigs()
         : GetArg(argMap, "xsec-grid", null) is "anchor"
         ? XsecScreen.AnchorConfigs()
+        : GetArg(argMap, "xsec-grid", null) is "pumpfade"
+        ? XsecScreen.PumpFadeConfigs()
         : XsecScreen.DefaultConfigs();
     return await XsecScreen.RunAsync(configs, PhaseScreen.DefaultPhases(), symbols, navTf,
         botSettings, memData, symbolInfo, balance, parallelism, outDir, label);

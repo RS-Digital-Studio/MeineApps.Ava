@@ -516,6 +516,15 @@ static void ApplySettingsToSingletons(IServiceProvider sp, BotSettings saved)
     // ============ Cross-Sectional ============ (Korb-Tuning via PUT /settings/xsec persistiert
     // in BotSettings.CrossSectional → hier auf den DI-Singleton mappen, sonst faellt jede getunte
     // Korb-Config bei jedem Server-Restart auf die Code-Defaults zurueck).
+    // Korb-Modus zuerst: ohne dieses Mapping faellt eine per PUT /settings/xsec gesetzte
+    // Betriebsart beim naechsten Server-Restart still auf den Code-Default "Momentum" zurueck —
+    // mit einem DominanceSpread-Korb im State waere das ein unbemerkter Regime-Wechsel am
+    // Echtgeld-Konto (BTC-Anker + Alt-Shorts wuerden als Momentum-Korb weitergepflegt).
+    // Unbekannte Werte auf Momentum normalisieren — identisch zu IsDominanceSpread im Service.
+    xsec.Mode = string.Equals(saved.CrossSectional.Mode, CrossSectionalSettings.ModeDominanceSpread,
+        StringComparison.OrdinalIgnoreCase)
+        ? CrossSectionalSettings.ModeDominanceSpread
+        : CrossSectionalSettings.ModeMomentum;
     xsec.LookbackCandles = saved.CrossSectional.LookbackCandles;
     xsec.RebalanceDays = saved.CrossSectional.RebalanceDays;
     // Einmalige Profil-Migration (13.07.2026): Das alte validierte Profil L120/R21d wurde vom

@@ -4,6 +4,7 @@ using BingXBot.Core.Enums;
 using BingXBot.Core.Helpers;
 using BingXBot.Core.Interfaces;
 using BingXBot.Core.Models;
+using BingXBot.Engine.Filters;
 using BingXBot.Engine.Portfolio;
 using Microsoft.Extensions.Logging;
 using LogLevel = BingXBot.Core.Enums.LogLevel;
@@ -58,6 +59,14 @@ public sealed class CrossSectionalTradingService : IDisposable
     // ANDERER Symbole (die Bestaetigung eines echt geschlossenen Symbols wird nicht verschleppt).
     private const int DriftConfirmTicks = 2;
     private Dictionary<string, int> _driftMissCounter = new();
+    // Positionen, deren Close beim Rebalance/Refill scheiterte (TradFi ausserhalb der Handels-
+    // zeiten, Rate-Limit). Sie sind KEINE Fremd-Positionen: sie binden Margin doppelt und tragen
+    // ungewollte Alt-Richtung — der Drift-Tick schliesst sie erneut, bis es gelingt. Persistiert
+    // im State (Crash-Recovery), sonst wuerde ein Neustart sie zu geschuetzten Fremd-Positionen
+    // umdeuten und bis zum naechsten Rebalance konservieren.
+    private Dictionary<string, Side> _pendingCloses = new();
+    // Wochenend-Verschiebungs-Log nur einmal je Verschiebung (nicht alle 30 min).
+    private bool _rebalanceDeferredLogged;
 
     /// <summary>
     /// Per-Tick-Hard-Cap (Watchdog). Ein voller Rebalance (Klines fuer Top-50+TradFi + bis zu
@@ -107,6 +116,7 @@ public sealed class CrossSectionalTradingService : IDisposable
         // RestoreOrAdoptStateAsync laedt die persistierte Sperrliste danach ggf. wieder.
         _driftMissCounter = new();
         _excludedUntilRebalance = new();
+        _pendingCloses = new();
         await RestoreOrAdoptStateAsync().ConfigureAwait(false);
 
         IsRunning = true;
@@ -201,10 +211,39 @@ public sealed class CrossSectionalTradingService : IDisposable
 
         // 4. Rebalance faellig? (Wall-Clock — robust gegen Downtime.) Sonst: Korb-Drift pruefen.
         if (DateTime.UtcNow >= _lastRebalanceUtc + TimeSpan.FromDays(Math.Max(1, _cfg.RebalanceDays)))
-            await RebalanceAsync(ct).ConfigureAwait(false);
+        {
+            // Wochenend-Gate: Mit IncludeTradFi traegt TradFi (~40 % des Universums) den Edge —
+            // ein Rebalance am Wochenende kann TradFi weder schliessen noch oeffnen (BingX 101413):
+            // Fehl-Closes blieben haengen, TradFi-Slots blieben leer, und der kaputte Korb wuerde
+            // durch das gesetzte LastRebalanceUtc fuer RebalanceDays zementiert. Der Rebalance
+            // wartet auf die naechste Werktags-Session; der Drift-Refill pflegt den Korb solange.
+            // Der 9-Tage-Rhythmus laeuft ab dem TATSAECHLICHEN Rebalance weiter (Termin wandert —
+            // gewollt, damit er nicht dauerhaft aufs Wochenende faellt).
+            if (_cfg.IncludeTradFi && IsTradFiWeekendBlackout(DateTime.UtcNow))
+            {
+                if (!_rebalanceDeferredLogged)
+                {
+                    _rebalanceDeferredLogged = true;
+                    Log(LogLevel.Info, "Engine",
+                        "Rebalance faellig, aber TradFi-Maerkte geschlossen (Wochenende) — "
+                        + "verschoben auf die naechste Werktags-Session; Drift-Refill pflegt den Korb.");
+                }
+                await RefillBasketDriftAsync(ct).ConfigureAwait(false);
+            }
+            else
+            {
+                _rebalanceDeferredLogged = false;
+                await RebalanceAsync(ct).ConfigureAwait(false);
+            }
+        }
         else
             await RefillBasketDriftAsync(ct).ConfigureAwait(false);
     }
+
+    /// <summary>Sa/So sind alle Nicht-Forex-TradFi-Maerkte zu (Forex erst ab So 22:00 UTC) —
+    /// ein voller Rebalance ist dann nicht sauber ausfuehrbar. Internal fuer Tests.</summary>
+    internal static bool IsTradFiWeekendBlackout(DateTime utcNow) =>
+        utcNow.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
 
     private async Task RefreshPaperPricingAsync(CancellationToken ct)
     {
@@ -243,7 +282,11 @@ public sealed class CrossSectionalTradingService : IDisposable
         var symbols = tickers
             .Where(t => t.Symbol.EndsWith("-USDT", StringComparison.OrdinalIgnoreCase)
                         && SymbolClassifier.IsApiTradeable(t.Symbol)
-                        && (cfg.IncludeTradFi || !SymbolClassifier.IsTradFi(t.Symbol)))
+                        && (cfg.IncludeTradFi || !SymbolClassifier.IsTradFi(t.Symbol))
+                        // Geschlossene Maerkte (TradFi Wochenende, Forex Fr-Abend) nicht ranken:
+                        // Opens wuerden mit BingX 101413 scheitern und der Slot bliebe leer —
+                        // Dauerfehlversuche pro 30-min-Tick uebers ganze Wochenende.
+                        && TradingHoursFilter.IsMarketOpen(t.Symbol, DateTime.UtcNow))
             .OrderByDescending(t => t.Volume24h)
             .Take(Math.Max(cfg.LongK + cfg.ShortK, cfg.UniverseTopN))
             .Select(t => t.Symbol)
@@ -305,6 +348,10 @@ public sealed class CrossSectionalTradingService : IDisposable
             .ToDictionary(kv => kv.Key, kv => kv.Value);
         _excludedUntilRebalance.Clear();
         _driftMissCounter.Clear();
+        // Fehl-Closes in die Retry-Liste (ersetzt die alte: was jetzt noch offen ist, steht im
+        // frischen Verify-Snapshot; was wieder Ziel-Korb wurde, ist held und kein Fehl-Close mehr).
+        _pendingCloses = result.FailedClosePositions?
+            .ToDictionary(p => p.Symbol, p => p.Side) ?? new();
         _lastRebalanceUtc = DateTime.UtcNow;
         SaveState();
         DrainPaperTrades();
@@ -336,8 +383,45 @@ public sealed class CrossSectionalTradingService : IDisposable
         // 1. Extern geschlossene Korb-Positionen erkennen (billig: 1 API-Call pro Tick).
         //    Mehrfach-Tick-Bestaetigung per Zaehler: erst handeln, wenn dieselbe Position in
         //    DriftConfirmTicks aufeinanderfolgenden Ticks fehlt (Schutz vor API-Glitches).
-        var positions = await _execution.GetPositionsAsync(ct).ConfigureAwait(false);
+        var positions = (await _execution.GetPositionsAsync(ct).ConfigureAwait(false)).ToList();
         var openKeys = positions.Select(p => $"{p.Symbol}_{p.Side}").ToHashSet();
+
+        // Fehl-Close-Retry: haengengebliebene Closes des letzten Rebalance/Refill erneut versuchen —
+        // pro Tick, bis es gelingt. Ohne diese Liste galten die Reste als Fremd-Positionen und
+        // wurden bis zum naechsten Rebalance konserviert (Ueber-Exposure + doppelt gebundene Margin).
+        if (_pendingCloses.Count > 0)
+        {
+            var pendingChanged = false;
+            foreach (var (symbol, side) in _pendingCloses.ToList())
+            {
+                var open = positions.FirstOrDefault(p => p.Symbol == symbol && p.Side == side);
+                if (open == null)
+                {
+                    // Inzwischen zu (frueherer Retry hat gegriffen oder extern geschlossen).
+                    _pendingCloses.Remove(symbol);
+                    pendingChanged = true;
+                    continue;
+                }
+                if (!TradingHoursFilter.IsMarketOpen(symbol, DateTime.UtcNow)) continue; // Markt zu — Versuch sinnlos.
+                try
+                {
+                    await _execution.ClosePositionAsync(symbol, side).ConfigureAwait(false);
+                    _pendingCloses.Remove(symbol);
+                    positions.Remove(open);   // lokaler Snapshot: nicht mehr als Fremd-Position schuetzen
+                    openKeys.Remove($"{symbol}_{side}");
+                    pendingChanged = true;
+                    BookLiveClose(open, "Xsec-Close-Retry");
+                    Log(LogLevel.Trade, "Exit", $"Fehl-Close-Retry erfolgreich: {symbol} {side} geschlossen.");
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    Log(LogLevel.Warning, "Exit",
+                        $"Fehl-Close-Retry {symbol} {side} erneut fehlgeschlagen ({ex.Message}) — naechster Tick.");
+                }
+            }
+            if (pendingChanged) SaveState();
+        }
 
         // Seiten-Flip: existiert fuer ein Korb-Symbol eine offene GEGENSEITEN-Position, hat der
         // User die Seite bewusst gedreht — sofort als extern geschlossen behandeln (kein
@@ -430,6 +514,9 @@ public sealed class CrossSectionalTradingService : IDisposable
         foreach (var (symbol, side) in refill) target[symbol] = side;
         foreach (var pos in positions)
         {
+            // Fehl-Close-Reste sind KEINE Fremd-Positionen: nicht schuetzen — der Reconcile
+            // (Close-vor-Open) versucht den Close damit automatisch erneut.
+            if (_pendingCloses.TryGetValue(pos.Symbol, out var pcSide) && pcSide == pos.Side) continue;
             if (!target.ContainsKey(pos.Symbol))
             {
                 target[pos.Symbol] = pos.Side;
@@ -454,6 +541,8 @@ public sealed class CrossSectionalTradingService : IDisposable
         foreach (var (symbol, side) in refill)
             if (result.Filled.Contains(symbol))
                 _currentBasket[symbol] = side;
+        foreach (var p in result.FailedClosePositions ?? [])
+            _pendingCloses[p.Symbol] = p.Side;
         SaveState();
         DrainPaperTrades();
 
@@ -523,11 +612,12 @@ public sealed class CrossSectionalTradingService : IDisposable
 
     // ─────────── State-Persistenz (Crash-Recovery) ───────────
 
-    // ExcludedUntilRebalance ist optional (null bei alten State-Dateien — abwaertskompatibel).
+    // ExcludedUntilRebalance/PendingCloses sind optional (null bei alten State-Dateien — abwaertskompatibel).
     private sealed record PersistedState(
         DateTime LastRebalanceUtc,
         Dictionary<string, Side> Basket,
-        List<string>? ExcludedUntilRebalance = null);
+        List<string>? ExcludedUntilRebalance = null,
+        Dictionary<string, Side>? PendingCloses = null);
 
     // Internal fuer Testbarkeit (InternalsVisibleTo=BingXBot.Tests).
     internal async Task RestoreOrAdoptStateAsync()
@@ -554,6 +644,7 @@ public sealed class CrossSectionalTradingService : IDisposable
                     _lastRebalanceUtc = st.LastRebalanceUtc;
                     _currentBasket = st.Basket ?? new();
                     _excludedUntilRebalance = st.ExcludedUntilRebalance?.ToHashSet() ?? new();
+                    _pendingCloses = st.PendingCloses ?? new();
                     Log(LogLevel.Info, "Recovery",
                         $"Cross-Sectional-State geladen: Korb {_currentBasket.Count} Positionen, letzter Rebalance "
                         + $"{_lastRebalanceUtc:yyyy-MM-dd HH:mm} UTC"
@@ -590,7 +681,8 @@ public sealed class CrossSectionalTradingService : IDisposable
         {
             var json = JsonSerializer.Serialize(new PersistedState(
                 _lastRebalanceUtc, _currentBasket,
-                _excludedUntilRebalance.Count > 0 ? _excludedUntilRebalance.ToList() : null));
+                _excludedUntilRebalance.Count > 0 ? _excludedUntilRebalance.ToList() : null,
+                _pendingCloses.Count > 0 ? _pendingCloses : null));
             File.WriteAllText(_stateFilePath, json);
         }
         catch (Exception ex) { Log(LogLevel.Warning, "Engine", $"State speichern fehlgeschlagen: {ex.Message}"); }

@@ -81,10 +81,15 @@ public sealed class CrossSectionalDriftRefillTests : IDisposable
 
     private async Task<CrossSectionalTradingService> CreateServiceAsync(
         FakeExchangeClient exchange, FakeMarketData marketData, Dictionary<string, Side> basket,
-        CrossSectionalSettings? cfg = null)
+        CrossSectionalSettings? cfg = null, Dictionary<string, Side>? pendingCloses = null)
     {
         // Korb via persistierten State setzen (derselbe Pfad wie Live-Crash-Recovery).
-        var state = new { LastRebalanceUtc = DateTime.UtcNow - TimeSpan.FromDays(1), Basket = basket };
+        var state = new
+        {
+            LastRebalanceUtc = DateTime.UtcNow - TimeSpan.FromDays(1),
+            Basket = basket,
+            PendingCloses = pendingCloses,
+        };
         await File.WriteAllTextAsync(_stateFile, JsonSerializer.Serialize(state));
 
         var service = new CrossSectionalTradingService(
@@ -343,6 +348,65 @@ public sealed class CrossSectionalDriftRefillTests : IDisposable
         ex.PlaceOrderCalls.Select(p => (p.Symbol, p.Side)).Should().Contain(("CCC-USDT", Side.Buy));
         ex.PlaceOrderCalls.Select(p => p.Symbol).Should().NotContain("AAA-USDT");
         ex.ClosePositionCalls.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task FehlCloseRetry_SchliesstRestUndSchuetztIhnNichtAlsFremdPosition()
+    {
+        // XXX-Long ist ein haengengebliebener Close des letzten Rebalance (PendingCloses im State).
+        // Der Drift-Tick muss ihn erneut schliessen — vor dem Fix galt er als Fremd-Position und
+        // wurde bis zum naechsten Rebalance konserviert (Ueber-Exposure).
+        var ex = new FakeExchangeClient()
+            .WithPosition("BBB-USDT", Side.Sell, 1m, 100m)
+            .WithPosition("XXX-USDT", Side.Buy, 1m, 50m);
+        var md = new FakeMarketData
+        {
+            Klines = { ["BBB-USDT"] = Trend(100m, -1m), ["CCC-USDT"] = Trend(50m, 2m) },
+        };
+        var svc = await CreateServiceAsync(
+            ex, md, new() { ["BBB-USDT"] = Side.Sell },
+            pendingCloses: new() { ["XXX-USDT"] = Side.Buy });
+
+        await svc.RefillBasketDriftAsync(CancellationToken.None);
+
+        ex.ClosePositionCalls.Should().Contain(("XXX-USDT", Side.Buy));
+        (await ex.GetPositionsAsync()).Should().NotContain(p => p.Symbol == "XXX-USDT");
+        svc.CurrentBasket.Should().NotContainKey("XXX-USDT");
+    }
+
+    [Fact]
+    public async Task FehlCloseRetry_BleibtBeiErneutemFehlschlagInDerListe()
+    {
+        // Der Close wirft weiterhin (z.B. Rate-Limit): das Symbol muss in der Retry-Liste bleiben
+        // und im naechsten Tick erneut versucht werden.
+        var ex = new FakeExchangeClient { CloseThrows = true }
+            .WithPosition("BBB-USDT", Side.Sell, 1m, 100m)
+            .WithPosition("XXX-USDT", Side.Buy, 1m, 50m);
+        var md = new FakeMarketData
+        {
+            Klines = { ["BBB-USDT"] = Trend(100m, -1m) },
+        };
+        var svc = await CreateServiceAsync(
+            ex, md, new() { ["BBB-USDT"] = Side.Sell },
+            pendingCloses: new() { ["XXX-USDT"] = Side.Buy });
+
+        await svc.RefillBasketDriftAsync(CancellationToken.None);
+        await svc.RefillBasketDriftAsync(CancellationToken.None);
+
+        // Beide Ticks haben den Close versucht (Retry-Liste hat ueberlebt).
+        ex.ClosePositionCalls.Count(c => c == ("XXX-USDT", Side.Buy)).Should().BeGreaterThanOrEqualTo(2);
+    }
+
+    [Fact]
+    public void WochenendGate_BlocktSamstagUndSonntag()
+    {
+        // Sa/So sind alle Nicht-Forex-TradFi-Maerkte zu — der Rebalance wird verschoben.
+        CrossSectionalTradingService.IsTradFiWeekendBlackout(new DateTime(2026, 8, 8, 12, 0, 0, DateTimeKind.Utc))
+            .Should().BeTrue("8.8.2026 ist ein Samstag");
+        CrossSectionalTradingService.IsTradFiWeekendBlackout(new DateTime(2026, 8, 9, 12, 0, 0, DateTimeKind.Utc))
+            .Should().BeTrue("9.8.2026 ist ein Sonntag");
+        CrossSectionalTradingService.IsTradFiWeekendBlackout(new DateTime(2026, 8, 10, 0, 30, 0, DateTimeKind.Utc))
+            .Should().BeFalse("10.8.2026 ist ein Montag");
     }
 
     [Fact]

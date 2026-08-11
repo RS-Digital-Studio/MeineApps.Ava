@@ -157,6 +157,44 @@ public class CrossSectionalRebalancerTests
     }
 
     [Fact]
+    public async Task Reconcile_OeffnetAlternierendShortLong()
+    {
+        // Insertion-Order waere L1,L2,L3,S1,S2,S3 (Longs zuerst, wie der MomentumBasketCalculator
+        // den Korb baut) — bei knapper Margin scheiterten so systematisch die zuletzt platzierten
+        // Shorts (netto-long im Abverkauf). Erwartet: alternierend S,L,S,L,S,L.
+        var ex = new FakeExchangeClient { AccountEquity = 12000m };
+        var target = new Dictionary<string, Side>
+        {
+            ["L1"] = Side.Buy, ["L2"] = Side.Buy, ["L3"] = Side.Buy,
+            ["S1"] = Side.Sell, ["S2"] = Side.Sell, ["S3"] = Side.Sell,
+        };
+        var prices = target.Keys.ToDictionary(s => s, _ => 100m);
+
+        await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto([.. target.Keys]), Cfg(longK: 3, shortK: 3, levCap: 1), Risk());
+
+        ex.PlaceOrderCalls.Select(p => p.Side).Should().ContainInOrder(
+            Side.Sell, Side.Buy, Side.Sell, Side.Buy, Side.Sell, Side.Buy);
+    }
+
+    [Fact]
+    public async Task Reconcile_FehlCloses_LandenImResult()
+    {
+        // Ein werfender Close (TradFi-Wochenende, Rate-Limit) muss als Position im Result stehen,
+        // damit der Aufrufer ihn in der Fehl-Close-Retry-Liste fuehren kann — sonst wird der Rest
+        // beim naechsten Drift-Tick als Fremd-Position geschuetzt statt geschlossen.
+        var ex = new FakeExchangeClient { CloseThrows = true }.WithPosition("AAA", Side.Buy, 1m, 100m);
+        var target = new Dictionary<string, Side> { ["BBB"] = Side.Buy };
+        var prices = new Dictionary<string, decimal> { ["AAA"] = 100m, ["BBB"] = 100m };
+
+        var r = await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto("AAA", "BBB"), Cfg(), Risk(), closeSettleDelay: TimeSpan.Zero);
+
+        r.FailedClose.Should().Be(1);
+        r.FailedClosePositions.Should().ContainSingle(p => p.Symbol == "AAA" && p.Side == Side.Buy);
+    }
+
+    [Fact]
     public async Task Reconcile_BasketSlotsOverride_UebersteuertTargetCount()
     {
         // Drift-Refill-Fall: target enthaelt einen Fremd-Schutz-Eintrag (bereits offen → held, kein

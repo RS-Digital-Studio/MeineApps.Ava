@@ -39,6 +39,11 @@ public sealed class FakeExchangeClient : IExchangeClient
     /// (simuliert einen fehlgeschlagenen Close fuer Rebalancer-Safety-Tests).</summary>
     public bool FailCloses { get; set; }
 
+    /// <summary>Test-Setup: wenn true, wirft <see cref="ClosePositionAsync"/> (simuliert BingX
+    /// 101413 "non-trading hours" / 100410 Rate-Limit — der reale Fehlerpfad ist eine Exception,
+    /// nicht ein stiller Nicht-Fill).</summary>
+    public bool CloseThrows { get; set; }
+
     /// <summary>Test-Setup: Anzahl der GetPositions-Reads, die eine per <see cref="ClosePositionAsync"/>
     /// geschlossene Position noch zeigen (simuliert BingX-Settle-Latenz nach Market-Close).
     /// 0 = sofort weg (Default).</summary>
@@ -180,6 +185,8 @@ public sealed class FakeExchangeClient : IExchangeClient
     {
         CallLog.Add($"ClosePositionAsync({symbol},{side})");
         ClosePositionCalls.Add((symbol, side));
+        if (CloseThrows)
+            throw new InvalidOperationException("BingX 101413: non-trading hours (simuliert)");
         if (!FailCloses)
         {
             lock (_lock)

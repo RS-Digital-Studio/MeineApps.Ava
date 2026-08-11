@@ -13,7 +13,8 @@ namespace BingXBot.Trading.CrossSectional;
 /// GetPositions teils erst Sekunden spaeter — eine Nachfrage waere ein Race).
 /// </summary>
 public sealed record RebalanceResult(
-    int Closed, int Opened, int SkippedMinOrder, int FailedClose, IReadOnlySet<string> Filled);
+    int Closed, int Opened, int SkippedMinOrder, int FailedClose, IReadOnlySet<string> Filled,
+    IReadOnlyList<Position>? FailedClosePositions = null);
 
 /// <summary>
 /// Fuehrt den Cross-Sectional-Rebalance gegen einen <see cref="IExchangeClient"/> aus: bringt die offenen
@@ -110,6 +111,7 @@ public static class CrossSectionalRebalancer
         var held = new HashSet<string>();
         var filled = new HashSet<string>();
         var failedClose = 0;
+        var failedClosePositions = new List<Position>();
         foreach (var pos in after)
         {
             if (target.TryGetValue(pos.Symbol, out var want) && want == pos.Side)
@@ -120,7 +122,8 @@ public static class CrossSectionalRebalancer
             else
             {
                 failedClose++;
-                log($"Rebalance: Close fehlgeschlagen — {pos.Symbol} {pos.Side} noch offen. Slot bleibt belegt, naechster Rebalance versucht erneut.");
+                failedClosePositions.Add(pos);   // Aufrufer fuehrt sie in der Fehl-Close-Retry-Liste
+                log($"Rebalance: Close fehlgeschlagen — {pos.Symbol} {pos.Side} noch offen. Slot bleibt belegt, naechster Durchlauf versucht erneut.");
             }
         }
 
@@ -142,17 +145,21 @@ public static class CrossSectionalRebalancer
         var acc = await ex.GetAccountInfoAsync().ConfigureAwait(false);
         var equity = acc.Balance + acc.UnrealizedPnl;
         if (equity <= 0m || slots <= 0)
-            return new RebalanceResult(closed, 0, 0, failedClose, filled);
+            return new RebalanceResult(closed, 0, 0, failedClose, filled, failedClosePositions);
         var perSlotMargin = equity * cfg.MarginUtilization / slots;
         var opensNeeded = target.Count(kv =>
             !held.Contains($"{kv.Key}_{kv.Value}") && doNotOpen?.Contains(kv.Key) != true);
         if (opensNeeded > 0 && acc.AvailableBalance > 0m)
             perSlotMargin = Math.Min(perSlotMargin, acc.AvailableBalance * 0.95m / opensNeeded);
 
-        // 4. Ziel-Positionen oeffnen, die noch nicht gehalten werden.
+        // 4. Ziel-Positionen oeffnen, die noch nicht gehalten werden — ALTERNIEREND Short/Long:
+        //    die fruehere Insertion-Order (alle Longs zuerst, MomentumBasketCalculator) liess bei
+        //    knapper Margin (Free-Margin-Cap, Fees/Mark-Drift zwischen den Market-Orders) bevorzugt
+        //    die zuletzt platzierten SHORTS scheitern — der market-neutrale Korb war netto long,
+        //    ausgerechnet im Abverkauf. Alternierend trifft ein Margin-Engpass beide Seiten gleich.
         var opened = 0;
         var skippedMin = 0;
-        foreach (var (symbol, side) in target)
+        foreach (var (symbol, side) in InterleaveBySide(target))
         {
             ct.ThrowIfCancellationRequested();
             if (held.Contains($"{symbol}_{side}")) continue;
@@ -209,6 +216,26 @@ public static class CrossSectionalRebalancer
             }
         }
 
-        return new RebalanceResult(closed, opened, skippedMin, failedClose, filled);
+        return new RebalanceResult(closed, opened, skippedMin, failedClose, filled, failedClosePositions);
+    }
+
+    /// <summary>
+    /// Ordnet die Ziel-Eintraege alternierend Short/Long (S,L,S,L,…) statt in Dictionary-
+    /// Insertion-Order (alle Longs zuerst) — Margin-Knappheit trifft so beide Seiten
+    /// gleichmaessig statt systematisch die zuletzt platzierten Shorts.
+    /// </summary>
+    private static List<KeyValuePair<string, Side>> InterleaveBySide(IReadOnlyDictionary<string, Side> target)
+    {
+        var longs = new List<KeyValuePair<string, Side>>();
+        var shorts = new List<KeyValuePair<string, Side>>();
+        foreach (var kv in target)
+            (kv.Value == Side.Sell ? shorts : longs).Add(kv);
+        var result = new List<KeyValuePair<string, Side>>(target.Count);
+        for (var i = 0; i < Math.Max(longs.Count, shorts.Count); i++)
+        {
+            if (i < shorts.Count) result.Add(shorts[i]);
+            if (i < longs.Count) result.Add(longs[i]);
+        }
+        return result;
     }
 }

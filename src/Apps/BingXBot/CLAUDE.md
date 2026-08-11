@@ -317,7 +317,13 @@ Cross-Asset-Dispersion (Gold/Indizes/Forex) traegt den Edge. Betriebs-Mechanik:
   `CrossSectional`-Block kann eine validierte Default-Aenderung ueberschreiben — das Bootstrap-Mapping
   senkte den Live-Hebel still von 2x (User-Entscheidung) auf das stale persistierte 1x. Nach
   Einfuehrung des Mappings IMMER `GET /settings/xsec` gegen den Soll-Wert pruefen und ggf. per PUT
-  korrigieren (LeverageCap 2 = validierter Live-Default).
+  korrigieren (LeverageCap 2 = validierter Live-Default). **Jedes neue Feld von
+  `CrossSectionalSettings` gehoert in dieses Bootstrap-Mapping** — ein ungemapptes Feld wirkt bis
+  zum naechsten Restart und faellt dann still auf den Code-Default zurueck. `Mode` war genau so
+  eine Luecke: ein per PUT gesetzter DominanceSpread waere nach jedem Restart wieder als Momentum
+  gelaufen, waehrend der State den BTC-Anker-Spread hielt (unbemerkter Regime-Wechsel am
+  Echtgeld-Konto). Unbekannte Mode-Strings normalisiert das Mapping auf Momentum — identisch zu
+  `IsDominanceSpread` im Service.
 
 ```
 CrossSectionalManager (Lifecycle: Paper=SimulatedExchange / Live=BingXRestClient + zwingend Hedge)
@@ -342,17 +348,16 @@ net-short weiterzulaufen; freie Short-Slots fuellt der Refill mit den naechsten 
 Umschalten ohne Deploy: `PUT /api/v1/settings/xsec` mit `"Mode": "DominanceSpread"` (validiert),
 dann Bot im CrossSectional-Modus starten.
 
-> **STATUS 11.08.2026 — Deploy + Umschaltung AUSSTEHEND (User-Entscheidung: direkt live, ohne
-> Paper-Phase).** Code komplett auf master (Commit 9109315f, 672/672 Tests), der Pi laeuft noch
-> mit dem alten Momentum-Profil. Naechste Schritte in dieser Reihenfolge:
-> 1. Pi-Deploy (`/server-deploy` bzw. publish.sh + update.sh) — Watchdog-Restart adoptiert den
->    laufenden Korb, liquidiert nichts.
-> 2. `PUT /api/v1/settings/xsec`: `Mode="DominanceSpread"`, `RebalanceDays=30`, `LeverageCap=1`,
->    `ShortK=10` (ab ~1000 USDT Konto: 20–30), `IncludeTradFi=false` — danach per GET gegenpruefen
->    (Bootstrap-Gotcha: stale persistierter Block kann Defaults ueberschreiben).
-> 3. Bot im CrossSectional-Modus starten (Dashboard/`POST /bot/start`) — der User loest den
->    Echtgeld-Start selbst aus. Der erste Rebalance schliesst die Momentum-Positionen
->    (Close-vor-Open) und baut den Spread auf.
+> **STATUS — DominanceSpread ist seit 11.08.2026 der Live-Modus** (User-Entscheidung: direkt live,
+> ohne Paper-Phase). Pi deployed, `PUT /settings/xsec` gesetzt: `Mode="DominanceSpread"`,
+> `RebalanceDays=30`, `LeverageCap=1`, `ShortK=10` (ab ~1000 USDT Konto: 20–30),
+> `IncludeTradFi=false`, `UniverseTopN=50`, `MarginUtilization=0.75`. Der Wechsel aus einem
+> LAUFENDEN Momentum-Korb wurde ueber einen erzwungenen Rebalance gefahren (`RebalanceDays=1`
+> setzen, einen Tick abwarten, direkt danach zurueck auf 30) — **nicht** per Settings-PUT allein:
+> der Drift-Refill haette die freien Short-Slots aufgefuellt und ein Hybrid-Buch aus
+> Momentum-Longs + Dominanz-Shorts gebaut, waehrend der echte Moduswechsel erst am
+> Wall-Clock-Termin (LastRebalanceUtc + RebalanceDays) gekommen waere. Der gleiche Weg gilt fuer
+> jeden weiteren Wechsel zwischen den Korb-Modi bei laufendem Korb.
 >
 > **Erfolgskriterium (vorab fixiert, NICHT nachverhandeln):** 3 Monate live; Gesamtergebnis nach
 > Fees+Funding positiv; MaxDD < 15 %; Verhalten konsistent mit der Backtest-Erwartung
@@ -368,9 +373,12 @@ dann Bot im CrossSectional-Modus starten.
 - **Trigger:** Dashboard-ToggleSwitch „Cross-Sectional" (Remote/Pi) ODER `POST /api/v1/bot/start
   { Mode, Engine: CrossSectional }`. `CurrentBasket` = aktueller Soll-Korb.
 - **Sicherheit:** Hedge-Mode zwingend (long+short); Reconciliation schliesst vor dem Oeffnen und verifiziert Closes;
-  Korb + `LastRebalanceUtc` als `xsec-state.json` neben der DB (Crash-Recovery: Korb adoptieren statt sofort ranken).
-- **Offen:** Standalone-Desktop-Local-Start ist Scalper-only (Pi/Remote ist der Produktionspfad); Settings-Endpoint
-  fuer `CrossSectionalSettings` (nutzt validierte Defaults); Live-per-Trade-PnL-Records (Paper komplett via Sim).
+  Korb + `LastRebalanceUtc` als `xsec-state-{live|paper}.json` (Crash-Recovery: Korb adoptieren statt sofort ranken).
+  **Pfad-Gotcha:** Der State liegt im `IAppPaths.AppDataFolder` (Linux `~/.config/BingXBot/`), die DB dagegen im
+  per `Server:DataDirectory` gesetzten Verzeichnis (Pi: `/var/lib/bingxbot`) — beide fallen nur ohne Override
+  zusammen. Beim Suchen des State auf dem Pi also `~/.config/BingXBot/`, nicht neben der DB.
+- **Offen:** Standalone-Desktop-Local-Start ist Scalper-only (Pi/Remote ist der Produktionspfad);
+  Live-per-Trade-PnL-Records (Paper komplett via Sim).
 
 ### `TradingServiceBase`-Loops
 

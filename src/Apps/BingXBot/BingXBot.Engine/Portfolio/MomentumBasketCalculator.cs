@@ -101,8 +101,17 @@ public static class MomentumBasketCalculator
     /// Geteilt zwischen Live (<c>CrossSectionalTradingService</c>) und Backtest
     /// (<c>CrossSectionalMomentumEngine</c>, Mode DominanceSpread) — Paritaet wie ComputeBasket.
     /// </summary>
+    /// <param name="canTrade">
+    /// Optionaler Erreichbarkeits-Filter (Live): Symbole, deren Exchange-Min-Order groesser ist als
+    /// der Slot, werden UEBERSPRUNGEN und der naechste Alt rueckt nach — aus "Top-ShortK nach Volumen"
+    /// wird "Top-ShortK erreichbare nach Volumen". Ohne den Filter blieben solche Slots dauerhaft Cash
+    /// (live 11.08.2026 bei ~95 USDT Equity: ETH/AAVE/BNB unerreichbar → Short-Seite 40 % unter-
+    /// investiert, der Spread lief netto long). <c>null</c> im Backtest — dort gibt es keine
+    /// Min-Order-Daten, und die Paritaet zum validierten Screen bleibt bit-identisch.
+    /// </param>
     public static Dictionary<string, Side> ComputeDominanceBasket(
-        IEnumerable<(string Symbol, IReadOnlyList<Candle> Candles)> universe, int longK, int shortK)
+        IEnumerable<(string Symbol, IReadOnlyList<Candle> Candles)> universe, int longK, int shortK,
+        Func<string, bool>? canTrade = null)
     {
         var basket = new Dictionary<string, Side>();
         var list = universe as IReadOnlyCollection<(string Symbol, IReadOnlyList<Candle> Candles)> ?? universe.ToList();
@@ -116,6 +125,7 @@ public static class MomentumBasketCalculator
             .Select(u => (u.Symbol, Vol: QuoteVolume(u.Candles, 42)))
             .Where(x => x.Vol > 0m)
             .OrderByDescending(x => x.Vol)
+            .Where(x => canTrade == null || canTrade(x.Symbol))
             .Take(Math.Max(0, shortK));
         foreach (var x in alts) basket[x.Symbol] = Side.Sell;
         return basket;

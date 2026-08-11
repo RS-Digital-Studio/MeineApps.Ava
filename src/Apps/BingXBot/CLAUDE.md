@@ -350,13 +350,17 @@ Rueckenwind (+1,3 %/J: Alt- > BTC-Funding). Korb-Bildung geteilt via
 Sizing ueber den optionalen `weights`-Parameter des Rebalancers (null = equal-weight, unveraendert).
 **Empfohlene Betriebs-Settings:** `RebalanceDays=30`, `LeverageCap=1`, `ShortK=10..20`,
 `IncludeTradFi=false` (reiner Krypto-Korb → kein Wochenend-Deferral), `LongK` wird ignoriert.
-**Konto-Groesse begrenzt ShortK:** Der Slot ist `equity × MarginUtilization × 0.5 / ShortK`; liegt er
-unter der BingX-`tradeMinQuantity × Preis` eines Ziel-Symbols, bleibt der Slot dauerhaft Cash (der
-Refill versucht es bei jedem Tick erneut und scheitert deterministisch) — die Short-Seite ist dann
-unterinvestiert und der Spread netto long. Bei ~95 USDT Equity und ShortK=10 (Slot ~3,6 USDT) traf
-das ETH (min 18,7), AAVE (8,8) und BNB (6,1). Faustregel: ShortK so waehlen, dass der Slot die
-Min-Order der volumenstaerksten Alts traegt — ETH ist unter ~380 USDT Equity strukturell nicht
-shortbar.
+**Konto-Groesse begrenzt die Symbol-Auswahl:** Der Slot ist `equity × MarginUtilization × 0.5 / ShortK`;
+liegt er unter der BingX-`tradeMinQuantity × Preis` eines Ziel-Symbols, ist das Symbol nicht handelbar.
+Bei ~95 USDT Equity traf das ETH (Min-Order 18,7 USDT), AAVE (8,8) und BNB (6,1) — also ausgerechnet
+die volumenstaerksten Alts. Der Korb-Bau filtert diese Symbole live heraus (`canTrade`-Predicate an
+`ComputeDominanceBasket`, gespeist aus `IExchangeClient.MeetsMinimumOrder`) und laesst den naechsten
+erreichbaren Alt nachruecken: aus „Top-ShortK nach Volumen" wird „Top-ShortK **erreichbare** nach
+Volumen". Ohne diesen Filter blieben die Slots dauerhaft Cash (der Refill scheiterte bei jedem Tick
+deterministisch neu), die Short-Seite war unterinvestiert und der Spread lief netto long. Der Backtest
+uebergibt bewusst `null` (keine Min-Order-Daten) — die Paritaet zum validierten Screen bleibt
+bit-identisch. Folge fuer die Bewertung: bei kleinem Konto shortet der Korb kleinere Alts als der
+Screen, das Beta der Short-Seite ist damit hoeher.
 Drift-Semantik: Der Spread ist EIN Paar-Trade — wird der BTC-Anker extern geschlossen, loest der
 Drift-Tick den ganzen Spread auf (Alt-Shorts schliessen, Sperre bis zum naechsten Rebalance) statt
 net-short weiterzulaufen; freie Short-Slots fuellt der Refill mit den naechsten Volumen-Alts.

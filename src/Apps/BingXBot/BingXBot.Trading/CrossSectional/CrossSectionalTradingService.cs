@@ -334,8 +334,9 @@ public sealed class CrossSectionalTradingService : IDisposable
 
         // Ziel-Korb (geteilter Calculator — identisch zum Backtest). DominanceSpread: Long BTC /
         // Short volumenstaerkste Alts statt Momentum-Ranking (Harness-Validierung 11.08.2026).
+        var canTrade = await BuildTradableFilterAsync(cfg, data.Prices).ConfigureAwait(false);
         var basket = IsDominanceSpread(cfg)
-            ? MomentumBasketCalculator.ComputeDominanceBasket(data.Universe, longK: 1, shortK: cfg.ShortK)
+            ? MomentumBasketCalculator.ComputeDominanceBasket(data.Universe, longK: 1, shortK: cfg.ShortK, canTrade)
             : MomentumBasketCalculator.ComputeBasket(
                 data.Universe, cfg.LookbackCandles, cfg.LongK, cfg.ShortK, cfg.RiskAdjusted);
         if (basket.Count == 0)
@@ -540,9 +541,10 @@ public sealed class CrossSectionalTradingService : IDisposable
         foreach (var pos in positions) excluded.Add(pos.Symbol);
         var candidates = data.Universe.Where(u => !excluded.Contains(u.Symbol)).ToList();
 
+        var refillFilter = await BuildTradableFilterAsync(cfg, data.Prices).ConfigureAwait(false);
         var refill = IsDominanceSpread(cfg)
             ? MomentumBasketCalculator.ComputeDominanceBasket(
-                candidates, longK: freeLongSlots > 0 ? 1 : 0, shortK: freeShortSlots)
+                candidates, longK: freeLongSlots > 0 ? 1 : 0, shortK: freeShortSlots, refillFilter)
             : MomentumBasketCalculator.ComputeBasket(
                 candidates, cfg.LookbackCandles, freeLongSlots, freeShortSlots, cfg.RiskAdjusted);
         if (refill.Count == 0)
@@ -751,6 +753,44 @@ public sealed class CrossSectionalTradingService : IDisposable
     }
 
     // ─────────── Helpers ───────────
+
+    /// <summary>
+    /// Erreichbarkeits-Filter fuer die Short-Seite des Dominanz-Spreads: Passt die Exchange-Min-Order
+    /// eines Symbols nicht in einen Slot (equity × MarginUtilization × 0.5 / ShortK × Hebel), waere der
+    /// Slot dauerhaft Cash — der Refill versucht es bei jedem Tick erneut und scheitert deterministisch.
+    /// Der Filter laesst den naechsten erreichbaren Alt nachruecken. Bei ~95 USDT Equity und ShortK=5
+    /// betraf das ETH (Min-Order 18,6 USDT) und AAVE (8,7) — die Short-Seite blieb 40 % unter-investiert
+    /// und der Spread lief netto long. <c>null</c> = kein Filter (Momentum-Modus oder Account-Call
+    /// fehlgeschlagen → bisheriges Verhalten, der Rebalancer prueft die Min-Order ohnehin nochmal).
+    /// </summary>
+    private async Task<Func<string, bool>?> BuildTradableFilterAsync(
+        CrossSectionalSettings cfg, IReadOnlyDictionary<string, decimal> prices)
+    {
+        if (!IsDominanceSpread(cfg)) return null;
+        decimal equity;
+        try
+        {
+            var acc = await _execution.GetAccountInfoAsync().ConfigureAwait(false);
+            equity = acc.Balance + acc.UnrealizedPnl;
+        }
+        catch (Exception ex)
+        {
+            Log(LogLevel.Warning, "Engine",
+                $"Erreichbarkeits-Filter uebersprungen (Account-Abruf fehlgeschlagen: {ex.Message}) — Korb wird ungefiltert gebildet.");
+            return null;
+        }
+
+        var slotMargin = equity * cfg.MarginUtilization * 0.5m / Math.Max(1, cfg.ShortK);
+        if (slotMargin <= 0m) return null;
+        var leverage = Math.Max(1, cfg.LeverageCap);
+        return symbol =>
+        {
+            // Ohne Preis nicht filtern — der Rebalancer faellt bei fehlendem Preis ohnehin auf
+            // "Slot ueberspringen" zurueck, und ein stiller Ausschluss waere schlechter.
+            if (!prices.TryGetValue(symbol, out var price) || price <= 0m) return true;
+            return _execution.MeetsMinimumOrder(symbol, slotMargin * leverage / price, price);
+        };
+    }
 
     /// <summary>DominanceSpread-Modus aktiv? (Unbekannte Mode-Strings = Momentum, abwaertskompatibel.)</summary>
     private static bool IsDominanceSpread(CrossSectionalSettings cfg) =>

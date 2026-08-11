@@ -260,4 +260,48 @@ public class MomentumBasketCalculatorTests
         basket.Should().HaveCount(1);
         basket["ETH-USDT"].Should().Be(Side.Sell);
     }
+
+    [Fact]
+    public void ComputeDominanceBasket_UnerreichbaresSymbol_NaechsterAltRuecktNach()
+    {
+        // Live-Befund 11.08.2026: bei kleinem Konto passt die Min-Order der volumenstaerksten Alts
+        // nicht in den Slot — ohne Filter blieb der Slot dauerhaft Cash und die Short-Seite
+        // unterinvestiert (Spread netto long). Mit Filter rueckt der naechste erreichbare Alt nach.
+        var universe = new (string, IReadOnlyList<Candle>)[]
+        {
+            ("BTC-USDT", SeriesWithVolume(9000m)),
+            ("ETH-USDT", SeriesWithVolume(5000m)),    // unerreichbar
+            ("SOL-USDT", SeriesWithVolume(3000m)),
+            ("DOGE-USDT", SeriesWithVolume(1000m)),
+        };
+
+        var basket = MomentumBasketCalculator.ComputeDominanceBasket(
+            universe, longK: 1, shortK: 2, canTrade: s => s != "ETH-USDT");
+
+        basket.Should().HaveCount(3);
+        basket["BTC-USDT"].Should().Be(Side.Buy);
+        basket.Should().NotContainKey("ETH-USDT");
+        basket["SOL-USDT"].Should().Be(Side.Sell);
+        basket["DOGE-USDT"].Should().Be(Side.Sell);   // rueckt in den frei gewordenen Slot nach
+    }
+
+    [Fact]
+    public void ComputeDominanceBasket_OhneFilter_UnveraendertesRanking()
+    {
+        // Backtest-Paritaet: ohne canTrade (Backtest kennt keine Min-Order-Daten) bleibt die
+        // Auswahl bit-identisch zum validierten Screen.
+        var universe = new (string, IReadOnlyList<Candle>)[]
+        {
+            ("BTC-USDT", SeriesWithVolume(9000m)),
+            ("ETH-USDT", SeriesWithVolume(5000m)),
+            ("SOL-USDT", SeriesWithVolume(3000m)),
+            ("DOGE-USDT", SeriesWithVolume(1000m)),
+        };
+
+        var mitNull = MomentumBasketCalculator.ComputeDominanceBasket(universe, longK: 1, shortK: 2, canTrade: null);
+        var ohneParameter = MomentumBasketCalculator.ComputeDominanceBasket(universe, longK: 1, shortK: 2);
+
+        mitNull.Should().BeEquivalentTo(ohneParameter);
+        mitNull.Should().ContainKey("ETH-USDT");
+    }
 }

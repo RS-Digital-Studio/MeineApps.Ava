@@ -155,7 +155,14 @@ public partial class ArCaptureActivity
                             void EnqueueIfGeo(ArPoint? p)
                             {
                                 if (p == null) return;
-                                if (p.GeoLatitude.HasValue && p.GeoLongitude.HasValue)
+                                // NUR exakte Punkt-Geos taugen als Re-Attach-Position. Eine
+                                // Kamera-Naeherung (GeoIsExact == false) wuerde den Punkt an die
+                                // damalige Standposition des Nutzers heften — Fehler = volle
+                                // Messdistanz. Solche Punkte laufen unten in MarkIfNoGeo.
+                                // Recovery-States von vor dieser Aenderung tragen kein Flag
+                                // (JSON-Default false) und werden damit bewusst konservativ
+                                // als "ohne Geo-Bezug" behandelt.
+                                if (p.GeoLatitude.HasValue && p.GeoLongitude.HasValue && p.GeoIsExact)
                                 {
                                     p.AnchorId = null; // alter ID ist tot, wird beim Re-Attach neu gesetzt
                                     _pendingEarthAnchorRestore.Add(p);
@@ -176,7 +183,11 @@ public partial class ArCaptureActivity
                         // im Projekt). Flag wandert durch ArTransferService.
                         void MarkIfNoGeo(ArPoint? p)
                         {
-                            if (p != null && (!p.GeoLatitude.HasValue || !p.GeoLongitude.HasValue))
+                            // Auch Punkte mit blosser Kamera-Naeherung (GeoIsExact == false) zaehlen
+                            // hier als "ohne Geo-Bezug" — dieselbe Bedingung wie in EnqueueIfGeo,
+                            // damit kein Punkt durch beide Raster faellt.
+                            if (p != null && (!p.GeoLatitude.HasValue || !p.GeoLongitude.HasValue
+                                              || !p.GeoIsExact))
                                 p.RestoredWithoutGeo = true;
                         }
                         if (recoveredPoints != null)

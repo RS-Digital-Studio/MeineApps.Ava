@@ -216,5 +216,8 @@ public class MockArCaptureService : IArCaptureService
         p.GeoLongitude = gpsLon + east / metersPerDegreeLon;
         p.GeoAltitude = gpsAltEllipsoid + (p.Y - SimulatedGroundPlaneY);
         p.GeoHorizontalAccuracy = 1.5f;
+        // Simuliert den ARCore-Earth-Pfad auf der HIT-Pose (nicht den Kamera-Fallback) —
+        // die Werte gehoeren zum Punkt selbst.
+        p.GeoIsExact = true;
     }
 }

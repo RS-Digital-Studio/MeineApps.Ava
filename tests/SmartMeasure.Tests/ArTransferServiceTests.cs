@@ -119,31 +119,107 @@ public class ArTransferServiceTests
     }
 
     [Fact]
-    public void ConvertToSurveyPoints_MitGeospatialKoords_BevorzugtVPS()
+    public void ConvertToSurveyPoints_MitLokalerPosition_IgnoriertVpsKoords()
     {
-        // Wenn ArPoint.GeoLatitude/GeoLongitude gesetzt sind, soll der Service
-        // diese DIREKT uebernehmen und nicht aus X/Z+Heading rechnen.
+        // Umgekehrte Prioritaet (bewusste Verhaltensaenderung): die relative AR-Geometrie ist
+        // die Wahrheit. VPS-Koords pro Punkt trugen ±1-3 m Rauschen JE PUNKT und verzerrten
+        // damit Distanzen und Flaechen — sie duerfen eine vorhandene lokale Position nicht
+        // mehr verdraengen.
         var (svc, _, _) = MakeService();
         var result = MakeResult(heading: 0f);
-        const double vpsLat = 48.8;
-        const double vpsLon = 9.2;
         result.Points.Add(new ArPoint
         {
-            X = 100, // sollte ignoriert werden weil VPS vorhanden
-            Z = 100,
+            X = 0,
             Y = 0,
-            GeoLatitude = vpsLat,
-            GeoLongitude = vpsLon,
+            Z = -1,               // 1 m nach Norden
+            GeoLatitude = 48.9,   // grob abweichende VPS-Position — muss ignoriert werden
+            GeoLongitude = 9.3,
             GeoAltitude = 600,
             GeoHorizontalAccuracy = 2.0f,
+            GeoIsExact = true,
         });
 
         var points = svc.ConvertToSurveyPoints(result, 1);
 
-        points[0].Latitude.Should().Be(vpsLat);
-        points[0].Longitude.Should().Be(vpsLon);
+        // Aus X/Z + Heading gerechnet, NICHT die VPS-Koordinate
+        (points[0].Latitude - Munich_Lat).Should().BeApproximately(8.99e-6, 1e-7);
+        points[0].Latitude.Should().NotBe(48.9);
+        points[0].Longitude.Should().NotBe(9.3);
+    }
+
+    [Fact]
+    public void ConvertToSurveyPoints_OhneLokalePosition_NutztExakteGeo()
+    {
+        // Total-Station-Punkte werden radial aus der Stations-Geo gerechnet und haben
+        // X/Y/Z = 0. Fuer sie ist die Punkt-Geo die einzige Quelle.
+        var (svc, _, _) = MakeService();
+        var result = MakeResult(heading: 0f);
+        const double tsLat = 48.8;
+        const double tsLon = 9.2;
+        result.Points.Add(new ArPoint
+        {
+            HasLocalPosition = false,
+            GeoLatitude = tsLat,
+            GeoLongitude = tsLon,
+            GeoAltitude = 600,
+            GeoHorizontalAccuracy = 2.0f,
+            GeoIsExact = true,
+        });
+
+        var points = svc.ConvertToSurveyPoints(result, 1);
+
+        points.Should().HaveCount(1);
+        points[0].Latitude.Should().Be(tsLat);
+        points[0].Longitude.Should().Be(tsLon);
         // Geo-Accuracy in cm: 2m * 100
         points[0].HorizontalAccuracy.Should().Be(200f);
+    }
+
+    [Fact]
+    public void ConvertToSurveyPoints_OhneLokalePosition_NichtExakteGeo_WirdVerworfen()
+    {
+        // GeoIsExact == false heisst: Lat/Lon sind die KAMERA-Position (Standort des Nutzers),
+        // nicht die des Messpunkts. Ohne lokale Position ist der Punkt damit nicht verortbar
+        // und darf nicht als Messung ins Projekt wandern — sonst faellt er auf die
+        // Standposition und sieht dort wie eine echte Messung aus.
+        var (svc, _, _) = MakeService();
+        var result = MakeResult(heading: 0f);
+        result.Points.Add(new ArPoint
+        {
+            HasLocalPosition = false,
+            GeoLatitude = 48.8,
+            GeoLongitude = 9.2,
+            GeoAltitude = 600,
+            GeoHorizontalAccuracy = 12.0f,
+            GeoIsExact = false,
+        });
+
+        var points = svc.ConvertToSurveyPoints(result, 1);
+
+        points.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ConvertToSurveyPoints_GroundOffsetAtCapture_SchlaegtSitzungswert()
+    {
+        // Die Sitzungs-Boden-Referenz ist ein EMA vom Sitzungsende. Ein Punkt, der bei einem
+        // anderen Bodenniveau gemessen wurde, muss SEINEN Offset behalten — sonst bekommen
+        // Punkte vom Sitzungsanfang die Bodenhoehe vom Sitzungsende.
+        var (svc, _, _) = MakeService();
+        var result = MakeResult(groundPlaneY: -1.0f); // Sitzungswert am Ende
+        result.Points.Add(new ArPoint
+        {
+            X = 0,
+            Y = -1.45f,
+            Z = 0,
+            GroundOffsetYAtCapture = -1.5f, // beim Messen lag der Boden tiefer
+        });
+
+        var points = svc.ConvertToSurveyPoints(result, 1);
+
+        // Mit Capture-Offset: -1.45 - (-1.5) = +0.05 → 568.05 Ellipsoid → ~520.05 NN.
+        // Mit dem Sitzungswert waeren es -0.45 → ~519.55 NN gewesen.
+        points[0].Altitude.Should().BeApproximately(520.05, 0.6);
     }
 
     [Fact]

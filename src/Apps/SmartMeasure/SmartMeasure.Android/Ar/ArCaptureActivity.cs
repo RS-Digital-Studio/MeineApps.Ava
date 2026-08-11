@@ -1752,6 +1752,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             GeoLongitude = hitGeoLon,
             GeoAltitude = hitGeoAlt,
             GeoHorizontalAccuracy = hitGeoHAcc,
+            // Nur bei hitGeoExact ist die Geo-Pose die des Messpunkts; sonst ist es die
+            // Kamera-Position mit korrigierter Hoehe (Naeherung, siehe ResolveHitGeoPose).
+            GeoIsExact = hitGeoExact,
+
+            // Boden-Referenz JETZT festhalten, nicht erst beim FinishCapture: der Wert ist ein
+            // laufender EMA und wandert ueber die Sitzung (Gefaelle, neu erkannte Planes).
+            GroundOffsetYAtCapture = GetGroundPlaneY(),
 
             // Capture-Zeitpunkt-Metadaten (Plan Kap. 4.2)
             CameraPitchDeg = capturePitchDeg,
@@ -1761,26 +1768,20 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             SampleTrackingContinuity = continuity,
         };
 
-        // Anchor erstellen — Earth-Anchor bevorzugen (drift-frei + persistent), aber NUR an
-        // der exakten HIT-Geo-Position. Niemals an der Kamera-/Snapshot-Position verankern:
-        // RefreshAnchors zieht den Punkt sonst pro Frame zur Standposition des Nutzers
-        // (Fehler = volle Messdistanz). Ohne exakte Hit-Geo-Pose ist der lokale
-        // Session-Anchor (anchorPose) die korrekte Wahl.
-        var hasAnchor = false;
-        if (_geospatialActive && _arSession?.Earth != null
-            && hitGeoExact && hitGeoLat.HasValue && hitGeoLon.HasValue && hitGeoAlt.HasValue)
-        {
-            hasAnchor = _anchorManager.TryCreateEarthAnchor(
-                _arSession.Earth,
-                hitGeoLat.Value,
-                hitGeoLon.Value,
-                hitGeoAlt.Value,
-                arPoint);
-        }
-
-        // Fallback auf lokalen Anchor
-        if (!hasAnchor)
-            hasAnchor = _anchorManager.TryCreateAnchor(_arSession, anchorPose, arPoint);
+        // Anchor erstellen — BEWUSST immer ein LOKALER Session-Anchor, nie ein Earth-Anchor.
+        //
+        // Ein Earth-Anchor haengt an der VPS-Loesung, und RefreshAnchors schreibt dessen Pose
+        // pro Frame in X/Y/Z zurueck. Jede VPS-Nachjustierung (Normalbetrieb, nicht Ausnahme)
+        // verschob damit die Messpunkte um bis zu mehrere Meter — und weil die Korrektur nicht
+        // starr ist, jeden Punkt anders: die relative Geometrie, also der eigentliche Messwert,
+        // wanderte sichtbar auseinander. Der lokale Anchor kompensiert genau das, wofuer
+        // Anchors gedacht sind (ARCore-Eigendrift des Session-Frames), und laesst die
+        // gemessenen Abstaende in Ruhe.
+        //
+        // Die Geo-Koordinaten des Punkts bleiben trotzdem gesetzt (GeoLatitude/-Longitude
+        // oben) — sie dienen der Georeferenzierung und den Site-Markern kommender Sitzungen,
+        // sind aber nicht mehr die Positions-Quelle.
+        var hasAnchor = _anchorManager.TryCreateAnchor(_arSession, anchorPose, arPoint);
 
         if (hasAnchor)
             arPoint.Confidence = MathF.Min(1f, arPoint.Confidence + 0.2f);
@@ -5530,6 +5531,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 GeoLongitude = sp.Longitude,
                 GeoAltitude = sp.Altitude,
                 GeoHorizontalAccuracy = sp.HorizontalAccuracy / 100f,
+                // Geo kommt aus dem gespeicherten SurveyPoint — sie IST die Punkt-Position
+                // (keine Kamera-Naeherung). Site-Marker gehen ohnehin nie ins Result zurueck.
+                GeoIsExact = true,
                 Timestamp = sp.Timestamp,
             };
 
@@ -5716,6 +5720,11 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             GeoLongitude = lon,
             GeoAltitude = alt,
             GeoHorizontalAccuracy = (float)(depth.Value * 0.02), // ~2% von Distanz als Schaetzung
+            // Radial aus Stations-Position + Distanz + Bearing FUER DEN ZIELPUNKT gerechnet —
+            // eine echte Punkt-Geo, keine Kamera-Naeherung. X/Y/Z sind hier 0, deshalb ist die
+            // Geo-Position die einzige Quelle und der Transfer MUSS sie nutzen duerfen.
+            GeoIsExact = true,
+            HasLocalPosition = false,
             Confidence = 0.85f,
             HitQuality = 2,
             CameraPitchDeg = pitch,

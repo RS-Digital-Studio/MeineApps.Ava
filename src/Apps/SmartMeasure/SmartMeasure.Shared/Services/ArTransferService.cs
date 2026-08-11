@@ -166,11 +166,38 @@ public class ArTransferService : IArTransferService
             double finalLat, finalLon, finalAltEllipsoid;
             float finalAccuracyCm;
 
-            // Y-Wert relativ zum Boden (falls Ground-Plane erkannt wurde)
-            var yRel = arPoint.Y - groundOffset;
+            // Y-Wert relativ zum Boden. Boden-Referenz des MESSZEITPUNKTS bevorzugen — der
+            // Sitzungs-Wert (groundOffset) ist ein EMA vom Sitzungsende und passt nicht zu
+            // Punkten, die vorher gesetzt wurden.
+            var yRel = arPoint.Y - (arPoint.GroundOffsetYAtCapture ?? groundOffset);
 
-            // Priorität 1: Geospatial-Koords pro Punkt (±1-3m via VPS, höchste Präzision)
-            if (arPoint.GeoLatitude.HasValue && arPoint.GeoLongitude.HasValue)
+            // Priorität 1: relative AR-Geometrie, mit EINER gemeinsamen starren Transformation
+            // (Session-Anker + Frame-Azimut) georeferenziert. Das erhält die zentimetergenaue
+            // relative Form der Messung — der gesamte Punktsatz kann als Ganzes um die
+            // Anker-Unsicherheit verschoben/verdreht sein, aber Distanzen und Flächen stimmen.
+            //
+            // Frueher lief hier die Geospatial-Koordinate PRO PUNKT vorne weg. Die ist absolut
+            // besser referenziert, traegt aber ±1-3 m VPS-Rauschen JE PUNKT: zwei real 2 m
+            // entfernte Punkte lagen danach 1 m oder 4 m auseinander, die Bowditch-Korrektur war
+            // wieder verworfen und das Gelaendemodell rechnete 25-cm-Isohypsen auf Hoehen mit
+            // Meter-Rauschen. Deshalb ist VPS jetzt nur noch Rueckfall.
+            //
+            // UTM-basierte Umkehrung via CoordinateService — präziser als 111320-Approximation
+            // (~8cm/100m Fehler auf 50° Breite).
+            if (arPoint.HasLocalPosition)
+            {
+                var (newLat, newLon) = RotateAndProject(
+                    arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, _coordinateService);
+                finalLat = newLat;
+                finalLon = newLon;
+                finalAltEllipsoid = gpsAlt + yRel;
+                finalAccuracyCm = fallbackAccuracyCm;
+            }
+            // Priorität 2: exakte Punkt-Geo — für Punkte OHNE lokale Position (Total-Station:
+            // radial aus Stations-Geo gerechnet, X/Y/Z bleiben 0). GeoIsExact ist Pflicht: bei
+            // false sind Lat/Lon die Kamera-/Standposition des Nutzers und nicht die des Punkts.
+            else if (arPoint.GeoLatitude.HasValue && arPoint.GeoLongitude.HasValue
+                     && arPoint.GeoIsExact)
             {
                 finalLat = arPoint.GeoLatitude.Value;
                 finalLon = arPoint.GeoLongitude.Value;
@@ -180,17 +207,14 @@ public class ArTransferService : IArTransferService
                     ? arPoint.GeoHorizontalAccuracy.Value * 100f
                     : fallbackAccuracyCm;
             }
+            // Weder lokale Position noch belastbare Geo → der Punkt ist nicht verortbar.
+            // Verwerfen statt ihn auf den Session-Ursprung fallen zu lassen (das sah im
+            // Projekt wie eine echte Messung am Standort des Nutzers aus).
             else
             {
-                // Priorität 2: Rotation aus AR-Lokal-Koords + Heading (Fallback ~±50cm).
-                // UTM-basierte Umkehrung via CoordinateService — präziser als
-                // 111320-Approximation (~8cm/100m Fehler auf 50° Breite).
-                var (newLat, newLon) = RotateAndProject(
-                    arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, _coordinateService);
-                finalLat = newLat;
-                finalLon = newLon;
-                finalAltEllipsoid = gpsAlt + yRel;
-                finalAccuracyCm = fallbackAccuracyCm;
+                System.Diagnostics.Debug.WriteLine(
+                    "AR-Transfer: Punkt ohne lokale Position und ohne exakte Geo — verworfen.");
+                continue;
             }
 
             // Android Location.Altitude / ARCore-Geospatial-Altitude sind WGS84-Ellipsoid →
@@ -253,23 +277,30 @@ public class ArTransferService : IArTransferService
             var contour = result.Contours[i];
             if (contour.Points.Count < 2) continue;
 
-            // Kontur-Punkte nach WGS84 umrechnen — Geospatial-Koords pro Punkt bevorzugen
+            // Kontur-Punkte nach WGS84 umrechnen. Gleiche Priorität wie bei den Einzelpunkten:
+            // die relative AR-Geometrie zuerst (starre Transformation über Session-Anker +
+            // Heading), VPS nur für Punkte ohne lokale Position. Bei einer Kontur zählt die Form
+            // — Fläche, Umfang und rechte Winkel — und genau die zerstört VPS-Rauschen pro Punkt.
             var wgsPoints = new List<(double lat, double lon)>(contour.Points.Count);
             foreach (var arPoint in contour.Points)
             {
-                if (arPoint.GeoLatitude.HasValue && arPoint.GeoLongitude.HasValue)
+                if (arPoint.HasLocalPosition)
                 {
-                    // VPS-Koords direkt nutzen (höchste Präzision)
-                    wgsPoints.Add((arPoint.GeoLatitude.Value, arPoint.GeoLongitude.Value));
-                }
-                else
-                {
-                    // Fallback auf Heading-basierte Rotation aus AR-Lokal-Koords via UTM
                     var (lat, lon) = RotateAndProject(
                         arPoint.X, arPoint.Z, gpsLat, gpsLon, sinH, cosH, _coordinateService);
                     wgsPoints.Add((lat, lon));
                 }
+                else if (arPoint.GeoLatitude.HasValue && arPoint.GeoLongitude.HasValue
+                         && arPoint.GeoIsExact)
+                {
+                    wgsPoints.Add((arPoint.GeoLatitude.Value, arPoint.GeoLongitude.Value));
+                }
+                // Nicht verortbare Punkte auslassen — eine Kontur mit einem Punkt am
+                // Session-Ursprung waere sonst grob verzerrt (Flaeche/Laenge falsch).
             }
+
+            // Nach dem Filtern kann eine Kontur unter die Mindest-Punktzahl fallen.
+            if (wgsPoints.Count < 2) continue;
 
             // v2-Format: absolute WGS84 Lat/Lon direkt persistieren (drift-resistent)
             // Format: {"v":2,"points":[[lat,lon],...]}

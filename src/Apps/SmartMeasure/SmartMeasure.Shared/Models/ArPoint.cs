@@ -72,6 +72,42 @@ public class ArPoint
     public float? GeoHorizontalAccuracy { get; set; }
 
     /// <summary>
+    /// True nur wenn <see cref="GeoLatitude"/>/<see cref="GeoLongitude"/> die Geo-Pose des
+    /// MESSPUNKTS selbst sind (ARCore-Earth auf der Hit-Pose). False bedeutet Naeherung: die
+    /// Werte stammen dann vom KAMERA-Snapshot, also von der Standposition des Nutzers, und nur
+    /// die Hoehe wurde auf den Messpunkt korrigiert. Der Fehler ist die volle Messdistanz.
+    ///
+    /// Muss vor jeder Verwendung der Geo-Koordinaten als Punkt-Position geprueft werden —
+    /// <c>HasValue</c> allein reicht NICHT. Ohne dieses Flag uebernahm der Transfer solche
+    /// Naeherungen wie exakte Messungen; alle von einem Standort aus gemessenen Punkte fielen
+    /// dadurch auf die Kamera-Position zusammen.
+    /// </summary>
+    public bool GeoIsExact { get; set; }
+
+    /// <summary>
+    /// True (Default) wenn <see cref="X"/>/<see cref="Y"/>/<see cref="Z"/> eine echte Position im
+    /// ARCore-Session-Frame sind. Total-Station-Punkte setzen das auf false: sie entstehen radial
+    /// aus Stations-Geo + Distanz + Bearing, ihre lokalen Koordinaten bleiben 0/0/0.
+    ///
+    /// Der Transfer georeferenziert bevorzugt ueber die lokale Geometrie (eine gemeinsame,
+    /// starre Transformation fuer die ganze Sitzung erhaelt die relative cm-Genauigkeit) und
+    /// darf deshalb wissen, fuer welche Punkte das gar nicht geht.
+    /// </summary>
+    public bool HasLocalPosition { get; set; } = true;
+
+    /// <summary>
+    /// Y-Wert der Boden-Ebene ZUM MESSZEITPUNKT dieses Punkts (ARCore-Session-Frame), sofern
+    /// eine Ground-Plane erkannt war. Der Transfer rechnet die Hoehe damit punktweise auf
+    /// "ueber Boden" um.
+    ///
+    /// Vorher gab es nur einen Sitzungs-Wert (<c>ArCaptureResult.GroundPlaneY</c>), der beim
+    /// FinishCapture EINMAL ausgelesen und auf alle Punkte angewandt wurde — die Referenz ist
+    /// aber ein laufender EMA, sodass Punkte vom Sitzungsanfang den Boden-Offset vom
+    /// Sitzungsende bekamen (Hoehen-Versatz im Gelaendemodell).
+    /// </summary>
+    public float? GroundOffsetYAtCapture { get; set; }
+
+    /// <summary>
     /// Kamera-Pitch in Grad zum Capture-Zeitpunkt (0 = horizontal, +90 = nach oben, -90 = nach unten).
     /// Wird aus der ARCore-Camera-Pose extrahiert — die Phone-Orientierung beeinflusst die
     /// Mess-Genauigkeit (steiler Pitch → größerer Depth-Fehler).

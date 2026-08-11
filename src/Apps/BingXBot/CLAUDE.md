@@ -342,6 +342,26 @@ net-short weiterzulaufen; freie Short-Slots fuellt der Refill mit den naechsten 
 Umschalten ohne Deploy: `PUT /api/v1/settings/xsec` mit `"Mode": "DominanceSpread"` (validiert),
 dann Bot im CrossSectional-Modus starten.
 
+> **STATUS 11.08.2026 — Deploy + Umschaltung AUSSTEHEND (User-Entscheidung: direkt live, ohne
+> Paper-Phase).** Code komplett auf master (Commit 9109315f, 672/672 Tests), der Pi laeuft noch
+> mit dem alten Momentum-Profil. Naechste Schritte in dieser Reihenfolge:
+> 1. Pi-Deploy (`/server-deploy` bzw. publish.sh + update.sh) — Watchdog-Restart adoptiert den
+>    laufenden Korb, liquidiert nichts.
+> 2. `PUT /api/v1/settings/xsec`: `Mode="DominanceSpread"`, `RebalanceDays=30`, `LeverageCap=1`,
+>    `ShortK=10` (ab ~1000 USDT Konto: 20–30), `IncludeTradFi=false` — danach per GET gegenpruefen
+>    (Bootstrap-Gotcha: stale persistierter Block kann Defaults ueberschreiben).
+> 3. Bot im CrossSectional-Modus starten (Dashboard/`POST /bot/start`) — der User loest den
+>    Echtgeld-Start selbst aus. Der erste Rebalance schliesst die Momentum-Positionen
+>    (Close-vor-Open) und baut den Spread auf.
+>
+> **Erfolgskriterium (vorab fixiert, NICHT nachverhandeln):** 3 Monate live; Gesamtergebnis nach
+> Fees+Funding positiv; MaxDD < 15 %; Verhalten konsistent mit der Backtest-Erwartung
+> (~+1,3 %/Monat im Mittel, Altseason-Squeeze-Monate bis ca. −15 % gehoeren zum Profil).
+> Nicht erfuellt → Modus verwerfen. Herleitung: Struktur-Analyse + Harness-Screens + Funding-
+> Verifikation 11.08.2026 (`tools/BingXBacktestLab/reports/btc-dominanz-analyse.html` +
+> `xsec-screen-anchor-*.md`; Lab-CLAUDE.md §BTC-Anker-Screen). Der frueher validierte
+> Momentum-Modus bleibt als Default-Fallback unveraendert erhalten.
+
 - **`EngineMode {Scalper, CrossSectional}`** ist orthogonal zu `TradingMode` (Paper/Live = sim vs. echt).
   `BotStartRequest.Engine` (Default Scalper), `BotSettings.LastEngineMode`+`CrossSectional`. `LocalBotControlService`
   waehlt anhand (Mode, Engine); es laeuft immer nur eine Engine (`_lifecycleLock`).

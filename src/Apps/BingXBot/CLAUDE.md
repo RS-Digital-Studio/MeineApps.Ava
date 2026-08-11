@@ -369,8 +369,10 @@ dann Bot im CrossSectional-Modus starten.
 
 > **STATUS — DominanceSpread ist seit 11.08.2026 der Live-Modus** (User-Entscheidung: direkt live,
 > ohne Paper-Phase). Pi deployed, `PUT /settings/xsec` gesetzt: `Mode="DominanceSpread"`,
-> `RebalanceDays=30`, `LeverageCap=1`, `ShortK=10` (ab ~1000 USDT Konto: 20–30),
-> `IncludeTradFi=false`, `UniverseTopN=50`, `MarginUtilization=0.75`. Der Wechsel aus einem
+> `RebalanceDays=30`, `LeverageCap=1`, `ShortK=5`, `IncludeTradFi=false`, `UniverseTopN=50`,
+> `MarginUtilization=0.75`. **ShortK=5 statt der empfohlenen 10** wegen der Konto-Groesse: bei
+> ~95 USDT waere der Slot 3,6 USDT und damit unter der Min-Order der meisten Top-Alts (s.o.);
+> mit wachsendem Konto ShortK wieder anheben (Richtwert 10 ab ~200 USDT, 20–30 ab ~1000). Der Wechsel aus einem
 > LAUFENDEN Momentum-Korb wurde ueber einen erzwungenen Rebalance gefahren (`RebalanceDays=1`
 > setzen, einen Tick abwarten, direkt danach zurueck auf 30) — **nicht** per Settings-PUT allein:
 > der Drift-Refill haette die freien Short-Slots aufgefuellt und ein Hybrid-Buch aus

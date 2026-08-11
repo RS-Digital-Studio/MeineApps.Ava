@@ -79,7 +79,10 @@ public class CrossSectionalRebalancerTests
         var target = new Dictionary<string, Side> { ["AAA"] = Side.Sell };
         var prices = new Dictionary<string, decimal> { ["AAA"] = 100m };
 
-        var r = await CrossSectionalRebalancer.ReconcileAsync(ex, target, prices, Crypto("AAA"), Cfg(), Risk());
+        // closeSettleDelay Zero: der Fail-Close bleibt in jedem Read sichtbar — ohne Zero wuerde
+        // der Settle-Retry hier real 3×2 s warten, bevor er den Close als gescheitert wertet.
+        var r = await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto("AAA"), Cfg(), Risk(), closeSettleDelay: TimeSpan.Zero);
 
         r.FailedClose.Should().Be(1);
         r.Opened.Should().Be(0);
@@ -132,6 +135,25 @@ public class CrossSectionalRebalancerTests
 
         ex.PlaceOrderCalls.Should().HaveCount(6);
         ex.PlaceOrderCalls.Should().OnlyContain(p => Math.Abs(p.Qty - 15m) < 0.0001m);
+    }
+
+    [Fact]
+    public async Task Reconcile_SettleLatenz_KeinFalsePositiveFailedClose()
+    {
+        // BingX-Settle-Latenz: der Positions-Snapshot zeigt die eben geschlossene Position noch
+        // 2 Reads lang. Ohne Settle-Retry: failedClose=1 und der Hedge-Guard blockt den
+        // Seiten-Flip fuer den ganzen Rebalance-Zyklus.
+        var ex = new FakeExchangeClient { AccountEquity = 12000m, CloseSettleReads = 2 }
+            .WithPosition("AAA", Side.Buy, 1m, 100m);
+        var target = new Dictionary<string, Side> { ["AAA"] = Side.Sell };
+        var prices = new Dictionary<string, decimal> { ["AAA"] = 100m };
+
+        var r = await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto("AAA"), Cfg(), Risk(), closeSettleDelay: TimeSpan.Zero);
+
+        r.FailedClose.Should().Be(0);
+        r.Opened.Should().Be(1);
+        ex.PlaceOrderCalls.Should().ContainSingle(p => p.Symbol == "AAA" && p.Side == Side.Sell);
     }
 
     [Fact]

@@ -44,7 +44,8 @@ public static class CrossSectionalRebalancer
         Action<string>? log = null,
         CancellationToken ct = default,
         Action<Position>? onClosed = null,
-        int basketSlots = 0)
+        int basketSlots = 0,
+        TimeSpan? closeSettleDelay = null)
     {
         log ??= _ => { };
         // Sizing-Divisor = tatsaechliche Korbgroesse (Backtest-Paritaet: CrossSectionalMomentumEngine
@@ -85,7 +86,26 @@ public static class CrossSectionalRebalancer
         }
 
         // 2. Verifizieren: erneut abfragen; bereits korrekt gehaltene merken, fehlgeschlagene Closes zaehlen.
+        //    Settle-Retry: BingX reflektiert Market-Closes teils erst Sekunden spaeter im Positions-
+        //    Snapshot (dokumentiertes Muster "Position-Retry nach Market-Order"). Ohne Warten entstehen
+        //    zwei teure False-Positives: (a) die eben geschlossene Position erscheint noch → failedClose
+        //    → der Hedge-Guard blockt das Ziel-Open fuer den ganzen Zyklus; (b) AvailableBalance ist noch
+        //    der Vor-Close-Wert (≈0 bei vollem Korb) → perSlotMargin ≈0 → alle Opens unter Min-Order →
+        //    Korb bleibt leer trotz bezahlter Close-Fees. Der Account-Snapshot fuers Sizing (Schritt 3)
+        //    wird deshalb erst NACH dem stabilen Positions-Snapshot gelesen. Echte Close-Fails (Exception,
+        //    z.B. TradFi ausserhalb der Handelszeiten) stehen nicht in closeAttempts — auf sie wird
+        //    nicht gewartet.
+        var settleDelay = closeSettleDelay ?? TimeSpan.FromSeconds(2);
         var after = await ex.GetPositionsAsync(ct).ConfigureAwait(false);
+        for (var settleAttempt = 0; settleAttempt < 3 && closeAttempts.Count > 0; settleAttempt++)
+        {
+            var stillSettling = after.Any(p => closeAttempts.Any(c =>
+                string.Equals(c.Symbol, p.Symbol, StringComparison.OrdinalIgnoreCase) && c.Side == p.Side));
+            if (!stillSettling) break;
+            if (settleDelay > TimeSpan.Zero)
+                await Task.Delay(settleDelay, ct).ConfigureAwait(false);
+            after = await ex.GetPositionsAsync(ct).ConfigureAwait(false);
+        }
         var held = new HashSet<string>();
         var filled = new HashSet<string>();
         var failedClose = 0;

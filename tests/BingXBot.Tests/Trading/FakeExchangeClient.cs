@@ -39,6 +39,13 @@ public sealed class FakeExchangeClient : IExchangeClient
     /// (simuliert einen fehlgeschlagenen Close fuer Rebalancer-Safety-Tests).</summary>
     public bool FailCloses { get; set; }
 
+    /// <summary>Test-Setup: Anzahl der GetPositions-Reads, die eine per <see cref="ClosePositionAsync"/>
+    /// geschlossene Position noch zeigen (simuliert BingX-Settle-Latenz nach Market-Close).
+    /// 0 = sofort weg (Default).</summary>
+    public int CloseSettleReads { get; set; }
+    private sealed class SettlingPosition { public required Position Pos; public int Remaining; }
+    private readonly List<SettlingPosition> _settling = new();
+
     /// <summary>Test-Setup: Konto-Equity, die <see cref="GetAccountInfoAsync"/> meldet.</summary>
     public decimal AccountEquity { get; set; } = 10000m;
 
@@ -153,7 +160,18 @@ public sealed class FakeExchangeClient : IExchangeClient
     public Task<IReadOnlyList<Position>> GetPositionsAsync()
     {
         CallLog.Add("GetPositionsAsync");
-        lock (_lock) return Task.FromResult<IReadOnlyList<Position>>(_positions.ToList());
+        lock (_lock)
+        {
+            var result = _positions.ToList();
+            // Settle-Latenz: geschlossene Positionen erscheinen noch fuer N Reads im Snapshot.
+            foreach (var s in _settling)
+            {
+                result.Add(s.Pos);
+                s.Remaining--;
+            }
+            _settling.RemoveAll(s => s.Remaining <= 0);
+            return Task.FromResult<IReadOnlyList<Position>>(result);
+        }
     }
 
     public Task<IReadOnlyList<Position>> GetPositionsAsync(CancellationToken ct) => GetPositionsAsync();
@@ -163,7 +181,15 @@ public sealed class FakeExchangeClient : IExchangeClient
         CallLog.Add($"ClosePositionAsync({symbol},{side})");
         ClosePositionCalls.Add((symbol, side));
         if (!FailCloses)
-            lock (_lock) _positions.RemoveAll(p => p.Symbol == symbol && p.Side == side);
+        {
+            lock (_lock)
+            {
+                var closing = _positions.FirstOrDefault(p => p.Symbol == symbol && p.Side == side);
+                _positions.RemoveAll(p => p.Symbol == symbol && p.Side == side);
+                if (closing != null && CloseSettleReads > 0)
+                    _settling.Add(new SettlingPosition { Pos = closing, Remaining = CloseSettleReads });
+            }
+        }
         return Task.CompletedTask;
     }
 

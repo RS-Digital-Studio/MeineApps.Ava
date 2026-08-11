@@ -190,15 +190,13 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     private readonly List<(global::Android.Locations.LocationManager mgr,
         global::Android.Locations.ILocationListener listener)> _activeLocationListeners = [];
 
-    // Drag-Startposition fuer Undo
-    private (float x, float y, float z)? _dragStartPos;
-    private string? _dragStartAnchorId;
-
     // Punkt-Editor State (Einzel- oder Kontur-Punkt)
     private int _selectedPointIndex = -1;
     private int _selectedContourIdx = -1;
     private int _selectedContourPointIdx = -1;
     private bool _isContourPointSelected;
+    // Wisch-Erkennung: unterscheidet Tap (= Punkt setzen/auswaehlen) von Wisch. Ein Wisch
+    // veraendert KEINE Punkt-Position mehr — Positionen kommen ausschliesslich vom Crosshair.
     private bool _isDragging;
     private float _touchDownX;
     private float _touchDownY;
@@ -267,14 +265,23 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     // Haptic Feedback
     private global::Android.OS.Vibrator? _vibrator;
 
-    // Akustisches Feedback beim Punkt-Setzen — Camera-Shutter-Click.
+    // Akustisches Feedback beim Punkt-Setzen. BEWUSST ein ToneGenerator auf dem MUSIC-Stream
+    // und NICHT MediaActionSound: letztere spielt zwingend ueber STREAM_SYSTEM_ENFORCED (die
+    // Kamera-Shutter-Vorgabe mancher Maerkte) und ignoriert damit sowohl den Lautstaerke-Regler
+    // als auch die Stumm-Schaltung des Telefons — der Klick kam immer in voller Lautstaerke.
+    // Ueber Stream.Music skaliert Android den Ton mit der Medien-Lautstaerke des Nutzers.
     // Liegt VOR OnCreate-Init, weil PlaceNewPoint via GL-Thread reinkommen kann
     // bevor der UI-Thread fertig ist. Lazy-Init beim ersten Play.
-    private global::Android.Media.MediaActionSound? _shutterSound;
+    private global::Android.Media.ToneGenerator? _shutterTone;
+    private global::Android.Media.AudioManager? _audioManager;
     private bool _soundEnabled = true; // Default an; via SharedPreferences "ar.sound.enabled"
 
-    // Beep für Bestätigungs-Aktionen (Fertig / Kontur geschlossen).
-    private bool _shutterLoaded;
+    /// <summary>Relative Lautstaerke des Klicks INNERHALB des Medien-Streams (0-100). Die
+    /// absolute Lautstaerke ergibt sich zusaetzlich aus dem Regler des Nutzers.</summary>
+    private const int ShutterToneVolume = 80;
+
+    /// <summary>Dauer des Klicks in ms — kurz genug, dass er nicht als Piepen wahrgenommen wird.</summary>
+    private const int ShutterToneDurationMs = 45;
 
     // Coach-Marks-Dialog beim ersten AR-Start.
     // SharedPreferences-Key "ar.coachmarks.shown".
@@ -466,8 +473,9 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             _vibrator = GetSystemService(VibratorService) as global::Android.OS.Vibrator;
         }
 
-        // MediaActionSound + Settings-Flag laden. Sound wird beim Punkt-Setzen + Kontur-Schließen
-        // gespielt, lässt sich via SharedPreferences "ar.sound.enabled" abschalten.
+        // Settings-Flag laden. Sound wird beim Punkt-Setzen + Kontur-Schließen gespielt
+        // (Medien-Stream, folgt der Telefonlautstärke) und lässt sich via
+        // SharedPreferences "ar.sound.enabled" ganz abschalten.
         var soundPrefs = GetSharedPreferences("smartmeasure_ar", FileCreationMode.Private);
         _soundEnabled = soundPrefs?.GetBoolean("ar.sound.enabled", true) ?? true;
         _coachMarksShown = soundPrefs?.GetBoolean("ar.coachmarks.shown", false) ?? false;
@@ -695,7 +703,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     {
         var menu = new global::Android.Widget.PopupMenu(this, anchor);
         const int idTape = 1, idTapeReset = 2, idTachy = 4,
-                  idDelete = 5, idScreenshot = 6, idRecord = 7, idHelp = 8, idGrid = 9;
+                  idDelete = 5, idScreenshot = 6, idRecord = 7, idHelp = 8, idGrid = 9,
+                  idMoveToCrosshair = 10;
 
         var popupMenu = menu.Menu!;
         popupMenu.Add(0, idTape, 0, "Maßband (Ad-hoc-Distanz)");
@@ -705,6 +714,10 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Löschen nur aktivieren, wenn ein Punkt ausgewählt ist — sonst ist der Eintrag
         // ausgegraut statt einen toten Klick mit leiser "Kein Punkt"-Meldung zu erzeugen.
         var hasSelection = _selectedPointIndex >= 0 || _isContourPointSelected;
+        // Verschieben ersetzt das frühere Drag-to-Move: Ziel ist immer das Crosshair, nie die
+        // Fingerposition — dieselbe Regel wie beim Setzen neuer Punkte.
+        popupMenu.Add(0, idMoveToCrosshair, 0, "Ausgewählten Punkt ans Ziel verschieben")!
+            .SetEnabled(hasSelection);
         popupMenu.Add(0, idDelete, 0, "Ausgewählten Punkt löschen")!.SetEnabled(hasSelection);
         popupMenu.Add(0, idGrid, 0, _showGroundGrid ? "Bodenraster ausblenden" : "Bodenraster einblenden");
         popupMenu.Add(0, idScreenshot, 0, "Screenshot speichern");
@@ -718,6 +731,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 case idTape: VibrateLight(); SetMode(CaptureMode.TapeMeasure); break;
                 case idTapeReset: VibrateMedium(); ResetTapeMeasure(); break;
                 case idTachy: VibrateLight(); ToggleTotalStationMode(); break;
+                case idMoveToCrosshair: MoveSelectedPointToCrosshair(); break;
                 case idDelete: ConfirmDeleteSelectedPoint(); break;
                 case idGrid: VibrateLight(); ToggleGroundGrid(); break;
                 case idScreenshot: TakeScreenshot(); break;
@@ -1210,7 +1224,7 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _overlayView?.PostInvalidate();
     }
 
-    #region Touch → Auswahl / Drag / Hit-Test
+    #region Touch → Auswahl / Hit-Test
 
     public override bool OnTouchEvent(MotionEvent? e)
     {
@@ -1254,8 +1268,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _touchDownX = e.GetX();
         _touchDownY = e.GetY();
         _isDragging = false;
-        _dragStartPos = null;
-        _dragStartAnchorId = null;
 
         // Readiness-Badge tap → Detail-Panel öffnen. VOR der normalen Punkt-Selection,
         // damit ein versehentlicher Punkt-Set im Badge-Bereich nicht passiert.
@@ -1279,14 +1291,6 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         // Pruefen ob ein existierender Punkt (Einzel oder Kontur) getroffen wurde
         var selectRadius = SELECT_RADIUS_DP * density;
         FindNearestProjectedPoint(_touchDownX, _touchDownY, selectRadius);
-
-        // Startposition + Anchor merken fuer Undo (Anchor wird beim Verschieben überschrieben).
-        var selectedPoint = GetSelectedArPoint();
-        if (selectedPoint != null)
-        {
-            _dragStartPos = (selectedPoint.X, selectedPoint.Y, selectedPoint.Z);
-            _dragStartAnchorId = selectedPoint.AnchorId;
-        }
 
         return true;
     }
@@ -1320,12 +1324,12 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
             _isDragging = true;
         }
 
-        if (_isDragging && (_selectedPointIndex >= 0 || _isContourPointSelected))
-        {
-            // Ausgewaehlten Punkt (Einzel- oder Kontur-Punkt) per Hit-Test verschieben
-            MoveSelectedPoint(e.GetX(), e.GetY());
-        }
-
+        // Bewusst KEINE Positions-Mutation beim Wischen: Punkte werden ausschliesslich am
+        // Crosshair positioniert (Setzen wie Verschieben). Der frueher hier haengende
+        // Drag-to-Move zog den Punkt an die Fingerposition — und weil ein Tap neben einem
+        // bestehenden Punkt diesen zuerst selektiert, verschob schon ein minimaler Wisch
+        // ueber TAP_THRESHOLD_DP eine fertige Messung an die Tap-Stelle. Verschieben laeuft
+        // jetzt ueber MoveSelectedPointToCrosshair (Mehr-Menue).
         return true;
     }
 
@@ -1348,26 +1352,8 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
                 PlaceNewPoint(_viewportWidth / 2f, _viewportHeight / 2f);
             }
         }
-        else if (_isDragging && (_selectedPointIndex >= 0 || _isContourPointSelected))
-        {
-            // Drag beendet → finale Position setzen + Undo-Action erstellen
-            MoveSelectedPoint(e.GetX(), e.GetY());
-
-            var p = GetSelectedArPoint();
-            if (_dragStartPos.HasValue && p != null)
-            {
-                var (oldX, oldY, oldZ) = _dragStartPos.Value;
-                _undoStack.Push(new MovePointAction(_dataLock, p, oldX, oldY, oldZ, p.X, p.Y, p.Z,
-                    _dragStartAnchorId, p.AnchorId));
-                _redoStack.Clear();
-                // Verschieben persistieren — Crash-Restore stuende sonst auf der alten Position.
-                SaveRecoveryState();
-            }
-        }
 
         _isDragging = false;
-        _dragStartPos = null;
-        _dragStartAnchorId = null;
         return true;
     }
 
@@ -1864,27 +1850,63 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         });
     }
 
-    private void MoveSelectedPoint(float screenX, float screenY)
+    /// <summary>Verschiebt den ausgewaehlten Punkt auf die aktuell im Crosshair anvisierte
+    /// Stelle. Einziger Verschiebe-Pfad — es gibt bewusst kein Drag-to-Move mehr, damit jede
+    /// Punkt-Position (Setzen wie Korrigieren) aus dem Crosshair kommt und exakt die Distanz
+    /// gilt, die das Reticle anzeigt.
+    ///
+    /// Der alte Anchor wird freigegeben und KEIN neuer erzeugt: eine manuelle Korrektur ist
+    /// eine bewusste Festlegung, die der Per-Frame-Refresh sonst wieder auf die Anchor-Pose
+    /// zurueckziehen wuerde (gleiche Semantik wie bei Bowditch-korrigierten Konturen und
+    /// Rechteck-Ecken). Ohne das Detach blieb der alte Anchor ausserdem als Orphan im
+    /// Manager haengen und verfaelschte Anchor-Zaehler + Quality-Score bis zum Session-Ende.</summary>
+    private void MoveSelectedPointToCrosshair()
     {
         var point = GetSelectedArPoint();
-        if (point == null) return;
+        if (point == null)
+        {
+            ShowTransientHint("Erst einen Punkt antippen", TransientSeverity.Warning);
+            return;
+        }
+        if (_viewportWidth <= 0 || _viewportHeight <= 0) return;
 
-        // UI-Thread → Frame-Op auf GL-Thread queuen (Drag-Hot-Path).
-        var newPos = HitTestAtFromUi(screenX, screenY);
-        if (newPos == null) return;
+        // UI-Thread → Frame-Op auf GL-Thread queuen (Frame.HitTest gehoert dorthin).
+        var newPos = HitTestAtFromUi(_viewportWidth / 2f, _viewportHeight / 2f);
+        if (newPos == null)
+        {
+            ShowTransientHint("Kein Ziel im Crosshair — Flaeche anvisieren", TransientSeverity.Warning);
+            return;
+        }
 
         RunOnUiThread(() =>
         {
+            var oldX = point.X;
+            var oldY = point.Y;
+            var oldZ = point.Z;
+
             // Mutation unter _dataLock: GL-Thread iteriert in ProjectPointsToScreen
             // parallel über die Listen — torn-reads (NaN, Visual-Flicker) sonst möglich.
             lock (_dataLock)
             {
+                DetachAnchorOf(point);
                 point.X = newPos.X;
                 point.Y = newPos.Y;
                 point.Z = newPos.Z;
-                point.AnchorId = newPos.AnchorId;
             }
+
+            // Undo bekommt oldAnchorId NICHT zurueck — der Anchor ist freigegeben, der Punkt
+            // bleibt nach dem Undo statisch auf der alten Position (ehrlicher als eine
+            // AnchorId, die im Manager nicht mehr existiert).
+            _undoStack.Push(new MovePointAction(_dataLock, point, oldX, oldY, oldZ,
+                point.X, point.Y, point.Z, null, null));
+            _redoStack.Clear();
+
+            VibrateLight();
+            ShowTransientHint("Punkt ans Ziel verschoben", TransientSeverity.Success);
             _overlayView?.Invalidate();
+
+            // Verschieben persistieren — Crash-Restore stuende sonst auf der alten Position.
+            SaveRecoveryState();
         });
     }
 
@@ -3459,22 +3481,26 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
     #region Sound Feedback
 
     /// <summary>
-    /// Kurzer Shutter-Klick beim Punkt-Setzen. Lazy-Load der MediaActionSound, da sie
-    /// nur ~5ms zum Initialisieren braucht und Speicher belegt — wir laden sie erst beim
-    /// ersten Aufruf. Wenn _soundEnabled == false, kein Init.
+    /// Kurzer Klick beim Punkt-Setzen, auf dem MEDIEN-Stream — folgt damit dem
+    /// Lautstaerke-Regler des Telefons und schweigt, wenn der Nutzer leise gestellt hat.
+    /// Lazy-Init beim ersten Aufruf; bei <c>_soundEnabled == false</c> kein Init.
     /// </summary>
     private void PlayShutterSound()
     {
         if (!_soundEnabled) return;
         try
         {
-            if (_shutterSound == null)
-            {
-                _shutterSound = new global::Android.Media.MediaActionSound();
-                _shutterSound.Load(global::Android.Media.MediaActionSoundType.ShutterClick);
-                _shutterLoaded = true;
-            }
-            _shutterSound.Play(global::Android.Media.MediaActionSoundType.ShutterClick);
+            _audioManager ??= GetSystemService(global::Android.Content.Context.AudioService)
+                as global::Android.Media.AudioManager;
+
+            // Medien-Lautstaerke ganz unten → gar nicht erst einen ToneGenerator aufbauen.
+            // Deckt den Fall ab, in dem der Nutzer waehrend der Messung leise dreht.
+            var volume = _audioManager?.GetStreamVolume(global::Android.Media.Stream.Music) ?? 0;
+            if (volume <= 0) return;
+
+            _shutterTone ??= new global::Android.Media.ToneGenerator(
+                global::Android.Media.Stream.Music, ShutterToneVolume);
+            _shutterTone.StartTone(global::Android.Media.Tone.PropBeep, ShutterToneDurationMs);
         }
         catch (Exception ex)
         {
@@ -5801,13 +5827,14 @@ public partial class ArCaptureActivity : AndroidX.AppCompat.App.AppCompatActivit
         _arSession?.Close();
         _arSession = null;
 
-        // MediaActionSound freigeben (sonst Audio-Resource-Leak)
-        if (_shutterLoaded)
+        // ToneGenerator freigeben (sonst Audio-Resource-Leak). _audioManager ist ein
+        // System-Service — nicht freigeben, nur die Referenz loesen.
+        if (_shutterTone != null)
         {
-            try { _shutterSound?.Release(); } catch { /* OK */ }
-            _shutterSound = null;
-            _shutterLoaded = false;
+            try { _shutterTone.Release(); } catch { /* OK */ }
+            _shutterTone = null;
         }
+        _audioManager = null;
 
         base.OnDestroy();
     }

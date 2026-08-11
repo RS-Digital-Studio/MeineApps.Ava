@@ -524,14 +524,19 @@ public partial class ArCaptureActivity
                 "Fläche — Kontur (Weg/Beet/Mauer/...) beginnen\n" +
                 "Schließen — aktive Kontur abschließen\n" +
                 "Zurück / Vor — Aktion rückgängig / wiederholen\n" +
-                "Mehr — Maßband, Tachymeter, Abstecken, Punkt löschen,\n" +
-                "        Screenshot, Aufnahme, Hilfe\n" +
+                "Mehr — Maßband, Tachymeter, Punkt verschieben, Punkt löschen,\n" +
+                "        Bodenraster, Screenshot, Aufnahme, Hilfe\n" +
                 "Fertig — Aufnahme beenden und ins Projekt übertragen\n\n" +
                 "Genauigkeit:\n" +
                 "AR misst auf ca. 5–50 cm genau — ideal für Gartenplanung\n" +
                 "und Flächen. Für zentimetergenaue Grenzpunkte einen\n" +
                 "RTK-Stab verbinden (in den App-Optionen).\n\n" +
                 "Tipps:\n" +
+                "Gemessen wird immer am Fadenkreuz (Bildmitte) — auch beim\n" +
+                "Verschieben. Das Antippen löst nur aus, anvisiert wird mit\n" +
+                "dem Fadenkreuz.\n" +
+                "Punkt korrigieren: antippen, neu anvisieren, dann\n" +
+                "Mehr → \"Ausgewählten Punkt ans Ziel verschieben\".\n" +
                 "Fadenkreuz-Farbe = Mess-Qualität:\n" +
                 "   Grün = Fläche erkannt (beste Qualität)\n" +
                 "   Gelb = geschätzt (Instant Placement)\n" +

@@ -210,8 +210,12 @@ public abstract class TradingServiceBase : IDisposable
         return state?.EntryTime;
     }
 
-    /// <summary>Stellt ein Signal für eine offene Position wieder her (z.B. nach App-Neustart aus BingX-Orders).</summary>
-    public void RestorePositionSignal(string symbol, Side side, SignalResult signal)
+    /// <summary>
+    /// Stellt ein Signal für eine offene Position wieder her (z.B. nach App-Neustart aus BingX-Orders).
+    /// <paramref name="positionQuantity"/> = echte Positions-Quantity von der Exchange — Pflicht fuer
+    /// funktionierende TP2-/Runner-/Close-Buchungs-Pfade (0 = unbekannt, nur fuer Alt-Aufrufer).
+    /// </summary>
+    public void RestorePositionSignal(string symbol, Side side, SignalResult signal, decimal positionQuantity = 0m)
     {
         var key = $"{symbol}_{side}";
 
@@ -242,14 +246,24 @@ public abstract class TradingServiceBase : IDisposable
             {
                 Signal = signal, Symbol = symbol, Side = side,
                 EntryPrice = entry,
+                // Tp2/OriginalQuantity MUESSEN auch bei Recovery/Adoption gefuellt sein: ohne Tp2
+                // uebersprang der WS-TP1-Fill die Phase-Transition (Full-Close bei 1.5R statt
+                // 50/50-Split), ohne OriginalQuantity buchte der Native-Close-Fallback Qty 0 und
+                // der Runner-Zweig war tot (Audit 11.08.2026).
+                Tp2 = signal.TakeProfit2,
+                OriginalQuantity = positionQuantity,
                 BreakevenSet = slAlreadyAtBe,
                 IsRecovered = true
             };
         }
         else
         {
-            // ExitState existiert: Signal-Referenz aktualisieren damit neue SL/TP-Werte greifen
+            // ExitState existiert: Signal-Referenz aktualisieren damit neue SL/TP-Werte greifen;
+            // fehlende Tp2/OriginalQuantity nachziehen (s.o.), vorhandene Werte nicht anfassen.
             existingState!.Signal = signal;
+            existingState.Tp2 ??= signal.TakeProfit2;
+            if (existingState.OriginalQuantity <= 0m && positionQuantity > 0m)
+                existingState.OriginalQuantity = positionQuantity;
         }
 
         // NF15 Fix — Recovery-Signale muessen auch im _signalCreatedAt/_positionOpenTimes-Tracking
@@ -1380,12 +1394,16 @@ public abstract class TradingServiceBase : IDisposable
                         continue;
                     }
 
-                    // Order platzieren
-                    var placed = await PlaceOrderOnExchangeAsync(ticker, side, positionSizeStd, signal, adaptLevStd).ConfigureAwait(false);
-                    if (!placed) continue;
-
+                    // Signal + ExitState VOR der Order registrieren: PlaceTpLimitOrdersAfterFillAsync
+                    // (laeuft INNERHALB von PlaceOrderOnExchangeAsync) schreibt die TP-Limit-OrderIds
+                    // und die Fill-Korrektur (echter EntryPrice, exchange-gerundete OriginalQuantity)
+                    // in den ExitState. Bei Registrierung erst NACH dem Place (frueherer Code) liefen
+                    // alle drei ExitState-Zugriffe dort ins Leere — Tp1/Tp2LimitOrderId blieben fuer
+                    // die gesamte Positions-Lebensdauer null, IsTpManagedByExchange war immer false,
+                    // und der Bot-5s-TP-Check lief parallel zu den BingX-Limits: Doppel-Close bei TP1,
+                    // TP2-Bein amputiert (Audit 11.08.2026). OnSignalCreated ebenfalls vorab, damit
+                    // die Reconcile-/TickerLoop-Grace-Fenster waehrend des Place greifen.
                     _positionSignals[slTpKey] = signal;
-
                     _exitStates[slTpKey] = new PositionExitState
                     {
                         Signal = signal, Symbol = ticker.Symbol, Side = side,
@@ -1396,8 +1414,25 @@ public abstract class TradingServiceBase : IDisposable
                         RunnerAtrBase = signal.EntryAtr ?? 0m,    // Task 4.7: Trailing-ATR-Basis
                         RunnerHardCap = signal.RunnerHardCap ?? 0m, // Task 4.7: 423.6% Hard-Cap
                     };
-                    Interlocked.Increment(ref _tradesToday);
                     OnSignalCreated(slTpKey);
+
+                    bool placed;
+                    try
+                    {
+                        placed = await PlaceOrderOnExchangeAsync(ticker, side, positionSizeStd, signal, adaptLevStd).ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        RemoveSignalByKey(slTpKey);   // Registrierung zurueckrollen — keine Position entstanden
+                        throw;
+                    }
+                    if (!placed)
+                    {
+                        RemoveSignalByKey(slTpKey);
+                        continue;
+                    }
+
+                    Interlocked.Increment(ref _tradesToday);
 
                     // v1.3.0 K1: TradeOpened-Event fuer Remote-Clients — konstruierte Position,
                     // weil die echte Exchange-Position erst im naechsten PriceTickerLoop auftaucht.

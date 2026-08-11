@@ -428,7 +428,7 @@ public class LiveTradingManager : IDisposable
                         var signal = new SignalResult(
                             pos.Side == Side.Buy ? Signal.Long : Signal.Short,
                             0.5m, pos.EntryPrice, slPrice, tpPrice, "Recovery: Aus BingX-Orders wiederhergestellt");
-                        _service!.RestorePositionSignal(pos.Symbol, pos.Side, signal);
+                        _service!.RestorePositionSignal(pos.Symbol, pos.Side, signal, pos.Quantity);
 
                         _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Recovery",
                             $"{pos.Symbol}: Wiederhergestellt (SL={slPrice?.ToString("F8") ?? "---"}, TP={tpPrice?.ToString("F8") ?? "---"})"));
@@ -443,7 +443,7 @@ public class LiveTradingManager : IDisposable
                             var signal = new SignalResult(
                                 pos.Side == Side.Buy ? Signal.Long : Signal.Short,
                                 0.5m, pos.EntryPrice, recoverySl, null, "Recovery: Standard-SL gesetzt (ATR-basiert)");
-                            _service!.RestorePositionSignal(pos.Symbol, pos.Side, signal);
+                            _service!.RestorePositionSignal(pos.Symbol, pos.Side, signal, pos.Quantity);
 
                             _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Recovery",
                                 $"{pos.Symbol}: Standard-SL gesetzt → SL={recoverySl:F8}",

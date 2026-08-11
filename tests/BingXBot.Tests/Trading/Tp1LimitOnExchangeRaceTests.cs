@@ -144,4 +144,7 @@ internal sealed class TestableLiveServiceForTpRace : LiveTradingService
 
     public Task<bool> PublicProcessTpLimitFillAsync(string symbol, string orderId) =>
         ProcessTpLimitFillAsync(symbol, orderId);
+
+    public Task<bool> PublicPlaceOrderOnExchangeAsync(Ticker ticker, Side side, decimal quantity, SignalResult signal, int leverage = 0) =>
+        PlaceOrderOnExchangeAsync(ticker, side, quantity, signal, leverage);
 }

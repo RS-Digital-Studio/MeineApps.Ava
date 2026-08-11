@@ -283,7 +283,7 @@ public partial class LiveTradingService
                     0.5m, pos.EntryPrice, slPrice, tp1,
                     "Adoptiert: unmanaged Position abgesichert (SL+TP+BE rekonstruiert)",
                     TakeProfit2: tp2, ConfluenceScore: 5, DisableSmartBreakeven: true);
-                RestorePositionSignal(pos.Symbol, pos.Side, signal);
+                RestorePositionSignal(pos.Symbol, pos.Side, signal, pos.Quantity);
 
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
                     $"{LogPrefix}{pos.Symbol} {pos.Side}: adoptiert — SL={slPrice:F8}, TP1={tp1:F8}, TP2={tp2:F8}, BE aktiv ({tpSource}).",
@@ -307,6 +307,11 @@ public partial class LiveTradingService
                 {
                     es.Signal = completed;
                     if (es.EntryPrice <= 0) es.EntryPrice = pos.EntryPrice;
+                    // Tp2/OriginalQuantity nachziehen — Recovery-ExitStates hatten sie nicht gesetzt:
+                    // ohne Tp2 macht der WS-TP1-Fill einen Full-Close bei 1.5R, ohne OriginalQuantity
+                    // bucht der Native-Close-Fallback Qty 0 (Audit 11.08.2026).
+                    es.Tp2 ??= tp2;
+                    if (es.OriginalQuantity <= 0m) es.OriginalQuantity = pos.Quantity;
                 }
 
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Reconcile",
@@ -382,6 +387,8 @@ public partial class LiveTradingService
             decimal? tp2Price = hasTp2Signal ? signal.TakeProfit2 : null;
 
             bool tp1Alive = false, tp2Alive = false;
+            // true wenn eine per Preis-Naehe gematchte Order-Id in den ExitState uebernommen wurde.
+            var adoptedIds = false;
             foreach (var o in openOrders)
             {
                 if (o.Side != closeSide) continue;
@@ -396,15 +403,38 @@ public partial class LiveTradingService
                     if (!string.IsNullOrEmpty(exitState.Tp1LimitOrderId) && o.OrderId == exitState.Tp1LimitOrderId) { tp1Alive = true; continue; }
                     if (!string.IsNullOrEmpty(exitState.Tp2LimitOrderId) && o.OrderId == exitState.Tp2LimitOrderId) { tp2Alive = true; continue; }
                 }
-                // Fallback: Preis-Naehe (0.05 % Toleranz fuer Tick-Rounding).
+                // Fallback: Preis-Naehe (0.05 % Toleranz fuer Tick-Rounding). Treffer schreibt die
+                // OrderId in den ExitState ZURUECK — nach Restart/Adoption fehlen die IDs, und ohne
+                // Rueckschreibung bliebe IsTpManagedByExchange dauerhaft false (der Bot-TP-Check
+                // liefe parallel zu den real liegenden Limits, Audit 11.08.2026).
                 var p = o.Price;
                 if (p <= 0) continue;
-                if (Math.Abs(p - tp1Price) / tp1Price < 0.0005m) { tp1Alive = true; continue; }
-                if (tp2Price.HasValue && Math.Abs(p - tp2Price.Value) / tp2Price.Value < 0.0005m) tp2Alive = true;
+                if (Math.Abs(p - tp1Price) / tp1Price < 0.0005m)
+                {
+                    tp1Alive = true;
+                    if (exitState != null && string.IsNullOrEmpty(exitState.Tp1LimitOrderId))
+                    {
+                        exitState.Tp1LimitOrderId = o.OrderId;
+                        adoptedIds = true;
+                    }
+                    continue;
+                }
+                if (tp2Price.HasValue && Math.Abs(p - tp2Price.Value) / tp2Price.Value < 0.0005m)
+                {
+                    tp2Alive = true;
+                    if (exitState != null && string.IsNullOrEmpty(exitState.Tp2LimitOrderId))
+                    {
+                        exitState.Tp2LimitOrderId = o.OrderId;
+                        adoptedIds = true;
+                    }
+                }
             }
 
             if (tp1Alive && (!hasTp2Signal || tp2Alive))
             {
+                // Per Preis-Naehe adoptierte OrderIds auch im Early-Return persistieren.
+                if (adoptedIds)
+                    try { await PersistExitStatesAsync().ConfigureAwait(false); } catch { /* best-effort */ }
                 _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Reconcile",
                     $"{LogPrefix}{action.Symbol} {action.Side}: Missing-TP gemeldet, aber TP-Orders existieren bereits ({(hasTp2Signal ? "TP1+TP2" : "TP1")}) — kein Re-Place",
                     action.Symbol));
@@ -438,10 +468,11 @@ public partial class LiveTradingService
             if (hasTp2Signal && !tp2Alive && tp2Qty > 0)
                 placedTp2 = await PlaceTpWithRetryAsync(action.Symbol, action.Side, tp2Qty, tp2Price!.Value, "TP2 Re-Place").ConfigureAwait(false);
 
-            // ExitState mit den frischen OrderIds aktualisieren + synchron persistieren.
+            // ExitState mit den frischen OrderIds aktualisieren + synchron persistieren
+            // (adoptedIds: auch per Preis-Naehe uebernommene IDs zaehlen als Mutation).
             if (exitState != null)
             {
-                var mutated = false;
+                var mutated = adoptedIds;
                 if (!string.IsNullOrEmpty(placedTp1)) { exitState.Tp1LimitOrderId = placedTp1; mutated = true; }
                 if (!string.IsNullOrEmpty(placedTp2)) { exitState.Tp2LimitOrderId = placedTp2; mutated = true; }
                 if (mutated)

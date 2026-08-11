@@ -187,6 +187,9 @@ public static class SettingsEndpoints
     private static bool TryValidateXsec(CrossSectionalSettings dto, out string reason)
     {
         reason = "";
+        if (!string.Equals(dto.Mode, CrossSectionalSettings.ModeMomentum, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(dto.Mode, CrossSectionalSettings.ModeDominanceSpread, StringComparison.OrdinalIgnoreCase))
+        { reason = $"Mode muss '{CrossSectionalSettings.ModeMomentum}' oder '{CrossSectionalSettings.ModeDominanceSpread}' sein."; return false; }
         if (dto.LookbackCandles < 2 || dto.LookbackCandles > 1000) { reason = "LookbackCandles muss 2..1000 sein."; return false; }
         if (dto.RebalanceDays < 1 || dto.RebalanceDays > 365) { reason = "RebalanceDays muss 1..365 sein."; return false; }
         if (dto.LongK < 0 || dto.LongK > 25) { reason = "LongK muss 0..25 sein."; return false; }

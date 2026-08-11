@@ -123,10 +123,14 @@ public sealed class CrossSectionalTradingService : IDisposable
         _cts = new CancellationTokenSource();
         _eventBus.PublishBotState(BotState.Running);
         Log(LogLevel.Info, "Engine",
-            $"Cross-Sectional gestartet: {_cfg.LongK}L-{_cfg.ShortK}S, {_cfg.LookbackCandles}-Kerzen-Momentum"
-            + $"{(_cfg.RiskAdjusted ? " (vol-bereinigt)" : "")}, Rebalance alle {_cfg.RebalanceDays}d, {_cfg.LeverageCap}x, "
-            + $"Universum Top-{_cfg.UniverseTopN}{(_cfg.IncludeTradFi ? "+TradFi" : "")}. Naechster Rebalance: "
-            + $"{(_lastRebalanceUtc + TimeSpan.FromDays(_cfg.RebalanceDays)):yyyy-MM-dd HH:mm} UTC.");
+            IsDominanceSpread(_cfg)
+                ? $"Cross-Sectional gestartet (BTC-DOMINANZ-SPREAD): Long BTC / Short Top-{_cfg.ShortK}-Volumen-Alts, "
+                  + $"Rebalance alle {_cfg.RebalanceDays}d, {_cfg.LeverageCap}x, Universum Top-{_cfg.UniverseTopN}. "
+                  + $"Naechster Rebalance: {(_lastRebalanceUtc + TimeSpan.FromDays(_cfg.RebalanceDays)):yyyy-MM-dd HH:mm} UTC."
+                : $"Cross-Sectional gestartet: {_cfg.LongK}L-{_cfg.ShortK}S, {_cfg.LookbackCandles}-Kerzen-Momentum"
+                  + $"{(_cfg.RiskAdjusted ? " (vol-bereinigt)" : "")}, Rebalance alle {_cfg.RebalanceDays}d, {_cfg.LeverageCap}x, "
+                  + $"Universum Top-{_cfg.UniverseTopN}{(_cfg.IncludeTradFi ? "+TradFi" : "")}. Naechster Rebalance: "
+                  + $"{(_lastRebalanceUtc + TimeSpan.FromDays(_cfg.RebalanceDays)):yyyy-MM-dd HH:mm} UTC.");
         _loop = Task.Run(() => LoopAsync(_cts.Token));
     }
 
@@ -328,16 +332,25 @@ public sealed class CrossSectionalTradingService : IDisposable
         var data = await BuildUniverseAsync("Rebalance", cfg, ct).ConfigureAwait(false);
         if (data == null) return;
 
-        // Ziel-Korb (geteilter Calculator — identisch zum Backtest).
-        var basket = MomentumBasketCalculator.ComputeBasket(
-            data.Universe, cfg.LookbackCandles, cfg.LongK, cfg.ShortK, cfg.RiskAdjusted);
-        if (basket.Count == 0) { Log(LogLevel.Info, "Engine", "Rebalance: leerer Ziel-Korb (kein klares Momentum)."); }
+        // Ziel-Korb (geteilter Calculator — identisch zum Backtest). DominanceSpread: Long BTC /
+        // Short volumenstaerkste Alts statt Momentum-Ranking (Harness-Validierung 11.08.2026).
+        var basket = IsDominanceSpread(cfg)
+            ? MomentumBasketCalculator.ComputeDominanceBasket(data.Universe, longK: 1, shortK: cfg.ShortK)
+            : MomentumBasketCalculator.ComputeBasket(
+                data.Universe, cfg.LookbackCandles, cfg.LongK, cfg.ShortK, cfg.RiskAdjusted);
+        if (basket.Count == 0)
+        {
+            Log(LogLevel.Info, "Engine", IsDominanceSpread(cfg)
+                ? "Rebalance: leerer Ziel-Korb (BTC-Anker nicht im Universum?)."
+                : "Rebalance: leerer Ziel-Korb (kein klares Momentum).");
+        }
 
         // Reconciliation (Close-vor-Open, Safety) — geteilt mit Paper/Live.
         var result = await CrossSectionalRebalancer.ReconcileAsync(
             _execution, basket, data.Prices, data.Categories, cfg, _risk,
             msg => Log(LogLevel.Info, "Exit", msg), ct,
-            onClosed: pos => BookLiveClose(pos, "Xsec-Rebalance")).ConfigureAwait(false);
+            onClosed: pos => BookLiveClose(pos, "Xsec-Rebalance"),
+            weights: DominanceWeightsOrNull(cfg, basket)).ConfigureAwait(false);
 
         // State persistieren + Trades publishen. Exclusion-Set leeren: der volle Rebalance darf
         // extern geschlossene Symbole wieder ranken (neuer 21-Tage-Zyklus = neue Entscheidung).
@@ -473,8 +486,45 @@ public sealed class CrossSectionalTradingService : IDisposable
                 + "aufgefuellt (geschlossene Symbole bleiben bis zum naechsten Rebalance gesperrt).");
         }
 
-        // 2. Freie Slots je Seite? (Korb soll LongK Longs + ShortK Shorts halten.)
-        var freeLongSlots = Math.Max(0, cfg.LongK - _currentBasket.Count(kv => kv.Value == Side.Buy));
+        // DominanceSpread: der Korb ist EIN Paar-Trade — faellt der BTC-Anker weg (extern
+        // geschlossen und gesperrt), sind die verbliebenen Alt-Shorts direktionales Net-Short.
+        // Dann den Spread AUFLOESEN (restliche Korb-Shorts schliessen) statt weiterzulaufen;
+        // der naechste volle Rebalance baut neu auf.
+        if (IsDominanceSpread(cfg)
+            && _excludedUntilRebalance.Contains(MomentumBasketCalculator.DominanceAnchorSymbol)
+            && !_currentBasket.ContainsKey(MomentumBasketCalculator.DominanceAnchorSymbol)
+            && _currentBasket.Count > 0)
+        {
+            Log(LogLevel.Warning, "Engine",
+                "Dominanz-Spread: BTC-Anker extern geschlossen — loese den Spread auf "
+                + $"({_currentBasket.Count} Korb-Short(s) schliessen), Neuaufbau beim naechsten Rebalance.");
+            foreach (var (symbol, side) in _currentBasket.ToList())
+            {
+                var open = positions.FirstOrDefault(p => p.Symbol == symbol && p.Side == side);
+                _currentBasket.Remove(symbol);
+                _excludedUntilRebalance.Add(symbol);
+                if (open == null) continue;
+                try
+                {
+                    await _execution.ClosePositionAsync(symbol, side).ConfigureAwait(false);
+                    BookLiveClose(open, "Xsec-Spread-Aufloesung");
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    _pendingCloses[symbol] = side;
+                    Log(LogLevel.Warning, "Exit", $"Spread-Aufloesung: Close {symbol} {side} fehlgeschlagen ({ex.Message}) — Retry-Liste.");
+                }
+            }
+            SaveState();
+            DrainPaperTrades();
+            return;
+        }
+
+        // 2. Freie Slots je Seite? (Korb soll LongK Longs + ShortK Shorts halten;
+        //    DominanceSpread: genau 1 Long-Slot — der BTC-Anker.)
+        var longTarget = IsDominanceSpread(cfg) ? 1 : cfg.LongK;
+        var freeLongSlots = Math.Max(0, longTarget - _currentBasket.Count(kv => kv.Value == Side.Buy));
         var freeShortSlots = Math.Max(0, cfg.ShortK - _currentBasket.Count(kv => kv.Value == Side.Sell));
         if (freeLongSlots == 0 && freeShortSlots == 0) return;
 
@@ -489,12 +539,16 @@ public sealed class CrossSectionalTradingService : IDisposable
         foreach (var pos in positions) excluded.Add(pos.Symbol);
         var candidates = data.Universe.Where(u => !excluded.Contains(u.Symbol)).ToList();
 
-        var refill = MomentumBasketCalculator.ComputeBasket(
-            candidates, cfg.LookbackCandles, freeLongSlots, freeShortSlots, cfg.RiskAdjusted);
+        var refill = IsDominanceSpread(cfg)
+            ? MomentumBasketCalculator.ComputeDominanceBasket(
+                candidates, longK: freeLongSlots > 0 ? 1 : 0, shortK: freeShortSlots)
+            : MomentumBasketCalculator.ComputeBasket(
+                candidates, cfg.LookbackCandles, freeLongSlots, freeShortSlots, cfg.RiskAdjusted);
         if (refill.Count == 0)
         {
             Log(LogLevel.Info, "Engine",
-                $"Drift-Refill: {freeLongSlots}L/{freeShortSlots}S Slot(s) frei, aber kein Kandidat mit klarem Momentum — naechster Versuch in {cfg.CheckIntervalMinutes} min.");
+                $"Drift-Refill: {freeLongSlots}L/{freeShortSlots}S Slot(s) frei, aber kein Kandidat"
+                + $"{(IsDominanceSpread(cfg) ? "" : " mit klarem Momentum")} — naechster Versuch in {cfg.CheckIntervalMinutes} min.");
             return;
         }
 
@@ -526,12 +580,18 @@ public sealed class CrossSectionalTradingService : IDisposable
 
         // basketSlots explizit: target enthaelt auch Fremd-Schutz-Eintraege — der Sizing-Divisor
         // muss die Soll-Korbgroesse (gehaltener Korb + Refill) sein, nicht target.Count.
+        // Gewichte (nur DominanceSpread): ueber den SOLL-Korb (gehalten + Refill) — Fremd-Schutz-
+        // Eintraege bekommen kein Gewicht (sie werden via doNotOpen ohnehin nie eroeffnet).
+        var basketAfterRefill = new Dictionary<string, Side>(_currentBasket);
+        foreach (var (symbol, side) in refill) basketAfterRefill[symbol] = side;
+
         var result = await CrossSectionalRebalancer.ReconcileAsync(
             _execution, target, data.Prices, data.Categories, cfg, _risk,
             msg => Log(LogLevel.Info, "Exit", msg), ct,
             onClosed: pos => BookLiveClose(pos, "Xsec-Drift-Refill"),
             basketSlots: _currentBasket.Count + refill.Count,
-            doNotOpen: doNotOpen).ConfigureAwait(false);
+            doNotOpen: doNotOpen,
+            weights: DominanceWeightsOrNull(cfg, basketAfterRefill)).ConfigureAwait(false);
 
         // 5. Nur den Korb (ohne Fremd-Schutz-Eintraege) persistieren — aufgenommen werden
         //    ausschliesslich tatsaechlich gefuellte Refill-Symbole (Min-Order-Skips/Rejects
@@ -689,6 +749,26 @@ public sealed class CrossSectionalTradingService : IDisposable
     }
 
     // ─────────── Helpers ───────────
+
+    /// <summary>DominanceSpread-Modus aktiv? (Unbekannte Mode-Strings = Momentum, abwaertskompatibel.)</summary>
+    private static bool IsDominanceSpread(CrossSectionalSettings cfg) =>
+        string.Equals(cfg.Mode, CrossSectionalSettings.ModeDominanceSpread, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Seitenweise 50/50-Gewichte des Dominanz-Spreads (Anteil an equity×MarginUtilization):
+    /// BTC-Anker 0.5, jeder Short 0.5/ShortK — fehlende Short-Slots bleiben bewusst Cash
+    /// (Backtest-Paritaet: kein Konzentrieren der Short-Seite auf weniger Symbole).
+    /// <c>null</c> im Momentum-Modus (equal-weight-Default des Rebalancers).
+    /// </summary>
+    private static Dictionary<string, decimal>? DominanceWeightsOrNull(
+        CrossSectionalSettings cfg, IReadOnlyDictionary<string, Side> basket)
+    {
+        if (!IsDominanceSpread(cfg)) return null;
+        var shortSlots = Math.Max(1, cfg.ShortK);
+        return basket.ToDictionary(
+            kv => kv.Key,
+            kv => kv.Value == Side.Buy ? 0.5m : 0.5m / shortSlots);
+    }
 
     private static string DescribeBasket(IReadOnlyDictionary<string, Side> basket)
     {

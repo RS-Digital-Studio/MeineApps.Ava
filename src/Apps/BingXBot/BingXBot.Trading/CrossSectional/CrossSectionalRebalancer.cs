@@ -47,7 +47,8 @@ public static class CrossSectionalRebalancer
         Action<Position>? onClosed = null,
         int basketSlots = 0,
         TimeSpan? closeSettleDelay = null,
-        IReadOnlySet<string>? doNotOpen = null)
+        IReadOnlySet<string>? doNotOpen = null,
+        IReadOnlyDictionary<string, decimal>? weights = null)
     {
         log ??= _ => { };
         // Sizing-Divisor = tatsaechliche Korbgroesse (Backtest-Paritaet: CrossSectionalMomentumEngine
@@ -147,10 +148,28 @@ public static class CrossSectionalRebalancer
         if (equity <= 0m || slots <= 0)
             return new RebalanceResult(closed, 0, 0, failedClose, filled, failedClosePositions);
         var perSlotMargin = equity * cfg.MarginUtilization / slots;
-        var opensNeeded = target.Count(kv =>
-            !held.Contains($"{kv.Key}_{kv.Value}") && doNotOpen?.Contains(kv.Key) != true);
-        if (opensNeeded > 0 && acc.AvailableBalance > 0m)
-            perSlotMargin = Math.Min(perSlotMargin, acc.AvailableBalance * 0.95m / opensNeeded);
+        var opens = target
+            .Where(kv => !held.Contains($"{kv.Key}_{kv.Value}") && doNotOpen?.Contains(kv.Key) != true)
+            .Select(kv => kv.Key)
+            .ToList();
+        // Per-Symbol-Margin: equal-weight (Default) ODER explizite Gewichte (Anteil an
+        // equity×MarginUtilization; DominanceSpread: BTC 0.5, Shorts je 0.5/ShortK). Der
+        // Free-Margin-Cap skaliert bei Gewichten alle Opens proportional (statt pro Slot).
+        decimal MarginFor(string symbol) =>
+            weights != null && weights.TryGetValue(symbol, out var w)
+                ? equity * cfg.MarginUtilization * w
+                : perSlotMargin;
+        var capFactor = 1m;
+        if (opens.Count > 0 && acc.AvailableBalance > 0m)
+        {
+            if (weights == null)
+                perSlotMargin = Math.Min(perSlotMargin, acc.AvailableBalance * 0.95m / opens.Count);
+            else
+            {
+                var needed = opens.Sum(MarginFor);
+                if (needed > 0m) capFactor = Math.Min(1m, acc.AvailableBalance * 0.95m / needed);
+            }
+        }
 
         // 4. Ziel-Positionen oeffnen, die noch nicht gehalten werden — ALTERNIEREND Short/Long:
         //    die fruehere Insertion-Order (alle Longs zuerst, MomentumBasketCalculator) liess bei
@@ -188,7 +207,7 @@ public static class CrossSectionalRebalancer
             {
                 await ex.SetLeverageAsync(symbol, leverage, side).ConfigureAwait(false);
 
-                var notional = perSlotMargin * leverage;
+                var notional = MarginFor(symbol) * capFactor * leverage;
                 var qty = notional / price;
                 if (qty <= 0m) continue;
                 if (!ex.MeetsMinimumOrder(symbol, qty, price))

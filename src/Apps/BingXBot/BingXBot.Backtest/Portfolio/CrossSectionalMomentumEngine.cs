@@ -333,14 +333,8 @@ public sealed class CrossSectionalMomentumEngine(
             }
             else
             {
-                // DominanceSpread: die ShortK volumenstaerksten Krypto-Alts (kein Momentum-Ranking).
-                var alts = universe
-                    .Where(u => u.Symbol != AnchorSymbol && IsCryptoAlt(u.Symbol))
-                    .Select(u => (u.Symbol, Vol: QuoteVolume(u.Candles, 42)))
-                    .Where(x => x.Vol > 0m)
-                    .OrderByDescending(x => x.Vol)
-                    .Take(p.ShortK);
-                foreach (var x in alts) basket[x.Symbol] = Side.Sell;
+                // DominanceSpread: geteilte Live-Logik (Paritaet wie beim Momentum-Modus).
+                return MomentumBasketCalculator.ComputeDominanceBasket(universe, longK: 1, shortK: p.ShortK);
             }
             return basket;
         }
@@ -432,8 +426,8 @@ public sealed class CrossSectionalMomentumEngine(
         return (decimal)Math.Clamp(scale, 0.25, 2.0);
     }
 
-    /// <summary>Fester Long-Anker der Modi AnchorBtc/DominanceSpread.</summary>
-    private const string AnchorSymbol = "BTC-USDT";
+    /// <summary>Fester Long-Anker der Modi AnchorBtc/DominanceSpread (geteilte Live-Konstante).</summary>
+    private const string AnchorSymbol = MomentumBasketCalculator.DominanceAnchorSymbol;
 
     /// <summary>Equity-Margin-Anteil je Pump-Fade-Slot (2 Slots = 15 %; der Korb weicht zurueck).</summary>
     private const decimal PumpFadeMarginPerSlot = 0.075m;
@@ -530,22 +524,8 @@ public sealed class CrossSectionalMomentumEngine(
         }
     }
 
-    /// <summary>Krypto-Alt = kein NC-TradFi-Perp und kein tokenisiertes Edelmetall (XAUT/PAXG →
-    /// AssetCluster.TradFiCommodity) — der DominanceSpread shortet nur echte Alts.</summary>
-    private static bool IsCryptoAlt(string symbol) =>
-        !SymbolClassifier.IsTradFi(symbol)
-        && AssetClusterClassifier.Classify(symbol) is not (AssetCluster.TradFiCommodity
-            or AssetCluster.TradFiForex or AssetCluster.TradFiIndex or AssetCluster.TradFiStock);
-
-    /// <summary>Quote-Volumen-Proxy (Σ Volume×Close) ueber die letzten <paramref name="candleCount"/> Kerzen.</summary>
-    private static decimal QuoteVolume(IReadOnlyList<Candle> candles, int candleCount)
-    {
-        var start = Math.Max(0, candles.Count - candleCount);
-        var sum = 0m;
-        for (var i = start; i < candles.Count; i++)
-            sum += candles[i].Volume * candles[i].Close;
-        return sum;
-    }
+    /// <summary>Krypto-Alt-Filter — geteilte Live-Logik (MomentumBasketCalculator).</summary>
+    private static bool IsCryptoAlt(string symbol) => MomentumBasketCalculator.IsCryptoAlt(symbol);
 
     /// <summary>ATR%(14) = ATR/letzter Close — vergleichbare Volatilitaet ueber Symbole hinweg.</summary>
     private static decimal AtrPercent(IReadOnlyList<Candle> candles)

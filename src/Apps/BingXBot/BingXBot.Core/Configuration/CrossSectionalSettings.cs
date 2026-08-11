@@ -18,6 +18,24 @@ namespace BingXBot.Core.Configuration;
 /// </summary>
 public sealed class CrossSectionalSettings
 {
+    /// <summary>Korb-Modus <see cref="Mode"/>: klassisches Cross-Sectional-Momentum (Default).</summary>
+    public const string ModeMomentum = "Momentum";
+
+    /// <summary>Korb-Modus <see cref="Mode"/>: BTC-Dominanz-Spread — Long BTC (50 % Margin) / Short die
+    /// ShortK volumenstaerksten Krypto-Alts (50 % verteilt), KEIN Momentum-Ranking. Harness-validiert
+    /// 11.08.2026: beste Worst-Phase aller je gemessenen Configs auf ALLEN Universums-Schnitten
+    /// (−1,3..−9,0 %); echtes Funding ist Rueckenwind (+1,3 %/J; Alt- > BTC-Funding). Empfohlene
+    /// Begleit-Settings: RebalanceDays≈30, LeverageCap=1, IncludeTradFi=false (reiner Krypto-Korb,
+    /// kein Wochenend-Deferral), LongK wird ignoriert (Anker ist fix BTC).</summary>
+    public const string ModeDominanceSpread = "DominanceSpread";
+
+    /// <summary>
+    /// Korb-Modus: <see cref="ModeMomentum"/> (Default, validiertes Live-Profil) oder
+    /// <see cref="ModeDominanceSpread"/>. String statt Enum — JSON-persistenz-robust wie
+    /// <see cref="NavTimeframe"/>; unbekannte Werte behandelt der Service als Momentum.
+    /// </summary>
+    public string Mode { get; set; } = ModeMomentum;
+
     /// <summary>Momentum-Lookback in Nav-Kerzen (H4). 60 ≈ 10 Tage (validiertes Optimum 13.06.2026).</summary>
     public int LookbackCandles { get; set; } = 60;
 
@@ -79,6 +97,7 @@ public sealed class CrossSectionalSettings
         {
             return new CrossSectionalSettings
             {
+                Mode = Mode,
                 LookbackCandles = LookbackCandles,
                 RebalanceDays = RebalanceDays,
                 LongK = LongK,
@@ -100,6 +119,7 @@ public sealed class CrossSectionalSettings
     {
         lock (_gate)
         {
+            Mode = src.Mode;
             LookbackCandles = src.LookbackCandles;
             RebalanceDays = src.RebalanceDays;
             LongK = src.LongK;

@@ -326,6 +326,22 @@ CrossSectionalManager (Lifecycle: Paper=SimulatedExchange / Live=BingXRestClient
        └─ CrossSectionalRebalancer (Close-vor-Open, Min-Order, Leverage-Cap, kein Hedge bei Fehl-Close)
 ```
 
+**Korb-Modus `CrossSectionalSettings.Mode` (seit 11.08.2026):** `"Momentum"` (Default, bisheriges
+Verhalten) oder `"DominanceSpread"` — BTC-Dominanz-Spread: Long BTC (fix, 50 % der Margin) / Short
+die ShortK volumenstaerksten Krypto-Alts (50 % verteilt, 0.5/ShortK je Slot — fehlende Slots bleiben
+Cash), KEIN Momentum-Ranking, TradFi + XAUT/PAXG ausgeschlossen. Harness-validiert: beste Worst-Phase
+aller je gemessenen Configs auf allen Universums-Schnitten (−1,3..−9,0 %); echtes BingX-Funding ist
+Rueckenwind (+1,3 %/J: Alt- > BTC-Funding). Korb-Bildung geteilt via
+`MomentumBasketCalculator.ComputeDominanceBasket` (Backtest-Paritaet bit-identisch verifiziert);
+Sizing ueber den optionalen `weights`-Parameter des Rebalancers (null = equal-weight, unveraendert).
+**Empfohlene Betriebs-Settings:** `RebalanceDays=30`, `LeverageCap=1`, `ShortK=10..20`,
+`IncludeTradFi=false` (reiner Krypto-Korb → kein Wochenend-Deferral), `LongK` wird ignoriert.
+Drift-Semantik: Der Spread ist EIN Paar-Trade — wird der BTC-Anker extern geschlossen, loest der
+Drift-Tick den ganzen Spread auf (Alt-Shorts schliessen, Sperre bis zum naechsten Rebalance) statt
+net-short weiterzulaufen; freie Short-Slots fuellt der Refill mit den naechsten Volumen-Alts.
+Umschalten ohne Deploy: `PUT /api/v1/settings/xsec` mit `"Mode": "DominanceSpread"` (validiert),
+dann Bot im CrossSectional-Modus starten.
+
 - **`EngineMode {Scalper, CrossSectional}`** ist orthogonal zu `TradingMode` (Paper/Live = sim vs. echt).
   `BotStartRequest.Engine` (Default Scalper), `BotSettings.LastEngineMode`+`CrossSectional`. `LocalBotControlService`
   waehlt anhand (Mode, Engine); es laeuft immer nur eine Engine (`_lifecycleLock`).

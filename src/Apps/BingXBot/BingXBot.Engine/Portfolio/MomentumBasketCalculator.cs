@@ -86,6 +86,58 @@ public static class MomentumBasketCalculator
         return basket;
     }
 
+    // ─────────── BTC-Dominanz-Spread (Struktur-Analyse + Harness-Validierung 11.08.2026) ───────────
+
+    /// <summary>Fester Long-Anker des Dominanz-Spreads.</summary>
+    public const string DominanceAnchorSymbol = "BTC-USDT";
+
+    /// <summary>
+    /// BTC-Dominanz-Spread-Korb: Long BTC (Anker) / Short die <paramref name="shortK"/>
+    /// volumenstaerksten Krypto-Alts (KEIN Momentum-Ranking — der Edge ist der strukturelle
+    /// Alt-Decay: 78 % der Alts underperformen BTC ueber die Lebenszeit, equal-weight-Alt-Index
+    /// −73 % vs. BTC 2022–2026). TradFi-Perps und tokenisierte Edelmetalle sind ausgeschlossen.
+    /// <paramref name="longK"/>: 1 = mit BTC-Anker (fehlt BTC im Universum → LEERER Korb, sonst
+    /// waere der Rest ein net-short-Direktionaltrade); 0 = nur Short-Seite (Drift-Refill).
+    /// Geteilt zwischen Live (<c>CrossSectionalTradingService</c>) und Backtest
+    /// (<c>CrossSectionalMomentumEngine</c>, Mode DominanceSpread) — Paritaet wie ComputeBasket.
+    /// </summary>
+    public static Dictionary<string, Side> ComputeDominanceBasket(
+        IEnumerable<(string Symbol, IReadOnlyList<Candle> Candles)> universe, int longK, int shortK)
+    {
+        var basket = new Dictionary<string, Side>();
+        var list = universe as IReadOnlyCollection<(string Symbol, IReadOnlyList<Candle> Candles)> ?? universe.ToList();
+        if (longK > 0)
+        {
+            if (!list.Any(u => u.Symbol == DominanceAnchorSymbol)) return basket;
+            basket[DominanceAnchorSymbol] = Side.Buy;
+        }
+        var alts = list
+            .Where(u => u.Symbol != DominanceAnchorSymbol && IsCryptoAlt(u.Symbol))
+            .Select(u => (u.Symbol, Vol: QuoteVolume(u.Candles, 42)))
+            .Where(x => x.Vol > 0m)
+            .OrderByDescending(x => x.Vol)
+            .Take(Math.Max(0, shortK));
+        foreach (var x in alts) basket[x.Symbol] = Side.Sell;
+        return basket;
+    }
+
+    /// <summary>Krypto-Alt = kein NC-TradFi-Perp und kein tokenisiertes Edelmetall (XAUT/PAXG →
+    /// AssetCluster.TradFiCommodity) — der Dominanz-Spread shortet nur echte Alts.</summary>
+    public static bool IsCryptoAlt(string symbol) =>
+        !SymbolClassifier.IsTradFi(symbol)
+        && AssetClusterClassifier.Classify(symbol) is not (AssetCluster.TradFiCommodity
+            or AssetCluster.TradFiForex or AssetCluster.TradFiIndex or AssetCluster.TradFiStock);
+
+    /// <summary>Quote-Volumen-Proxy (Σ Volume×Close) ueber die letzten <paramref name="candleCount"/> Kerzen.</summary>
+    public static decimal QuoteVolume(IReadOnlyList<Candle> candles, int candleCount)
+    {
+        var start = Math.Max(0, candles.Count - candleCount);
+        var sum = 0m;
+        for (var i = start; i < candles.Count; i++)
+            sum += candles[i].Volume * candles[i].Close;
+        return sum;
+    }
+
     /// <summary>Slot-Auswahl EINER Seite: erst Hysterese (gehaltene im Buffer-Fenster), dann Rang-Reihenfolge.</summary>
     private static void SelectSide(
         List<string> sideRanked, int k, Side side,

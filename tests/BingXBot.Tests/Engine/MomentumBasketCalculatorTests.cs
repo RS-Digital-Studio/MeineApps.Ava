@@ -193,4 +193,71 @@ public class MomentumBasketCalculatorTests
         up!.Value.Should().BePositive();
         down!.Value.Should().BeNegative();
     }
+
+    // ─────────── BTC-Dominanz-Spread (ComputeDominanceBasket) ───────────
+
+    /// <summary>Flache Serie mit definiertem Kerzen-Volumen (Quote-Volumen ∝ vol × 100).</summary>
+    private static List<Candle> SeriesWithVolume(decimal volume, int count = 50)
+    {
+        var candles = new List<Candle>();
+        var baseTime = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        for (var i = 0; i < count; i++)
+            candles.Add(new Candle(baseTime.AddHours(4 * i), 100m, 100.1m, 99.9m, 100m, volume, baseTime.AddHours(4 * (i + 1))));
+        return candles;
+    }
+
+    [Fact]
+    public void ComputeDominanceBasket_LongBtc_ShortVolumenstaerksteAlts_OhneTradFiUndGold()
+    {
+        var universe = new (string, IReadOnlyList<Candle>)[]
+        {
+            ("BTC-USDT", SeriesWithVolume(9000m)),
+            ("ETH-USDT", SeriesWithVolume(5000m)),
+            ("SOL-USDT", SeriesWithVolume(3000m)),
+            ("DOGE-USDT", SeriesWithVolume(1000m)),
+            ("NCCOGOLD2USD-USDT", SeriesWithVolume(8000m)),   // TradFi-Perp → nie im Short-Korb
+            ("XAUT-USDT", SeriesWithVolume(7000m)),           // tokenisiertes Gold → nie im Short-Korb
+        };
+
+        var basket = MomentumBasketCalculator.ComputeDominanceBasket(universe, longK: 1, shortK: 2);
+
+        basket.Should().HaveCount(3);
+        basket["BTC-USDT"].Should().Be(Side.Buy);
+        basket["ETH-USDT"].Should().Be(Side.Sell);
+        basket["SOL-USDT"].Should().Be(Side.Sell);   // Top-2 nach Volumen; DOGE faellt raus
+        basket.Should().NotContainKey("NCCOGOLD2USD-USDT");
+        basket.Should().NotContainKey("XAUT-USDT");
+    }
+
+    [Fact]
+    public void ComputeDominanceBasket_OhneBtcAnker_LeererKorb()
+    {
+        // Ohne Anker waere der Rest ein net-short-Direktionaltrade → bewusst leer.
+        var universe = new (string, IReadOnlyList<Candle>)[]
+        {
+            ("ETH-USDT", SeriesWithVolume(5000m)),
+            ("SOL-USDT", SeriesWithVolume(3000m)),
+        };
+
+        var basket = MomentumBasketCalculator.ComputeDominanceBasket(universe, longK: 1, shortK: 2);
+
+        basket.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ComputeDominanceBasket_LongK0_NurShorts_FuerDriftRefill()
+    {
+        // Drift-Refill: BTC-Anker wird bereits gehalten → nur Short-Slots auffuellen.
+        var universe = new (string, IReadOnlyList<Candle>)[]
+        {
+            ("ETH-USDT", SeriesWithVolume(5000m)),
+            ("SOL-USDT", SeriesWithVolume(3000m)),
+            ("DOGE-USDT", SeriesWithVolume(1000m)),
+        };
+
+        var basket = MomentumBasketCalculator.ComputeDominanceBasket(universe, longK: 0, shortK: 1);
+
+        basket.Should().HaveCount(1);
+        basket["ETH-USDT"].Should().Be(Side.Sell);
+    }
 }

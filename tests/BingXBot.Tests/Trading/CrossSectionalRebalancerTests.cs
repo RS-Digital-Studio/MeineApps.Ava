@@ -17,7 +17,9 @@ public class CrossSectionalRebalancerTests
         LongK = longK, ShortK = shortK, LeverageCap = levCap, MarginUtilization = 0.75m, RebalanceDays = 21,
     };
 
-    private static RiskSettings Risk() => new() { MaxOpenPositions = 10 };
+    // Bewusst der echte Live-Default (3): MaxOpenPositions darf seit dem Oversizing-Fix
+    // (11.08.2026) NICHT mehr in den Xsec-Sizing-Divisor eingehen.
+    private static RiskSettings Risk() => new() { MaxOpenPositions = 3 };
 
     private static Dictionary<string, MarketCategory> Crypto(params string[] symbols) =>
         symbols.ToDictionary(s => s, _ => MarketCategory.Crypto);
@@ -99,7 +101,8 @@ public class CrossSectionalRebalancerTests
     [Fact]
     public async Task Reconcile_SiztEquityGleichgewichtet()
     {
-        // equity 10000, slots = LongK1+ShortK1 = 2, util 0.75 → perSlotMargin 3750; lev1, price 150 → qty 25.
+        // equity 10000, Divisor = Korbgroesse (target.Count = 1), util 0.75 → perSlotMargin 7500;
+        // lev1, price 150 → qty 50. (Vor dem Oversizing-Fix war der Divisor LongK+ShortK.)
         var ex = new FakeExchangeClient { AccountEquity = 10000m };
         var target = new Dictionary<string, Side> { ["AAA"] = Side.Buy };
         var prices = new Dictionary<string, decimal> { ["AAA"] = 150m };
@@ -107,6 +110,46 @@ public class CrossSectionalRebalancerTests
         await CrossSectionalRebalancer.ReconcileAsync(ex, target, prices, Crypto("AAA"), Cfg(longK: 1, shortK: 1, levCap: 1), Risk());
 
         ex.PlaceOrderCalls.Should().ContainSingle();
-        ex.PlaceOrderCalls[0].Qty.Should().BeApproximately(25m, 0.0001m);
+        ex.PlaceOrderCalls[0].Qty.Should().BeApproximately(50m, 0.0001m);
+    }
+
+    [Fact]
+    public async Task Reconcile_SizingDivisor_IstKorbgroesse_NichtMaxOpenPositions()
+    {
+        // Regressionstest Oversizing-Befund 11.08.2026: 6 Ziel-Slots + MaxOpenPositions=3 (Live-Default)
+        // → Divisor MUSS 6 sein (equity 12000 × 0.75 / 6 = 1500 Margin/Slot; lev1, price 100 → qty 15),
+        // und ALLE 6 Slots werden eroeffnet. Der alte Code teilte durch min(6,3)=3 → qty 30 (doppelt).
+        var ex = new FakeExchangeClient { AccountEquity = 12000m };
+        var target = new Dictionary<string, Side>
+        {
+            ["L1"] = Side.Buy, ["L2"] = Side.Buy, ["L3"] = Side.Buy,
+            ["S1"] = Side.Sell, ["S2"] = Side.Sell, ["S3"] = Side.Sell,
+        };
+        var prices = target.Keys.ToDictionary(s => s, _ => 100m);
+
+        await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto([.. target.Keys]), Cfg(longK: 3, shortK: 3, levCap: 1), Risk());
+
+        ex.PlaceOrderCalls.Should().HaveCount(6);
+        ex.PlaceOrderCalls.Should().OnlyContain(p => Math.Abs(p.Qty - 15m) < 0.0001m);
+    }
+
+    [Fact]
+    public async Task Reconcile_BasketSlotsOverride_UebersteuertTargetCount()
+    {
+        // Drift-Refill-Fall: target enthaelt einen Fremd-Schutz-Eintrag (bereits offen → held, kein
+        // Sizing) + 1 Refill-Slot. Der Divisor kommt aus basketSlots (Soll-Korbgroesse 6), nicht aus
+        // target.Count (2): equity 12000 × 0.75 / 6 = 1500; lev1, price 100 → qty 15.
+        var ex = new FakeExchangeClient { AccountEquity = 12000m }
+            .WithPosition("FREMD", Side.Buy, 1m, 100m);
+        var target = new Dictionary<string, Side> { ["FREMD"] = Side.Buy, ["NEU"] = Side.Sell };
+        var prices = new Dictionary<string, decimal> { ["FREMD"] = 100m, ["NEU"] = 100m };
+
+        await CrossSectionalRebalancer.ReconcileAsync(
+            ex, target, prices, Crypto("FREMD", "NEU"), Cfg(longK: 3, shortK: 3, levCap: 1), Risk(),
+            basketSlots: 6);
+
+        ex.PlaceOrderCalls.Should().ContainSingle(p => p.Symbol == "NEU");
+        ex.PlaceOrderCalls[0].Qty.Should().BeApproximately(15m, 0.0001m);
     }
 }

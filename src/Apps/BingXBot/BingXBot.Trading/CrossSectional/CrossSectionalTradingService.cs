@@ -396,10 +396,13 @@ public sealed class CrossSectionalTradingService : IDisposable
         foreach (var pos in positions)
             if (!target.ContainsKey(pos.Symbol)) target[pos.Symbol] = pos.Side;
 
+        // basketSlots explizit: target enthaelt auch Fremd-Schutz-Eintraege — der Sizing-Divisor
+        // muss die Soll-Korbgroesse (gehaltener Korb + Refill) sein, nicht target.Count.
         var result = await CrossSectionalRebalancer.ReconcileAsync(
             _execution, target, data.Prices, data.Categories, cfg, _risk,
             msg => Log(LogLevel.Info, "Exit", msg), ct,
-            onClosed: pos => BookLiveClose(pos, "Xsec-Drift-Refill")).ConfigureAwait(false);
+            onClosed: pos => BookLiveClose(pos, "Xsec-Drift-Refill"),
+            basketSlots: _currentBasket.Count + refill.Count).ConfigureAwait(false);
 
         // 5. Nur den Korb (ohne Fremd-Schutz-Eintraege) persistieren — aufgenommen werden
         //    ausschliesslich tatsaechlich gefuellte Refill-Symbole (Min-Order-Skips/Rejects

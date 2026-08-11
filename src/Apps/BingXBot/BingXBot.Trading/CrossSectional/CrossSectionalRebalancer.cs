@@ -43,10 +43,17 @@ public static class CrossSectionalRebalancer
         RiskSettings risk,
         Action<string>? log = null,
         CancellationToken ct = default,
-        Action<Position>? onClosed = null)
+        Action<Position>? onClosed = null,
+        int basketSlots = 0)
     {
         log ??= _ => { };
-        var slots = Math.Min(cfg.LongK + cfg.ShortK, risk.MaxOpenPositions);
+        // Sizing-Divisor = tatsaechliche Korbgroesse (Backtest-Paritaet: CrossSectionalMomentumEngine
+        // gewichtet 1/target.Count). RiskSettings.MaxOpenPositions gehoert NICHT in den Xsec-Pfad:
+        // der Scalper-Default 3 halbierte den Divisor bei 6 Ziel-Slots — jeder Slot wurde doppelt so
+        // gross dimensioniert wie validiert, waehrend die Open-Schleife trotzdem ALLE Slots eroeffnete
+        // (Live-Oversizing-Befund 11.08.2026). Der Drift-Refill uebergibt die Soll-Korbgroesse explizit
+        // via basketSlots, weil sein target auch Fremd-Schutz-Eintraege enthaelt, die keine Korb-Slots sind.
+        var slots = basketSlots > 0 ? basketSlots : target.Count;
 
         // 1. Close-vor-Open: Positionen schliessen, die nicht (mehr) zum Ziel passen (Symbol raus ODER Seite gedreht).
         //    Geschlossene Positionen (Pre-Close-Snapshot) merken — nach der Verifikation meldet

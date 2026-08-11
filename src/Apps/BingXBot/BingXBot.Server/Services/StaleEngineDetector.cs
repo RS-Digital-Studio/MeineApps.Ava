@@ -285,7 +285,10 @@ public sealed class StaleEngineDetector : IHostedService, IDisposable
             // BotStartRequest mit InitialBalance=null + leerem ActiveTimeframes-List signalisiert
             // "nimm die persistierten Werte". Siehe LocalBotControlService.StartAsync.
 
-            await _botControl.StopAsync(CancellationToken.None).ConfigureAwait(false);
+            // Restart-schonender Stop: Xsec-Korb bleibt offen und wird nach dem Start aus dem
+            // persistierten State adoptiert (kein Fee-Round-Trip, keine Selbst-Sperrung der
+            // Korb-Symbole als "extern geschlossen").
+            await _botControl.StopForRestartAsync(CancellationToken.None).ConfigureAwait(false);
 
             // Kurze Pause, damit StopBase + Dispose abgeschlossen sind
             await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);

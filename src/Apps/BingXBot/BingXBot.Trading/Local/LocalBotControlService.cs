@@ -245,6 +245,44 @@ public sealed class LocalBotControlService : IBotControlService, IDisposable
         finally { _lifecycleLock.Release(); }
     }
 
+    /// <summary>
+    /// Stop im Rahmen eines Watchdog-Auto-Restarts (StaleEngineDetector: Stop → Start binnen
+    /// Sekunden): Engine anhalten, aber den Xsec-Korb NICHT liquidieren — der Korb ist bewusst
+    /// mehrtaegig, ein haengender Tick ist kein Exit-Signal. Vorher kostete jeder Auto-Restart
+    /// den kompletten Round-Trip an Taker-Fees, und weil der persistierte State die Korb-Symbole
+    /// weiter enthielt, wurden sie 2 Ticks spaeter als "extern geschlossen" gesperrt — der neue
+    /// Korb bestand aus den Raengen 4-6 statt dem Ranking-Optimum (Audit 11.08.2026).
+    /// Scalper-Pfade verhalten sich wie beim normalen Stop (Positionen bleiben offen und sind
+    /// durch native SL/TP geschuetzt).
+    /// </summary>
+    public async Task<BotStatusDto> StopForRestartAsync(CancellationToken ct = default)
+    {
+        await _lifecycleLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            // Kein PersistResumeFlagAsync(false): der Restart startet unmittelbar danach wieder —
+            // crasht der Prozess dazwischen, soll der Reboot-Auto-Resume die Engine zurueckbringen.
+            try
+            {
+                if (_paperService.IsRunning)
+                    await _paperService.StopAsync().ConfigureAwait(false);
+                if (_liveManager.IsRunning)
+                    await _liveManager.StopAsync().ConfigureAwait(false);
+                if (_xsecManager?.IsRunning == true)
+                    await _xsecManager.StopAsync(closePositions: false).ConfigureAwait(false);
+                _uptime.Reset();
+            }
+            catch (Exception ex)
+            {
+                _lastError = ex.Message;
+                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Error, "Engine",
+                    $"Stop (Auto-Restart) fehlgeschlagen: {ex.Message}"));
+            }
+            return GetStatus();
+        }
+        finally { _lifecycleLock.Release(); }
+    }
+
     public async Task<BotStatusDto> EmergencyStopAsync(CancellationToken ct = default)
     {
         await _lifecycleLock.WaitAsync(ct).ConfigureAwait(false);

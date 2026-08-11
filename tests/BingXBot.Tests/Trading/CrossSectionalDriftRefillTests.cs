@@ -398,6 +398,28 @@ public sealed class CrossSectionalDriftRefillTests : IDisposable
     }
 
     [Fact]
+    public async Task StopFuerAutoRestart_LiquidiertKorbNicht()
+    {
+        // Watchdog-Auto-Restart (Stop -> Start binnen Sekunden): der mehrtaegige Korb darf NICHT
+        // liquidiert werden — vorher kostete jeder Restart den vollen Fee-Round-Trip und sperrte
+        // die Korb-Symbole anschliessend als "extern geschlossen" (Korb aus Raengen 4-6).
+        var ex = new FakeExchangeClient()
+            .WithPosition("AAA-USDT", Side.Buy, 1m, 100m)
+            .WithPosition("BBB-USDT", Side.Sell, 1m, 100m);
+        var md = new FakeMarketData
+        {
+            Klines = { ["AAA-USDT"] = Trend(100m, 1m), ["BBB-USDT"] = Trend(100m, -1m) },
+        };
+        var svc = await CreateServiceAsync(ex, md, new() { ["AAA-USDT"] = Side.Buy, ["BBB-USDT"] = Side.Sell });
+
+        await svc.StartAsync();
+        await svc.StopAsync(closePositions: false);
+
+        ex.CallLog.Should().NotContain("CloseAllPositionsAsync");
+        (await ex.GetPositionsAsync()).Should().HaveCount(2, "der Korb muss den Restart ueberleben");
+    }
+
+    [Fact]
     public void WochenendGate_BlocktSamstagUndSonntag()
     {
         // Sa/So sind alle Nicht-Forex-TradFi-Maerkte zu — der Rebalance wird verschoben.

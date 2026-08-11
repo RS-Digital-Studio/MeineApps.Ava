@@ -173,9 +173,13 @@ public sealed class CrossSectionalManager : IDisposable
         return _restClient;
     }
 
-    public async Task StopAsync()
+    /// <param name="closePositions">false = Korb offen lassen (Watchdog-Auto-Restart: der
+    /// persistierte State bleibt, der Neustart adoptiert den Korb und setzt das Drift-Management
+    /// fort). true (Default) = User-Stop: alles schliessen — Xsec-Positionen haben keine nativen
+    /// Stops, ein offener Korb ohne laufende Engine waere komplett ungeschuetzt.</param>
+    public async Task StopAsync(bool closePositions = true)
     {
-        if (_service != null) await _service.StopAsync().ConfigureAwait(false);
+        if (_service != null) await _service.StopAsync(closePositions).ConfigureAwait(false);
     }
 
     public async Task EmergencyStopAsync()

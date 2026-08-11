@@ -263,6 +263,33 @@ unseren Ist-Fehlermodus (Universums-Snapshot-Sensitivität). Der eigentliche Eng
 **Point-in-Time-Universum** (Listing-/Delisting-Historie + historische 24h-Volumen-Snapshots pro
 Rebalance-Datum): ohne das ist jeder weitere Signal-Test nicht entscheidbar.
 
+**BTC-Anker-Screen (11.08.2026, `--xsec-grid anchor`) — Seiten-Zerlegung + Dominanz-Spread:**
+Ausgangspunkt war die Top-50-Struktur-Analyse (78 % der Alts underperformen BTC ueber die
+Lebenszeit; Report `reports/btc-dominanz-analyse.html`). Der Screen zerlegt das Live-Profil in
+seine Seiten (der Xsec-Report weist seit 11.08. **Long-/Short-PnL je Phase** aus: `LongPct`/
+`ShortPct` in Zelle+JSON) und testet zwei neue Lab-Modi (`XsecMode.AnchorBtc` = Long fest BTC/
+Shorts wie Live; `XsecMode.DominanceSpread` = Long BTC 50 % / Short die ShortK volumenstaerksten
+Krypto-Alts, seitenweise 50/50-Gewichtung, fehlende Slots bleiben Cash). Befund ueber 4 Schnitte
+(Top-40/50/60 + may-live) + 1000-USDT-Gegenprobe:
+1. **Die Momentum-Short-Seite (Bottom-K) verliert in praktisch jeder Phase auf jedem Schnitt**
+   (Short-only 0L-3S: Worst-Phase −82..−98 %, 0/4 bis 1/4). Der gesamte Edge des Live-Profils
+   kam von der Long-Seite — die Shorts sind konstanter Ballast, auch in Bear-Phasen.
+2. **Long-only (3L-0S)** traegt riesige Σ (bis +2900 % via Einzel-Moonshots), bleibt aber 2/4
+   (Bear/Bull negativ) — Lotterie-Varianz, kein robustes Profil.
+3. **AnchorBtc repariert das nicht** (Worst −12..−58 %, 1/4–3/4): auch mit BTC-Anker bleibt die
+   Momentum-Short-Auswahl der Verlierer.
+4. **DominanceSpread R180 (~monatlich)/lev1 hat auf ALLEN Schnitten die beste Worst-Phase**
+   (−1,3..−9,0 % bei 158 USDT; −3,2/−6,3 % bei 1000 USDT mit 20S/30S) — die mit Abstand beste je
+   im Harness gemessene Worst-Phase (Live-Profil zum Vergleich: −44..−75 %). Meist 3/4 robust,
+   Σ +9..+27 % ueber 4 Jahre (1k-Konto). Verlust-Phase ist Recent — getrieben vom BTC-Long selbst
+   (BTC-Rueckgang ab Ende 2025), die Alt-Short-Seite blieb dort positiv.
+   **Gotchas:** breite Koerbe (≥20S) fragmentieren auf 158 USDT unter Min-Order (n=13..17,
+   Shorts fehlen still → Zahlen unbrauchbar, nur ≥1000 USDT bewerten); ShortK nach Volumen
+   waehlt systematisch die „heissen" Alts (konservativer als der equal-weight-Alt-Index der
+   Struktur-Analyse — deren Sharpe 0.88 ueberlebt den live-treuen Harness nur teilweise).
+   Offen: echte Funding-Historie (Sim = flat 0,01 %/8h; real ist Alt-Funding meist > BTC-Funding
+   → Rueckenwind fuer den Spread), Point-in-Time-Universum.
+
 **Weitere Strategie-Klassen getestet (`--xsec-grid strategies`, `--pairs`, `--funding-carry`):** Reversal,
 Low-Vol-market-neutral, Inverse-Vol-Gewichtung, Skip-Period, Pairs-Trading (Distance/Gatev), Funding-Harvest —
 **alle NEGATIV/nicht-robust**. **Level-Familie (13.07.2026, `--phase-screen`, Live-Settings):** S/R-Level aus

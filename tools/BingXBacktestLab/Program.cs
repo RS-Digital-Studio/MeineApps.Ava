@@ -167,6 +167,8 @@ if (GetArg(argMap, "xsec", null) != null)
         ? XsecScreen.UniCheckConfigs()
         : GetArg(argMap, "xsec-grid", null) is "final"
         ? XsecScreen.FinalConfigs()
+        : GetArg(argMap, "xsec-grid", null) is "anchor"
+        ? XsecScreen.AnchorConfigs()
         : XsecScreen.DefaultConfigs();
     return await XsecScreen.RunAsync(configs, PhaseScreen.DefaultPhases(), symbols, navTf,
         botSettings, memData, symbolInfo, balance, parallelism, outDir, label);

@@ -24,6 +24,16 @@ public enum XsecMode
     /// <summary>Long niedrigste Vol (ATR%) / short hoechste Vol — Betting-against-Beta / Low-Vol-Praemie
     /// (Literatur: positive Low-Vol-Praemie in Krypto post-2017, negativer Vol-Risk-Premium).</summary>
     LowVol,
+    /// <summary>Long-Seite fest = BTC (voller 50%-Long-Anteil), Short-Seite wie Momentum-Modus
+    /// Bottom-ShortK (volles Universum inkl. TradFi). Testet die Hypothese aus der Top-50-Analyse
+    /// 11.08.2026: der Xsec-Edge sitzt in der Short-Seite, die Momentum-Long-Slots kaempfen gegen
+    /// den strukturellen Alt-Decay — BTC ist das einzige phasen-robuste Long-Leg.</summary>
+    AnchorBtc,
+    /// <summary>BTC-Dominanz-Spread: Long BTC (50%) / Short die ShortK volumenstaerksten Krypto-Alts
+    /// (equal-weight, KEIN Momentum-Ranking, TradFi + tokenisierte Edelmetalle ausgeschlossen).
+    /// Handelbare Annaeherung an den Alt-Decay-Struktur-Trade (Alt-Index verlor −73 % vs. BTC
+    /// 2022–2026, in jedem vollen Jahr negativ). Lookback/RiskAdjusted sind hier bedeutungslos.</summary>
+    DominanceSpread,
 }
 
 /// <summary>
@@ -259,6 +269,38 @@ public sealed class CrossSectionalMomentumEngine(
             return MomentumBasketCalculator.ComputeBasket(universe, p.LookbackCandles, p.LongK, p.ShortK,
                 p.RiskAdjusted, p.SkipCandles, currentBasket, p.ExitRankBuffer, p.ClusterDiversify);
 
+        if (p.Mode is XsecMode.AnchorBtc or XsecMode.DominanceSpread)
+        {
+            // Ohne Anchor im Universum KEIN Korb (sonst waere der Rest ein net-short-Direktionaltrade).
+            var basket = new Dictionary<string, Side>();
+            if (!universe.Any(u => u.Symbol == AnchorSymbol)) return basket;
+            basket[AnchorSymbol] = Side.Buy;
+
+            if (p.Mode == XsecMode.AnchorBtc)
+            {
+                // Short-Seite identisch zur Live-Momentum-Logik (Bottom-K, nur negatives Momentum).
+                var worst = universe
+                    .Where(u => u.Symbol != AnchorSymbol)
+                    .Select(u => (u.Symbol, Mom: MomentumBasketCalculator.Momentum(u.Candles, p.LookbackCandles, p.RiskAdjusted, p.SkipCandles)))
+                    .Where(x => x.Mom.HasValue && x.Mom!.Value < 0m)
+                    .OrderBy(x => x.Mom!.Value)
+                    .Take(p.ShortK);
+                foreach (var x in worst) basket[x.Symbol] = Side.Sell;
+            }
+            else
+            {
+                // DominanceSpread: die ShortK volumenstaerksten Krypto-Alts (kein Momentum-Ranking).
+                var alts = universe
+                    .Where(u => u.Symbol != AnchorSymbol && IsCryptoAlt(u.Symbol))
+                    .Select(u => (u.Symbol, Vol: QuoteVolume(u.Candles, 42)))
+                    .Where(x => x.Vol > 0m)
+                    .OrderByDescending(x => x.Vol)
+                    .Take(p.ShortK);
+                foreach (var x in alts) basket[x.Symbol] = Side.Sell;
+            }
+            return basket;
+        }
+
         if (p.Mode == XsecMode.Reversal)
         {
             // Gleiches Momentum-Ranking, aber Seiten gespiegelt: long die schwaechsten (Bottom-K,
@@ -288,10 +330,21 @@ public sealed class CrossSectionalMomentumEngine(
         return lv;
     }
 
-    /// <summary>Gleichgewicht (1/Slots je Symbol) oder inverse-Vol (1/ATR%, normalisiert auf Σ=1).</summary>
+    /// <summary>Gleichgewicht (1/Slots je Symbol) oder inverse-Vol (1/ATR%, normalisiert auf Σ=1).
+    /// Anker-Modi (AnchorBtc/DominanceSpread): seitenweise 50/50 — der eine Long (BTC) traegt die
+    /// vollen 50 %, jeder Short 0.5/ShortK (fehlende Shorts bleiben Cash statt die Seite zu
+    /// konzentrieren). InverseVolWeight wird in den Anker-Modi ignoriert.</summary>
     private static Dictionary<string, decimal> ComputeWeights(
         Dictionary<string, Side> target, List<PortfolioSymbolState> states, XsecParams p)
     {
+        if (p.Mode is XsecMode.AnchorBtc or XsecMode.DominanceSpread)
+        {
+            var shortSlots = Math.Max(1, p.ShortK);
+            return target.ToDictionary(
+                kv => kv.Key,
+                kv => kv.Value == Side.Buy ? 0.5m : 0.5m / shortSlots);
+        }
+
         var n = target.Count;
         if (!p.InverseVolWeight || n == 0)
             return target.ToDictionary(kv => kv.Key, _ => n > 0 ? 1m / n : 0m);
@@ -333,6 +386,26 @@ public sealed class CrossSectionalMomentumEngine(
         if (annualVol <= 0.01) return 1m;
         var scale = (double)targetAnnualPct / annualVol;
         return (decimal)Math.Clamp(scale, 0.25, 2.0);
+    }
+
+    /// <summary>Fester Long-Anker der Modi AnchorBtc/DominanceSpread.</summary>
+    private const string AnchorSymbol = "BTC-USDT";
+
+    /// <summary>Krypto-Alt = kein NC-TradFi-Perp und kein tokenisiertes Edelmetall (XAUT/PAXG →
+    /// AssetCluster.TradFiCommodity) — der DominanceSpread shortet nur echte Alts.</summary>
+    private static bool IsCryptoAlt(string symbol) =>
+        !SymbolClassifier.IsTradFi(symbol)
+        && AssetClusterClassifier.Classify(symbol) is not (AssetCluster.TradFiCommodity
+            or AssetCluster.TradFiForex or AssetCluster.TradFiIndex or AssetCluster.TradFiStock);
+
+    /// <summary>Quote-Volumen-Proxy (Σ Volume×Close) ueber die letzten <paramref name="candleCount"/> Kerzen.</summary>
+    private static decimal QuoteVolume(IReadOnlyList<Candle> candles, int candleCount)
+    {
+        var start = Math.Max(0, candles.Count - candleCount);
+        var sum = 0m;
+        for (var i = start; i < candles.Count; i++)
+            sum += candles[i].Volume * candles[i].Close;
+        return sum;
     }
 
     /// <summary>ATR%(14) = ATR/letzter Close — vergleichbare Volatilitaet ueber Symbole hinweg.</summary>

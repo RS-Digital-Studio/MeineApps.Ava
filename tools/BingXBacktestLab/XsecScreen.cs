@@ -16,7 +16,9 @@ namespace BingXBacktestLab;
 //  strukturell phasen-robust (relativ statt absolut direktional).
 // ============================================================================
 
-internal sealed record XsecCell(int Trades, decimal WinRate, decimal ProfitFactor, decimal TotalPnl, decimal Pct, decimal MaxDd);
+internal sealed record XsecCell(
+    int Trades, decimal WinRate, decimal ProfitFactor, decimal TotalPnl, decimal Pct, decimal MaxDd,
+    decimal LongPct, decimal ShortPct, int LongTrades, int ShortTrades);
 
 internal sealed record XsecRow(XsecParams Cfg, XsecCell[] Cells)
 {
@@ -190,6 +192,34 @@ internal static class XsecScreen
     }
 
     /// <summary>
+    /// BTC-Anker-Screen (Hypothese aus der Top-50-Struktur-Analyse 11.08.2026): 78 % der Alts
+    /// underperformen BTC ueber die Lebenszeit, BTC ist das einzige phasen-robuste Long-Leg →
+    /// sitzt der Xsec-Edge in der Short-Seite? Vergleicht das Live-Profil gegen seine isolierten
+    /// Seiten (Long-only/Short-only), gegen die BTC-verankerte Variante (Long fest BTC, Shorts wie
+    /// Live) und gegen den reinen Dominanz-Spread (Long BTC / Short volumenstaerkste Alts, ohne
+    /// Momentum). Alle Vergleiche auf derselben Phasen-/Universums-/Konto-Mechanik.
+    /// </summary>
+    public static XsecParams[] AnchorConfigs() =>
+    [
+        // Referenz: Live-Profil + isolierte Seiten.
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 3, ShortK: 0, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 0, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2),
+        // BTC-Anker: Long fest BTC (50 %), Shorts wie Live Bottom-K-Momentum (volles Universum).
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 1, ShortK: 3, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, Mode: XsecMode.AnchorBtc),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 1, ShortK: 5, RiskAdjusted: true, AtrStopMultiplier: 0m, LeverageCap: 2, Mode: XsecMode.AnchorBtc),
+        // Dominanz-Spread: Long BTC / Short volumenstaerkste Krypto-Alts, ohne Momentum-Ranking.
+        // R54 = Live-Kadenz (9d), R180 = ~monatlich (Pandas-Analyse-Kadenz, minimaler Turnover).
+        new(LookbackCandles: 60, RebalanceEveryCandles: 54, LongK: 1, ShortK: 10, RiskAdjusted: false, AtrStopMultiplier: 0m, LeverageCap: 2, Mode: XsecMode.DominanceSpread),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 180, LongK: 1, ShortK: 10, RiskAdjusted: false, AtrStopMultiplier: 0m, LeverageCap: 2, Mode: XsecMode.DominanceSpread),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 180, LongK: 1, ShortK: 10, RiskAdjusted: false, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.DominanceSpread),
+        new(LookbackCandles: 60, RebalanceEveryCandles: 180, LongK: 1, ShortK: 20, RiskAdjusted: false, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.DominanceSpread),
+        // Breiter Korb (nur auf >=1000-USDT-Konten sinnvoll — 158 USDT fragmentiert unter Min-Order):
+        // naehert den equal-weight-Alt-Index der Struktur-Analyse an (Decay sitzt in der Breite).
+        new(LookbackCandles: 60, RebalanceEveryCandles: 180, LongK: 1, ShortK: 30, RiskAdjusted: false, AtrStopMultiplier: 0m, LeverageCap: 1, Mode: XsecMode.DominanceSpread),
+    ];
+
+    /// <summary>
     /// Universums-Sensitivitaets-Check (Befund 29.07.2026: die Juni-4/4-Validierung des Live-Profils
     /// reproduziert auf dem heutigen Top-50-Schnitt NICHT — 2022-Bear kippt von +35 % auf −54 %).
     /// Kleiner Config-Satz (Live-Profil + die besten Worst-Phase-Kandidaten der Re-Validierung +
@@ -232,7 +262,15 @@ internal static class XsecScreen
         var engine = new CrossSectionalMomentumEngine(data, symbolInfo, NullLogger<CrossSectionalMomentumEngine>.Instance);
         var report = await engine.RunAsync(symbols, navTf, phase.From, phase.To, settings, cfg, ct).ConfigureAwait(false);
         var pct = balance > 0 ? report.TotalPnl / balance * 100m : 0m;
-        return new XsecCell(report.TotalTrades, report.WinRate, report.ProfitFactor, report.TotalPnl, pct, report.MaxDrawdownPercent);
+        // Seiten-Zerlegung: welcher Teil des PnL kommt aus Long- vs. Short-Trades? (Hypothese
+        // 11.08.2026: der Edge sitzt in der Short-Seite, die Long-Slots kaempfen gegen den Alt-Decay.)
+        var longPnl = report.Trades.Where(t => t.Side == BingXBot.Core.Enums.Side.Buy).Sum(t => t.Pnl);
+        var shortPnl = report.Trades.Where(t => t.Side == BingXBot.Core.Enums.Side.Sell).Sum(t => t.Pnl);
+        var longN = report.Trades.Count(t => t.Side == BingXBot.Core.Enums.Side.Buy);
+        return new XsecCell(report.TotalTrades, report.WinRate, report.ProfitFactor, report.TotalPnl, pct, report.MaxDrawdownPercent,
+            balance > 0 ? longPnl / balance * 100m : 0m,
+            balance > 0 ? shortPnl / balance * 100m : 0m,
+            longN, report.TotalTrades - longN);
     }
 
     public static async Task<int> RunAsync(
@@ -289,6 +327,14 @@ internal static class XsecScreen
             Console.WriteLine($"ROBUST (in ALLEN {phases.Length} Phasen positiv): {string.Join(", ", robustRows.Select(r => $"{r.Cfg.Label} (min {r.MinPhasePct:F1}%)"))}");
         else
             Console.WriteLine($"KEINE Config in allen {phases.Length} Phasen positiv. Bester min-Phasen-Wert: {rows[0].Cfg.Label} mit {rows[0].MinPhasePct:F1}%.");
+
+        Console.WriteLine($"\n=== LONG/SHORT-ZERLEGUNG (PnL% je Seite, pro Phase) ===");
+        Console.WriteLine($"{"Config",-34} " + string.Join(" ", phases.Select(p => $"{p.Name + " L/S",21}")));
+        foreach (var r in rows)
+        {
+            var ls = string.Join(" ", r.Cells.Select(c => $"{c.LongPct,9:F1}/{c.ShortPct,-9:F1}"));
+            Console.WriteLine($"{r.Cfg.Label,-34} {ls}");
+        }
         return 0;
     }
 
@@ -315,7 +361,7 @@ internal static class XsecScreen
         foreach (var r in rows)
         {
             sb.Append($"| {r.Cfg.Label} | ");
-            foreach (var c in r.Cells) sb.Append($"{c.Pct:F1}% (n{c.Trades}, PF{FmtPf(c.ProfitFactor)}) | ");
+            foreach (var c in r.Cells) sb.Append($"{c.Pct:F1}% (n{c.Trades}, PF{FmtPf(c.ProfitFactor)}, L{c.LongPct:+0.0;-0.0}/S{c.ShortPct:+0.0;-0.0}) | ");
             sb.AppendLine($"{r.MinPhasePct:F1}% | {r.SumPct:F1}% | {r.TotalTrades} | {(r.AllPositive ? "JA" : $"{r.PositivePhases}/{phases.Length}")} |");
         }
         sb.AppendLine();
@@ -338,7 +384,7 @@ internal static class XsecScreen
                 config = r.Cfg.Label, r.Cfg.LookbackCandles, r.Cfg.RebalanceEveryCandles, r.Cfg.LongK, r.Cfg.ShortK,
                 r.Cfg.RiskAdjusted, r.Cfg.AtrStopMultiplier,
                 r.MinPhasePct, r.SumPct, r.TotalTrades, r.AllPositive, r.PositivePhases,
-                cells = phases.Zip(r.Cells, (p, c) => new { phase = p.Name, c.Trades, c.WinRate, c.ProfitFactor, c.TotalPnl, c.Pct, c.MaxDd })
+                cells = phases.Zip(r.Cells, (p, c) => new { phase = p.Name, c.Trades, c.WinRate, c.ProfitFactor, c.TotalPnl, c.Pct, c.MaxDd, c.LongPct, c.ShortPct, c.LongTrades, c.ShortTrades })
             })
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"\nReport: {mdPath}\nJSON  : {jsonPath}");

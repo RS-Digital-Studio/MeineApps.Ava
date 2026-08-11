@@ -237,14 +237,21 @@ public class BingXRestClient : IExchangeClient
     /// Sendet einen signierten Request an die BingX API.
     /// Baut Query-String, fügt Timestamp + Signatur hinzu, parst Response.
     /// Retry bei transienten Fehlern (HTTP 429, 5xx, Timeout) mit exponentiellem Backoff.
+    /// <para><paramref name="retryUnsafe"/> = false: Der Request ist NICHT idempotent
+    /// (Position-eroeffnende Order) — KEIN automatischer Resend, wenn der Effekt des vorherigen
+    /// Versuchs unklar ist (API-Code 100410, HTTP 5xx, Netzwerkfehler, Timeout — BingX kann die
+    /// Order trotzdem angenommen haben → Doppel-Exposure). Nur HTTP 429 bleibt retrybar (der
+    /// Rate-Limiter lehnt VOR der Verarbeitung ab). Die Retries laufen dann eine Ebene hoeher
+    /// in der OrderRetryPolicy MIT Idempotency-Probe. Vorher gate-te das Flag nur den
+    /// 100410-Zweig — Timeout/Netzwerk/5xx wurden trotzdem blind resent (Audit 11.08.2026).</para>
     /// </summary>
     private Task<T> SendSignedRequestAsync<T>(
         HttpMethod method,
         string path,
         Dictionary<string, string>? parameters,
         string rateCategory,
-        bool retryRateLimit = true)
-        => SendSignedRequestAsync<T>(method, path, parameters, rateCategory, CancellationToken.None, retryRateLimit);
+        bool retryUnsafe = true)
+        => SendSignedRequestAsync<T>(method, path, parameters, rateCategory, CancellationToken.None, retryUnsafe);
 
     private async Task<T> SendSignedRequestAsync<T>(
         HttpMethod method,
@@ -252,7 +259,7 @@ public class BingXRestClient : IExchangeClient
         Dictionary<string, string>? parameters,
         string rateCategory,
         CancellationToken ct,
-        bool retryRateLimit = true)
+        bool retryUnsafe = true)
     {
         for (int attempt = 0; attempt <= MaxRetries; attempt++)
         {
@@ -304,8 +311,11 @@ public class BingXRestClient : IExchangeClient
                 using var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false);
                 var content = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
-                // Transiente Fehler: Retry bei 429 (Rate Limit) und 5xx (Server-Fehler)
-                if (IsTransientError(response) && attempt < MaxRetries)
+                // Transiente Fehler: Retry bei 429 (Rate Limit) und 5xx (Server-Fehler).
+                // 429 ist immer retry-sicher (der Rate-Limiter lehnt VOR der Verarbeitung ab);
+                // 5xx nur bei retryUnsafe (der Server kann die Order teilverarbeitet haben).
+                if (IsTransientError(response) && attempt < MaxRetries
+                    && (retryUnsafe || response.StatusCode == System.Net.HttpStatusCode.TooManyRequests))
                 {
                     var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1)); // 2s, 4s, 8s
                     _logger.LogWarning("Transienter Fehler HTTP {StatusCode}, Retry in {Backoff}s (Versuch {Attempt}/{Max})",
@@ -333,11 +343,11 @@ public class BingXRestClient : IExchangeClient
                     // transient wie HTTP 429, daher mit Backoff erneut versuchen (Timestamp/Signatur
                     // werden pro Versuch neu erzeugt). Live beobachtet: CloseAll beim Stop gab nach
                     // dem ersten 100410 auf und liess eine Position offen.
-                    // ACHTUNG: NICHT fuer Position-eroeffnende Orders (retryRateLimit=false in
+                    // ACHTUNG: NICHT fuer Position-eroeffnende Orders (retryUnsafe=false in
                     // PlaceOrderAsync) — BingX kann die Order trotz Rate-Limit-Antwort angenommen
                     // haben, der Retry wuerde sie doppelt platzieren (doppelte Exposure). Close-/
                     // reduce-only-Pfade sind retry-sicher (zweiter Close auf leerer Position = Reject).
-                    if (apiResponse.Code == 100410 && retryRateLimit && attempt < MaxRetries)
+                    if (apiResponse.Code == 100410 && retryUnsafe && attempt < MaxRetries)
                     {
                         var rateBackoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
                         _logger.LogWarning("API Error 100410 (rate limited), Retry in {Backoff}s (Versuch {Attempt}/{Max})",
@@ -365,14 +375,17 @@ public class BingXRestClient : IExchangeClient
 
                 return apiResponse.Data!;
             }
-            catch (HttpRequestException ex) when (attempt < MaxRetries)
+            // Netzwerkfehler/Timeout: der Request kann BingX trotzdem erreicht haben — Resend nur
+            // bei retryUnsafe (nicht-idempotente Orders laufen ueber die OrderRetryPolicy mit
+            // Idempotency-Probe eine Ebene hoeher).
+            catch (HttpRequestException ex) when (attempt < MaxRetries && retryUnsafe)
             {
                 var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
                 _logger.LogWarning(ex, "Netzwerkfehler, Retry in {Backoff}s (Versuch {Attempt}/{Max})",
                     backoff.TotalSeconds, attempt + 1, MaxRetries);
                 await Task.Delay(backoff, ct).ConfigureAwait(false);
             }
-            catch (TaskCanceledException ex) when (!ex.CancellationToken.IsCancellationRequested && attempt < MaxRetries)
+            catch (TaskCanceledException ex) when (!ex.CancellationToken.IsCancellationRequested && attempt < MaxRetries && retryUnsafe)
             {
                 // Timeout (nicht manuell abgebrochen)
                 var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
@@ -542,15 +555,16 @@ public class BingXRestClient : IExchangeClient
         _logger.LogInformation("Platziere Order: {Symbol} {Side} {Type} Qty={Quantity} (Original: {OrigQty})",
             request.Symbol, request.Side, request.Type, adjustedQty, request.Quantity);
 
-        // retryRateLimit=false: Position-eroeffnende Order darf bei 100410 NICHT blind erneut
-        // gesendet werden — BingX kann sie trotz Rate-Limit-Antwort angenommen haben (Doppel-Order).
-        // Der Aufrufer (Reconcile/Drift-Refill/Scan) versucht es im naechsten Durchlauf erneut.
+        // retryUnsafe=false: Position-eroeffnende Order darf bei unklarem Effekt des vorherigen
+        // Versuchs (100410, 5xx, Netzwerkfehler, Timeout) NICHT blind erneut gesendet werden —
+        // BingX kann sie trotzdem angenommen haben (Doppel-Order/Doppel-Exposure). Retries
+        // laufen eine Ebene hoeher in der OrderRetryPolicy MIT Idempotency-Probe.
         var data = await SendSignedRequestAsync<BingXOrderData>(
             HttpMethod.Post,
             "/openApi/swap/v2/trade/order",
             parameters,
             "orders",
-            retryRateLimit: false);
+            retryUnsafe: false);
 
         var order = data.Order!;
         return new Order(

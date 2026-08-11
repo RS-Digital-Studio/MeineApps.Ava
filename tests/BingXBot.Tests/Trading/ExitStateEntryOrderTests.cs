@@ -81,6 +81,25 @@ public class ExitStateEntryOrderTests
     }
 
     [Fact]
+    public void GetBarStart_AlignedAufKerzengrenzen()
+    {
+        // Anti-Churn-Dedup-Fenster: H4-Kerzen sind UTC-aligned (00/04/08/12/16/20).
+        var t = new DateTime(2026, 8, 11, 14, 37, 12, DateTimeKind.Utc);
+        TradingServiceBase.GetBarStart(TimeFrame.H4, t)
+            .Should().Be(new DateTime(2026, 8, 11, 12, 0, 0, DateTimeKind.Utc));
+        TradingServiceBase.GetBarStart(TimeFrame.H1, t)
+            .Should().Be(new DateTime(2026, 8, 11, 14, 0, 0, DateTimeKind.Utc));
+        TradingServiceBase.GetBarStart(TimeFrame.D1, t)
+            .Should().Be(new DateTime(2026, 8, 11, 0, 0, 0, DateTimeKind.Utc));
+        // Zwei Zeitpunkte in derselben H4-Kerze liefern denselben Dedup-Schluessel.
+        TradingServiceBase.GetBarStart(TimeFrame.H4, t.AddHours(1))
+            .Should().Be(TradingServiceBase.GetBarStart(TimeFrame.H4, t));
+        // Der naechste Kerzen-Start oeffnet ein neues Fenster.
+        TradingServiceBase.GetBarStart(TimeFrame.H4, t.AddHours(2))
+            .Should().Be(new DateTime(2026, 8, 11, 16, 0, 0, DateTimeKind.Utc));
+    }
+
+    [Fact]
     public void RestorePositionSignal_ExistierenderExitState_ZiehtFehlendeFelderNach()
     {
         // Restart-Sequenz: DB-Restore legt einen ExitState ohne Tp2/OriginalQuantity an,

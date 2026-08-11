@@ -83,43 +83,39 @@ public partial class LiveTradingService
             // (100/300/1000/3000 ms) bis zu 4× wiederholt. Vor jedem Retry pruefen wir per
             // Idempotency-Check (GetPositionsAsync), ob die Order beim ersten Versuch in Wahrheit
             // doch durchging und nur die Response timeoutete — sonst Doppel-Place.
-            Order order = null!;
-            order = await Resilience.OrderRetryPolicy.ExecuteAsync(async () =>
-            {
-                // Idempotency-Pre-Check vor jedem Retry-Versuch (ausser dem ersten):
-                // Position oder pending Limit-Order schon da → skippen, gefakte "neue" Order zurueckgeben.
-                if (order != null) // Marker: vorheriger Versuch lief und wirft jetzt Retry
-                {
-                    try
-                    {
-                        var existing = await _restClient.GetPositionsAsync().ConfigureAwait(false);
-                        var match = existing.FirstOrDefault(p => p.Symbol == ticker.Symbol && p.Side == side);
-                        if (match != null && match.Quantity > 0)
-                        {
-                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                                $"{ticker.Symbol}: Idempotency-Treffer — Position existiert bereits, kein Doppel-Place",
-                                ticker.Symbol));
-                            return order;
-                        }
-                    }
-                    catch { /* Idempotency-Check Best-Effort */ }
-                }
-                var placed = await _restClient.PlaceOrderAsync(new OrderRequest(
+            // Retry mit ECHTER Idempotency-Probe (Audit 11.08.2026): Der fruehere Pre-Check in der
+            // Closure las eine Variable, die erst NACH ExecuteAsync zugewiesen wurde — er lief nie.
+            // Die Probe fragt vor jedem Retry die Positionen ab: Kam die Order beim vorherigen
+            // Versuch trotz Timeout/Netzwerkfehler doch an, wird eine synthetische Filled-Order
+            // zurueckgegeben statt doppelt zu platzieren. retryRateLimit=false: bei 100410 KEIN
+            // Retry (BingX kann die Order angenommen haben, und die Settle-Latenz von 1-3 s macht
+            // die Probe in den 100/300-ms-Backoffs blind — Doktrin aus BingXRestClient).
+            var order = await Resilience.OrderRetryPolicy.ExecuteAsync(
+                () => _restClient.PlaceOrderAsync(new OrderRequest(
                     ticker.Symbol, side, orderType, quantity,
                     Price: limitPrice,
                     StopLoss: signal?.StopLoss,
                     TakeProfit: null),
-                    lastPrice: ticker.LastPrice)
-                    .ConfigureAwait(false);
-                if (placed.Status == OrderStatus.Rejected)
-                    return placed; // Nicht retryen — strukturelle Ablehnung.
-                return placed;
-            }, onRetry: (attempt, ex) =>
-            {
-                _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
-                    $"{ticker.Symbol}: Order-Retry #{attempt} nach Fehler ({ex.GetType().Name}: {ex.Message}) — Backoff {Resilience.OrderRetryPolicy.GetBackoffMs(attempt + 1)} ms",
-                    ticker.Symbol));
-            }).ConfigureAwait(false);
+                    lastPrice: ticker.LastPrice),
+                onRetry: (attempt, ex) =>
+                {
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                        $"{ticker.Symbol}: Order-Retry #{attempt} nach Fehler ({ex.GetType().Name}: {ex.Message}) — Backoff {Resilience.OrderRetryPolicy.GetBackoffMs(attempt + 1)} ms",
+                        ticker.Symbol));
+                },
+                idempotencyCheck: async () =>
+                {
+                    var existing = await _restClient.GetPositionsAsync().ConfigureAwait(false);
+                    var match = existing.FirstOrDefault(p =>
+                        p.Symbol == ticker.Symbol && p.Side == side && p.Quantity > 0);
+                    if (match == null) return null;
+                    _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Trade",
+                        $"{ticker.Symbol}: Idempotency-Treffer — Position existiert bereits, kein Doppel-Place",
+                        ticker.Symbol));
+                    return new Order($"idempotent-{Guid.NewGuid():N}", ticker.Symbol, side, orderType,
+                        match.EntryPrice, match.Quantity, null, DateTime.UtcNow, OrderStatus.Filled);
+                },
+                retryRateLimit: false).ConfigureAwait(false);
 
             if (order.Status == OrderStatus.Rejected)
             {

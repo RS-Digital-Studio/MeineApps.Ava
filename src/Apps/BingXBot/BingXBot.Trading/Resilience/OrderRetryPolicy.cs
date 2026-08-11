@@ -106,6 +106,21 @@ public static class OrderRetryPolicy
     }
 
     /// <summary>
+    /// True bei BingX 100410 ("request rate too high"). Fuer Position-eroeffnende Orders ist
+    /// dieser Fehler NICHT retry-sicher: BingX kann die Order trotz Rate-Limit-Antwort
+    /// angenommen haben — ein blinder Resend platziert sie doppelt, und die Idempotency-Probe
+    /// kann die Position wegen Settle-Latenz (1-3 s) noch nicht sehen (Backoff 100/300 ms ist
+    /// schneller). Entry-Aufrufer setzen daher <c>retryRateLimit: false</c> in
+    /// <see cref="ExecuteAsync{T}"/>.
+    /// </summary>
+    public static bool IsRateLimitError(Exception ex) => ex switch
+    {
+        OrderApiException oae => oae.BingxCode == 100410,
+        BingXApiException be => be.ErrorCode == 100410,
+        _ => false,
+    };
+
+    /// <summary>
     /// Fuehrt eine asynchrone Aktion mit Retry + Backoff aus. Bei <see cref="MaxAttempts"/> Fehlern
     /// wird die letzte Exception weitergeworfen.
     ///
@@ -120,7 +135,8 @@ public static class OrderRetryPolicy
         Func<Task<T>> action,
         Action<int, Exception>? onRetry = null,
         CancellationToken ct = default,
-        Func<Task<T?>>? idempotencyCheck = null)
+        Func<Task<T?>>? idempotencyCheck = null,
+        bool retryRateLimit = true)
         where T : class?
     {
         Exception? lastException = null;
@@ -151,7 +167,9 @@ public static class OrderRetryPolicy
             catch (Exception ex)
             {
                 lastException = ex;
-                if (attempt >= MaxAttempts || !ShouldRetry(ex))
+                // retryRateLimit=false (Entry-Orders): 100410 nicht retryen — s. IsRateLimitError.
+                if (attempt >= MaxAttempts || !ShouldRetry(ex)
+                    || (!retryRateLimit && IsRateLimitError(ex)))
                     throw;
                 // Phase 18 / H6 — Telemetry-Counter pro Retry-Versuch (mit Exception-Type-Tag).
                 BingXBot.Trading.Telemetry.BotTelemetry.OrderRetries.Add(1,

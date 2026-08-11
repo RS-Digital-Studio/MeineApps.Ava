@@ -88,6 +88,12 @@ public abstract class TradingServiceBase : IDisposable
 
     // Positions-Zustand (SL/TP-Tracking, BE-Status)
     protected readonly ConcurrentDictionary<string, PositionExitState> _exitStates = new();
+    // Anti-Churn (Audit 11.08.2026): merkt pro (Symbol|NavTF) den Kerzen-Start des letzten
+    // erfolgreichen Entries. Die zustandslose Strategie liefert fuer die gesamte Kerze dasselbe
+    // Signal, der Scan laeuft aber jede Minute — nach einem Exit fiel die Positions-Sperre weg
+    // und derselbe (gescheiterte) Breakout wurde bis zu ~240x je H4-Kerze erneut gehandelt.
+    // Der Backtest evaluiert exakt 1x pro Kerze; dieser Guard stellt Live-Paritaet her.
+    private readonly ConcurrentDictionary<string, DateTime> _entryBarBySymbolTf = new();
     // Verlust-Tracking
     protected volatile int _consecutiveLosses;
     // Täglicher Trade-Counter (wird bei Tageswechsel zurückgesetzt)
@@ -278,6 +284,26 @@ public abstract class TradingServiceBase : IDisposable
     /// </summary>
     public void RemovePositionSignal(string symbol, Side side) =>
         RemoveSignalByKey($"{symbol}_{side}");
+
+    /// <summary>
+    /// UTC-Start der laufenden Kerze fuer eine Navigator-TF (H4-Kerzen sind UTC-aligned:
+    /// 00/04/08/12/16/20). Dedup-Fenster fuer den Anti-Churn-Guard — innerhalb derselben
+    /// laufenden Kerze ist das Signal der zustandslosen Strategie bit-identisch.
+    /// Internal fuer Tests.
+    /// </summary>
+    internal static DateTime GetBarStart(TimeFrame tf, DateTime utcNow)
+    {
+        var duration = tf switch
+        {
+            TimeFrame.M15 => TimeSpan.FromMinutes(15),
+            TimeFrame.H1 => TimeSpan.FromHours(1),
+            TimeFrame.H4 => TimeSpan.FromHours(4),
+            TimeFrame.D1 => TimeSpan.FromDays(1),
+            TimeFrame.W1 => TimeSpan.FromDays(7),
+            _ => TimeSpan.FromHours(4),
+        };
+        return new DateTime(utcNow.Ticks - utcNow.Ticks % duration.Ticks, DateTimeKind.Utc);
+    }
 
     /// <summary>Entfernt Signal und ExitState und ruft OnSignalRemoved auf.</summary>
     protected void RemoveSignalByKey(string key)
@@ -1346,6 +1372,49 @@ public abstract class TradingServiceBase : IDisposable
 
                     var side = signal.Signal == Signal.Long ? Side.Buy : Side.Sell;
 
+                    // Anti-Churn-Guard 1 — EIN Entry je (Symbol, NavTF, Kerze): nach einem Exit
+                    // innerhalb derselben Kerze feuert das identische Signal sonst bei jedem
+                    // 60-s-Scan erneut (Re-Entry in den bereits gescheiterten Breakout, mit
+                    // EntryPrice/SL vom alten Kerzen-Close). Eintrag wird erst bei ERFOLGREICHEM
+                    // Entry gesetzt — transiente Order-Fehler blockieren die Kerze nicht.
+                    var entryBarKey = $"{ticker.Symbol}|{navTf}";
+                    var entryBarStart = GetBarStart(navTf, DateTime.UtcNow);
+                    if (_entryBarBySymbolTf.TryGetValue(entryBarKey, out var handledBar) && handledBar == entryBarStart)
+                    {
+                        if (_eventBus.HasLogSubscribers)
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Debug, "Risk",
+                                $"{LogPrefix}{ticker.Symbol} [{navTf}]: Übersprungen — Kerze {entryBarStart:HH:mm} bereits gehandelt (Anti-Churn)", ticker.Symbol));
+                        continue;
+                    }
+
+                    // Anti-Churn-Guard 2 — Stale-Signal: EntryPrice/SL des Signals stammen vom
+                    // Kerzen-Close, der Entry erfolgt aber zum aktuellen Markt. Ist der Markt
+                    // seit dem Close mehr als 25 % der SL-Distanz weggelaufen, stimmen Sizing-
+                    // und RRR-Geometrie nicht mehr; liegt der SL bereits auf der falschen Seite
+                    // des Marktes, wuerde der mitgeschickte STOP_MARKET sofort triggern.
+                    if (signal.EntryPrice is > 0m && signal.StopLoss.HasValue && ticker.LastPrice > 0m)
+                    {
+                        var slDistance = Math.Abs(signal.EntryPrice.Value - signal.StopLoss.Value);
+                        var priceDrift = Math.Abs(ticker.LastPrice - signal.EntryPrice.Value);
+                        if (slDistance > 0m && priceDrift > slDistance * 0.25m)
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Info, "Risk",
+                                $"{LogPrefix}{ticker.Symbol} [{navTf}]: Signal verworfen — Markt {priceDrift / signal.EntryPrice.Value:P2} vom Signal-Close entfernt (> 25 % der SL-Distanz, Stale-Signal-Guard)",
+                                ticker.Symbol));
+                            continue;
+                        }
+                        var slOnWrongSide = side == Side.Buy
+                            ? signal.StopLoss.Value >= ticker.LastPrice
+                            : signal.StopLoss.Value <= ticker.LastPrice;
+                        if (slOnWrongSide)
+                        {
+                            _eventBus.PublishLog(new LogEntry(DateTime.UtcNow, LogLevel.Warning, "Risk",
+                                $"{LogPrefix}{ticker.Symbol} [{navTf}]: Signal verworfen — SL {signal.StopLoss.Value:F8} liegt auf der falschen Seite des Marktes ({ticker.LastPrice:F8})",
+                                ticker.Symbol));
+                            continue;
+                        }
+                    }
+
                     // Dedup pro (Symbol, NavTF, Side) — aber eine Position auf BingX je (Symbol, Side).
                     // Wenn bereits ein anderes TF-Signal offen ist, skippen wir (BingX würde sonst die Position nur vergrößern).
                     var slTpKey = $"{ticker.Symbol}_{side}";
@@ -1432,6 +1501,8 @@ public abstract class TradingServiceBase : IDisposable
                         continue;
                     }
 
+                    // Anti-Churn-Guard 1: diese Kerze ist fuer (Symbol, NavTF) gehandelt.
+                    _entryBarBySymbolTf[entryBarKey] = entryBarStart;
                     Interlocked.Increment(ref _tradesToday);
 
                     // v1.3.0 K1: TradeOpened-Event fuer Remote-Clients — konstruierte Position,

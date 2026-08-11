@@ -255,4 +255,52 @@ public class OrderRetryPolicyTests
         attempts.Should().Be(OrderRetryPolicy.MaxAttempts);
         probeCalls.Should().Be(OrderRetryPolicy.MaxAttempts - 1, "Probe läuft vor Retry 2..MaxAttempts");
     }
+
+    // ─────────── Audit 11.08.2026 — 100410-Gate fuer Entry-Orders ───────────
+
+    [Fact]
+    public void IsRateLimitError_Erkennt100410_BeiBeidenExceptionTypen()
+    {
+        OrderRetryPolicy.IsRateLimitError(new OrderApiException("rate", bingxCode: 100410)).Should().BeTrue();
+        OrderRetryPolicy.IsRateLimitError(new BingXBot.Exchange.BingXApiException(100410, "rate too high")).Should().BeTrue();
+        OrderRetryPolicy.IsRateLimitError(new OrderApiException("busy", bingxCode: 109400)).Should().BeFalse();
+        OrderRetryPolicy.IsRateLimitError(new TaskCanceledException()).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_RetryRateLimitFalse_WirftBei100410SofortOhneRetry()
+    {
+        // Entry-Orders: BingX kann die Order trotz 100410-Antwort angenommen haben, und die
+        // Idempotency-Probe ist in den 100/300-ms-Backoffs wegen Settle-Latenz blind —
+        // kein Retry, der Fehler propagiert (naechster Scan versucht es regulaer erneut).
+        var attempts = 0;
+        Func<Task> act = () => OrderRetryPolicy.ExecuteAsync<string>(
+            action: () =>
+            {
+                attempts++;
+                throw new BingXBot.Exchange.BingXApiException(100410, "rate too high");
+            },
+            retryRateLimit: false);
+
+        await act.Should().ThrowAsync<BingXBot.Exchange.BingXApiException>();
+        attempts.Should().Be(1, "100410 darf bei Entry-Orders nicht blind resent werden");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_RetryRateLimitDefault_Retried100410()
+    {
+        // Close-/reduce-only-Pfade (Default): 100410 bleibt retrybar (zweiter Close auf leerer
+        // Position ist ein harmloser Reject).
+        var attempts = 0;
+        var result = await OrderRetryPolicy.ExecuteAsync<string>(
+            action: () =>
+            {
+                attempts++;
+                if (attempts == 1) throw new BingXBot.Exchange.BingXApiException(100410, "rate too high");
+                return Task.FromResult("done");
+            });
+
+        result.Should().Be("done");
+        attempts.Should().Be(2);
+    }
 }

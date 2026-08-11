@@ -102,9 +102,15 @@ public static class IndicatorHelper
     private static long _quotesMisses;
 
     // Quotes-Cache: Vermeidet wiederholte Konvertierung derselben Candle-Liste.
-    // Key = (CandleCount, LastClose, LastOpenTimeTicks, FirstOpenTimeTicks), Value = List<Quote>
-    // M-9 Fix: FirstOpenTimeTicks einbeziehen um Kollisionen bei gleicher Länge+letztem Close zu vermeiden
-    private static readonly ConcurrentDictionary<(int Count, decimal Close, long LastTicks, long FirstTicks), List<Quote>> _quotesCache = new();
+    // Key = (CandleCount, LastClose, FirstClose, LastOpenTimeTicks, FirstOpenTimeTicks), Value = List<Quote>
+    // M-9 Fix: FirstOpenTimeTicks einbeziehen um Kollisionen bei gleicher Länge+letztem Close zu vermeiden.
+    // Audit 11.08.2026: FirstClose ZUSAETZLICH — innerhalb eines Scans haben alle Symbole derselben
+    // TF identische Count/First-/LastTicks (gleiches Lookback-Fenster, aligned Kerzen); das einzige
+    // Unterscheidungsmerkmal war LastClose. Zwei Symbole mit identischem letzten Close (BTC/WBTC,
+    // ETH/WETH/STETH, Sub-Cent-Memecoins) teilten sich sonst die Quotes-Liste — Symbol B bekam die
+    // Kerzen von A und damit EMA/ATR/ADX/Donchian von A (Breakout-Signal ohne Setup, falsches ATR-
+    // Sizing, kein Log). Der Indikator-Cache hatte den analogen Fix (M-9) bereits.
+    private static readonly ConcurrentDictionary<(int Count, decimal Close, decimal FirstClose, long LastTicks, long FirstTicks), List<Quote>> _quotesCache = new();
 
     /// <summary>Cache leeren (am Ende eines Scan-Durchlaufs aufrufen). Thread-safe per Generation.</summary>
     public static void ClearCache()
@@ -168,7 +174,7 @@ public static class IndicatorHelper
 
         var last = candles[^1];
         var first = candles[0];
-        var key = (candles.Count, last.Close, last.OpenTime.Ticks, first.OpenTime.Ticks);
+        var key = (candles.Count, last.Close, first.Close, last.OpenTime.Ticks, first.OpenTime.Ticks);
 
         if (_quotesCache.TryGetValue(key, out var cached))
         {

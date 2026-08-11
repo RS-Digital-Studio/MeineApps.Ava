@@ -847,16 +847,23 @@ public abstract class TradingServiceBase : IDisposable
 
                     if (!hit)
                     {
+                        // SL-Backstop auf MARK-Price (Paritaet zum nativen STOP_MARKET mit
+                        // workingType=MARK_PRICE): der Last-Price wickt auf illiquiden Symbolen
+                        // durch den SL, waehrend der index-basierte Mark-Price haelt — der Bot
+                        // stoppte dann per Market-Order aus, obwohl die Boerse nie getriggert
+                        // haette (einseitiger Zusatz-Stop-out-Bias, Audit 11.08.2026).
+                        // TP-Checks bleiben auf Last (Limits fuellen auf Orderbuch-Preisen).
+                        var slRefPrice = pos.MarkPrice > 0m ? pos.MarkPrice : price;
                         if (pos.Side == Side.Buy)
                         {
-                            if (signal.StopLoss.HasValue && price <= signal.StopLoss.Value)
+                            if (signal.StopLoss.HasValue && slRefPrice <= signal.StopLoss.Value)
                             { hit = true; isStopLoss = true; reason = $"Stop-Loss bei {signal.StopLoss.Value:F8}"; }
                             else if (!tpManagedByExchange && signal.TakeProfit.HasValue && price >= signal.TakeProfit.Value)
                             { hit = true; reason = $"Take-Profit bei {signal.TakeProfit.Value:F8}"; }
                         }
                         else
                         {
-                            if (signal.StopLoss.HasValue && price >= signal.StopLoss.Value)
+                            if (signal.StopLoss.HasValue && slRefPrice >= signal.StopLoss.Value)
                             { hit = true; isStopLoss = true; reason = $"Stop-Loss bei {signal.StopLoss.Value:F8}"; }
                             else if (!tpManagedByExchange && signal.TakeProfit.HasValue && price <= signal.TakeProfit.Value)
                             { hit = true; reason = $"Take-Profit bei {signal.TakeProfit.Value:F8}"; }
@@ -1750,10 +1757,21 @@ public abstract class TradingServiceBase : IDisposable
     {
         _riskManager?.UpdateDailyStats(trade);
 
-        // Buch Workflow 6.8: BE-Ausstoppung → sofortiger Re-Entry (kein Cooldown)
-        // Erkennen: Trade-PnL nahe 0 (±0.2% von Entry×Quantity) = BE-Exit
-        var isBreakEvenExit = trade.EntryPrice > 0
-                             && Math.Abs(trade.Pnl) < Math.Abs(trade.EntryPrice * trade.Quantity) * 0.002m;
+        // Buch Workflow 6.8: BE-Ausstoppung → sofortiger Re-Entry (kein Cooldown).
+        // Erkennung am GEPLANTEN RISIKO (|Entry−SL|×Qty) statt am Notional: die alte
+        // 0,2%-Notional-Schwelle stufte reine Fee-Verluste als Break-Even ein und resettete
+        // damit die Loss-Streak-Bremse (bei 20x-TradFi entsprach sie 4 % der Margin —
+        // auch echte Verluste galten als BE; Audit 11.08.2026). Best-effort-Lookup des SL
+        // (Signal/ExitState koennen je nach Buchungspfad schon entsorgt sein) — ohne SL
+        // bleibt die alte Notional-Regel als Fallback.
+        var beThreshold = Math.Abs(trade.EntryPrice * trade.Quantity) * 0.002m;
+        var beKey = $"{trade.Symbol}_{trade.Side}";
+        var plannedSl = _positionSignals.TryGetValue(beKey, out var beSignal) ? beSignal.StopLoss
+            : _exitStates.TryGetValue(beKey, out var beState) ? beState.Signal?.StopLoss
+            : null;
+        if (plannedSl is > 0m && trade.EntryPrice > 0m)
+            beThreshold = Math.Abs(trade.EntryPrice - plannedSl.Value) * trade.Quantity * 0.15m;
+        var isBreakEvenExit = trade.EntryPrice > 0 && Math.Abs(trade.Pnl) < beThreshold;
 
         if (trade.Pnl < 0 && !isBreakEvenExit)
         {

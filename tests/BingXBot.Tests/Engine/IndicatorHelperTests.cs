@@ -21,6 +21,37 @@ public class IndicatorHelperTests
     }
 
     [Fact]
+    public void ToQuotes_KeineKollision_BeiGleichemLetztenCloseUndGleichenZeiten()
+    {
+        // Audit 11.08.2026: Innerhalb eines Scans haben alle Symbole derselben TF identische
+        // Count/First-/LastOpenTimes; unterschieden hat der Quotes-Cache-Key nur per LastClose.
+        // Zwei eng gekoppelte Symbole mit identischem letzten Close (BTC/WBTC, ETH/WETH) teilten
+        // sich dadurch die Quotes-Liste — Symbol B bekam die Kerzen von A (Indikatoren von A,
+        // Breakout-Signal ohne Setup). Der Key enthaelt jetzt zusaetzlich FirstClose.
+        var t0 = new DateTime(2026, 8, 11, 0, 0, 0, DateTimeKind.Utc);
+        List<BingXBot.Core.Models.Candle> Make(decimal firstClose, decimal lastClose)
+        {
+            var candles = new List<BingXBot.Core.Models.Candle>();
+            for (var i = 0; i < 5; i++)
+            {
+                var close = i == 0 ? firstClose : i == 4 ? lastClose : 100m + i;
+                candles.Add(new BingXBot.Core.Models.Candle(
+                    t0.AddHours(4 * i), close, close + 1, close - 1, close, 1000m, t0.AddHours(4 * (i + 1))));
+            }
+            return candles;
+        }
+
+        var symbolA = Make(firstClose: 100m, lastClose: 555m);
+        var symbolB = Make(firstClose: 200m, lastClose: 555m);   // gleicher letzter Close!
+
+        var quotesA = IndicatorHelper.ToQuotes(symbolA);
+        var quotesB = IndicatorHelper.ToQuotes(symbolB);
+
+        quotesA[0].Close.Should().Be(100m);
+        quotesB[0].Close.Should().Be(200m, "Symbol B darf nicht die gecachten Kerzen von A bekommen");
+    }
+
+    [Fact]
     public void CalculateEma_ShouldReturnCorrectCount()
     {
         var candles = TestHelper.GenerateTestCandles(50);

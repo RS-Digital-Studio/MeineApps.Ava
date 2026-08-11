@@ -321,13 +321,15 @@ public sealed class CrossSectionalTradingService : IDisposable
     /// auf BingX/in der App), werden die freien Slots mit einem frischen Momentum-Ranking aufgefuellt —
     /// sonst laeuft der Korb bis zu RebalanceDays lang unter-investiert und verliert die
     /// Market-Neutralitaet (z.B. 3 Longs zu, nur Shorts uebrig = volles direktionales Risiko).
+    /// Auch ein KOMPLETT leerer Korb (fehlgeschlagener Rebalance: Settle-Race, Insufficient Margin,
+    /// Wochenende) wird hier wieder aufgebaut — vorher war das eine Sackgasse bis zum naechsten
+    /// Wall-Clock-Rebalance (bis zu RebalanceDays flat, live beobachtet als "Bot verliert nur noch").
     /// Extern geschlossene Symbole werden bis zum naechsten vollen Rebalance NICHT erneut eroeffnet
     /// (User-Entscheidung respektieren); Fremd-Positionen (manuell eroeffnet) bleiben unangetastet.
     /// </summary>
     // Internal fuer Testbarkeit (InternalsVisibleTo=BingXBot.Tests).
     internal async Task RefillBasketDriftAsync(CancellationToken ct)
     {
-        if (_currentBasket.Count == 0) return;
         // Konsistenter Settings-Snapshot fuer den ganzen Refill (torn-read-Schutz, s. RebalanceAsync).
         var cfg = _cfg.Clone();
 
@@ -336,6 +338,29 @@ public sealed class CrossSectionalTradingService : IDisposable
         //    DriftConfirmTicks aufeinanderfolgenden Ticks fehlt (Schutz vor API-Glitches).
         var positions = await _execution.GetPositionsAsync(ct).ConfigureAwait(false);
         var openKeys = positions.Select(p => $"{p.Symbol}_{p.Side}").ToHashSet();
+
+        // Seiten-Flip: existiert fuer ein Korb-Symbol eine offene GEGENSEITEN-Position, hat der
+        // User die Seite bewusst gedreht — sofort als extern geschlossen behandeln (kein
+        // Zwei-Tick-Warten: die Gegenposition ist ein positiver Beleg, kein leere-Antwort-Glitch).
+        // Ohne diese Regel stuende das Symbol mit der ALTEN Korb-Seite im Reconcile-Ziel — der
+        // Rebalancer wuerde die User-Position schliessen und die alte Seite wiedereroeffnen.
+        var flipped = _currentBasket
+            .Where(kv => openKeys.Contains($"{kv.Key}_{(kv.Value == Side.Buy ? Side.Sell : Side.Buy)}"))
+            .Select(kv => kv.Key)
+            .ToList();
+        if (flipped.Count > 0)
+        {
+            foreach (var symbol in flipped)
+            {
+                _currentBasket.Remove(symbol);
+                _excludedUntilRebalance.Add(symbol);
+                _driftMissCounter.Remove(symbol);
+            }
+            SaveState();
+            Log(LogLevel.Warning, "Engine",
+                $"Korb-Drift: {flipped.Count} Symbol(e) extern auf die Gegenseite gedreht "
+                + $"({string.Join(", ", flipped)}) — Korb-Seite aufgegeben, User-Position bleibt unangetastet.");
+        }
         var missingNow = _currentBasket
             .Where(kv => !openKeys.Contains($"{kv.Key}_{kv.Value}"))
             .Select(kv => kv.Key)
@@ -389,12 +414,28 @@ public sealed class CrossSectionalTradingService : IDisposable
             return;
         }
 
-        // 4. Reconcile-Ziel = gehaltener Korb + Refill + Fremd-Positionen (nur als Schutz, damit
-        //    Close-vor-Open sie zwischen den Rebalances nicht schliesst — erst der volle Rebalance darf das).
+        // 4. Reconcile-Ziel = gehaltener Korb + Refill + Fremd-Positionen. Schutz-Semantik via
+        //    doNotOpen: (a) unbestaetigt fehlende Korb-Symbole (Miss-Zaehler laeuft) bleiben im
+        //    Ziel, damit Close-vor-Open sie nicht schliesst, falls die Position real noch offen
+        //    ist — WIEDEREROEFFNET werden sie aber erst nach der Zwei-Tick-Bestaetigung NICHT
+        //    (Sperrliste) bzw. gar nicht. Vorher hebelte ein einziger freier Slot die Bestaetigung
+        //    aus: das unbestaetigt fehlende Symbol wurde im selben Tick wiedereroeffnet.
+        //    (b) Fremd-Positionen (manuell eroeffnet) sind reiner Schutz — nie eroeffnen, auch
+        //    nicht wenn sie zwischen den beiden Positions-Snapshots verschwinden.
         var target = new Dictionary<string, Side>(_currentBasket);
+        var doNotOpen = new HashSet<string>();
+        foreach (var symbol in _currentBasket.Keys)
+            if (_driftMissCounter.ContainsKey(symbol))
+                doNotOpen.Add(symbol);
         foreach (var (symbol, side) in refill) target[symbol] = side;
         foreach (var pos in positions)
-            if (!target.ContainsKey(pos.Symbol)) target[pos.Symbol] = pos.Side;
+        {
+            if (!target.ContainsKey(pos.Symbol))
+            {
+                target[pos.Symbol] = pos.Side;
+                doNotOpen.Add(pos.Symbol);
+            }
+        }
 
         // basketSlots explizit: target enthaelt auch Fremd-Schutz-Eintraege — der Sizing-Divisor
         // muss die Soll-Korbgroesse (gehaltener Korb + Refill) sein, nicht target.Count.
@@ -402,7 +443,8 @@ public sealed class CrossSectionalTradingService : IDisposable
             _execution, target, data.Prices, data.Categories, cfg, _risk,
             msg => Log(LogLevel.Info, "Exit", msg), ct,
             onClosed: pos => BookLiveClose(pos, "Xsec-Drift-Refill"),
-            basketSlots: _currentBasket.Count + refill.Count).ConfigureAwait(false);
+            basketSlots: _currentBasket.Count + refill.Count,
+            doNotOpen: doNotOpen).ConfigureAwait(false);
 
         // 5. Nur den Korb (ohne Fremd-Schutz-Eintraege) persistieren — aufgenommen werden
         //    ausschliesslich tatsaechlich gefuellte Refill-Symbole (Min-Order-Skips/Rejects

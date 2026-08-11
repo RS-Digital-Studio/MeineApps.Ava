@@ -45,7 +45,8 @@ public static class CrossSectionalRebalancer
         CancellationToken ct = default,
         Action<Position>? onClosed = null,
         int basketSlots = 0,
-        TimeSpan? closeSettleDelay = null)
+        TimeSpan? closeSettleDelay = null,
+        IReadOnlySet<string>? doNotOpen = null)
     {
         log ??= _ => { };
         // Sizing-Divisor = tatsaechliche Korbgroesse (Backtest-Paritaet: CrossSectionalMomentumEngine
@@ -143,7 +144,8 @@ public static class CrossSectionalRebalancer
         if (equity <= 0m || slots <= 0)
             return new RebalanceResult(closed, 0, 0, failedClose, filled);
         var perSlotMargin = equity * cfg.MarginUtilization / slots;
-        var opensNeeded = target.Count(kv => !held.Contains($"{kv.Key}_{kv.Value}"));
+        var opensNeeded = target.Count(kv =>
+            !held.Contains($"{kv.Key}_{kv.Value}") && doNotOpen?.Contains(kv.Key) != true);
         if (opensNeeded > 0 && acc.AvailableBalance > 0m)
             perSlotMargin = Math.Min(perSlotMargin, acc.AvailableBalance * 0.95m / opensNeeded);
 
@@ -154,6 +156,10 @@ public static class CrossSectionalRebalancer
         {
             ct.ThrowIfCancellationRequested();
             if (held.Contains($"{symbol}_{side}")) continue;
+
+            // Schutz-Eintraege (Fremd-Positionen, unbestaetigt fehlende Korb-Symbole): stehen im
+            // Ziel nur, damit Close-vor-Open sie nicht schliesst — eroeffnet wird hier NIE.
+            if (doNotOpen?.Contains(symbol) == true) continue;
 
             // Gegenseite noch offen (fehlgeschlagener Close) → NICHT die Ziel-Seite oeffnen (kein Hedge derselben Exposure).
             if (after.Any(pp => pp.Symbol == symbol && pp.Side != side))

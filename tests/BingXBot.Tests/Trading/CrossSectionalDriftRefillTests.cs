@@ -26,10 +26,10 @@ public sealed class CrossSectionalDriftRefillTests : IDisposable
         try { File.Delete(_stateFile); } catch { /* Temp-Cleanup ist Best-Effort. */ }
     }
 
-    private static CrossSectionalSettings Cfg() => new()
+    private static CrossSectionalSettings Cfg(int longK = 1, int shortK = 1) => new()
     {
-        LongK = 1,
-        ShortK = 1,
+        LongK = longK,
+        ShortK = shortK,
         LookbackCandles = 10,
         RiskAdjusted = false,        // ROC pur — deterministisch fuer die Momentum-Erwartung
         UniverseTopN = 10,
@@ -80,14 +80,15 @@ public sealed class CrossSectionalDriftRefillTests : IDisposable
     }
 
     private async Task<CrossSectionalTradingService> CreateServiceAsync(
-        FakeExchangeClient exchange, FakeMarketData marketData, Dictionary<string, Side> basket)
+        FakeExchangeClient exchange, FakeMarketData marketData, Dictionary<string, Side> basket,
+        CrossSectionalSettings? cfg = null)
     {
         // Korb via persistierten State setzen (derselbe Pfad wie Live-Crash-Recovery).
         var state = new { LastRebalanceUtc = DateTime.UtcNow - TimeSpan.FromDays(1), Basket = basket };
         await File.WriteAllTextAsync(_stateFile, JsonSerializer.Serialize(state));
 
         var service = new CrossSectionalTradingService(
-            exchange, marketData, new RiskSettings { MaxOpenPositions = 10 }, Cfg(),
+            exchange, marketData, new RiskSettings { MaxOpenPositions = 10 }, cfg ?? Cfg(),
             new BotEventBus(), NullLogger.Instance, _stateFile);
         await service.RestoreOrAdoptStateAsync();
         return service;
@@ -283,12 +284,87 @@ public sealed class CrossSectionalDriftRefillTests : IDisposable
         var cats = new[] { "AAA-USDT", "BBB-USDT" }.ToDictionary(s => s, _ => MarketCategory.Crypto);
         var closedSymbols = new List<string>();
 
+        // closeSettleDelay Zero: der Fail-Close bleibt in jedem Read sichtbar — ohne Zero
+        // wuerde der Settle-Retry hier real 3×2 s warten.
         await CrossSectionalRebalancer.ReconcileAsync(
             ex, target, prices, cats,
             new CrossSectionalSettings { LongK = 1, ShortK = 1, LeverageCap = 1, MarginUtilization = 0.75m },
             new RiskSettings { MaxOpenPositions = 10 },
-            onClosed: pos => closedSymbols.Add(pos.Symbol));
+            onClosed: pos => closedSymbols.Add(pos.Symbol),
+            closeSettleDelay: TimeSpan.Zero);
 
         closedSymbols.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task LeererKorb_RefillBautVolleSlotsAuf()
+    {
+        // Ein fehlgeschlagener Rebalance (Filled leer: Settle-Race, Insufficient Margin, Wochenende)
+        // hinterlaesst einen leeren Korb. Vor dem Fix war das eine Sackgasse: der Drift-Refill stieg
+        // bei leerem Korb sofort aus → Bot bis zu RebalanceDays (9 Tage) flat.
+        var ex = new FakeExchangeClient();
+        var md = new FakeMarketData
+        {
+            Klines = { ["AAA-USDT"] = Trend(100m, 1m), ["BBB-USDT"] = Trend(100m, -1m), ["CCC-USDT"] = Trend(50m, 2m) },
+        };
+        var svc = await CreateServiceAsync(ex, md, new());   // leerer Korb, Rebalance nicht faellig
+
+        await svc.RefillBasketDriftAsync(CancellationToken.None);
+
+        // LongK=1/ShortK=1: staerkstes positives Momentum (CCC) long, staerkstes negatives (BBB) short.
+        ex.PlaceOrderCalls.Select(p => (p.Symbol, p.Side)).Should().Contain(("CCC-USDT", Side.Buy));
+        ex.PlaceOrderCalls.Select(p => (p.Symbol, p.Side)).Should().Contain(("BBB-USDT", Side.Sell));
+        svc.CurrentBasket.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Drift_UnbestaetigtFehlendesSymbol_WirdBeiFreiemSlotNichtWiedereroeffnet()
+    {
+        // Chronisch freier Long-Slot (LongK=2, Korb hat nur 1 Long) + AAA fehlt seit DIESEM Tick
+        // (Miss-Zaehler 1, unbestaetigt). Vor dem Fix stand AAA im Reconcile-Ziel und wurde im
+        // selben Tick wiedereroeffnet — die Zwei-Tick-Bestaetigung war wirkungslos, sobald
+        // irgendein Slot frei war.
+        var ex = new FakeExchangeClient().WithPosition("BBB-USDT", Side.Sell, 1m, 100m);
+        var md = new FakeMarketData
+        {
+            Klines =
+            {
+                ["AAA-USDT"] = Trend(100m, 1m), ["BBB-USDT"] = Trend(100m, -1m),
+                ["CCC-USDT"] = Trend(50m, 2m), ["DDD-USDT"] = Trend(80m, 0.5m),
+            },
+        };
+        var svc = await CreateServiceAsync(
+            ex, md, new() { ["AAA-USDT"] = Side.Buy, ["BBB-USDT"] = Side.Sell }, Cfg(longK: 2));
+
+        await svc.RefillBasketDriftAsync(CancellationToken.None);   // Tick 1: AAA-Miss unbestaetigt
+
+        // Der freie Long-Slot wird mit dem besten Kandidaten (CCC) gefuellt — AAA darf trotz
+        // freiem Slot NICHT wiedereroeffnet werden (Zwei-Tick-Bestaetigung laeuft noch).
+        ex.PlaceOrderCalls.Select(p => (p.Symbol, p.Side)).Should().Contain(("CCC-USDT", Side.Buy));
+        ex.PlaceOrderCalls.Select(p => p.Symbol).Should().NotContain("AAA-USDT");
+        ex.ClosePositionCalls.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Drift_SeitenFlipDurchUser_SchliesstUserPositionNichtUndGibtKorbSeiteAuf()
+    {
+        // Korb: AAA long. Der User hat AAA long geschlossen und bewusst AAA SHORT eroeffnet.
+        // Vor dem Fix stand AAA=Buy (alte Korb-Seite) im Reconcile-Ziel: der Rebalancer haette
+        // die User-Short-Position geschlossen und AAA long wiedereroeffnet.
+        var ex = new FakeExchangeClient()
+            .WithPosition("AAA-USDT", Side.Sell, 1m, 100m)    // User-Flip
+            .WithPosition("BBB-USDT", Side.Sell, 1m, 100m);   // Korb-Short unveraendert
+        var md = new FakeMarketData
+        {
+            Klines = { ["AAA-USDT"] = Trend(100m, 1m), ["BBB-USDT"] = Trend(100m, -1m), ["CCC-USDT"] = Trend(50m, 2m) },
+        };
+        var svc = await CreateServiceAsync(ex, md, new() { ["AAA-USDT"] = Side.Buy, ["BBB-USDT"] = Side.Sell });
+
+        await svc.RefillBasketDriftAsync(CancellationToken.None);
+
+        ex.ClosePositionCalls.Should().BeEmpty();                                      // User-Short unangetastet
+        ex.PlaceOrderCalls.Select(p => (p.Symbol, p.Side)).Should().NotContain(("AAA-USDT", Side.Buy));
+        svc.CurrentBasket.Should().NotContainKey("AAA-USDT");                          // Korb-Seite aufgegeben
+        ex.PlaceOrderCalls.Select(p => (p.Symbol, p.Side)).Should().Contain(("CCC-USDT", Side.Buy));  // Slot neu gefuellt
     }
 }

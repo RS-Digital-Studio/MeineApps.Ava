@@ -34,7 +34,11 @@ public class ReconcilePositionsIntegrationTests
         // Signal 120 s alt — ueber Grace-Window (90 s)
         service._signalCreatedAt["BTC-USDT_Buy"] = DateTime.UtcNow.AddSeconds(-120);
 
-        // Act
+        // Act — ZWEI Durchgaenge: seit dem Glitch-Guard (Audit 11.08.2026) gilt eine leere
+        // Positions-Antwort bei getrackten Signalen erst im zweiten Tick in Folge als echt
+        // (BingX liefert bei Schema-Drift leer statt Exception).
+        await service.ReconcilePositionsAsync(CancellationToken.None);
+        service._positionSignals.ContainsKey("BTC-USDT_Buy").Should().BeTrue("erster leerer Snapshot ist nur Vormerkung");
         await service.ReconcilePositionsAsync(CancellationToken.None);
 
         // Assert: Signal ist weg

@@ -48,9 +48,14 @@
         <meta-data android:name="com.google.android.ar.API_KEY"
                    android:value="AIzaSyAwiV05cpoj1Pcz5Z_2MReAtiHcywgrOQk" />
 
-        <!-- FileProvider für Export-Share (DXF, KMZ, PDF, CSV, GeoJSON, OBJ) -->
+        <!-- FileProvider für Export-Share (DXF, KMZ, PDF, CSV, GeoJSON, OBJ).
+             Authority AUSGESCHRIEBEN statt als Manifest-Platzhalter: .NET für Android ersetzt
+             Platzhalter nur mit <AndroidManifestPlaceholders> im csproj — ohne das blieb hier
+             der Platzhalter wörtlich stehen, während MainActivity mit
+             PackageName + ".fileprovider" sucht. Share/Öffnen von Exporten schlug damit fehl.
+             Muss zu <ApplicationId> im csproj passen; alle anderen Apps machen es genauso. -->
         <provider android:name="androidx.core.content.FileProvider"
-                  android:authorities="${applicationId}.fileprovider"
+                  android:authorities="com.rsdigital.smartmeasure.fileprovider"
                   android:exported="false"
                   android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS"

@@ -3,6 +3,7 @@
              xmlns:vm="using:SmartMeasure.Shared.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:labs="using:Avalonia.Labs.Controls"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="SmartMeasure.Shared.Views.TerrainView"
              x:CompileBindings="True"
              x:DataType="vm:TerrainViewModel">
@@ -17,13 +18,13 @@
                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12">
                 <StackPanel Spacing="2">
                     <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                        <Run Text="Punkte: " /><Run Text="{Binding PointCount}" FontWeight="Bold" />
+                        <Run Text="{loc:Translate Points}" /><Run Text="&#160;" /><Run Text="{Binding PointCount}" FontWeight="Bold" />
                     </TextBlock>
                     <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                        <Run Text="Fläche: " /><Run Text="{Binding AreaText}" FontWeight="Bold" />
+                        <Run Text="{loc:Translate Area}" /><Run Text="&#160;" /><Run Text="{Binding AreaText}" FontWeight="Bold" />
                     </TextBlock>
                     <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
-                        <Run Text="Höhe: " /><Run Text="{Binding HeightRangeText}" FontWeight="Bold" />
+                        <Run Text="{loc:Translate HeightRange}" /><Run Text="&#160;" /><Run Text="{Binding HeightRangeText}" FontWeight="Bold" />
                     </TextBlock>
                 </StackPanel>
             </Border>
@@ -42,7 +43,7 @@
             <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
                 <!-- Überhöhung -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="Höhe:" FontSize="11" VerticalAlignment="Center"
+                    <TextBlock Text="{loc:Translate Elevation}" FontSize="11" VerticalAlignment="Center"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                     <Slider Value="{Binding Exaggeration}" Minimum="1" Maximum="10"
                             Width="80" VerticalAlignment="Center" />

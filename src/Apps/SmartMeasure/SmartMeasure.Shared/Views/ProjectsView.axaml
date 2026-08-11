@@ -3,6 +3,7 @@
              xmlns:vm="using:SmartMeasure.Shared.ViewModels"
              xmlns:models="using:SmartMeasure.Shared.Models"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="SmartMeasure.Shared.Views.ProjectsView"
              x:CompileBindings="True"
              x:DataType="vm:ProjectsViewModel">
@@ -12,7 +13,7 @@
         <Border Grid.Row="0" Background="{DynamicResource BgSecondaryBrush}" Padding="12,8">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <TextBox Grid.Column="0" Text="{Binding NewProjectName}"
-                         PlaceholderText="Neues Projekt..." FontSize="14"
+                         PlaceholderText="{loc:Translate NewProjectWatermark}" FontSize="14"
                          Background="{DynamicResource BgCardBrush}"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
                 <Button Grid.Column="1" Command="{Binding CreateProjectCommand}"
@@ -21,7 +22,7 @@
                         Foreground="White" Padding="16,8">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="Plus" Width="18" Height="18" />
-                        <TextBlock Text="Erstellen" />
+                        <TextBlock Text="{loc:Translate Create}" />
                     </StackPanel>
                 </Button>
             </Grid>
@@ -30,12 +31,12 @@
         <!-- Plan-Kap. 5.13: Differential-Snapshot zwischen zwei Projekten -->
         <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}" Padding="12,8" Margin="0,0,0,4">
             <StackPanel Spacing="6">
-                <TextBlock Text="Sessions vergleichen (Differential)" FontSize="12" FontWeight="SemiBold"
+                <TextBlock Text="{loc:Translate CompareSessions}" FontSize="12" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="6">
                     <ComboBox Grid.Column="0" ItemsSource="{Binding Projects}"
                               SelectedItem="{Binding CompareProjectA}"
-                              PlaceholderText="Projekt A" FontSize="12">
+                              PlaceholderText="{loc:Translate ProjectA}" FontSize="12">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="models:SurveyProject">
                                 <TextBlock Text="{Binding Name}" />
@@ -44,7 +45,7 @@
                     </ComboBox>
                     <ComboBox Grid.Column="1" ItemsSource="{Binding Projects}"
                               SelectedItem="{Binding CompareProjectB}"
-                              PlaceholderText="Projekt B" FontSize="12">
+                              PlaceholderText="{loc:Translate ProjectB}" FontSize="12">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="models:SurveyProject">
                                 <TextBlock Text="{Binding Name}" />
@@ -56,7 +57,7 @@
                             FontSize="11" Padding="8,4">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <mi:MaterialIcon Kind="CompareHorizontal" Width="14" Height="14" />
-                            <TextBlock Text="Vergleichen" />
+                            <TextBlock Text="{loc:Translate Compare}" />
                         </StackPanel>
                     </Button>
                 </Grid>
@@ -95,14 +96,14 @@
                                         <mi:MaterialIcon Kind="MapMarker" Width="14" Height="14"
                                                          Foreground="{DynamicResource PrimaryBrush}" />
                                         <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
-                                            <Run Text="{Binding PointCount}" /><Run Text=" Punkte" />
+                                            <Run Text="{Binding PointCount}" /><Run Text="&#160;" /><Run Text="{loc:Translate PointCount}" />
                                         </TextBlock>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                         <mi:MaterialIcon Kind="VectorPolygon" Width="14" Height="14"
                                                          Foreground="{DynamicResource SecondaryBrush}" />
                                         <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
-                                            <Run Text="{Binding AreaSquareMeters, StringFormat='{}{0:F0}'}" /><Run Text=" m²" />
+                                            <Run Text="{Binding AreaSquareMeters, StringFormat='{}{0:F0}'}" /><Run Text="{loc:Translate SquareMetersSuffix}" />
                                         </TextBlock>
                                     </StackPanel>
                                     <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
@@ -119,7 +120,7 @@
                                             CommandParameter="{Binding}">
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <mi:MaterialIcon Kind="FolderOpen" Width="14" Height="14" />
-                                            <TextBlock Text="Öffnen" />
+                                            <TextBlock Text="{loc:Translate Open}" />
                                         </StackPanel>
                                     </Button>
                                     <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
@@ -129,7 +130,7 @@
                                             CommandParameter="{Binding}">
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <mi:MaterialIcon Kind="ContentCopy" Width="14" Height="14" />
-                                            <TextBlock Text="Kopieren" />
+                                            <TextBlock Text="{loc:Translate Duplicate}" />
                                         </StackPanel>
                                     </Button>
                                     <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
@@ -137,44 +138,44 @@
                                             Foreground="{DynamicResource SecondaryBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportCsvCommand}"
                                             CommandParameter="{Binding}">
-                                        <TextBlock Text="CSV" />
+                                        <TextBlock Text="{loc:Translate ExportCsv}" />
                                     </Button>
                                     <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource SecondaryBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportGeoJsonCommand}"
                                             CommandParameter="{Binding}">
-                                        <TextBlock Text="GeoJSON" />
+                                        <TextBlock Text="{loc:Translate ExportGeoJson}" />
                                     </Button>
                                     <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource AccentBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportBlenderCommand}"
                                             CommandParameter="{Binding}">
-                                        <TextBlock Text="OBJ" />
+                                        <TextBlock Text="{loc:Translate ExportObj}" />
                                     </Button>
                                     <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource PrimaryBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportDxfCommand}"
                                             CommandParameter="{Binding}"
-                                            ToolTip.Tip="AutoCAD/Allplan/Revit-kompatibel">
-                                        <TextBlock Text="DXF" />
+                                            ToolTip.Tip="{loc:Translate DxfTooltip}">
+                                        <TextBlock Text="{loc:Translate ExportDxf}" />
                                     </Button>
                                     <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource AccentBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportKmzCommand}"
                                             CommandParameter="{Binding}"
-                                            ToolTip.Tip="Google Earth / Google Maps">
-                                        <TextBlock Text="KMZ" />
+                                            ToolTip.Tip="{loc:Translate KmzTooltip}">
+                                        <TextBlock Text="{loc:Translate ExportKmz}" />
                                     </Button>
                                     <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="{DynamicResource BgElevatedBrush}"
                                             Foreground="{DynamicResource DangerBrush}"
                                             Command="{Binding $parent[ItemsControl].((vm:ProjectsViewModel)DataContext).ExportPdfCommand}"
                                             CommandParameter="{Binding}">
-                                        <TextBlock Text="PDF" />
+                                        <TextBlock Text="{loc:Translate ExportPdf}" />
                                     </Button>
                                     <Button Padding="12,10" MinHeight="44" CornerRadius="6" FontSize="11"
                                             Background="Transparent"

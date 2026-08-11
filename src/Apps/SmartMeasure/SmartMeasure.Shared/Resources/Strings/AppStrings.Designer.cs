@@ -188,5 +188,59 @@ namespace SmartMeasure.Shared.Resources.Strings {
         public static string ArTrackingExcessiveMotion => ResourceManager.GetString("ArTrackingExcessiveMotion", resourceCulture) ?? "";
         public static string ArTrackingCameraUnavailable => ResourceManager.GetString("ArTrackingCameraUnavailable", resourceCulture) ?? "";
         public static string ArTrackingBadState => ResourceManager.GetString("ArTrackingBadState", resourceCulture) ?? "";
+
+        // Export-Banner (MainView)
+        public static string Share => ResourceManager.GetString("Share", resourceCulture) ?? "";
+        public static string ExportCreated => ResourceManager.GetString("ExportCreated", resourceCulture) ?? "";
+
+        // Gartenplan-Werkzeugleiste + Zeichenmodus
+        public static string RemoveLastElement => ResourceManager.GetString("RemoveLastElement", resourceCulture) ?? "";
+        public static string RemoveLastPoint => ResourceManager.GetString("RemoveLastPoint", resourceCulture) ?? "";
+        public static string Point => ResourceManager.GetString("Point", resourceCulture) ?? "";
+        public static string FinishElement => ResourceManager.GetString("FinishElement", resourceCulture) ?? "";
+        public static string CancelDrawing => ResourceManager.GetString("CancelDrawing", resourceCulture) ?? "";
+
+        // Volumen-Panel (Gartenplan)
+        public static string VolumeEstimate => ResourceManager.GetString("VolumeEstimate", resourceCulture) ?? "";
+        public static string CalculateVolume => ResourceManager.GetString("CalculateVolume", resourceCulture) ?? "";
+        public static string DepthMeters => ResourceManager.GetString("DepthMeters", resourceCulture) ?? "";
+
+        // Einstellungen
+        public static string Display => ResourceManager.GetString("Display", resourceCulture) ?? "";
+        public static string MetricSystem => ResourceManager.GetString("MetricSystem", resourceCulture) ?? "";
+        public static string DataSection => ResourceManager.GetString("DataSection", resourceCulture) ?? "";
+        public static string DatabaseLabel => ResourceManager.GetString("DatabaseLabel", resourceCulture) ?? "";
+        public static string ArAccuracyNote => ResourceManager.GetString("ArAccuracyNote", resourceCulture) ?? "";
+        public static string ExportFormatsNote => ResourceManager.GetString("ExportFormatsNote", resourceCulture) ?? "";
+
+        // Mess-Tab (Hero-CTA, Statistik, Empty-State)
+        public static string ArHeroTitle => ResourceManager.GetString("ArHeroTitle", resourceCulture) ?? "";
+        public static string ArHeroSubtitle => ResourceManager.GetString("ArHeroSubtitle", resourceCulture) ?? "";
+        public static string ArAccuracyTitle => ResourceManager.GetString("ArAccuracyTitle", resourceCulture) ?? "";
+        public static string ArAccuracyBody => ResourceManager.GetString("ArAccuracyBody", resourceCulture) ?? "";
+        public static string CurrentMeasurement => ResourceManager.GetString("CurrentMeasurement", resourceCulture) ?? "";
+        public static string AreaShort => ResourceManager.GetString("AreaShort", resourceCulture) ?? "";
+        public static string PerimeterShort => ResourceManager.GetString("PerimeterShort", resourceCulture) ?? "";
+        public static string NoPointsTitle => ResourceManager.GetString("NoPointsTitle", resourceCulture) ?? "";
+        public static string NoPointsBody => ResourceManager.GetString("NoPointsBody", resourceCulture) ?? "";
+
+        // Projekte-Tab (Differential-Vergleich + Export-Buttons)
+        public static string CompareSessions => ResourceManager.GetString("CompareSessions", resourceCulture) ?? "";
+        public static string ProjectA => ResourceManager.GetString("ProjectA", resourceCulture) ?? "";
+        public static string ProjectB => ResourceManager.GetString("ProjectB", resourceCulture) ?? "";
+        public static string Compare => ResourceManager.GetString("Compare", resourceCulture) ?? "";
+        public static string ExportDxf => ResourceManager.GetString("ExportDxf", resourceCulture) ?? "";
+        public static string ExportKmz => ResourceManager.GetString("ExportKmz", resourceCulture) ?? "";
+        public static string DxfTooltip => ResourceManager.GetString("DxfTooltip", resourceCulture) ?? "";
+        public static string KmzTooltip => ResourceManager.GetString("KmzTooltip", resourceCulture) ?? "";
+        public static string SquareMetersSuffix => ResourceManager.GetString("SquareMetersSuffix", resourceCulture) ?? "";
+
+        // Toast-Meldungen aus MainViewModel (via LocalizationManager.GetString)
+        public static string ProjectLoadFailed => ResourceManager.GetString("ProjectLoadFailed", resourceCulture) ?? "";
+        public static string ExportFailed => ResourceManager.GetString("ExportFailed", resourceCulture) ?? "";
+        public static string ArTransfer => ResourceManager.GetString("ArTransfer", resourceCulture) ?? "";
+        public static string NoProjectAvailable => ResourceManager.GetString("NoProjectAvailable", resourceCulture) ?? "";
+        public static string PointsTransferred => ResourceManager.GetString("PointsTransferred", resourceCulture) ?? "";
+        public static string ArTransferFailed => ResourceManager.GetString("ArTransferFailed", resourceCulture) ?? "";
     }
 }

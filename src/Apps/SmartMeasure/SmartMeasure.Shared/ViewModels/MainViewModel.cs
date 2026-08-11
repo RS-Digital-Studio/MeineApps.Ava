@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using SmartMeasure.Shared.Services;
@@ -90,7 +91,8 @@ public partial class MainViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                MessageRequested?.Invoke("Projekt konnte nicht geladen werden", ex.Message);
+                MessageRequested?.Invoke(
+                    LocalizationManager.GetString("ProjectLoadFailed"), ex.Message);
             }
         };
 
@@ -100,15 +102,16 @@ public partial class MainViewModel : ViewModelBase
             LastExportPath = path;
             LastExportFileName = System.IO.Path.GetFileName(path);
             IsExportBannerVisible = true;
-            MessageRequested?.Invoke("Export erstellt", LastExportFileName);
+            MessageRequested?.Invoke(
+                LocalizationManager.GetString("ExportCreated"), LastExportFileName);
         };
 
         ProjectsVm.ExportFailed += reason =>
-            MessageRequested?.Invoke("Export fehlgeschlagen", reason);
+            MessageRequested?.Invoke(LocalizationManager.GetString("ExportFailed"), reason);
 
         // GardenPlan-Fehler (z.B. Zeichnung ohne Referenz verworfen)
         GardenPlanVm.MessageRequested += msg =>
-            MessageRequested?.Invoke("Gartenplan", msg);
+            MessageRequested?.Invoke(LocalizationManager.GetString("GardenPlan"), msg);
 
         // AR-Capture → Terrain-Transfer
         SurveyVm.ArCaptureCompleted += async result =>
@@ -122,13 +125,19 @@ public partial class MainViewModel : ViewModelBase
                     project = await ProjectsVm.EnsureProjectExistsAsync();
                     if (project == null)
                     {
-                        MessageRequested?.Invoke("AR-Transfer", "Kein Projekt verfügbar");
+                        MessageRequested?.Invoke(
+                            LocalizationManager.GetString("ArTransfer"),
+                            LocalizationManager.GetString("NoProjectAvailable"));
                         return;
                     }
                 }
 
                 var count = await _arTransferService.TransferToProjectAsync(result, project.Id);
-                MessageRequested?.Invoke("AR-Capture", $"{count} Punkte übertragen");
+                MessageRequested?.Invoke(
+                    LocalizationManager.GetString("ArCapture"),
+                    string.Format(
+                        System.Globalization.CultureInfo.CurrentCulture,
+                        LocalizationManager.GetString("PointsTransferred"), count));
 
                 // Erst NACH erfolgreicher Persistierung den AR-Session-Recovery-State
                 // freigeben — bei Crash/Fehler bis hierher bleibt die Session
@@ -143,7 +152,8 @@ public partial class MainViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                MessageRequested?.Invoke("AR-Transfer fehlgeschlagen", ex.Message);
+                MessageRequested?.Invoke(
+                    LocalizationManager.GetString("ArTransferFailed"), ex.Message);
             }
         };
     }

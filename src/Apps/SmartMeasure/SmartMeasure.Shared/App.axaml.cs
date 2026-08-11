@@ -2,8 +2,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
+using SmartMeasure.Shared.Resources.Strings;
 using SmartMeasure.Shared.Services;
 using SmartMeasure.Shared.ViewModels;
 using SmartMeasure.Shared.Views;
@@ -38,6 +40,13 @@ public class App : Application
             var services = new ServiceCollection();
             ConfigureServices(services);
             Services = services.BuildServiceProvider();
+
+            // Lokalisierung VOR dem ersten View-Aufbau initialisieren: Initialize() liest die
+            // gespeicherte Sprache aus den Preferences, LocalizationManager macht sie fuer die
+            // {loc:Translate}-Markup-Extension und statische GetString-Aufrufe verfuegbar.
+            var localization = Services.GetRequiredService<ILocalizationService>();
+            localization.Initialize();
+            LocalizationManager.Initialize(localization);
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -111,6 +120,12 @@ public class App : Application
 
         // Preferences (JSON-Persistenz für User-Settings)
         services.AddSingleton<IPreferencesService>(_ => new PreferencesService("SmartMeasure"));
+
+        // Lokalisierung (DE/EN/ES/FR/IT/PT liegen als AppStrings.*.resx vor). MUSS nach
+        // IPreferencesService kommen — LocalizationService persistiert die Sprachwahl darüber.
+        services.AddSingleton<ILocalizationService>(sp =>
+            new LocalizationService(AppStrings.ResourceManager,
+                sp.GetRequiredService<IPreferencesService>()));
 
         // AR-Capture-Service (plattform-spezifisch oder Mock) — lazy, siehe IAppPaths-Hinweis oben.
         services.AddSingleton<IArCaptureService>(sp =>

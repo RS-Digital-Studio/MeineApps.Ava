@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:models="using:SmartMeasure.Shared.Models"
              xmlns:labs="using:Avalonia.Labs.Controls"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="SmartMeasure.Shared.Views.GardenPlanView"
              x:CompileBindings="True"
              x:DataType="vm:GardenPlanViewModel">
@@ -13,52 +14,54 @@
         <Border Grid.Row="0" Background="{DynamicResource BgSecondaryBrush}" Padding="8,4">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="Weg"
+                    <!-- CommandParameter bleibt der GardenElementType-Name (Enum-Parse im VM) —
+                         nur die ANZEIGE ist lokalisiert. -->
+                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="{loc:Translate Path}"
                             Background="{DynamicResource BgCardBrush}"
                             Command="{Binding SelectToolCommand}" CommandParameter="Weg">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <mi:MaterialIcon Kind="Road" Width="16" Height="16" Foreground="#78909C" />
-                            <TextBlock Text="Weg" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{loc:Translate Path}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                         </StackPanel>
                     </Button>
-                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="Beet"
+                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="{loc:Translate Bed}"
                             Background="{DynamicResource BgCardBrush}"
                             Command="{Binding SelectToolCommand}" CommandParameter="Beet">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <mi:MaterialIcon Kind="Flower" Width="16" Height="16" Foreground="#6D4C41" />
-                            <TextBlock Text="Beet" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{loc:Translate Bed}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                         </StackPanel>
                     </Button>
-                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="Rasen"
+                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="{loc:Translate Lawn}"
                             Background="{DynamicResource BgCardBrush}"
                             Command="{Binding SelectToolCommand}" CommandParameter="Rasen">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <mi:MaterialIcon Kind="Grass" Width="16" Height="16" Foreground="#66BB6A" />
-                            <TextBlock Text="Rasen" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{loc:Translate Lawn}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                         </StackPanel>
                     </Button>
-                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="Mauer"
+                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="{loc:Translate GardenWall}"
                             Background="{DynamicResource BgCardBrush}"
                             Command="{Binding SelectToolCommand}" CommandParameter="Mauer">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <mi:MaterialIcon Kind="Wall" Width="16" Height="16" Foreground="#EF5350" />
-                            <TextBlock Text="Mauer" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{loc:Translate GardenWall}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                         </StackPanel>
                     </Button>
-                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="Zaun"
+                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="{loc:Translate Fence}"
                             Background="{DynamicResource BgCardBrush}"
                             Command="{Binding SelectToolCommand}" CommandParameter="Zaun">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <mi:MaterialIcon Kind="Fence" Width="16" Height="16" Foreground="#EF5350" />
-                            <TextBlock Text="Zaun" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{loc:Translate Fence}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                         </StackPanel>
                     </Button>
-                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="Terrasse"
+                    <Button Padding="8,6" CornerRadius="6" ToolTip.Tip="{loc:Translate Terrace}"
                             Background="{DynamicResource BgCardBrush}"
                             Command="{Binding SelectToolCommand}" CommandParameter="Terrasse">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <mi:MaterialIcon Kind="ViewDashboard" Width="16" Height="16" Foreground="#D7CCC8" />
-                            <TextBlock Text="Terrasse" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{loc:Translate Terrace}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                         </StackPanel>
                     </Button>
 
@@ -68,7 +71,7 @@
                     <!-- Undo letztes Element -->
                     <Button Padding="8,6" CornerRadius="6" Command="{Binding UndoCommand}"
                             IsEnabled="{Binding CanUndo}" Background="{DynamicResource BgCardBrush}"
-                            ToolTip.Tip="Letztes Element entfernen">
+                            ToolTip.Tip="{loc:Translate RemoveLastElement}">
                         <mi:MaterialIcon Kind="Undo" Width="16" Height="16"
                                          Foreground="{DynamicResource TextSecondaryBrush}" />
                     </Button>
@@ -87,7 +90,8 @@
                     <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
                                VerticalAlignment="Center">
                         <Run Text="{Binding DrawingPointCount}" />
-                        <Run Text=" Punkte" />
+                        <Run Text="&#160;" />
+                        <Run Text="{loc:Translate PointCount}" />
                     </TextBlock>
                 </StackPanel>
 
@@ -95,27 +99,27 @@
                 <Button Grid.Column="2" Padding="8,4" CornerRadius="6" Margin="4,0"
                         Command="{Binding UndoDrawPointCommand}"
                         IsEnabled="{Binding IsDrawing}" Background="#3A3A4E"
-                        ToolTip.Tip="Letzten Punkt entfernen">
+                        ToolTip.Tip="{loc:Translate RemoveLastPoint}">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <mi:MaterialIcon Kind="UndoVariant" Width="14" Height="14" Foreground="#FFEB3B" />
-                        <TextBlock Text="Punkt" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="{loc:Translate Point}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
                 </Button>
 
                 <!-- Fertig -->
                 <Button Grid.Column="3" Padding="10,4" CornerRadius="6" Margin="4,0"
                         Command="{Binding FinishDrawingCommand}" Background="#2E7D32"
-                        ToolTip.Tip="Element fertigstellen">
+                        ToolTip.Tip="{loc:Translate FinishElement}">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <mi:MaterialIcon Kind="Check" Width="14" Height="14" Foreground="White" />
-                        <TextBlock Text="Fertig" FontSize="10" FontWeight="SemiBold" Foreground="White" />
+                        <TextBlock Text="{loc:Translate Finish}" FontSize="10" FontWeight="SemiBold" Foreground="White" />
                     </StackPanel>
                 </Button>
 
                 <!-- Abbrechen -->
                 <Button Grid.Column="4" Padding="8,4" CornerRadius="6" Margin="4,0"
                         Command="{Binding CancelDrawingCommand}" Background="#C62828"
-                        ToolTip.Tip="Zeichnung abbrechen">
+                        ToolTip.Tip="{loc:Translate CancelDrawing}">
                     <mi:MaterialIcon Kind="Close" Width="14" Height="14" Foreground="White" />
                 </Button>
             </Grid>
@@ -131,7 +135,7 @@
                 Padding="12,6" MaxHeight="120">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="2">
-                    <TextBlock Text="Materialliste" FontSize="12" FontWeight="SemiBold"
+                    <TextBlock Text="{loc:Translate Materials}" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                     <ItemsControl ItemsSource="{Binding Materials}">
                         <ItemsControl.ItemTemplate>
@@ -151,14 +155,14 @@
                     </ItemsControl>
                     <TextBlock FontSize="11" Margin="0,4,0,0"
                                Foreground="{DynamicResource TextMutedBrush}">
-                        <Run Text="Werte inkl. 15% Sicherheitszuschlag" />
+                        <Run Text="{loc:Translate SafetyMarginNote}" />
                     </TextBlock>
 
                     <!-- Plan-Kap. 5.4: Volumen-Schaetzung pro Element -->
                     <Border Background="{DynamicResource BgCardBrush}"
                             CornerRadius="6" Padding="8" Margin="0,8,0,0">
                         <StackPanel Spacing="6">
-                            <TextBlock Text="Volumen-Schaetzung" FontSize="12" FontWeight="SemiBold"
+                            <TextBlock Text="{loc:Translate VolumeEstimate}" FontSize="12" FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                             <ItemsControl ItemsSource="{Binding Elements}">
                                 <ItemsControl.ItemTemplate>
@@ -171,13 +175,14 @@
                                                     Command="{Binding $parent[ItemsControl].((vm:GardenPlanViewModel)DataContext).EstimateVolumeCommand}"
                                                     CommandParameter="{Binding}"
                                                     Background="{DynamicResource SecondaryBrush}"
-                                                    Foreground="White">V berechnen</Button>
+                                                    Foreground="White"
+                                                    Content="{loc:Translate CalculateVolume}" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <Grid ColumnDefinitions="Auto,*">
-                                <TextBlock Text="Tiefe (m):" FontSize="11" VerticalAlignment="Center"
+                                <TextBlock Text="{loc:Translate DepthMeters}" FontSize="11" VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <NumericUpDown Grid.Column="1" Margin="6,0,0,0"
                                                Value="{Binding VolumeDepthMeters}"

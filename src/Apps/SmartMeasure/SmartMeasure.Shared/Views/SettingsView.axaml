@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SmartMeasure.Shared.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="SmartMeasure.Shared.Views.SettingsView"
              x:CompileBindings="True"
              x:DataType="vm:SettingsViewModel">
@@ -10,7 +11,7 @@
         <StackPanel Spacing="12" Margin="16,12,16,80">
 
             <!-- Titel -->
-            <TextBlock Text="Einstellungen" FontSize="22" FontWeight="Bold"
+            <TextBlock Text="{loc:Translate Settings}" FontSize="22" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" Margin="4,0,0,4" />
 
             <!-- Anzeige -->
@@ -22,12 +23,12 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <mi:MaterialIcon Kind="Cog" Width="20" Height="20"
                                          Foreground="{DynamicResource SecondaryBrush}" />
-                        <TextBlock Text="Anzeige" FontSize="16" FontWeight="SemiBold"
+                        <TextBlock Text="{loc:Translate Display}" FontSize="16" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                     </StackPanel>
 
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="Metrisches System (m, m²)" FontSize="13"
+                        <TextBlock Text="{loc:Translate MetricSystem}" FontSize="13"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" />
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseMetric}"
@@ -45,12 +46,12 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <mi:MaterialIcon Kind="Database" Width="20" Height="20"
                                          Foreground="{DynamicResource AccentBrush}" />
-                        <TextBlock Text="Daten" FontSize="16" FontWeight="SemiBold"
+                        <TextBlock Text="{loc:Translate DataSection}" FontSize="16" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                     </StackPanel>
 
                     <TextBlock FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}">
-                        <Run Text="Datenbank: " /><Run Text="{Binding DatabaseInfo}" />
+                        <Run Text="{loc:Translate DatabaseLabel}" /><Run Text="{Binding DatabaseInfo}" />
                     </TextBlock>
                 </StackPanel>
             </Border>
@@ -68,13 +69,13 @@
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                     </StackPanel>
                     <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13">
-                        <Run Text="Version " /><Run Text="{Binding AppVersion}" />
+                        <Run Text="{loc:Translate AppVersion}" /><Run Text="&#160;" /><Run Text="{Binding AppVersion}" />
                     </TextBlock>
-                    <TextBlock Text="3D-Grundstücksvermessung + Gartenplanung" FontSize="12"
+                    <TextBlock Text="{loc:Translate AppDescription}" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0" />
-                    <TextBlock Text="AR-Kamera-Vermessung (±5–50 cm)" FontSize="12"
+                    <TextBlock Text="{loc:Translate ArAccuracyNote}" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}" />
-                    <TextBlock Text="Export: CSV, GeoJSON, OBJ (Blender), PDF" FontSize="12"
+                    <TextBlock Text="{loc:Translate ExportFormatsNote}" FontSize="12"
                                Foreground="{DynamicResource TextMutedBrush}" />
                 </StackPanel>
             </Border>

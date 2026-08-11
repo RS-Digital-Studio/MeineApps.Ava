@@ -95,8 +95,14 @@ Relativ-Messung); bei dauerhaftem Camera-Deny öffnet der Service die App-Einste
 
 ## FileProvider (Export + Share)
 
-Authority: `{packageId}.fileprovider` → `AndroidX.Core.Content.FileProvider.GetUriForFile(this, PackageName + ".fileprovider", file)`.
-Manifest: `<provider android:authorities="${applicationId}.fileprovider" android:grantUriPermissions="true" .../>`.
+Authority: `com.rsdigital.smartmeasure.fileprovider` → `AndroidX.Core.Content.FileProvider.GetUriForFile(this, PackageName + ".fileprovider", file)`.
+Manifest: `<provider android:authorities="com.rsdigital.smartmeasure.fileprovider" android:grantUriPermissions="true" .../>`.
+
+> **Authority ausschreiben, nicht `${applicationId}`.** .NET für Android ersetzt den Platzhalter
+> nur, wenn `<AndroidManifestPlaceholders>` im csproj definiert ist. Ohne das steht wörtlich
+> `${applicationId}.fileprovider` im gemergten Manifest, während `MainActivity` mit
+> `PackageName + ".fileprovider"` sucht → Share/Öffnen von Exporten schlägt fehl. Der Wert muss
+> zu `<ApplicationId>` im csproj passen (alle Apps im Workspace schreiben ihn aus).
 Pfade: `Resources/xml/provider_paths.xml`.
 `UriLauncher.PlatformShareFile` → `Intent.ActionSend`, `PlatformOpenFile` → `Intent.ActionView`.
 

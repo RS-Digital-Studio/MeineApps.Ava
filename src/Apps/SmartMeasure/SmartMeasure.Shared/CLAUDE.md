@@ -33,21 +33,42 @@ null → Fallbacks/Mocks (gewollt). Generisches Pattern → [Core.Ava-CLAUDE.md]
 
 1. **`IAppPaths`** — MUSS als erstes registriert werden (`ProjectService`, `ExportService`, `SettingsViewModel` hängen davon ab).
 2. **`IPreferencesService`** → `PreferencesService("SmartMeasure")`.
-3. **`IArCaptureService`** — plattform-spezifisch oder Mock.
-4. **Fachliche Services** (alle Singleton): `IMeasurementService`, `ICoordinateService`,
+3. **`ILocalizationService`** → `new LocalizationService(AppStrings.ResourceManager, IPreferencesService)`.
+   MUSS nach `IPreferencesService` kommen (persistiert die Sprachwahl darüber).
+4. **`IArCaptureService`** — plattform-spezifisch oder Mock.
+5. **Fachliche Services** (alle Singleton): `IMeasurementService`, `ICoordinateService`,
    `IGeoidService`, `ITerrainService`, `IGardenPlanService`, `IProjectService`,
    `IExportService`, `IBlenderExportService`, `IArTransferService`,
    `IDifferentialSnapshotService`, `IVolumeService`,
    `ITotalStationService`, `ILeastSquaresAdjustmentService`,
    `IVoiceAnnotationService`, `ISurveyReportService`, `ISceneReconstructionService`,
    `IMultiUserSessionService`.
-5. **ViewModels** (alle Singleton): `MainViewModel`, `SurveyViewModel`,
+6. **ViewModels** (alle Singleton): `MainViewModel`, `SurveyViewModel`,
    `TerrainViewModel`, `GardenPlanViewModel`, `MapViewModel`, `ProjectsViewModel`,
    `SettingsViewModel`.
 
+### Lokalisierung
+
+`AppStrings.resx` + 5 Übersetzungen (EN/ES/FR/IT/PT), 144 Keys. Nach dem DI-Build und **vor**
+dem ersten View-Aufbau: `localization.Initialize()` (liest die gespeicherte Sprache) +
+`LocalizationManager.Initialize(localization)`.
+
+| Ebene | Zugriff |
+|-------|---------|
+| AXAML | `xmlns:loc="using:MeineApps.Core.Ava.Localization"` + `{loc:Translate Key}` |
+| ViewModels / Code | `LocalizationManager.GetString("Key")` (statisch, kein Inject nötig) |
+| AR-Activity | eigener Weg — `ArOverlayLabels`-Snapshot direkt aus `AppStrings.*` (keine Avalonia-DI, siehe [../CLAUDE.md](../CLAUDE.md)) |
+
+`AppStrings.Designer.cs` wird **manuell** gepflegt (CLI-Build generiert nicht) — neue Keys dort
+als Property nachtragen, sonst sind sie nur über `GetString` erreichbar.
+
+> **RESX per Skript befüllen:** PowerShell 5.1 liest `.ps1` ohne BOM als ANSI. Ein Skript mit
+> Umlauten im Quelltext schreibt Mojibake in die RESX. Übersetzungen daher aus einer
+> UTF-8-JSON-Datei laden (`Get-Content -Encoding UTF8`) und das Skript ASCII-only halten.
+
 ### `OnFrameworkInitializationCompleted`
 
-DI bauen → Lifetime-Branch:
+DI bauen → Lokalisierung initialisieren → Lifetime-Branch:
 - **Desktop** (`IClassicDesktopStyleApplicationLifetime`, 450×900): `MainViewModel` sofort holen,
   `MainView` als `DataContext`, `InitializeAsync()`. Factories null → Mocks (gewollt).
 - **Android** (`IActivityApplicationLifetime` — VOR `ISingleViewApplicationLifetime` prüfen, das

@@ -369,4 +369,124 @@
   <data name="ArTrackingBadState" xml:space="preserve">
     <value>Session error</value>
   </data>
+  <data name="Share" xml:space="preserve">
+    <value>Share</value>
+  </data>
+  <data name="ExportCreated" xml:space="preserve">
+    <value>Export created</value>
+  </data>
+  <data name="RemoveLastElement" xml:space="preserve">
+    <value>Remove last element</value>
+  </data>
+  <data name="RemoveLastPoint" xml:space="preserve">
+    <value>Remove last point</value>
+  </data>
+  <data name="Point" xml:space="preserve">
+    <value>Point</value>
+  </data>
+  <data name="FinishElement" xml:space="preserve">
+    <value>Finish element</value>
+  </data>
+  <data name="CancelDrawing" xml:space="preserve">
+    <value>Cancel drawing</value>
+  </data>
+  <data name="VolumeEstimate" xml:space="preserve">
+    <value>Volume estimate</value>
+  </data>
+  <data name="CalculateVolume" xml:space="preserve">
+    <value>Calc. V</value>
+  </data>
+  <data name="DepthMeters" xml:space="preserve">
+    <value>Depth (m):</value>
+  </data>
+  <data name="Display" xml:space="preserve">
+    <value>Display</value>
+  </data>
+  <data name="MetricSystem" xml:space="preserve">
+    <value>Metric system (m, m²)</value>
+  </data>
+  <data name="DataSection" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="DatabaseLabel" xml:space="preserve">
+    <value>Database: </value>
+  </data>
+  <data name="ArAccuracyNote" xml:space="preserve">
+    <value>AR camera surveying (±5–50 cm)</value>
+  </data>
+  <data name="ExportFormatsNote" xml:space="preserve">
+    <value>Export: CSV, GeoJSON, OBJ (Blender), PDF</value>
+  </data>
+  <data name="ArHeroTitle" xml:space="preserve">
+    <value>Measure with AR camera</value>
+  </data>
+  <data name="ArHeroSubtitle" xml:space="preserve">
+    <value>Point the camera at the ground and tap points — no extra hardware.</value>
+  </data>
+  <data name="ArAccuracyTitle" xml:space="preserve">
+    <value>AR accuracy approx. ±5–50 cm</value>
+  </data>
+  <data name="ArAccuracyBody" xml:space="preserve">
+    <value>Ideal for garden planning, areas and dimensions. Measuring repeatedly improves accuracy.</value>
+  </data>
+  <data name="CurrentMeasurement" xml:space="preserve">
+    <value>Current measurement</value>
+  </data>
+  <data name="AreaShort" xml:space="preserve">
+    <value>Area</value>
+  </data>
+  <data name="PerimeterShort" xml:space="preserve">
+    <value>Perimeter</value>
+  </data>
+  <data name="NoPointsTitle" xml:space="preserve">
+    <value>No measurement points yet</value>
+  </data>
+  <data name="NoPointsBody" xml:space="preserve">
+    <value>Start the AR camera above and tap points in your garden. Your area and dimensions will appear here.</value>
+  </data>
+  <data name="CompareSessions" xml:space="preserve">
+    <value>Compare sessions (differential)</value>
+  </data>
+  <data name="ProjectA" xml:space="preserve">
+    <value>Project A</value>
+  </data>
+  <data name="ProjectB" xml:space="preserve">
+    <value>Project B</value>
+  </data>
+  <data name="Compare" xml:space="preserve">
+    <value>Compare</value>
+  </data>
+  <data name="ExportDxf" xml:space="preserve">
+    <value>DXF</value>
+  </data>
+  <data name="ExportKmz" xml:space="preserve">
+    <value>KMZ</value>
+  </data>
+  <data name="DxfTooltip" xml:space="preserve">
+    <value>AutoCAD/Allplan/Revit compatible</value>
+  </data>
+  <data name="KmzTooltip" xml:space="preserve">
+    <value>Google Earth / Google Maps</value>
+  </data>
+  <data name="SquareMetersSuffix" xml:space="preserve">
+    <value> m²</value>
+  </data>
+  <data name="ProjectLoadFailed" xml:space="preserve">
+    <value>Project could not be loaded</value>
+  </data>
+  <data name="ExportFailed" xml:space="preserve">
+    <value>Export failed</value>
+  </data>
+  <data name="ArTransfer" xml:space="preserve">
+    <value>AR transfer</value>
+  </data>
+  <data name="NoProjectAvailable" xml:space="preserve">
+    <value>No project available</value>
+  </data>
+  <data name="PointsTransferred" xml:space="preserve">
+    <value>{0} points transferred</value>
+  </data>
+  <data name="ArTransferFailed" xml:space="preserve">
+    <value>AR transfer failed</value>
+  </data>
 </root>

@@ -1,0 +1,9 @@
+<Project>
+  <!-- Als signing.local.props neben Directory.Build.targets ablegen und die beiden
+       Passwörter des Upload-Keystores aus dem Passwortmanager eintragen.
+       signing.local.props steht in .gitignore und wird nie versioniert. -->
+  <PropertyGroup>
+    <MeineAppsSigningKeyPass>SCHLUESSELPASSWORT</MeineAppsSigningKeyPass>
+    <MeineAppsSigningStorePass>KEYSTOREPASSWORT</MeineAppsSigningStorePass>
+  </PropertyGroup>
+</Project>

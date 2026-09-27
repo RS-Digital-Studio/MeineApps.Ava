@@ -577,7 +577,7 @@ GitHub Actions Workflow (.github/workflows/unity-android.yml):
 
 - **Keystore:** `F:\Meine_Apps_Ava\Releases\meineapps.keystore` (gemeinsamer Keystore aller Apps)
 - **Alias:** `meineapps`
-- **Passwort:** `MeineApps2025` (in Directory.Build.targets oder CI-Secret)
+- **Passwort:** `<siehe signing.local.props>` (in Directory.Build.targets oder CI-Secret)
 - **Package-ID:** `com.meineapps.arcanekingdom` (vorlaeufig, finalisieren vor Launch)
 
 ### 12.4 Release-Tracks

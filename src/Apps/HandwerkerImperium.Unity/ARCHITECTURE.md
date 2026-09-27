@@ -1721,9 +1721,9 @@ public static class BuildScripts
     {
         PlayerSettings.Android.useCustomKeystore = true;
         PlayerSettings.Android.keystoreName = "../../../../Releases/meineapps.keystore";
-        PlayerSettings.Android.keystorePass = "MeineApps2025";
+        PlayerSettings.Android.keystorePass = "<siehe signing.local.props>";
         PlayerSettings.Android.keyaliasName = "meineapps";
-        PlayerSettings.Android.keyaliasPass = "MeineApps2025";
+        PlayerSettings.Android.keyaliasPass = "<siehe signing.local.props>";
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
         PlayerSettings.Android.useAPKExpansionFiles = false;
         EditorUserBuildSettings.buildAppBundle = true;

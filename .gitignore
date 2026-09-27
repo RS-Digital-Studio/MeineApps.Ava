@@ -402,3 +402,6 @@ server_current.json
 !src/Apps/*/Unity/Assets/**/*.meta
 !src/Apps/*/Unity/Packages/manifest.json
 !src/Apps/*/Unity/Packages/packages-lock.json
+
+# Signierpasswörter des Upload-Keystores — nur lokal, Vorlage signing.local.props.example
+/signing.local.props

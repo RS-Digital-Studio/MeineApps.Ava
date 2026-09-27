@@ -563,9 +563,12 @@ Versionen zentral in `Directory.Packages.props`. Kern:
 
 ### Keystore
 
-`F:\Meine_Apps_Ava\Releases\meineapps.keystore` · Alias `meineapps` · das Passwort liest der
-Build aus `Directory.Build.targets` — **nie in Unterlagen oder Erinnerungen wiederholen**, das
-Repository ist öffentlich.
+`F:\Meine_Apps_Ava\Releases\meineapps.keystore` · Alias `meineapps` · die Passwörter stehen in
+`signing.local.props` neben `Directory.Build.targets` — **nicht versioniert** (`.gitignore`), das
+Repository ist öffentlich. Auf einem neuen Rechner `signing.local.props.example` kopieren und
+die Werte aus dem Passwortmanager eintragen; ohne die Datei signiert Debug mit dem
+Debug-Schlüssel, und ein Release-Build bricht mit einer Meldung ab. Passwörter nie in
+Unterlagen oder Erinnerungen wiederholen.
 
 ---
 

@@ -378,7 +378,7 @@ Editiere `Unity/Packages/manifest.json`:
 4. **SHA-1:** Aus Keystore extrahieren:
    ```powershell
    keytool -list -v -keystore F:\Meine_Apps_Ava\Releases\meineapps.keystore -alias meineapps
-   # Password: MeineApps2025
+   # Password: <siehe signing.local.props>
    ```
 5. **Register App**
 6. **Download `google-services.json`** → ablegen unter `Unity/Assets/StreamingAssets/` (Unity-Firebase-Plugin liest es von dort)
@@ -742,9 +742,9 @@ File → Build Settings
 Project Settings → Player → Android → Publishing Settings:
 ☑ Custom Keystore
 Keystore Path: ..\..\..\..\Releases\meineapps.keystore
-Keystore Pass: MeineApps2025
+Keystore Pass: <siehe signing.local.props>
 Key Alias: meineapps
-Key Pass: MeineApps2025
+Key Pass: <siehe signing.local.props>
 ```
 
 ### 11.2 IL2CPP konfigurieren

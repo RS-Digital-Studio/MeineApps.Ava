@@ -1,11 +1,17 @@
 <Project>
+  <!-- Die Signierpasswörter stehen in signing.local.props neben dieser Datei — nicht
+       versioniert (.gitignore), denn das Repository ist öffentlich. Vorlage:
+       signing.local.props.example. Fehlt die Datei, signiert ein Debug-Build mit dem
+       Debug-Schlüssel, und ein Release-Build bricht mit einer Meldung ab. -->
+  <Import Project="$(MSBuildThisFileDirectory)signing.local.props" Condition="Exists('$(MSBuildThisFileDirectory)signing.local.props')" />
+
   <PropertyGroup Condition="$(TargetFramework.Contains('android'))">
     <!-- Signing -->
-    <AndroidKeyStore>true</AndroidKeyStore>
+    <AndroidKeyStore Condition="Exists('$(MSBuildThisFileDirectory)signing.local.props')">true</AndroidKeyStore>
     <AndroidSigningKeyStore>$(MSBuildThisFileDirectory)Releases\meineapps.keystore</AndroidSigningKeyStore>
     <AndroidSigningKeyAlias>meineapps</AndroidSigningKeyAlias>
-    <AndroidSigningKeyPass>MeineApps2025</AndroidSigningKeyPass>
-    <AndroidSigningStorePass>MeineApps2025</AndroidSigningStorePass>
+    <AndroidSigningKeyPass>$(MeineAppsSigningKeyPass)</AndroidSigningKeyPass>
+    <AndroidSigningStorePass>$(MeineAppsSigningStorePass)</AndroidSigningStorePass>
 
     <!-- Play Store erfordert AAB -->
     <AndroidPackageFormat>aab</AndroidPackageFormat>
@@ -40,4 +46,8 @@
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
   </PropertyGroup>
 
+  <Target Name="MeineAppsSignierungPruefen" BeforeTargets="Build"
+          Condition="$(TargetFramework.Contains('android')) And '$(Configuration)' == 'Release' And !Exists('$(MSBuildThisFileDirectory)signing.local.props')">
+    <Error Text="signing.local.props fehlt: signing.local.props.example daneben kopieren und die Passwörter aus dem Passwortmanager eintragen." />
+  </Target>
 </Project>

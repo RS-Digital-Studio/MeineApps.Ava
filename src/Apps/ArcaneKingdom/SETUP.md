@@ -148,7 +148,7 @@ Output landet in `Unity/Build/arcanekingdom-<version>.aab`. Beim ersten Mal daue
 
 **Signierung:** Player Settings → Publishing Settings → Custom Keystore aktivieren:
 - Pfad: `F:\Meine_Apps_Ava\Releases\meineapps.keystore`
-- Passwort: `MeineApps2025`
+- Passwort: `<siehe signing.local.props>`
 - Alias: `meineapps`
 
 ---

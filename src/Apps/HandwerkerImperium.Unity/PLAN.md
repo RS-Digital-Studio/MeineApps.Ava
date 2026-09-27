@@ -1441,9 +1441,9 @@ unity-builder \
   --buildTarget Android \
   --androidAppBundle true \
   --androidKeystoreName meineapps.keystore \
-  --androidKeystorePass MeineApps2025 \
+  --androidKeystorePass <siehe signing.local.props> \
   --androidKeyaliasName meineapps \
-  --androidKeyaliasPass MeineApps2025 \
+  --androidKeyaliasPass <siehe signing.local.props> \
   --output Releases/HandwerkerImperium-Unity-v1.0.0.aab
 ```
 

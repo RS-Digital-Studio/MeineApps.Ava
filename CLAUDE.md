@@ -13,6 +13,21 @@ Domänen-Details, Gotchas und Troubleshooting → jeweilige Library-/App-CLAUDE.
 > Die Avalonia-Versionen von BomberBlast und HandwerkerImperium bleiben produktiv und werden
 > weiter gepflegt; die Unity-Varianten laufen als parallele Beta.
 
+## Arbeitsweise in diesem Workspace
+
+Ergänzt die globale CLAUDE.md um das, was nur hier gilt:
+
+- **Android primär.** Desktop (Windows/Linux) dient nur zum Testen — keine
+  Desktop-spezifischen Optimierungen.
+- **Studio-Qualität heißt hier auch Spielgefühl:** Mechanik, Progression und Flow;
+  Balancing von Wirtschaft, Schwierigkeit und Belohnungen; haptisches, visuelles und
+  akustisches Feedback. Volle Power ausschöpfen — SkiaSharp-Shader, Partikel,
+  Animationen, „Game Juice".
+- **Fertig heißt:** `dotnet build` kompiliert. Refactoring → `dotnet build` + AppChecker
+  (und die betroffenen xUnit-Tests) vorher und nachher grün.
+- **Release (nur auf Anfrage):** Version erhöhen → AAB bauen → nach `Releases/{App}`.
+- **Erinnerungen dieses Workspaces:** `lessons-learned.md`, `gotchas.md`, `balancing.md`.
+
 ---
 
 ## 1. Architektur (Pflicht)
@@ -548,14 +563,44 @@ Versionen zentral in `Directory.Packages.props`. Kern:
 
 ### Keystore
 
-`F:\Meine_Apps_Ava\Releases\meineapps.keystore` · Alias `meineapps` · Passwort `MeineApps2025`
-(in `Directory.Build.targets`).
+`F:\Meine_Apps_Ava\Releases\meineapps.keystore` · Alias `meineapps` · das Passwort liest der
+Build aus `Directory.Build.targets` — **nie in Unterlagen oder Erinnerungen wiederholen**, das
+Repository ist öffentlich.
 
 ---
 
 ## 6. Werkzeuge: Workflows, Skills, Hooks
 
-Agent-Roster (Modell/Effort) → **globale CLAUDE.md**. Projekt-spezifische Verkettung:
+**Agenten** (`.claude/agents/`, Modell und Aufwand im Frontmatter):
+
+| Kategorie | Agent | Modell/Aufwand | Einsatz |
+|-----------|-------|----------------|---------|
+| **Kritisches Denken** | `code-review` | opus/max | Code-Review inkl. MVVM-Verstöße |
+|  | `debugger` | opus/max | Bug-Diagnose mit Hypothesen |
+|  | `pre-release` | opus/max | Release-Reife inkl. Server-Checks |
+|  | `mvvm-auditor` | opus/max | Strikter MVVM-Audit + Auto-Fix |
+|  | `bingxbot` | opus/max | Trading-Domäne (SK-System, BingX-API) |
+| **Architektur** | `architect` | opus/high | Design-Entscheidungen, Modulgrenzen |
+|  | `planner` | opus/high | Feature-Planung (Dateien, DI, RESX) |
+|  | `devils-advocate` | opus/high | Ideen stresstesten |
+|  | `server-ops` | opus/high | Pi/systemd/SignalR/SSH-Deploy |
+| **Qualität** | `tester` | opus/high | Unit-Tests + Randfälle |
+|  | `refactor` | opus/high | Duplikate, große Klassen, Muster |
+|  | `migrator` | opus/high | Framework-Upgrades (Avalonia/.NET/Skia) |
+|  | `security` | opus/high | Secrets, Manifest, IAP, Compliance |
+|  | `performance` | opus/high | CPU/GC/UI-Ruckler/Startup |
+|  | `skiasharp` | opus/high | Paint-Lifecycle, Shader, DPI |
+|  | `health` | opus/high | Makro-Gesundheit der Codebasis |
+|  | `game-audit` | opus/high | Spielersicht (Balancing, UX, Economy) |
+| **Routine** | `ui` | sonnet/medium | AXAML/Styles/Touch/Bindings |
+|  | `localize` | sonnet/medium | RESX-Vollständigkeit, Platzhalter |
+|  | `documenter` | sonnet/medium | Kommentare, CLAUDE.md, Changelog |
+|  | `deploy` | sonnet/medium | Release-Pipeline (AAB) |
+|  | `dependency-checker` | sonnet/medium | NuGet-Updates, Schwachstellen |
+|  | `git-detective` | sonnet/medium | Commit-Historie, Fehlereinführung |
+|  | `learn` | sonnet/medium | Code erklären, Muster zeigen |
+
+Projekt-spezifische Verkettung:
 
 | Szenario | Ablauf |
 |----------|--------|
@@ -572,9 +617,11 @@ Agent-Roster (Modell/Effort) → **globale CLAUDE.md**. Projekt-spezifische Verk
 **Skills (projekt-lokal):** `build-check`, `app-status`, `new-view`, `new-service`,
 `mvvm-check`, `localize-check`, `release`, `server-deploy`, `changelog`.
 
-**Hooks (User-Settings):** *SessionStart* — MVVM-Strict-Reminder, Auto-Commit-Erlaubnis,
-deutsche Umlaute, CLAUDE.md-Pflicht. *PostToolUse* (Write/Edit auf `View*.axaml.cs`) —
-Code-Behind-Hygiene-Reminder.
+**Hooks (`.claude/settings.json`):** *SessionStart* — MVVM-Strict-Reminder. *PostToolUse*
+(Write/Edit auf `View*.axaml.cs`) — Code-Behind-Hygiene-Reminder.
+
+**MCP-Server (`.mcp.json`):** `unity-mcp` (ArcaneKingdom) und `unity-mcp-hwi`
+(HandwerkerImperium.Unity) — nur in diesem Workspace, nicht global.
 
 ---
 

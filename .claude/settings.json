@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "enabledMcpjsonServers": ["unity-mcp", "unity-mcp-hwi"],
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'set -- *.sln; if [ -e \"$1\" ] || [ -f Directory.Build.props ]; then echo \"MVVM ist strikt: kein App.Services.GetRequiredService im View-Ctor, kein DataContext= im Code-Behind, keine Business-Logik im Code-Behind.\"; fi'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'json=$(cat); path=$(echo \"$json\" | grep -oE \"\\\"file_path\\\":\\s*\\\"[^\\\"]+\\\"\" | head -1); if echo \"$path\" | grep -qE \"View[A-Za-z]*\\.axaml\\.cs\"; then echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PostToolUse\\\",\\\"additionalContext\\\":\\\"MVVM-Reminder: View-Code-Behind wurde editiert. Pruefe: kein App.Services.GetRequiredService im Ctor, kein DataContext= im Code-Behind, keine Business-Logik (nur InitializeComponent + ggf. DataContextChanged fuer VM-Event-Subscribe).\\\"}}\"; fi'"
+          }
+        ]
+      }
+    ]
+  }
+}

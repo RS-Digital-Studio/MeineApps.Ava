@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "unity-mcp": {
+      "command": "C:\\Users\\rober\\.unity\\relay\\relay_win.exe",
+      "args": ["--mcp", "--project-path", "F:\\Meine_Apps_Ava\\src\\Apps\\ArcaneKingdom\\Unity"],
+      "env": {}
+    },
+    "unity-mcp-hwi": {
+      "command": "C:\\Users\\rober\\.unity\\relay\\relay_win.exe",
+      "args": ["--mcp", "--project-path", "F:\\Meine_Apps_Ava\\src\\Apps\\HandwerkerImperium.Unity\\Unity"],
+      "env": {}
+    }
+  }
+}
